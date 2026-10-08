@@ -75,7 +75,7 @@ function renderStatus(art, source) {
 }
 
 function renderMirrors(flat) {
-  const host = $('mirrors');
+  const host = $('mirror-cards');
   if (!host) return;
   host.innerHTML = '';
   for (const mirror of flat || []) {
