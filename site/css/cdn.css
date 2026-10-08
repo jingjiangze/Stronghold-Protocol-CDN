@@ -111,6 +111,9 @@ h3 { font-size: 15px; font-weight: 600; }
 .card__meta { margin-top: 10px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 11px; color: var(--dim); }
 .card__value { font-size: 20px; font-weight: 550; color: var(--accent); font-variant-numeric: tabular-nums; }
 .card__value.is-bad { font-size: 13px; color: var(--dim); }
+.card__stats { display: flex; gap: 16px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: 11px; color: var(--dim); }
+.card__stats b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px; }
+.card__stats span { display: inline-flex; align-items: baseline; gap: 5px; }
 .badge { position: absolute; top: -9px; right: 14px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 650; letter-spacing: 1.2px; padding: 2px 8px; border-radius: 6px; }
 .mono { font-family: var(--mono); font-size: 12px; }
 .muted { color: var(--muted); }

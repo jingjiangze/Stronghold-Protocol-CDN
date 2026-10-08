@@ -91,7 +91,9 @@ function renderMirrors(flat) {
       `<div class="card__title">${mirror.id}</div>` +
       `<div class="mono muted" style="margin-top:8px;word-break:break-all">${mirror.base || mirror.root}</div>` +
       `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>` +
-      `<span class="card__value is-bad" data-ms>未测速</span></div>`;
+      `<span class="card__value is-bad" data-ms>未测速</span></div>` +
+      `<div class="card__stats" data-stats hidden>` +
+      `<span>延迟 <b data-latency>—</b></span><span>速度 <b data-speed>—</b></span></div>`;
     host.appendChild(card);
   }
 }
@@ -184,25 +186,52 @@ async function refreshDropin() {
 // ---- mirror speed test -------------------------------------------------------------------
 
 /**
- * Probe target. It has to exist on every origin — asking for a file only the primary carries
- * reports the others as broken (which is exactly what the first version did: it asked for
- * mirrors.json, which the Pages origin does not serve). robots.txt is tiny, present everywhere,
- * and needs no preflight. Two attempts, best time wins, so a cold connection is not the verdict.
+ * Probe target: the interface's own 256 KiB file, which every origin serves.
+ *
+ * Both halves of "fast" matter — how long until the first byte (latency) and how fast the rest
+ * follows (throughput) — and a 26-byte robots.txt only answers the first. Range requests would
+ * sample a big file cheaply but the Pages origin rejects their CORS preflight (405), so a small
+ * known-size file is the portable way. Two attempts, best throughput wins, so a cold connection
+ * is not the verdict.
  */
-const PROBE_PATH = '/robots.txt';
+const PROBE_PATH = '/cdn/v1/probe.bin';
 
-async function timeMirror(mirror, attempts = 2) {
+function fmtSpeed(kbps) {
+  return kbps >= 1024 ? `${(kbps / 1024).toFixed(1)} MB/s` : `${kbps} KB/s`;
+}
+
+// Before the probe file has been deployed everywhere, fall back to the index — it exists on every
+// origin, so the test never depends on deploy order.
+const PROBE_FALLBACK = '/cdn/v1/index.json';
+
+async function measureOnce(mirror, path) {
+  const url = `${mirror.root}${path}?probe=${Date.now()}`;
+  const t0 = performance.now();
+  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(20000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  // The promise resolves when the headers arrive, so this is the time to first byte.
+  const tHeaders = performance.now();
+  const body = await res.arrayBuffer();
+  const t1 = performance.now();
+  const seconds = Math.max(0.001, (t1 - tHeaders) / 1000);
+  return {
+    latency: Math.round(tHeaders - t0),
+    kbps: Math.round(body.byteLength / 1024 / seconds),
+    bytes: body.byteLength,
+    path,
+  };
+}
+
+async function measureMirror(mirror, attempts = 2) {
   let best = null;
   for (let i = 0; i < attempts; i++) {
-    const started = performance.now();
-    const res = await fetch(`${mirror.root}${PROBE_PATH}?probe=${Date.now()}-${i}`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(6000),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    await res.arrayBuffer();
-    const ms = Math.round(performance.now() - started);
-    if (best == null || ms < best) best = ms;
+    let sample;
+    try {
+      sample = await measureOnce(mirror, PROBE_PATH);
+    } catch {
+      sample = await measureOnce(mirror, PROBE_FALLBACK);
+    }
+    if (!best || sample.kbps > best.kbps) best = sample;
   }
   return best;
 }
@@ -210,15 +239,16 @@ async function timeMirror(mirror, attempts = 2) {
 async function probeMirrors(flat) {
   const ranked = await Promise.all(
     (flat || []).map(async (mirror) => {
-      if (!httpsOnly(mirror.root)) return { ...mirror, ms: null, error: '非 https' };
+      if (!httpsOnly(mirror.root)) return { ...mirror, error: '非 https' };
       try {
-        return { ...mirror, ms: await timeMirror(mirror) };
+        return { ...mirror, ...(await measureMirror(mirror)) };
       } catch (error) {
-        return { ...mirror, ms: null, error: String(error.message || error) };
+        return { ...mirror, error: String(error.message || error) };
       }
     }),
   );
-  ranked.sort((a, b) => (a.ms ?? Number.MAX_SAFE_INTEGER) - (b.ms ?? Number.MAX_SAFE_INTEGER));
+  // Ranked by download speed, which is what the assets actually cost; latency is shown beside it.
+  ranked.sort((a, b) => (b.kbps ?? -1) - (a.kbps ?? -1) || (a.latency ?? 1e9) - (b.latency ?? 1e9));
   return ranked;
 }
 
@@ -226,17 +256,23 @@ function paintProbe(ranked) {
   for (const mirror of ranked) {
     const card = document.querySelector(`.card[data-mirror="${CSS.escape(mirror.id)}"]`);
     if (!card) continue;
-    const slot = card.querySelector('[data-ms]');
-    if (slot) {
-      if (mirror.ms == null) {
-        slot.textContent = mirror.error || '不可用';
-        slot.className = 'card__value is-bad';
-      } else {
-        slot.textContent = `${mirror.ms} ms`;
-        slot.className = 'card__value';
-      }
+    const state = card.querySelector('[data-ms]');
+    const stats = card.querySelector('[data-stats]');
+    const failed = mirror.kbps == null;
+
+    if (state) {
+      state.textContent = failed ? mirror.error || '不可用' : '已测速';
+      state.className = failed ? 'card__value is-bad' : 'card__value';
     }
-    const isBest = ranked[0]?.id === mirror.id && mirror.ms != null;
+    if (stats) {
+      stats.hidden = failed;
+      const latency = stats.querySelector('[data-latency]');
+      const speed = stats.querySelector('[data-speed]');
+      if (latency) latency.textContent = `${mirror.latency} ms`;
+      if (speed) speed.textContent = fmtSpeed(mirror.kbps);
+    }
+
+    const isBest = ranked[0]?.id === mirror.id && !failed;
     card.classList.toggle('is-best', isBest);
     card.querySelector('.badge')?.remove();
     if (isBest) {
@@ -254,12 +290,16 @@ function wireProbe(flat) {
   button.addEventListener('click', async () => {
     const line = $('probe-line');
     button.disabled = true;
-    if (line) line.textContent = '正在并发探测各镜像…';
+    if (line) line.textContent = '正在并发探测各镜像（每个下载 256 KiB）…';
     try {
       const ranked = await probeMirrors(flat);
       paintProbe(ranked);
-      const best = ranked.find((m) => m.ms != null);
-      if (line) line.textContent = best ? `最快：${best.id}（${best.ms} ms）` : '所有镜像都不可达。';
+      const best = ranked.find((m) => m.kbps != null);
+      if (line) {
+        line.textContent = best
+          ? `最快：${best.id}（${fmtSpeed(best.kbps)}，延迟 ${best.latency} ms）——按下载速度排序`
+          : '所有镜像都不可达。';
+      }
     } finally {
       button.disabled = false;
     }

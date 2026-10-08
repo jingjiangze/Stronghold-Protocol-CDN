@@ -27,6 +27,7 @@
       <a href="#agents">agent 接入</a>
       <a href="#params">拉取参数</a>
       <a href="#mirrors">镜像站</a>
+      <a href="#sources">来源</a>
       <a href="#layout">目录与 API</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -297,6 +298,43 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th class="num">来源</th></tr></thead>
         <tbody><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="section" id="sources">
+    <div class="section-heading">
+      <div><div class="eyebrow">REFERENCE · SOURCES</div><h2>还有哪些免费 CDN</h2></div>
+      <span class="section-status">都要求能绑定自有域名才算"中转"</span>
+    </div>
+    <p class="section-note" style="margin-bottom:12px">
+      一个前提：多数免费 CDN <b>不支持绑定自有域名</b>（jsDelivr、Statically、各种 gh 镜像都只能用它给你的地址），
+      想让流量走自己的域名，只能自己加一层反代——那样瓶颈就变成你自己的机器，反而更慢。所以下表按"能不能绑域名"筛过。
+      国内厂商另有硬门槛：<b>域名要 ICP 备案</b>才能用国内节点加速，本域未备案，所以国内 CDN 目前不可用。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>来源</th><th>免费</th><th>绑自有域名</th><th>国内可用</th><th>结论</th></tr></thead>
+        <tbody>
+          <tr><td>Cloudflare R2 + 自定义域</td><td>是（出口免费）</td><td>是</td><td>一般（港/新/日节点）</td><td><b>已接入 · 主源</b></td></tr>
+          <tr><td>Cloudflare Pages</td><td>是</td><td>是</td><td>同上</td><td><b>已接入 · 次源</b></td></tr>
+          <tr><td>Cloudflare 抗 DDoS</td><td>是且不限量</td><td>随域名生效</td><td>—</td><td><b>已生效</b>（"高防"这层免费档已覆盖）</td></tr>
+          <tr><td>GitHub Release + 镜像前缀</td><td>是</td><td>否</td><td>镜像可用</td><td><b>已接入 · 打包通道</b></td></tr>
+          <tr><td>AWS CloudFront</td><td>12 个月 1 TB/月，之后按量</td><td>是（ACM 证书）</td><td>一般</td><td>待接入：本机 AWS 会话已过期，需先 <code class="inline">aws login</code></td></tr>
+          <tr><td>阿里云 / 腾讯云 CDN、又拍云、七牛</td><td>有免费额度</td><td>是</td><td><b>好</b></td><td>需 <b>ICP 备案</b>；本域未备案 → 暂不可用</td></tr>
+          <tr><td>Bunny CDN</td><td>否（14 天试用）</td><td>是</td><td>较好</td><td>收费，约 $0.01/GB</td></tr>
+          <tr><td>Oracle Cloud Always Free</td><td>是（含 10 TB/月出口）</td><td>是（自建 nginx 镜像）</td><td>视机房</td><td>可行，但要自己开机器与运维</td></tr>
+          <tr><td>jsDelivr / Statically</td><td>是</td><td>否</td><td>差</td><td>不建议</td></tr>
+          <tr><td>Vercel / Netlify 免费档</td><td>是</td><td>是</td><td>基本不可用</td><td>不建议</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice">
+      <span>
+        <b>接入新来源不需要改代码：</b>在仓库的 <code class="inline">origins.json</code> 的
+        <code class="inline">extraOrigins</code> 里加一条 <code class="inline">{ id, kind, root }</code>，
+        下一次同步就会把它写进 <code class="inline">art.json</code> / <code class="inline">mirrors.json</code>，
+        本页的镜像列表与测速也会自动带上它。
+      </span>
     </div>
   </section>
 

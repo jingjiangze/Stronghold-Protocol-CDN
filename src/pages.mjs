@@ -11,6 +11,7 @@ import { spawnSync } from 'node:child_process';
 
 import { rewriteManifestText } from './rewrite-manifest.mjs';
 import { ZIP_ROOT } from './names.mjs';
+import { makeProbeBuffer, PROBE_KEY } from './probe-file.mjs';
 
 export const PAGES_PROJECT = process.env.SP_PAGES_PROJECT || 'stronghold-assets-cdn';
 /** The pages.dev subdomain exists as soon as the project does; the custom domain rides DNS. */
@@ -81,8 +82,10 @@ export async function preparePagesDist({ stage, out, manifests, base, tag, index
   const cdnDir = path.join(out, 'cdn', 'v1');
   fs.mkdirSync(cdnDir, { recursive: true });
   await fsp.writeFile(path.join(cdnDir, 'index.json'), indexJson, 'utf8');
+  // The speed-test probe has to exist on every origin, or the others measure as broken.
+  await fsp.writeFile(path.join(out, ...PROBE_KEY.split('/')), makeProbeBuffer());
   await fsp.writeFile(path.join(out, 'robots.txt'), 'User-agent: *\nDisallow: /\n', 'utf8');
-  files += 3;
+  files += 4;
 
   return { out, files };
 }

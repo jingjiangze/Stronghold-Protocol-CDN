@@ -33,6 +33,8 @@ import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './packs.mjs';
 import { buildDropin } from './dropin.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
+import { makeProbeBuffer, PROBE_KEY } from './probe-file.mjs';
+import { readExtraOrigins } from './origins.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -462,6 +464,9 @@ async function main() {
   // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
   // invalidate it — the interface below simply reports one origin fewer.
   const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
+  // A CDN sitting in front of the bucket is one entry in origins.json, not a code change.
+  const extraOrigins = readExtraOrigins(ROOT);
+  if (extraOrigins.length) log(`extra origins: ${extraOrigins.map((o) => o.id).join(', ')}`);
   if (opts.pages) {
     try {
       const dist = await preparePagesDist({
@@ -481,6 +486,12 @@ async function main() {
       report.pages = { error: error.message };
     }
   }
+
+  origins.push(...extraOrigins);
+
+  // A run that does not rebuild something must not publish it as absent: art.json is the contract,
+  // and wiping the pack list because this particular run skipped the pack step would be a lie.
+  const publishedBefore = await readPublishedArt(opts.base);
 
   let packs = [];
   if (opts.packs) {
@@ -508,6 +519,10 @@ async function main() {
       console.error(`[sync] pack channel FAILED: ${error.message}`);
       report.packs = { error: error.message };
     }
+  }
+  if (!packs.length && publishedBefore?.art?.packs?.length) {
+    packs = publishedBefore.art.packs;
+    log(`packs not rebuilt — carrying forward ${packs.length} from the published interface`);
   }
 
   const mirrorsDoc = `${JSON.stringify(
@@ -628,6 +643,9 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
     ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
     [`cdn/v1/index-${version}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
     ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
+    // The speed-test probe: a known 256 KiB that every origin serves, so a browser can measure
+    // latency and throughput without Range (which the Pages origin's CORS preflight rejects).
+    [PROBE_KEY, makeProbeBuffer(), 'application/octet-stream', IMMUTABLE],
   ];
   for (const [key, body, contentType, cacheControl] of objects) {
     await putObject(config, key, body, { contentType, cacheControl });

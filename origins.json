@@ -1,0 +1,10 @@
+{
+  "_comment": "Extra read-only mirrors of the same tree. Everything here is added to art.json / mirrors.json and to the site's speed test automatically — so pointing a new CDN at the bucket is one entry, not a code change. These are origins we do NOT deploy to; the r2 origin and the Pages origin are handled by the sync itself.",
+  "_example": {
+    "id": "cloudfront",
+    "kind": "cdn",
+    "root": "https://d111111abcdef8.cloudfront.net",
+    "note": "AWS CloudFront in front of the R2 bucket"
+  },
+  "extraOrigins": []
+}

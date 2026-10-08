@@ -1,0 +1,43 @@
+// Extra read-only mirrors, from `origins.json`.
+//
+// The r2 and Pages origins are deployment targets, so the sync knows about them structurally. A
+// third origin — CloudFront, an object-storage CDN, a mirror on a VPS — is not something this
+// repository deploys to; it is something that sits in front of the same bucket. Keeping that list
+// in a JSON file means pointing a new CDN at the bucket is one entry: it flows into art.json,
+// mirrors.json and the site's speed test with no code change.
+import fs from 'node:fs';
+import path from 'node:path';
+
+import { assertPublicHttpsUrl } from './upstream.mjs';
+
+/**
+ * @returns {{id:string, kind:string, root:string, base:string, note?:string}[]}
+ */
+export function readExtraOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+  const list = Array.isArray(cfg?.extraOrigins) ? cfg.extraOrigins : [];
+  const out = [];
+  for (const entry of list) {
+    if (!entry?.id || !entry?.root) continue;
+    try {
+      // Same rule as everywhere else: https only, and never a loopback/private/reserved host.
+      const url = assertPublicHttpsUrl(entry.root);
+      const root_ = url.href.replace(/\/+$/, '');
+      out.push({
+        id: String(entry.id),
+        kind: String(entry.kind || 'cdn'),
+        root: root_,
+        base: `${root_}/assets/`,
+        ...(entry.note ? { note: String(entry.note) } : {}),
+      });
+    } catch {
+      // A malformed entry must not take the whole sync down; it simply is not published.
+    }
+  }
+  return out;
+}
