@@ -44,6 +44,7 @@ function parseArgs(argv) {
     write: false,
     prune: false,
     reportOnly: false,
+    force: false,
     pages: false,
     packs: false,
     tag: '',
@@ -59,6 +60,8 @@ function parseArgs(argv) {
     // The gate is authoritative in both modes: a red run means the CDN is not complete. Use
     // --report-only when the point is just to read the numbers.
     else if (arg === '--report-only') opts.reportOnly = true;
+    // Re-run even when the published interface already names this upstream tag.
+    else if (arg === '--force') opts.force = true;
     // Extra origins. Both need --write (they publish), and both are best-effort: a failure there
     // must not invalidate the bucket, which is the primary.
     else if (arg === '--pages') opts.pages = true;
@@ -177,6 +180,16 @@ async function uploadKeys(config, stage, keys, files) {
   return { done, failed };
 }
 
+/** The interface we published last time, or null when nothing has been published yet. */
+async function readPublishedArt(base) {
+  try {
+    const res = await fetch(`${base}/cdn/v1/art.json`, { signal: AbortSignal.timeout(15_000) });
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const startedAt = new Date().toISOString();
@@ -185,6 +198,20 @@ async function main() {
 
   const release = await resolveRelease(opts.tag);
   log(`upstream ${release.repo} → ${release.tag} (published ${release.publishedAt})`);
+
+  // Watermark short-circuit: what we published last time already names this upstream tag and
+  // verified clean, so there is nothing to do — and, more to the point, no reason to pull 428 MB
+  // every six hours to find that out.
+  if (!opts.force) {
+    const published = await readPublishedArt(opts.base);
+    if (published?.upstream?.tag === release.tag && published?.verified?.missing === 0) {
+      log(
+        `already mirrored ${release.tag}: ${published.verified.probed} URLs verified, 0 missing ` +
+          `(synced ${published.syncedAt}) — nothing to do (--force to re-run anyway)`,
+      );
+      return;
+    }
+  }
 
   const workDir = path.resolve(ROOT, opts.work, release.tag);
   const stage = path.join(workDir, 'stage');
