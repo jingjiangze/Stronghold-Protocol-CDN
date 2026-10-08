@@ -266,10 +266,12 @@ function paintProbe(ranked) {
     }
     if (stats) {
       stats.hidden = failed;
-      const latency = stats.querySelector('[data-latency]');
-      const speed = stats.querySelector('[data-speed]');
-      if (latency) latency.textContent = `${mirror.latency} ms`;
-      if (speed) speed.textContent = fmtSpeed(mirror.kbps);
+      if (!failed) {
+        const latency = stats.querySelector('[data-latency]');
+        const speed = stats.querySelector('[data-speed]');
+        if (latency) latency.textContent = `${mirror.latency} ms`;
+        if (speed) speed.textContent = fmtSpeed(mirror.kbps);
+      }
     }
 
     const isBest = ranked[0]?.id === mirror.id && !failed;

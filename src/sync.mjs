@@ -33,7 +33,7 @@ import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './packs.mjs';
 import { buildDropin } from './dropin.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
-import { makeProbeBuffer, PROBE_KEY } from './probe-file.mjs';
+import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins } from './origins.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -41,6 +41,16 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
 const DEFAULT_PAGES_BASE = process.env.SP_PAGES_BASE || 'https://spages.jiangjiangze.icu';
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
+
+/**
+ * Bumped whenever the published interface gains or changes a field.
+ *
+ * The watermark short-circuit compares the upstream tag, so it cannot see that the interface
+ * itself moved — that is how a run that should have published the speed-test probe reported
+ * "nothing to do" and left it 404. Requiring the published schema to match the running code makes
+ * every interface change cost exactly one re-publish, which is the point.
+ */
+export const ART_SCHEMA = 3;
 
 /** The manifests the client reads, and the ones the game server rewrites. */
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
@@ -296,6 +306,7 @@ async function main() {
     const missingPacks = opts.packs && !(published?.art?.packs || []).length;
     if (
       published?.upstream?.tag === release.tag &&
+      published?.schema === ART_SCHEMA &&
       published?.verified?.missing === 0 &&
       !missingPages &&
       !missingPacks
@@ -305,6 +316,9 @@ async function main() {
           `(synced ${published.syncedAt}) — nothing to do (--force to re-run anyway)`,
       );
       return;
+    }
+    if (published && published.schema !== ART_SCHEMA) {
+      log(`the published interface is schema ${published.schema ?? 1}, this code publishes ${ART_SCHEMA} — continuing`);
     }
     if (published?.upstream?.tag === release.tag && (missingPages || missingPacks)) {
       log(
@@ -545,6 +559,7 @@ async function main() {
         urls: pack.urls,
       })),
       index: '/cdn/v1/index.json',
+      probe: `/${PROBE_KEY}`,
       pick: '/cdn/v1/pick.js',
     },
     null,
@@ -661,7 +676,7 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
  */
 async function publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
   const art = {
-    schema: 2,
+    schema: ART_SCHEMA,
     upstream: {
       repo: release.repo,
       tag: release.tag,
@@ -675,6 +690,8 @@ async function publishArt(config, { opts, release, version, manifest, refs, inde
       format: 1,
       token: version,
       mirrors: origins,
+      // Where a consumer can measure an origin's latency and throughput themselves.
+      probe: { key: `/${PROBE_KEY}`, bytes: PROBE_BYTES },
       packs: packs.map((pack) => ({
         id: pack.id,
         group: pack.group,
