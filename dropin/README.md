@@ -46,6 +46,28 @@ node stronghold-cdn/verify-cdn.mjs http://127.0.0.1:3000
 
 **撤销**：删掉 `stronghold-cdn/`，按原方式启动。部署包自始至终没被改过。
 
+### 2.1 本地化模式（把素材搬到本机，玩家不再各拉几千个文件）
+
+默认模式是"素材由 CDN 发"。如果你希望素材**存在本机**（局域网速度、且不依赖外网），加一个环境变量：
+
+```bash
+# Windows: set SP_LOCALIZE=1 之后双击 start-with-cdn.cmd
+SP_LOCALIZE=1 sh stronghold-cdn/start-with-cdn.sh
+```
+
+启动时会按 `mirrors.json` 的打包清单下载素材包（约 533 MB，**默认优先走社区镜像**，
+`SP_LOCALIZE_FROM=direct` 可改为直连 GitHub），解压到 `stronghold-cdn/.sp-assets/`，之后
+`/assets/**`、`/fonts/**` 由侧车**从本地磁盘同源发出**。
+
+- **清单不做任何改写**：上游本来就是相对路径 `/assets/…`，同源正是客户端要的 —— 所以这个模式下"正确的改写"就是不改写，连 CORS 都不需要。
+- **未命中的文件按 `本地 → 部署包自己的素材 → CDN` 兜底**，所以只下部分包也能跑（`SP_LOCALIZE_PACKS=assets-spine-1,fonts-1` 指定子集）。
+- **验收**：`SP_LOCALIZE=1 node stronghold-cdn/verify-cdn.mjs http://127.0.0.1:3000` —— 期望
+  `manifests: … relative`、`unpacked tree: N/N sampled files served from local disk`、`OK: art is served locally by this sidecar`。
+- 再想回到 CDN 模式：删掉 `.sp-assets/` 并去掉 `SP_LOCALIZE`。
+
+**为什么浏览器客户端不能"自己解压"**：客户端是上游页面，不修改它就无法拦截它自己的图片请求；
+能做这件事的位置只有**部署侧的这层侧车**（既不是服务器配置，也不是上游文件）。
+
 > 如果你用的是**本项目 fork**（含 `SP_ASSET_CDN` 支持），可以不要这层代理：
 > `SP_ASSET_CDN=__SP_CDN_BASE__ npm start` 就是同样的效果。
 

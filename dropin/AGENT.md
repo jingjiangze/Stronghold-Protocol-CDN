@@ -33,6 +33,17 @@
    期望输出最后一行是 `OK: art is served from the CDN`。它要求：清单里 **0 条**素材仍指向本机，
    且抽样 20 条 CDN URL 全部返回 200。
 
+## 可选：本地化模式（`SP_LOCALIZE=1`）
+
+想让素材落在部署机本地（局域网速度、运行期不依赖外网）：设 `SP_LOCALIZE=1` 启动。侧车会按
+`mirrors.json` 的打包清单下载（默认优先社区镜像，`SP_LOCALIZE_FROM=direct` 改直连）并解压到
+`.sp-assets/`，然后**同源**发出 `/assets/**`、`/fonts/**`。
+
+- **不要**在这个模式下再去改写清单 —— 上游的相对路径就是对的（同源）。
+- 未命中按 `本地 → 上游 → CDN` 兜底；`SP_LOCALIZE_PACKS=a,b` 可只下子集。
+- 验收：`SP_LOCALIZE=1 node verify-cdn.mjs http://127.0.0.1:<端口>`，期望
+  `unpacked tree: N/N … from local disk` 与 `OK: art is served locally by this sidecar`。
+
 ## 硬约束（别踩）
 
 - **不要在部署包里改 `data/assets.json`**：服务器自己也要读这个文件（`server/data.js`、`server/update.js`
