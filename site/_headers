@@ -26,7 +26,12 @@
   Content-Type: text/markdown; charset=utf-8
   X-Robots-Tag: all
 
+# Pages serves this at /bandwidth (it 308s /bandwidth.html there), so the rule must name both.
 /bandwidth.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+/bandwidth
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 

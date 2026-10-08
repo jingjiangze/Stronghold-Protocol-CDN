@@ -2,5 +2,7 @@ User-agent: *
 Disallow: /
 
 # The written guide is content, not an operator surface: let it be indexed and linked.
+# Pages serves it at /bandwidth (it 308s /bandwidth.html there); allow both spellings.
+Allow: /bandwidth
 Allow: /bandwidth.html
 Allow: /docs/
