@@ -73,6 +73,37 @@ export function fetchSourcePackage({ source, dir, log = console.log }) {
   return target;
 }
 
+
+/**
+ * Some packages wrap the tree one level deeper: this project's server release is a zip holding a
+ * .tar.gz plus a manual (scripts/pack-server-zip.py), so a single unzip leaves nothing to find.
+ * Unpack any archive found inside, wherever it is.
+ */
+function extractNestedArchives(root, log = console.log) {
+  const archives = [];
+  const stack = [root];
+  while (stack.length) {
+    const dir = stack.pop();
+    let entries;
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (/\.(tar\.gz|tgz|tar)$/i.test(entry.name)) archives.push(full);
+    }
+  }
+  for (const archive of archives) {
+    log(`source: unpacking nested ${path.basename(archive)} …`);
+    const res = spawnSync('tar', ['-xf', archive, '-C', path.dirname(archive)], { stdio: 'inherit' });
+    if (res.status !== 0) throw new Error(`tar failed (${res.status}) on ${path.basename(archive)}`);
+  }
+  return archives.length;
+}
+
 /** Extract the art tree and the manifest. The package's top folder name is not assumed. */
 export function extractSourceTree({ source, zipPath, stage, log = console.log }) {
   const root = path.join(stage, source.id);
@@ -94,6 +125,9 @@ export function extractSourceTree({ source, zipPath, stage, log = console.log })
       `source ${source.id}: unzip failed (${res.status}); package listing starts with:\n${head}`,
     );
   }
+  // A package may wrap the tree one level deeper (this project's server release is a zip holding a
+  // .tar.gz plus a manual), so unpack anything nested before looking for the tree.
+  extractNestedArchives(root, log);
   fs.writeFileSync(marker, `${new Date().toISOString()}\n`);
   return root;
 }
@@ -119,7 +153,13 @@ export function findSourceLayout(root, manifest = 'data/assets.json') {
 /** Index a source's art tree, and read the manifest it ships. */
 export async function readSource({ source, root, log = console.log }) {
   const layout = findSourceLayout(root, source.manifest);
-  if (!layout) throw new Error(`source ${source.id}: no ${SOURCE_ASSETS_DIR} inside the package`);
+  if (!layout) {
+    const listing = (fs.existsSync(root) ? fs.readdirSync(root) : [])
+      .map((name) => (fs.statSync(path.join(root, name)).isDirectory() ? `${name}/` : name))
+      .slice(0, 15)
+      .join(', ');
+    throw new Error(`source ${source.id}: no ${SOURCE_ASSETS_DIR} inside the package; it contains: ${listing}`);
+  }
   const index = await buildIndex([{ abs: layout.assets, prefix: 'assets/' }]);
   let manifestText = '';
   try {
