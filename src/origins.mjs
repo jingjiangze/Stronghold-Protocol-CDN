@@ -41,3 +41,46 @@ export function readExtraOrigins(root) {
   }
   return out;
 }
+
+/**
+ * Origins that mount files out of a **git repository** through a public mirror chain
+ * (jsDelivr / Statically / ghfast→raw).
+ *
+ * These are a different animal from the flat origins and must not be presented as equivalent:
+ * a git mount can only serve files that are **committed to git**, and our 533 MB asset tree
+ * deliberately is not (it is derived from the upstream release package). So a git origin is
+ * partial by construction — it carries the interface files and the probe, not `assets/**`.
+ * `coverage` exists so the UI can say that out loud instead of implying a full mirror.
+ */
+export const GIT_PROBE_PATH = '/probe/cdn-probe.bin';
+
+export function readGitOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+  const list = Array.isArray(cfg?.gitOrigins) ? cfg.gitOrigins : [];
+  const out = [];
+  for (const entry of list) {
+    if (!entry?.id || !entry?.root) continue;
+    try {
+      const url = assertPublicHttpsUrl(entry.root);
+      const root_ = url.href.replace(/\/+$/, '');
+      out.push({
+        id: String(entry.id),
+        kind: String(entry.kind || 'git'),
+        root: root_,
+        // Same shape as a flat origin so one parser reads both; `coverage` says what it really holds.
+        base: `${root_}/`,
+        probe: String(entry.probe || GIT_PROBE_PATH),
+        coverage: String(entry.coverage || 'partial'),
+        ...(entry.note ? { note: String(entry.note) } : {}),
+      });
+    } catch {
+      // A malformed entry must not take the whole sync down; it simply is not published.
+    }
+  }
+  return out;
+}

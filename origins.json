@@ -6,5 +6,33 @@
     "root": "https://d111111abcdef8.cloudfront.net",
     "note": "AWS CloudFront in front of the R2 bucket"
   },
-  "extraOrigins": []
+  "extraOrigins": [],
+
+  "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. They serve what is committed to git — the interface files and probe/cdn-probe.bin — and NOT public/assets/**, which is deliberately kept out of git (it is derived from the upstream release package). Each entry is therefore marked coverage=partial and carries its own probe path, so the site can say so on the card instead of implying a full mirror. Statically caveat: only the '@ref' form is https — the '/gh/<repo>/<ref>/<path>' form 301-redirects to http and would be blocked as mixed content.",
+  "gitOrigins": [
+    {
+      "id": "jsdelivr",
+      "kind": "git",
+      "root": "https://cdn.jsdelivr.net/gh/jingjiangze/Stronghold-Protocol-CDN@main",
+      "probe": "/probe/cdn-probe.bin",
+      "coverage": "partial",
+      "note": "jsDelivr 挂载本仓 git 内容（不含素材树）"
+    },
+    {
+      "id": "statically",
+      "kind": "git",
+      "root": "https://cdn.statically.io/gh/jingjiangze/Stronghold-Protocol-CDN@main",
+      "probe": "/probe/cdn-probe.bin",
+      "coverage": "partial",
+      "note": "Statically 挂载本仓 git 内容（必须用 @ref 形式）"
+    },
+    {
+      "id": "ghfast-raw",
+      "kind": "git",
+      "root": "https://ghfast.top/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main",
+      "probe": "/probe/cdn-probe.bin",
+      "coverage": "partial",
+      "note": "ghfast 镜像链挂载 raw.githubusercontent（国内可用）"
+    }
+  ]
 }

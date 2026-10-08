@@ -34,7 +34,7 @@ import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './pa
 import { buildDropin } from './dropin.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins } from './origins.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -591,9 +591,19 @@ async function main() {
 
   origins.push(...extraOrigins);
 
-  // A run that does not rebuild something must not publish it as absent: art.json is the contract,
-  // and wiping the pack list because this particular run skipped the pack step would be a lie.
+  // A git-mount origin (jsDelivr / Statically / ghfast) serves files committed to git. It is
+  // partial by construction — the asset tree is not in git — so it is published with `coverage`
+  // and its own probe path rather than being passed off as a full mirror.
+  const gitOrigins = readGitOrigins(ROOT);
+  if (gitOrigins.length) log(`git origins: ${gitOrigins.map((o) => o.id).join(', ')}`);
+  origins.push(...gitOrigins);
+
+  // An origin that this run did not rebuild must not disappear from the interface: art.json is the
+  // contract, and dropping the Pages origin because this run skipped --pages would be a lie. Packs
+  // already carry forward (below); origins now do the same, keeping the structural ones (r2, pages)
+  // from the published interface and merging this run's view into it.
   const publishedBefore = await readPublishedArt(opts.base);
+  const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors);
 
   let packs = [];
   if (opts.packs) {
@@ -637,7 +647,15 @@ async function main() {
         zip: release.zip.name,
         zipSha256: release.zip.sha256,
       },
-      flat: origins.map((origin) => ({ id: origin.id, kind: origin.kind, root: origin.root, base: origin.base })),
+      flat: mergedOrigins.map((origin) => ({
+        id: origin.id,
+        kind: origin.kind,
+        root: origin.root,
+        base: origin.base,
+        ...(origin.probe ? { probe: origin.probe } : {}),
+        ...(origin.coverage ? { coverage: origin.coverage } : {}),
+        ...(origin.note ? { note: origin.note } : {}),
+      })),
       packs: packs.map((pack) => ({
         id: pack.id,
         group: pack.group,
@@ -693,7 +711,7 @@ async function main() {
     refs,
     index,
     probe,
-    origins,
+    origins: mergedOrigins,
     packs,
     mirrorsDoc,
     byteSample,
@@ -763,6 +781,37 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
  * deployed and every pack that uploaded. Field names follow the re line's `art` block
  * (`base`/`version`/`format`/`mirrors`/`packs`) so one parser reads both axes.
  */
+/**
+ * An origin this run did not rebuild must not vanish from the interface.
+ *
+ * The Pages origin is the case in point: it is only pushed when `--pages` is passed, so every
+ * run without it used to republish an interface that claimed the Pages origin never existed —
+ * even though the deployment was still live. Packs already carried forward; origins did not.
+ *
+ * Merging by id keeps the current run's view authoritative (so a renamed root or a newly added
+ * git origin wins) while a structural origin missing from this run is restored from what is
+ * already published.
+ */
+export function carryForwardOrigins(current, published) {
+  if (!Array.isArray(published) || !published.length) return current;
+  const byId = new Map(current.map((origin) => [origin.id, origin]));
+  const out = [...current];
+  for (const prior of published) {
+    if (!prior?.id || byId.has(prior.id)) continue;
+    if (!prior?.root || typeof prior.root !== 'string') continue;
+    out.push({
+      id: String(prior.id),
+      kind: String(prior.kind || 'cdn'),
+      root: String(prior.root),
+      base: String(prior.base || `${String(prior.root).replace(/\/+$/, '')}/assets/`),
+      ...(prior.probe ? { probe: String(prior.probe) } : {}),
+      ...(prior.coverage ? { coverage: String(prior.coverage) } : {}),
+      ...(prior.note ? { note: String(prior.note) } : {}),
+    });
+  }
+  return out;
+}
+
 async function publishArt(config, { opts, release, version, sources, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
   const art = {
     schema: ART_SCHEMA,

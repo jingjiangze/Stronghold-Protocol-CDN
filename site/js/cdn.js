@@ -87,10 +87,15 @@ function renderMirrors(flat) {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.mirror = mirror.id;
+    // A git mount only serves what is committed to git, so say so rather than implying a full mirror.
+    const coverage =
+      mirror.coverage === 'partial'
+        ? '<span class="chip" title="仅服务 git 仓库内已提交的文件，不含素材树">部分覆盖</span>'
+        : '';
     card.innerHTML =
       `<div class="card__title">${mirror.id}</div>` +
       `<div class="mono muted" style="margin-top:8px;word-break:break-all">${mirror.base || mirror.root}</div>` +
-      `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>` +
+      `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>${coverage}` +
       `<span class="card__value is-bad" data-ms>未测速</span></div>` +
       `<div class="card__stats" data-stats hidden>` +
       `<span>延迟 <b data-latency>—</b></span><span>速度 <b data-speed>—</b></span></div>`;
@@ -203,6 +208,8 @@ function fmtSpeed(kbps) {
 // Before the probe file has been deployed everywhere, fall back to the index — it exists on every
 // origin, so the test never depends on deploy order.
 const PROBE_FALLBACK = '/cdn/v1/index.json';
+// A git origin has no /cdn/v1/ tree, so its fallback is another file committed to the repo.
+const PROBE_FALLBACK_GIT = '/README.md';
 
 async function measureOnce(mirror, path) {
   const url = `${mirror.root}${path}?probe=${Date.now()}`;
@@ -222,14 +229,20 @@ async function measureOnce(mirror, path) {
   };
 }
 
+// A git-mount origin has no /cdn/v1/ tree of its own, so it publishes its own probe path; using it
+// directly avoids spending the first attempt on a guaranteed 404.
+function probePathFor(mirror) {
+  return mirror.probe || PROBE_PATH;
+}
+
 async function measureMirror(mirror, attempts = 2) {
   let best = null;
   for (let i = 0; i < attempts; i++) {
     let sample;
     try {
-      sample = await measureOnce(mirror, PROBE_PATH);
+      sample = await measureOnce(mirror, probePathFor(mirror));
     } catch {
-      sample = await measureOnce(mirror, PROBE_FALLBACK);
+      sample = await measureOnce(mirror, mirror.probe ? PROBE_FALLBACK_GIT : PROBE_FALLBACK);
     }
     if (!best || sample.kbps > best.kbps) best = sample;
   }
