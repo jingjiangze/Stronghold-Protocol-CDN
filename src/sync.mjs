@@ -28,9 +28,13 @@ import { rewriteManifestText, collectManifestPaths, manifestUrls } from './rewri
 import { diffIndex, uploadBytes } from './diff.mjs';
 import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
 import { r2Config, putObject, deleteObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
+import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
+import { planPacks, publishPacks, ensureRelease } from './packs.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
+const DEFAULT_PAGES_BASE = process.env.SP_PAGES_BASE || 'https://spages.jiangjiangze.icu';
+const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
 
 /** The manifests the client reads, and the ones the game server rewrites. */
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
@@ -40,9 +44,13 @@ function parseArgs(argv) {
     write: false,
     prune: false,
     reportOnly: false,
+    pages: false,
+    packs: false,
     tag: '',
     work: 'work',
     base: DEFAULT_BASE,
+    pagesBase: DEFAULT_PAGES_BASE,
+    repo: DEFAULT_REPO,
   };
   for (const arg of argv) {
     if (arg === '--write') opts.write = true;
@@ -51,14 +59,31 @@ function parseArgs(argv) {
     // The gate is authoritative in both modes: a red run means the CDN is not complete. Use
     // --report-only when the point is just to read the numbers.
     else if (arg === '--report-only') opts.reportOnly = true;
+    // Extra origins. Both need --write (they publish), and both are best-effort: a failure there
+    // must not invalidate the bucket, which is the primary.
+    else if (arg === '--pages') opts.pages = true;
+    else if (arg === '--packs') opts.packs = true;
     else if (arg.startsWith('--tag=')) opts.tag = arg.slice('--tag='.length);
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
+    else if (arg.startsWith('--pages-base=')) opts.pagesBase = arg.slice('--pages-base='.length);
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (opts.prune && !opts.write) throw new Error('--prune only makes sense together with --write');
+  if ((opts.pages || opts.packs) && !opts.write) throw new Error('--pages/--packs publish, so they need --write');
   opts.base = String(opts.base).replace(/\/+$/, '');
+  opts.pagesBase = String(opts.pagesBase).replace(/\/+$/, '');
   return opts;
+}
+
+/** Mirror prefixes for the pack channel; the list is data (mirrors.json), not code. */
+function readMirrorPrefixes() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'mirrors.json'), 'utf8'));
+    return Array.isArray(cfg.github) ? cfg.github : [];
+  } catch {
+    return [];
+  }
 }
 
 const log = (...args) => console.log('[sync]', ...args);
@@ -217,6 +242,8 @@ async function main() {
     if (index.files[key]) expected[url] = index.files[key].size;
   }
 
+  const indexJson = indexDocument({ release, index });
+
   const report = {
     schema: 1,
     mode: opts.write ? 'write' : 'dry-run',
@@ -229,6 +256,8 @@ async function main() {
     removedSample: diff.remove.slice(0, 50),
     uploaded: null,
     verification: null,
+    pages: null,
+    packs: null,
     ok: false,
   };
 
@@ -272,26 +301,97 @@ async function main() {
     throw new Error('acceptance gate failed — the interface files were NOT published');
   }
 
-  await publishInterface(config, { opts, release, manifest, manifests, index, refs, probe });
+  await publishCore(config, { opts, manifests, release, indexJson });
+
+  // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
+  // invalidate it — the interface below simply reports one origin fewer.
+  const origins = [{ id: 'r2', base: `${opts.base}/assets/` }];
+  if (opts.pages) {
+    try {
+      const dist = await preparePagesDist({
+        stage,
+        out: path.join(workDir, 'pages-dist'),
+        manifests,
+        base: opts.pagesBase,
+        tag: release.tag,
+        indexJson,
+      });
+      log(`pages dist: ${dist.files} files → ${opts.pagesBase}`);
+      deployPages({ dist: dist.out });
+      origins.push({ id: 'pages', base: `${opts.pagesBase}/assets/` });
+      report.pages = { base: opts.pagesBase, files: dist.files };
+    } catch (error) {
+      console.error(`[sync] pages origin FAILED: ${error.message}`);
+      report.pages = { error: error.message };
+    }
+  }
+
+  let packs = [];
+  if (opts.packs) {
+    try {
+      const plan = planPacks(index.files);
+      log(`packs: ${plan.length} → ${plan.map((p) => p.id).join(', ')}`);
+      ensureRelease({
+        tag: release.tag,
+        repo: opts.repo,
+        body: `素材包（上游 ${release.tag}）：${index.count} 个文件 / ${(index.bytes / 1048576).toFixed(1)} MB。供镜像链加速下载，内容与扁平树一致。`,
+      });
+      const packDir = path.join(workDir, 'packs');
+      fs.mkdirSync(packDir, { recursive: true });
+      packs = await publishPacks({
+        config,
+        root: path.join(stage, 'public'),
+        packs: plan,
+        tag: release.tag,
+        repo: opts.repo,
+        workDir: packDir,
+        mirrorPrefixes: readMirrorPrefixes(),
+      });
+      report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
+    } catch (error) {
+      console.error(`[sync] pack channel FAILED: ${error.message}`);
+      report.packs = { error: error.message };
+    }
+  }
+
+  await publishArt(config, { opts, release, manifest, refs, index, probe, origins, packs });
   await writeReports(ROOT, report);
   log('done.');
 }
 
-async function publishInterface(config, { opts, release, manifest, manifests, index, refs, probe }) {
-  const rewritten = manifests.map((entry) => ({
-    key: `data/${entry.name}`,
-    ...rewriteManifestText(entry.text, { base: opts.base, version: release.tag }),
-  }));
-  const indexJson = JSON.stringify({
-    schema: 1,
-    tag: release.tag,
-    count: index.count,
-    bytes: index.bytes,
-    files: index.files,
-  });
+/** The content index, published in two flavours: a moving one and a frozen per-tag one. */
+function indexDocument({ release, index }) {
+  return JSON.stringify({ schema: 1, tag: release.tag, count: index.count, bytes: index.bytes, files: index.files });
+}
 
+/** Everything origin-neutral plus the primary-origin manifests: safe to publish once the gate passed. */
+async function publishCore(config, { opts, manifests, release, indexJson }) {
+  let rewrittenCount = 0;
+  const objects = [
+    ...manifests.map((entry) => {
+      const rewritten = rewriteManifestText(entry.text, { base: opts.base, version: release.tag });
+      rewrittenCount += rewritten.count;
+      return [`data/${entry.name}`, Buffer.from(rewritten.text, 'utf8'), 'application/json', SHORT];
+    }),
+    ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
+    [`cdn/v1/index-${release.tag}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
+    ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
+  ];
+  for (const [key, body, contentType, cacheControl] of objects) {
+    await putObject(config, key, body, { contentType, cacheControl });
+    log(`published ${key} (${body.length} bytes)`);
+  }
+  log(`rewrote ${rewrittenCount} manifest URLs → ${opts.base}/assets/…?v=${release.tag}`);
+}
+
+/**
+ * The interface itself, published last so it describes what actually exists: every origin that
+ * deployed and every pack that uploaded. Field names follow the re line's `art` block
+ * (`base`/`version`/`format`/`mirrors`/`packs`) so one parser reads both axes.
+ */
+async function publishArt(config, { opts, release, manifest, refs, index, probe, origins, packs }) {
   const art = {
-    schema: 1,
+    schema: 2,
     upstream: {
       repo: release.repo,
       tag: release.tag,
@@ -299,26 +399,30 @@ async function publishInterface(config, { opts, release, manifest, manifests, in
       zip: release.zip.name,
       zipSha256: release.zip.sha256,
     },
-    art: { base: `${opts.base}/assets/`, version: 1, format: 1, mirrors: [], packs: [] },
+    art: {
+      base: `${opts.base}/assets/`,
+      version: 2,
+      format: 1,
+      mirrors: origins,
+      packs: packs.map((pack) => ({
+        id: pack.id,
+        group: pack.group,
+        sha256: pack.sha256,
+        size: pack.bytes,
+        files: pack.files,
+        urls: pack.urls,
+      })),
+    },
     manifest: { url: '/data/assets.json', hash: manifest.hash, refs: refs.length },
     tree: { files: index.count, bytes: index.bytes, index: '/cdn/v1/index.json' },
     syncedAt: new Date().toISOString(),
     verified: { at: new Date().toISOString(), missing: 0, mismatch: 0, probed: probe.probed },
   };
-
-  const objects = [
-    ...rewritten.map(({ key, text }) => [key, Buffer.from(text, 'utf8'), 'application/json', SHORT]),
-    ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
-    [`cdn/v1/index-${release.tag}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
-    ['cdn/v1/art.json', Buffer.from(`${JSON.stringify(art, null, 2)}\n`, 'utf8'), 'application/json', SHORT],
-    ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
-  ];
-  for (const [key, body, contentType, cacheControl] of objects) {
-    await putObject(config, key, body, { contentType, cacheControl });
-    log(`published ${key} (${body.length} bytes)`);
-  }
-  const total = rewritten.reduce((sum, entry) => sum + entry.count, 0);
-  log(`rewrote ${total} manifest URLs → ${opts.base}/assets/…?v=${release.tag}`);
+  await putObject(config, 'cdn/v1/art.json', Buffer.from(`${JSON.stringify(art, null, 2)}\n`, 'utf8'), {
+    contentType: 'application/json',
+    cacheControl: SHORT,
+  });
+  log(`published cdn/v1/art.json (schema 2: ${origins.length} origin(s), ${packs.length} pack(s))`);
 }
 
 async function writeReports(root, report) {
@@ -334,6 +438,16 @@ async function writeReports(root, report) {
     `- tree: ${report.tree.files} files, ${(report.tree.bytes / 1048576).toFixed(1)} MB`,
     `- diff: add ${report.diff.add}, change ${report.diff.change}, same ${report.diff.same}, extra-on-CDN ${report.diff.remove} (${(report.diff.uploadBytes / 1048576).toFixed(1)} MB to upload)`,
     ...(report.uploaded ? [`- uploaded: ${report.uploaded.done} (${report.uploaded.failed} failed)`] : []),
+    ...(report.pages ? [`- pages origin: ${report.pages.error ? `FAILED (${report.pages.error})` : `${report.pages.files} files → ${report.pages.base}`}`] : []),
+    ...(report.packs
+      ? [
+          `- pack channel: ${
+            report.packs.error
+              ? `FAILED (${report.packs.error})`
+              : `${report.packs.length} pack(s), ${(report.packs.reduce((s, p) => s + p.bytes, 0) / 1048576).toFixed(1)} MB`
+          }`,
+        ]
+      : []),
     '',
     v ? summarizeVerification(v) : '_no verification ran_',
     '',

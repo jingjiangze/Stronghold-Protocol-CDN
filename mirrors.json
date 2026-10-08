@@ -1,0 +1,7 @@
+{
+  "_comment": "Mirror prefixes applied to github.com release URLs, in preference order. Data, not code: adding a mirror is an edit to this file. Used by the pack channel, where a few ~100 MB downloads replace thousands of small requests.",
+  "github": [
+    "https://ghfast.top/",
+    "https://gh-proxy.com/"
+  ]
+}
