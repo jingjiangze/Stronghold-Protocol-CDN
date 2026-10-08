@@ -1,0 +1,53 @@
+name: site
+
+# The CDN documentation site (downcdn.jiangjiangze.icu).
+#
+# The page reads art.json and mirrors.json live, so the only thing that can go stale is the
+# directory table and the offline fallback snapshot — hence a plain redeploy on site changes, a
+# daily refresh, and a manual trigger.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'site/**'
+      - 'src/site-data.mjs'
+      - 'src/packs.mjs'
+      - '.github/workflows/site.yml'
+  schedule:
+    - cron: '43 4 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: unit tests
+        run: node --test tests/*.test.mjs
+
+      # Reads the live interface and writes site/data/snapshot.json. It only ever contacts https
+      # hosts, and refuses loopback/private/reserved ones.
+      - name: snapshot
+        run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
+
+      - name: deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 pages deploy site \
+            --project-name=stronghold-cdn-site \
+            --branch=main \
+            --commit-dirty=true

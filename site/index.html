@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0f0e" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 上游静态资源的自动镜像、聚合接口与接入参数（非官方同人作品）" />
+  <title>卫戍协议：盟约 · 素材 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' fill='%230c0f0e'/%3E%3Cpath fill='%234ed8af' d='M4 4h16v3H4zm2 5h12v3H6zm2 5h8v3H8zm3 5h2v2h-2z'/%3E%3C/svg%3E" />
+
+  <!-- Web fonts: self-hosted (see fonts/fonts.css). No third-party domains on this page —
+       a hijacked fonts.googleapis.com redirect to http makes Chrome mark the whole page
+       "not secure", which is exactly what happened on the download site. -->
+  <link rel="stylesheet" href="./fonts/fonts.css" />
+  <link rel="stylesheet" href="./fonts/webfonts-local.css" />
+  <link rel="stylesheet" href="./css/theme.css" />
+  <link rel="stylesheet" href="./css/components.css" />
+  <link rel="stylesheet" href="./css/cdn.css?v=1" />
+</head>
+
+<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu">
+<div class="cdn-page">
+
+  <header class="cdn-head">
+    <div class="cdn-head__kicker">
+      <span class="micro micro--mint">RHODES ISLAND // SIMULATION SERVICE</span>
+      <span class="micro micro--hi">ASSET CDN · NON-COMMERCIAL FAN PROJECT</span>
+    </div>
+    <h1>素材 CDN<small>Stronghold-Protocol-CDN</small></h1>
+    <p class="cdn-head__lead">
+      把上游（<a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">sganggs/Stronghold-Protocol</a>）
+      的静态素材自动镜像到边缘，并对外提供一套可校验、可引用的接口。素材内容就是上游 Release 完整包里的同一批文件，
+      <b>逐文件校验过</b>，不做任何转码。
+    </p>
+  </header>
+
+  <section class="cdn-strip" id="status" aria-live="polite">
+    <div class="cdn-stat"><div class="cdn-stat__k">上游版本</div><div class="cdn-stat__v cdn-stat__v--mint" id="s-tag">…</div></div>
+    <div class="cdn-stat"><div class="cdn-stat__k">缓存令牌</div><div class="cdn-stat__v cdn-stat__v--small" id="s-token">…</div></div>
+    <div class="cdn-stat"><div class="cdn-stat__k">校验</div><div class="cdn-stat__v cdn-stat__v--mint" id="s-verify">…</div></div>
+    <div class="cdn-stat"><div class="cdn-stat__k">文件</div><div class="cdn-stat__v" id="s-files">…</div></div>
+    <div class="cdn-stat"><div class="cdn-stat__k">体积</div><div class="cdn-stat__v" id="s-bytes">…</div></div>
+    <div class="cdn-stat"><div class="cdn-stat__k">上次同步</div><div class="cdn-stat__v cdn-stat__v--small" id="s-synced">…</div></div>
+  </section>
+  <p class="cdn-status" id="status-line"></p>
+
+  <section class="cdn-section">
+    <h2>这是什么</h2>
+    <p>
+      上游把 <code class="cdn-inline">public/assets/**</code> 放在 <code class="cdn-inline">.gitignore</code> 里、
+      安装期从第三方仓库下载，运行期再由部署机自己发。这个 CDN 把「运行期分发」接走：素材只有一份、放在边缘，
+      玩家就近取，部署机的上行不再被几百 MB 的重复流量占满。
+    </p>
+    <p>
+      三层来源，一层比一层更抗单点：<b>主源</b>是 R2 自定义域，<b>次源</b>是 Cloudflare Pages（同一棵树、自己的边缘缓存与域名），
+      <b>批量通道</b>是把树打成的若干压缩包，走 GitHub Release 并由社区镜像链加速。
+    </p>
+    <div class="cdn-note">
+      <b>与上游的关系：</b>上游
+      <a href="https://github.com/sganggs/Stronghold-Protocol/pull/24" target="_blank" rel="noopener">PR #24</a>
+      已经给素材下载器加了镜像层（<code class="cdn-inline">SP_ASSET_SOURCE=mirror</code> +
+      <code class="cdn-inline">SP_GITHUB_PROXY</code>），解决的是<b>安装期</b>从 GitHub 拉取的速度；
+      本站解决的是<b>运行期</b>分发，两者互补，并且本站可以作为上游镜像链里的一个来源。
+    </div>
+  </section>
+
+  <section class="cdn-section">
+    <h2>拉取参数</h2>
+    <p>接入方需要的全部参数。素材 URL 一律带版本令牌，所以可以放心长缓存，改版不需要等缓存过期。</p>
+    <table class="cdn-table">
+      <thead><tr><th>项</th><th>值</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>基址</td>
+          <td class="mono"><span data-base>https://weishucdn.jiangjiangze.icu</span>/</td>
+          <td>素材路径与上游部署树里的 <code class="cdn-inline">assets/…</code> 完全一致，直接拼即可</td>
+        </tr>
+        <tr>
+          <td>版本令牌</td>
+          <td class="mono">?v=<span id="p-token">…</span></td>
+          <td>由内容索引派生（<code class="cdn-inline">&lt;上游 tag&gt;-&lt;索引 sha256 前 8 位&gt;</code>），字节一变令牌就变</td>
+        </tr>
+        <tr>
+          <td>CORS</td>
+          <td class="mono">Access-Control-Allow-Origin: *</td>
+          <td>客户端用 <code class="cdn-inline">img.crossOrigin='anonymous'</code> 取图，必须有它，否则 WebGL 贴图会被污染</td>
+        </tr>
+        <tr>
+          <td>缓存</td>
+          <td class="mono">public, max-age=31536000, immutable</td>
+          <td>素材与字体；接口 JSON 为 <code class="cdn-inline">max-age=300</code></td>
+        </tr>
+        <tr>
+          <td>方法</td>
+          <td class="mono">GET / HEAD / Range</td>
+          <td>音频拖动进度需要 Range；校验用 HEAD 即可</td>
+        </tr>
+        <tr>
+          <td>索引</td>
+          <td class="mono">cdn/v1/index.json</td>
+          <td>全量 <code class="cdn-inline">{ 路径: { size, sha256 } }</code>，用于逐文件校验或做二级镜像</td>
+        </tr>
+      </tbody>
+    </table>
+    <code class="cdn-code"><i># 取一个素材（路径与上游一致）</i>
+curl -I "<b>https://weishucdn.jiangjiangze.icu</b>/assets/char/avatar/char_003_kalts.png?v=<span class="tok">v0.2.1-xxxxxxxx</span>"
+
+<i># 清单：里面已经是绝对 CDN 地址，直接喂给客户端</i>
+curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"</code>
+  </section>
+
+  <section class="cdn-section">
+    <h2>镜像站</h2>
+    <p>同一份内容有多个来源。哪个最快取决于<b>访问者自己的网络</b>，所以这里只给候选，测速在你的浏览器里做。</p>
+    <div class="cdn-actions">
+      <button class="btn btn--sm" id="probe" type="button"><span class="btn__label">开始测速</span></button>
+      <span class="cdn-status" id="probe-line"></span>
+    </div>
+    <div class="cdn-mirrors" id="mirrors"></div>
+
+    <h3 class="micro micro--hi" style="margin:.3rem 0 .08rem">打包通道</h3>
+    <p>
+      整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
+      再套社区镜像前缀加速。
+    </p>
+    <table class="cdn-table" id="packs">
+      <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th>可用来源</th></tr></thead>
+      <tbody><tr><td colspan="5">加载中…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="cdn-section">
+    <h2>文件目录</h2>
+    <p>键空间与上游部署树一一对应。<span id="dir-note"></span></p>
+    <table class="cdn-table" id="dirs">
+      <thead><tr><th>前缀</th><th class="num">文件</th><th class="num">体积</th></tr></thead>
+      <tbody><tr><td colspan="3">加载中…</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="cdn-section">
+    <h2>API 接入点</h2>
+    <table class="cdn-table">
+      <thead><tr><th>路径</th><th>内容</th><th>缓存</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">/assets/**</td><td>素材本体，键 = 上游 <code class="cdn-inline">public/assets/**</code> 去掉 <code class="cdn-inline">public/</code></td><td class="mono">immutable</td></tr>
+        <tr><td class="mono">/fonts/**</td><td>字体</td><td class="mono">immutable</td></tr>
+        <tr><td class="mono">/data/assets.json</td><td>上游清单，已把 <code class="cdn-inline">/assets/…</code>、<code class="cdn-inline">/fonts/…</code> 改写成带令牌的绝对地址</td><td class="mono">300</td></tr>
+        <tr><td class="mono">/cdn/v1/art.json</td><td><b>契约</b>：上游版本、缓存令牌、镜像列表、包列表、校验结果</td><td class="mono">300</td></tr>
+        <tr><td class="mono">/cdn/v1/mirrors.json</td><td>聚合清单：全部来源与打包通道（含镜像前缀 URL）</td><td class="mono">300</td></tr>
+        <tr><td class="mono">/cdn/v1/index.json</td><td>全量键表 <code class="cdn-inline">{ size, sha256 }</code></td><td class="mono">300</td></tr>
+        <tr><td class="mono">/cdn/v1/index-&lt;令牌&gt;.json</td><td>同上，按内容令牌冻结的副本</td><td class="mono">immutable</td></tr>
+        <tr><td class="mono">/cdn/v1/pick.js</td><td>零依赖 ES 模块：<code class="cdn-inline">pickFastest()</code> 测速并返回最快镜像</td><td class="mono">300</td></tr>
+        <tr><td class="mono">/robots.txt</td><td><code class="cdn-inline">Disallow: /</code>（非商业同人，不索引）</td><td class="mono">—</td></tr>
+      </tbody>
+    </table>
+    <code class="cdn-code"><i>// 在你的页面里挑最快的镜像</i>
+import { pickFastest } from "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
+const list = await (await fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
+const { best, ranked } = await pickFastest(list.flat);
+console.log(best.id, best.base, best.ms + "ms");</code>
+  </section>
+
+  <section class="cdn-section">
+    <h2>接入方式</h2>
+    <table class="cdn-table">
+      <thead><tr><th>场景</th><th>做法</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>游戏服（本项目 fork）</td>
+          <td>设环境变量即可，服务端会把三张清单改写成 CDN 绝对地址：<br />
+            <code class="cdn-inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code></td>
+        </tr>
+        <tr>
+          <td>纯静态 / 网页端</td>
+          <td>直接取 <code class="cdn-inline">/data/assets.json</code>，里面已经是绝对地址（带令牌），不要自己拼路径</td>
+        </tr>
+        <tr>
+          <td>二级镜像 / 需要校验</td>
+          <td>读 <code class="cdn-inline">/cdn/v1/index.json</code> 拿 <code class="cdn-inline">size</code> + <code class="cdn-inline">sha256</code> 逐文件比对</td>
+        </tr>
+        <tr>
+          <td>上游服务器部署包（未修改）</td>
+          <td>用一键包 <code class="cdn-inline">stronghold-cdn-dropin-&lt;tag&gt;.zip</code>：解压到部署目录旁边，运行启动脚本。
+            它代理未修改的部署并把清单在响应层改写，<b>不改部署包里任何文件</b>，撤销即删文件夹。<br />
+            下载：<a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">Releases</a></td>
+        </tr>
+        <tr>
+          <td>安装期加速</td>
+          <td>把 CDN 当作上游下载器的一个来源（路径与部署树一致）：<br />
+            <code class="cdn-inline">SP_ASSET_SOURCE=mirror SP_GITHUB_PROXY=&lt;CDN&gt;/ npm run assets</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="cdn-foot">
+    <p>
+      非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
+      本站不提供游戏本体下载，只镜像上游仓库发布包里的静态资源。
+    </p>
+    <p>
+      相关：<a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a> ·
+      <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a> ·
+      <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">上游仓库</a> ·
+      <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
+    </p>
+  </footer>
+
+</div>
+<script src="./js/cdn.js?v=1"></script>
+</body>
+</html>

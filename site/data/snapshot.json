@@ -1,0 +1,537 @@
+{
+  "generatedAt": "2026-10-08T15:26:17.275Z",
+  "cdnBase": "https://weishucdn.jiangjiangze.icu",
+  "art": {
+    "schema": 2,
+    "upstream": {
+      "repo": "sganggs/Stronghold-Protocol",
+      "tag": "v0.2.1",
+      "publishedAt": "2026-10-07T12:45:41Z",
+      "zip": "Stronghold-Protocol-v0.2.1.zip",
+      "zipSha256": "84a4cd861d2631526abec3d19ac3bf17bc5304758f3d73882d4aaa82a33e3f0c"
+    },
+    "art": {
+      "base": "https://weishucdn.jiangjiangze.icu/assets/",
+      "version": 2,
+      "format": 1,
+      "token": "v0.2.1-e2407f6c",
+      "mirrors": [
+        {
+          "id": "r2",
+          "kind": "r2",
+          "root": "https://weishucdn.jiangjiangze.icu",
+          "base": "https://weishucdn.jiangjiangze.icu/assets/"
+        },
+        {
+          "id": "pages",
+          "kind": "pages",
+          "root": "https://spages.jiangjiangze.icu",
+          "base": "https://spages.jiangjiangze.icu/assets/"
+        }
+      ],
+      "packs": [
+        {
+          "id": "assets-audio-1",
+          "group": "assets/audio",
+          "sha256": "4b67e4a5ad1a670c6d7a1a00da5927f0de668995a8e69f749e67b4b4011280e9",
+          "size": 94939745,
+          "files": 3116,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip"
+          ]
+        },
+        {
+          "id": "assets-audio-2",
+          "group": "assets/audio",
+          "sha256": "69c11cf6d003a18c9ec9e653456037663ae0f2df67fe8dcdc5b9042411af8298",
+          "size": 6890815,
+          "files": 263,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip"
+          ]
+        },
+        {
+          "id": "assets-band-1",
+          "group": "assets/band",
+          "sha256": "c4f6c39d096eb07dbe5d1360f18513eeed219a67bb2e1bc2262c327d17728e78",
+          "size": 2745827,
+          "files": 40,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip"
+          ]
+        },
+        {
+          "id": "assets-bond-1",
+          "group": "assets/bond",
+          "sha256": "e713ee6717c834b2ea65e190b82569ba14b44d3400d27a556fcaf9b903d36e1b",
+          "size": 93010,
+          "files": 23,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip"
+          ]
+        },
+        {
+          "id": "assets-char-1",
+          "group": "assets/char",
+          "sha256": "8ca466fe21d0b15c7c4582536b22e082c4dde9bbb33471ef210db14de286d626",
+          "size": 73016314,
+          "files": 804,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip"
+          ]
+        },
+        {
+          "id": "assets-enemy-1",
+          "group": "assets/enemy",
+          "sha256": "05f9d76ad6e188288f624adb228af2994249ea06315e39e9d6dbb0bad645d69c",
+          "size": 11091175,
+          "files": 252,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip"
+          ]
+        },
+        {
+          "id": "assets-item-1",
+          "group": "assets/item",
+          "sha256": "b1feb0b47cfba196f9762676372685ba04ba086d1334246a5248cd6e1a45e715",
+          "size": 1122770,
+          "files": 59,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip"
+          ]
+        },
+        {
+          "id": "assets-local-1",
+          "group": "assets/local",
+          "sha256": "f5ad30d52d17fd5ea777b76d82b8379fd3b76752df0bd3bbdf5be9a3345c3f78",
+          "size": 71804501,
+          "files": 1611,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip"
+          ]
+        },
+        {
+          "id": "assets-module-1",
+          "group": "assets/module",
+          "sha256": "28ce6f0153958add4a8d3c7496f025d79f11f563c859bdfa63c4757fd5f00386",
+          "size": 235432,
+          "files": 130,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip"
+          ]
+        },
+        {
+          "id": "assets-prof-1",
+          "group": "assets/prof",
+          "sha256": "7f2836300d6796c5627e6eec73e66bd1a14eead776eb6a47a9aa20fb32cdc892",
+          "size": 291543,
+          "files": 93,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip"
+          ]
+        },
+        {
+          "id": "assets-skill-1",
+          "group": "assets/skill",
+          "sha256": "0efbfcacd7f510aa3fd09c8fe840c753d2d986e28a301c69f436a17a7241d84f",
+          "size": 10100474,
+          "files": 522,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip"
+          ]
+        },
+        {
+          "id": "assets-spine-1",
+          "group": "assets/spine",
+          "sha256": "a5762a188d71b6b56ad39e95c3716ced043362e6e3b6f2f864cf5c1389e73a6a",
+          "size": 48451968,
+          "files": 1134,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip"
+          ]
+        },
+        {
+          "id": "assets-spine-2",
+          "group": "assets/spine",
+          "sha256": "81d7fc7a9a068b7b0b58410960262cc7b70d6073a115c88cb5f47395d7ac1316",
+          "size": 43810769,
+          "files": 598,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip"
+          ]
+        },
+        {
+          "id": "assets-spine-3",
+          "group": "assets/spine",
+          "sha256": "c735773f46f1eb2d7e6cef3f8ea59abb85cf836b12961691b14d0b9eb1809a40",
+          "size": 17541355,
+          "files": 283,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip"
+          ]
+        },
+        {
+          "id": "assets-token-1",
+          "group": "assets/token",
+          "sha256": "bba4e1ada10f6d035981a995ec6befda46ca40a9babb41c9c498ff6263c7ba57",
+          "size": 1432061,
+          "files": 50,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip"
+          ]
+        },
+        {
+          "id": "assets-ui-1",
+          "group": "assets/ui",
+          "sha256": "3bfc0583975e84f2cfd6e99a2dbe5e89cf30addd4fc246f7d4af3a68067add44",
+          "size": 41104439,
+          "files": 602,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip"
+          ]
+        },
+        {
+          "id": "fonts-1",
+          "group": "fonts",
+          "sha256": "2daa858e57c77d7fc449b92b0fce4ebeb3c83a28988e1eedf6a276f18b6d7c65",
+          "size": 140309,
+          "files": 7,
+          "urls": [
+            "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip",
+            "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip",
+            "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip"
+          ]
+        }
+      ]
+    },
+    "manifest": {
+      "url": "/data/assets.json",
+      "hash": "7ae1d03466cb",
+      "refs": 9574
+    },
+    "tree": {
+      "files": 9587,
+      "bytes": 559043655,
+      "index": "/cdn/v1/index.json"
+    },
+    "syncedAt": "2026-10-08T14:49:53.371Z",
+    "verified": {
+      "at": "2026-10-08T14:49:53.371Z",
+      "missing": 0,
+      "mismatch": 0,
+      "probed": 9574,
+      "unreachable": 0,
+      "verifiedByBucket": 0,
+      "byteSample": {
+        "checked": 120,
+        "mismatch": 0
+      }
+    }
+  },
+  "mirrors": {
+    "schema": 1,
+    "token": "v0.2.1-e2407f6c",
+    "upstream": {
+      "repo": "sganggs/Stronghold-Protocol",
+      "tag": "v0.2.1",
+      "zip": "Stronghold-Protocol-v0.2.1.zip",
+      "zipSha256": "84a4cd861d2631526abec3d19ac3bf17bc5304758f3d73882d4aaa82a33e3f0c"
+    },
+    "flat": [
+      {
+        "id": "r2",
+        "kind": "r2",
+        "root": "https://weishucdn.jiangjiangze.icu",
+        "base": "https://weishucdn.jiangjiangze.icu/assets/"
+      },
+      {
+        "id": "pages",
+        "kind": "pages",
+        "root": "https://spages.jiangjiangze.icu",
+        "base": "https://spages.jiangjiangze.icu/assets/"
+      }
+    ],
+    "packs": [
+      {
+        "id": "assets-audio-1",
+        "sha256": "4b67e4a5ad1a670c6d7a1a00da5927f0de668995a8e69f749e67b4b4011280e9",
+        "size": 94939745,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-1.zip"
+        ]
+      },
+      {
+        "id": "assets-audio-2",
+        "sha256": "69c11cf6d003a18c9ec9e653456037663ae0f2df67fe8dcdc5b9042411af8298",
+        "size": 6890815,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-audio-2.zip"
+        ]
+      },
+      {
+        "id": "assets-band-1",
+        "sha256": "c4f6c39d096eb07dbe5d1360f18513eeed219a67bb2e1bc2262c327d17728e78",
+        "size": 2745827,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-band-1.zip"
+        ]
+      },
+      {
+        "id": "assets-bond-1",
+        "sha256": "e713ee6717c834b2ea65e190b82569ba14b44d3400d27a556fcaf9b903d36e1b",
+        "size": 93010,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-bond-1.zip"
+        ]
+      },
+      {
+        "id": "assets-char-1",
+        "sha256": "8ca466fe21d0b15c7c4582536b22e082c4dde9bbb33471ef210db14de286d626",
+        "size": 73016314,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-char-1.zip"
+        ]
+      },
+      {
+        "id": "assets-enemy-1",
+        "sha256": "05f9d76ad6e188288f624adb228af2994249ea06315e39e9d6dbb0bad645d69c",
+        "size": 11091175,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-enemy-1.zip"
+        ]
+      },
+      {
+        "id": "assets-item-1",
+        "sha256": "b1feb0b47cfba196f9762676372685ba04ba086d1334246a5248cd6e1a45e715",
+        "size": 1122770,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-item-1.zip"
+        ]
+      },
+      {
+        "id": "assets-local-1",
+        "sha256": "f5ad30d52d17fd5ea777b76d82b8379fd3b76752df0bd3bbdf5be9a3345c3f78",
+        "size": 71804501,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-local-1.zip"
+        ]
+      },
+      {
+        "id": "assets-module-1",
+        "sha256": "28ce6f0153958add4a8d3c7496f025d79f11f563c859bdfa63c4757fd5f00386",
+        "size": 235432,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-module-1.zip"
+        ]
+      },
+      {
+        "id": "assets-prof-1",
+        "sha256": "7f2836300d6796c5627e6eec73e66bd1a14eead776eb6a47a9aa20fb32cdc892",
+        "size": 291543,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-prof-1.zip"
+        ]
+      },
+      {
+        "id": "assets-skill-1",
+        "sha256": "0efbfcacd7f510aa3fd09c8fe840c753d2d986e28a301c69f436a17a7241d84f",
+        "size": 10100474,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-skill-1.zip"
+        ]
+      },
+      {
+        "id": "assets-spine-1",
+        "sha256": "a5762a188d71b6b56ad39e95c3716ced043362e6e3b6f2f864cf5c1389e73a6a",
+        "size": 48451968,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-1.zip"
+        ]
+      },
+      {
+        "id": "assets-spine-2",
+        "sha256": "81d7fc7a9a068b7b0b58410960262cc7b70d6073a115c88cb5f47395d7ac1316",
+        "size": 43810769,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-2.zip"
+        ]
+      },
+      {
+        "id": "assets-spine-3",
+        "sha256": "c735773f46f1eb2d7e6cef3f8ea59abb85cf836b12961691b14d0b9eb1809a40",
+        "size": 17541355,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-spine-3.zip"
+        ]
+      },
+      {
+        "id": "assets-token-1",
+        "sha256": "bba4e1ada10f6d035981a995ec6befda46ca40a9babb41c9c498ff6263c7ba57",
+        "size": 1432061,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-token-1.zip"
+        ]
+      },
+      {
+        "id": "assets-ui-1",
+        "sha256": "3bfc0583975e84f2cfd6e99a2dbe5e89cf30addd4fc246f7d4af3a68067add44",
+        "size": 41104439,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/assets-ui-1.zip"
+        ]
+      },
+      {
+        "id": "fonts-1",
+        "sha256": "2daa858e57c77d7fc449b92b0fce4ebeb3c83a28988e1eedf6a276f18b6d7c65",
+        "size": 140309,
+        "urls": [
+          "https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip",
+          "https://ghfast.top/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip",
+          "https://gh-proxy.com/github.com/jingjiangze/Stronghold-Protocol-CDN/releases/download/assets-v0.2.1/fonts-1.zip"
+        ]
+      }
+    ],
+    "index": "/cdn/v1/index.json",
+    "pick": "/cdn/v1/pick.js"
+  },
+  "dirs": [
+    {
+      "prefix": "assets/spine/",
+      "files": 2015,
+      "bytes": 236001660
+    },
+    {
+      "prefix": "assets/audio/",
+      "files": 3379,
+      "bytes": 107981228
+    },
+    {
+      "prefix": "assets/local/",
+      "files": 1611,
+      "bytes": 73751270
+    },
+    {
+      "prefix": "assets/char/",
+      "files": 804,
+      "bytes": 72981105
+    },
+    {
+      "prefix": "assets/ui/",
+      "files": 602,
+      "bytes": 41065933
+    },
+    {
+      "prefix": "assets/enemy/",
+      "files": 252,
+      "bytes": 11079159
+    },
+    {
+      "prefix": "assets/skill/",
+      "files": 522,
+      "bytes": 10054787
+    },
+    {
+      "prefix": "assets/band/",
+      "files": 40,
+      "bytes": 2740050
+    },
+    {
+      "prefix": "assets/token/",
+      "files": 50,
+      "bytes": 1454775
+    },
+    {
+      "prefix": "assets/item/",
+      "files": 59,
+      "bytes": 1114423
+    },
+    {
+      "prefix": "assets/prof/",
+      "files": 93,
+      "bytes": 279115
+    },
+    {
+      "prefix": "fonts/",
+      "files": 7,
+      "bytes": 230526
+    },
+    {
+      "prefix": "assets/module/",
+      "files": 130,
+      "bytes": 219556
+    },
+    {
+      "prefix": "assets/bond/",
+      "files": 23,
+      "bytes": 90068
+    }
+  ],
+  "totals": {
+    "files": 9587,
+    "bytes": 559043655
+  }
+}
