@@ -256,7 +256,10 @@ async function probeMirrors(flat) {
       try {
         return { ...mirror, ...(await measureMirror(mirror)) };
       } catch (error) {
-        return { ...mirror, error: String(error.message || error) };
+        // A git mirror can be genuinely slow rather than down (Statically served one probe at
+        // ~700 B/s on a good day), so distinguish a timeout from a refusal.
+        const message = String(error?.message || error);
+        return { ...mirror, error: /timed? ?out|abort/i.test(message) ? '超时' : message };
       }
     }),
   );
