@@ -1,9 +1,7 @@
 # Pages headers for the CDN documentation site.
-# Assets and fonts are content-stable and referenced with a ?v= token, so they can be cached hard;
-# the HTML gets a short TTL so a copy change lands without a purge.
-
-/fonts/*
-  Cache-Control: public, max-age=31536000, immutable
+# The site's own css/js are renamed to carry their content hash at deploy time (this zone's
+# /js/* Cache Rule ignores the query string, so ?v= cannot bust it), hence the long TTL is safe.
+# The HTML gets a short TTL so a copy change lands without a purge.
 
 /css/*
   Cache-Control: public, max-age=31536000, immutable

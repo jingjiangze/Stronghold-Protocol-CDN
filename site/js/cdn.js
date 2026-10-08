@@ -32,9 +32,7 @@ function fmtBytes(bytes) {
   return mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(1)} MB`;
 }
 
-function fmtCount(n) {
-  return Number.isFinite(n) ? n.toLocaleString('zh-CN') : '—';
-}
+const fmtCount = (n) => (Number.isFinite(n) ? n.toLocaleString('zh-CN') : '—');
 
 function fmtTime(iso) {
   if (!iso) return '—';
@@ -47,26 +45,29 @@ function fmtTime(iso) {
 function renderStatus(art, source) {
   if (!art) {
     setText('status-line', '接口暂不可达，且没有可用的快照。');
-    $('status-line')?.classList.add('cdn-status--err');
+    setText('nav-status', '接口不可达');
+    $('status-line')?.classList.add('warn');
     return;
   }
+  const v = art.verified || {};
+  const clean = v.missing === 0 && v.mismatch === 0;
+
   setText('s-tag', art.upstream?.tag || '—');
-  setText('s-token', art.art?.token || '—');
+  setText('s-files', fmtCount(art.tree?.files));
+  setText('s-bytes', fmtBytes(art.tree?.bytes));
+  setText('s-verify', clean ? '0 缺失' : `${v.missing} 缺失`);
+  setText('s-synced', `上次同步 ${fmtTime(art.syncedAt)}`);
+  setText('nav-status', `${art.upstream?.tag || '?'} · ${clean ? '校验通过' : '校验异常'}`);
   setText('p-token', art.art?.token || '…');
   for (const el of document.querySelectorAll('.tok')) el.textContent = art.art?.token || '…';
 
-  const v = art.verified || {};
-  const clean = v.missing === 0 && v.mismatch === 0;
-  setText('s-verify', clean ? `0 缺失 / 0 不符（${fmtCount(v.probed)} 项）` : `${v.missing} 缺失 / ${v.mismatch} 不符`);
-  $('s-verify')?.classList.toggle('cdn-stat__v--mint', clean);
-  $('s-verify')?.classList.toggle('cdn-stat__v--gold', !clean);
-
-  setText('s-files', fmtCount(art.tree?.files));
-  setText('s-bytes', fmtBytes(art.tree?.bytes));
-  setText('s-synced', fmtTime(art.syncedAt));
+  const verifyEl = $('s-verify');
+  verifyEl?.classList.toggle('ok', clean);
+  verifyEl?.classList.toggle('warn', !clean);
 
   const byteSample = v.byteSample;
   const parts = [`上游 ${art.upstream?.tag || '?'}`, `缓存令牌 ${art.art?.token || '?'}`];
+  parts.push(clean ? `全量 ${fmtCount(v.probed)} 项校验通过` : `${v.missing} 缺失 / ${v.mismatch} 不符`);
   if (byteSample) parts.push(`字节抽样 ${byteSample.checked} 个文件 / ${byteSample.mismatch} 不符`);
   if (v.verifiedByBucket) parts.push(`${v.verifiedByBucket} 项由源桶兜底确认`);
   parts.push(source === 'live' ? '数据实时读取自接口' : '接口不可达，显示的是上次部署的快照');
@@ -79,15 +80,13 @@ function renderMirrors(flat) {
   host.innerHTML = '';
   for (const mirror of flat || []) {
     const card = document.createElement('div');
-    card.className = 'cdn-mirror';
+    card.className = 'card';
     card.dataset.mirror = mirror.id;
     card.innerHTML =
-      `<div class="cdn-mirror__id">${mirror.id}</div>` +
-      `<div class="cdn-mirror__base">${mirror.base || mirror.root}</div>` +
-      `<div class="cdn-mirror__meta">` +
-      `<span class="micro">${mirror.kind || 'origin'}</span>` +
-      `<span class="cdn-mirror__ms cdn-mirror__ms--bad" data-ms>未测速</span>` +
-      `</div>`;
+      `<div class="card__title">${mirror.id}</div>` +
+      `<div class="mono muted" style="margin-top:8px;word-break:break-all">${mirror.base || mirror.root}</div>` +
+      `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>` +
+      `<span class="card__value is-bad" data-ms>未测速</span></div>`;
     host.appendChild(card);
   }
 }
@@ -96,7 +95,7 @@ function renderPacks(packs) {
   const body = $('packs')?.querySelector('tbody');
   if (!body) return;
   if (!packs?.length) {
-    body.innerHTML = '<tr><td colspan="5">本次同步没有产出打包通道。</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="muted">本次同步没有产出打包通道。</td></tr>';
     return;
   }
   body.innerHTML = packs
@@ -113,7 +112,7 @@ function renderDirs(dirs, totals) {
   const body = $('dirs')?.querySelector('tbody');
   if (!body) return;
   if (!dirs?.length) {
-    body.innerHTML = '<tr><td colspan="3">没有目录数据。</td></tr>';
+    body.innerHTML = '<tr><td colspan="3" class="muted">没有目录数据。</td></tr>';
     return;
   }
   body.innerHTML = dirs
@@ -123,7 +122,7 @@ function renderDirs(dirs, totals) {
         `<td class="num">${fmtBytes(d.bytes)}</td></tr>`,
     )
     .join('');
-  if (totals) setText('dir-note', `共 ${fmtCount(totals.files)} 个文件 / ${fmtBytes(totals.bytes)}。`);
+  if (totals) setText('dir-note', `共 ${fmtCount(totals.files)} 个文件 / ${fmtBytes(totals.bytes)}`);
 }
 
 // ---- mirror speed test -------------------------------------------------------------------
@@ -169,25 +168,26 @@ async function probeMirrors(flat) {
 
 function paintProbe(ranked) {
   for (const mirror of ranked) {
-    const card = document.querySelector(`.cdn-mirror[data-mirror="${CSS.escape(mirror.id)}"]`);
+    const card = document.querySelector(`.card[data-mirror="${CSS.escape(mirror.id)}"]`);
     if (!card) continue;
     const slot = card.querySelector('[data-ms]');
-    if (!slot) continue;
-    if (mirror.ms == null) {
-      slot.textContent = mirror.error || '不可用';
-      slot.className = 'cdn-mirror__ms cdn-mirror__ms--bad';
-    } else {
-      slot.textContent = `${mirror.ms} ms`;
-      slot.className = 'cdn-mirror__ms';
+    if (slot) {
+      if (mirror.ms == null) {
+        slot.textContent = mirror.error || '不可用';
+        slot.className = 'card__value is-bad';
+      } else {
+        slot.textContent = `${mirror.ms} ms`;
+        slot.className = 'card__value';
+      }
     }
-    card.classList.toggle('cdn-mirror--best', ranked[0]?.id === mirror.id && mirror.ms != null);
-    const existing = card.querySelector('.cdn-mirror__tag');
-    if (existing) existing.remove();
-    if (ranked[0]?.id === mirror.id && mirror.ms != null) {
-      const tag = document.createElement('span');
-      tag.className = 'cdn-mirror__tag';
-      tag.textContent = '最快';
-      card.appendChild(tag);
+    const isBest = ranked[0]?.id === mirror.id && mirror.ms != null;
+    card.classList.toggle('is-best', isBest);
+    card.querySelector('.badge')?.remove();
+    if (isBest) {
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = '最快';
+      card.appendChild(badge);
     }
   }
 }
@@ -246,6 +246,6 @@ main().catch((error) => {
   const line = $('status-line');
   if (line) {
     line.textContent = `页面初始化失败：${error.message}`;
-    line.classList.add('cdn-status--err');
+    line.classList.add('warn');
   }
 });
