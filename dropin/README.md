@@ -26,13 +26,13 @@ CDN 把这两件事都接走：素材只有一份、放在边缘，玩家就近�
 ## 2. 一键使用（运行期）
 
 ```
-<任意目录>/
-  Stronghold-Protocol/     ← 上游部署包（未修改）
-  stronghold-cdn/          ← 本文件夹
+Stronghold-Protocol/          ← 上游部署包
+  stronghold-cdn/             ← 本文件夹（放部署包内、旁边、或部署包上一级都能被自动找到）
 ```
 
 - **Windows**：双击 `stronghold-cdn\start-with-cdn.cmd`
 - **Linux/macOS**：`sh stronghold-cdn/start-with-cdn.sh`
+- 部署目录被改过名（例如 `servers/`）：`SP_DEPLOY_DIR=/path/to/servers sh stronghold-cdn/start-with-cdn.sh`
 
 它会启动游戏服（内部端口 `PORT+1`），在 `PORT`（默认 3000）上做代理，并把三个美术清单响应里的
 `/assets/…`、`/fonts/…` 改写成 CDN 绝对地址。房间与对局的 WebSocket 原样透传。

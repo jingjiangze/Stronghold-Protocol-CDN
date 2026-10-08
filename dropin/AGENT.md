@@ -5,15 +5,19 @@
 ## 你要做的事（三步）
 
 1. **确认部署位置**：找到含 `package.json`、`server/`、`public/` 的那个目录（上游完整包解压后的
-   `Stronghold-Protocol/`）。本文件夹应当与它**平级**，即：
+   `Stronghold-Protocol/`）。本文件夹放在**三种位置之一**都能被自动找到：
 
    ```
-   <任意目录>/
-     Stronghold-Protocol/     ← 上游部署包
-     stronghold-cdn/          ← 本文件夹
+   Stronghold-Protocol/            Stronghold-Protocol/          <任意目录>/
+     stronghold-cdn/         或      （部署包本体）          或     Stronghold-Protocol/
+     （部署包本体）                  stronghold-cdn/               stronghold-cdn/
    ```
 
-   如果不是平级，把本文件夹移过去，或设 `SP_DEPLOY_DIR=<部署目录>`。
+   都不满足时（例如部署目录被改名成 `servers/`），显式指定：
+
+   ```
+   SP_DEPLOY_DIR=/path/to/部署目录 node cdn-serve.mjs
+   ```
 
 2. **启动**：Windows 双击 `start-with-cdn.cmd`；Linux/macOS 运行 `sh start-with-cdn.sh`。
    它会：把游戏服起在内部端口（`PORT+1`），在 `PORT`（默认 3000）上代理它，并把

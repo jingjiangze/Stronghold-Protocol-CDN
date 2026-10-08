@@ -16,18 +16,41 @@
 //   SP_SERVER_CMD how the game server is started         (default: npm start)
 import http from 'node:http';
 import net from 'node:net';
+import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const DEPLOY = path.resolve(HERE, '..');
 const CDN = (process.env.SP_CDN_BASE || '__SP_CDN_BASE__').replace(/\/+$/, '');
 const TOKEN = process.env.SP_CDN_TOKEN || '__SP_CDN_TOKEN__';
 const PORT = Number(process.env.PORT || 3000);
 const UPSTREAM = PORT + 1;
 const MANIFESTS = new Set(['/data/assets.json', '/data/local-assets.json', '/data/emotes.json']);
 const TOKEN_QUERY = TOKEN ? `?v=${encodeURIComponent(TOKEN)}` : '';
+
+/**
+ * Find the deployment, whichever way the folder was dropped in: inside it, next to it, or next to
+ * its parent. Guessing wrong here is the difference between a one-click start and an error message,
+ * so all the layouts the guide allows are checked, and SP_DEPLOY_DIR always wins.
+ */
+function findDeployDir() {
+  const looksLikeDeployment = (dir) =>
+    dir && fs.existsSync(path.join(dir, 'package.json')) && fs.existsSync(path.join(dir, 'server'));
+  const candidates = [
+    process.env.SP_DEPLOY_DIR,
+    path.resolve(HERE, '..'),
+    path.join(HERE, 'Stronghold-Protocol'),
+    path.resolve(HERE, '..', 'Stronghold-Protocol'),
+  ];
+  for (const dir of candidates) if (looksLikeDeployment(dir)) return dir;
+  throw new Error(
+    'could not find the game deployment (a folder with package.json and server/).\n' +
+      'Put this folder inside it, or next to it, or set SP_DEPLOY_DIR=<the deployment folder>.',
+  );
+}
+
+const DEPLOY = findDeployDir();
 
 const log = (...args) => console.log('[cdn-serve]', ...args);
 

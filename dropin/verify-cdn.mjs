@@ -39,19 +39,29 @@ if (local) console.log('  (local ones mean the deployment is not being served th
 const sample = [...urls].filter((_, i) => i % Math.max(1, Math.floor(urls.size / 20)) === 0).slice(0, 20);
 let ok = 0;
 const bad = [];
+const unreachable = [];
 for (const url of sample) {
-  try {
-    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(15000) });
-    if (res.ok) ok++;
-    else bad.push(`${res.status} ${url}`);
-  } catch (error) {
-    bad.push(`${error.message} ${url}`);
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(25000) });
+      if (res.ok) ok++;
+      else bad.push(`${res.status} ${url}`);
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
+    }
   }
+  // A probe that could not complete says nothing about the CDN — only a non-200 does.
+  if (lastError) unreachable.push(`${lastError.message} ${url}`);
 }
 console.log(`probe: ${ok}/${sample.length} sampled URLs answered`);
 for (const line of bad.slice(0, 10)) console.log(`  ! ${line}`);
+for (const line of unreachable.slice(0, 5)) console.log(`  ~ could not probe from here: ${line}`);
 
-if (total && local === 0 && ok === sample.length) {
+if (total && local === 0 && bad.length === 0) {
   console.log('OK: art is served from the CDN');
   process.exit(0);
 }

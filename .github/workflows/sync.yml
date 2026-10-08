@@ -21,6 +21,10 @@ on:
         description: 'true = also build zip packs, publish them to R2 and attach them to a GitHub release'
         type: boolean
         default: false
+      dropin_only:
+        description: 'true = only rebuild the drop-in zip from the published interface (seconds, no tree needed)'
+        type: boolean
+        default: false
       prune:
         description: 'true = also delete keys upstream no longer lists (dangerous)'
         type: boolean
@@ -82,6 +86,7 @@ jobs:
           if [ "${{ inputs.write }}" = "true" ]; then args="$args --write"; fi
           if [ "${{ inputs.pages }}" = "true" ]; then args="$args --pages"; fi
           if [ "${{ inputs.packs }}" = "true" ]; then args="$args --packs"; fi
+          if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
           if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi
           echo "node src/sync.mjs $args"
