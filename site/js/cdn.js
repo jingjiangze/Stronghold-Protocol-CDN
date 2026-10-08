@@ -237,7 +237,9 @@ async function main() {
   const flat = mirrors?.flat || art?.art?.mirrors || [];
   renderStatus(art, source);
   renderMirrors(flat);
-  renderPacks(mirrors?.packs || art?.art?.packs || []);
+  // art.json's pack list is the complete one (id, group, files, size, urls); mirrors.json's copy
+  // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
+  renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderDirs(snapshot?.dirs || [], snapshot?.totals || null);
   wireProbe(flat);
 }

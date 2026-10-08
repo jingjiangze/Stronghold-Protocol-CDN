@@ -53,6 +53,7 @@ function parseArgs(argv) {
     pages: false,
     packs: false,
     dropinOnly: false,
+    interfaceOnly: false,
     tag: '',
     work: 'work',
     base: DEFAULT_BASE,
@@ -75,6 +76,8 @@ function parseArgs(argv) {
     // Rebuild only the drop-in zip from the already-published interface: it needs no tree, so
     // iterating on the guide or the launchers costs seconds instead of a full 25-minute sync.
     else if (arg === '--dropin-only') opts.dropinOnly = true;
+    // Re-emit the aggregation files from the published contract — no tree, no verification.
+    else if (arg === '--interface-only') opts.interfaceOnly = true;
     else if (arg.startsWith('--tag=')) opts.tag = arg.slice('--tag='.length);
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
@@ -85,6 +88,7 @@ function parseArgs(argv) {
   if (opts.prune && !opts.write) throw new Error('--prune only makes sense together with --write');
   if ((opts.pages || opts.packs) && !opts.write) throw new Error('--pages/--packs publish, so they need --write');
   if (opts.dropinOnly && !opts.write) throw new Error('--dropin-only publishes, so it needs --write');
+  if (opts.interfaceOnly && !opts.write) throw new Error('--interface-only publishes, so it needs --write');
   opts.base = String(opts.base).replace(/\/+$/, '');
   opts.pagesBase = String(opts.pagesBase).replace(/\/+$/, '');
   return opts;
@@ -210,6 +214,39 @@ async function main() {
   const release = await resolveRelease(opts.tag);
   log(`upstream ${release.repo} → ${release.tag} (published ${release.publishedAt})`);
 
+
+
+  // Interface only: re-emit mirrors.json and pick.js from the published contract. The aggregation
+  // files are derived data, so correcting them should not require re-hashing 533 MB.
+  if (opts.interfaceOnly) {
+    const published = await readPublishedArt(opts.base);
+    if (!published?.art?.token) throw new Error('--interface-only needs a published cdn/v1/art.json');
+    const config = r2Config();
+    const mirrorsDoc = `${JSON.stringify(
+      {
+        schema: 1,
+        token: published.art.token,
+        upstream: published.upstream,
+        flat: published.art.mirrors,
+        packs: published.art.packs,
+        index: '/cdn/v1/index.json',
+        pick: '/cdn/v1/pick.js',
+      },
+      null,
+      2,
+    )}
+`;
+    await putObject(config, 'cdn/v1/mirrors.json', Buffer.from(mirrorsDoc, 'utf8'), {
+      contentType: 'application/json',
+      cacheControl: SHORT,
+    });
+    await putObject(config, 'cdn/v1/pick.js', Buffer.from(PICK_SOURCE, 'utf8'), {
+      contentType: 'text/javascript',
+      cacheControl: SHORT,
+    });
+    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js`);
+    return;
+  }
 
   // Drop-in only: everything it needs is the published interface, so no download, no hashing and
   // no pack rebuild.
@@ -494,7 +531,14 @@ async function main() {
         zipSha256: release.zip.sha256,
       },
       flat: origins.map((origin) => ({ id: origin.id, kind: origin.kind, root: origin.root, base: origin.base })),
-      packs: packs.map((pack) => ({ id: pack.id, sha256: pack.sha256, size: pack.bytes, urls: pack.urls })),
+      packs: packs.map((pack) => ({
+        id: pack.id,
+        group: pack.group,
+        files: pack.files,
+        sha256: pack.sha256,
+        size: pack.bytes,
+        urls: pack.urls,
+      })),
       index: '/cdn/v1/index.json',
       pick: '/cdn/v1/pick.js',
     },

@@ -32,6 +32,10 @@ on:
         description: 'true = only rebuild the drop-in zip from the published interface (seconds, no tree needed)'
         type: boolean
         default: false
+      interface_only:
+        description: 'true = only re-emit mirrors.json + pick.js from the published contract (seconds)'
+        type: boolean
+        default: false
       prune:
         description: 'true = also delete keys upstream no longer lists (dangerous)'
         type: boolean
@@ -97,6 +101,7 @@ jobs:
           if [ "$(want "${{ inputs.pages }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --pages"; fi
           if [ "$(want "${{ inputs.packs }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --packs"; fi
           if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
+          if [ "${{ inputs.interface_only }}" = "true" ]; then args="$args --interface-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
           if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi
           echo "node src/sync.mjs $args"
