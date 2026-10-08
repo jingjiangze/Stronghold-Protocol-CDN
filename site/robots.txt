@@ -1,2 +1,6 @@
 User-agent: *
 Disallow: /
+
+# The written guide is content, not an operator surface: let it be indexed and linked.
+Allow: /bandwidth.html
+Allow: /docs/

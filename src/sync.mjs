@@ -912,7 +912,12 @@ async function writeReports(root, report) {
   console.log(lines.join('\n'));
 }
 
-main().catch(async (error) => {
-  console.error(`[sync] ERROR ${error.stack || error.message}`);
-  process.exitCode = 1;
-});
+// Only run when invoked as a script. Importing this module (tests do, for carryForwardOrigins)
+// must not start a real sync -- that would download a 505 MB upstream package and write to the
+// working tree, which is exactly what made tests/origins.test.mjs depend on the network.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
+  main().catch(async (error) => {
+    console.error(`[sync] ERROR ${error.stack || error.message}`);
+    process.exitCode = 1;
+  });
+}

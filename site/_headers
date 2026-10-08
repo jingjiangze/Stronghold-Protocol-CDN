@@ -19,6 +19,18 @@
 /
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
 
+# Written documents are meant to be found and read: allow indexing, and serve the Markdown as
+# text so a browser renders it instead of downloading it.
+/docs/*
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  Content-Type: text/markdown; charset=utf-8
+  X-Robots-Tag: all
+
+/bandwidth.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+# Everything else on this site is an operator surface, not content: keep it out of search.
 /*
   X-Robots-Tag: noindex
   X-Content-Type-Options: nosniff

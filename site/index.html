@@ -29,6 +29,8 @@
       <a href="#mirrors">镜像站</a>
       <a href="#sources">来源</a>
       <a href="#layout">目录与 API</a>
+      <a href="#bandwidth">上行带宽压缩</a>
+      <a href="./bandwidth.html">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
   </div>
@@ -335,6 +337,37 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         下一次同步就会把它写进 <code class="inline">art.json</code> / <code class="inline">mirrors.json</code>，
         本页的镜像列表与测速也会自动带上它。
       </span>
+    </div>
+  </section>
+
+  <section class="section" id="bandwidth">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · BANDWIDTH</div><h2>上行带宽最大化压缩</h2></div>
+      <span class="section-status">小上行带宽盒子的实测优化与容量表</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      如果你的部署机上行很小（家用宽带、4G 路由、小水管 VPS），这一份是为你写的。核心结论是反直觉的：
+      <b>上行不是稳态瓶颈，是首载瓶颈</b> —— 稳态人均只要约 60 B/s，而优化前一个新玩家进场要吃掉 <b>467.9 MiB</b>，
+      在 10 Mbps 上等于<b>占死 6.5 分钟</b>。所以收益几乎全部来自「让盒子不发字节」，而不是「把字节压得更小」。
+    </p>
+    <div class="cards">
+      <a class="card" href="./bandwidth.html">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>措施 / 实测 / 容量表 / 否决记录</span></div>
+        <div class="card__stats">
+          <span>首载提速 <b>316×</b></span>
+          <span>稳态人均 <b>60 B/s</b></span>
+          <span>移出素材 <b>462.6 MiB</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/bandwidth-max-compression.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>10 Mbps</b> 前后对比</span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
     </div>
   </section>
 
