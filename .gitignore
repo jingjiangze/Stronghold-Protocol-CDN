@@ -1,0 +1,9 @@
+node_modules/
+.cache/
+work/
+report.json
+report.md
+*.log
+.mimosa/
+.DS_Store
+Thumbs.db

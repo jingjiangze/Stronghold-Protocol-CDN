@@ -1,0 +1,3 @@
+# The sync job runs on Linux runners; a CRLF checkout has broken this project's tooling before.
+# Keep the repository, and every checkout, at LF.
+* text=auto eol=lf
