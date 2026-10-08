@@ -23,6 +23,9 @@ export const ZIP_PACKS_DIR = `${ZIP_ROOT}/packs`;
 /** Prefixes this repository owns on the bucket. Everything else belongs to other lines. */
 export const OWNED_PREFIXES = ['assets/', 'fonts/', 'data/', 'cdn/', 'packs/'];
 
+/** Root-level objects owned by exact name — `robots.txt` only works from the root. */
+export const OWNED_KEYS = ['robots.txt'];
+
 /** Manifest keys whose URL strings get rewritten to absolute CDN URLs. */
 export const REWRITE_PREFIXES = ['/assets/', '/fonts/'];
 

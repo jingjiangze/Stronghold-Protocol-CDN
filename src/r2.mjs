@@ -7,7 +7,7 @@
 // Credentials come from the environment ONLY. Never put them in source, fixtures or tests.
 import { createHash, createHmac } from 'node:crypto';
 import https from 'node:https';
-import { OWNED_PREFIXES } from './names.mjs';
+import { OWNED_PREFIXES, OWNED_KEYS } from './names.mjs';
 
 const REGION = 'auto';
 const SERVICE = 's3';
@@ -39,11 +39,10 @@ export function r2Config(env = process.env) {
  * the bucket belong to other product lines, so writing to them is a bug — fail instead.
  */
 export function assertOwnedKey(key) {
-  if (!OWNED_PREFIXES.some((prefix) => key.startsWith(prefix))) {
-    throw new Error(
-      `refusing to write outside the owned prefixes (${OWNED_PREFIXES.join(', ')}): ${key}`,
-    );
-  }
+  if (OWNED_KEYS.includes(key) || OWNED_PREFIXES.some((prefix) => key.startsWith(prefix))) return;
+  throw new Error(
+    `refusing to write outside the owned prefixes (${[...OWNED_PREFIXES, ...OWNED_KEYS].join(', ')}): ${key}`,
+  );
 }
 
 // SigV4 canonicalization: everything except unreserved (A-Za-z0-9-._~) and '/' is percent-encoded.
