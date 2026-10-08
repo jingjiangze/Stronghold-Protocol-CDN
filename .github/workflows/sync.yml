@@ -104,6 +104,7 @@ jobs:
           if [ "$(want "${{ inputs.write }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --write"; fi
           if [ "$(want "${{ inputs.pages }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --pages"; fi
           if [ "$(want "${{ inputs.packs }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --packs"; fi
+          if [ "$(want "${{ inputs.sources }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --sources"; fi
           if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
           if [ "${{ inputs.interface_only }}" = "true" ]; then args="$args --interface-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
