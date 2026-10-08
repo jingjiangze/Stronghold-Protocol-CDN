@@ -61,6 +61,9 @@ export function planPacks(files, { maxBytes = DEFAULT_PACK_BYTES } = {}) {
 
 /** Build one zip deterministically: sorted entries, `-X` (no uid/gid/extra fields), the tree's own mtimes. */
 export function buildPack(root, keys, outFile) {
+  // spawnSync reports a missing cwd as ENOENT on the binary, which reads like "zip is not
+  // installed" — say what is actually wrong.
+  if (!fs.existsSync(root)) throw new Error(`buildPack: no tree at ${root}`);
   const res = spawnSync('zip', ['-X', '-q', outFile, '-@'], {
     input: keys.join('\n') + '\n',
     cwd: root,

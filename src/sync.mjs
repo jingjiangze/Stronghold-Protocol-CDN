@@ -419,7 +419,7 @@ async function main() {
       fs.mkdirSync(packDir, { recursive: true });
       packs = await publishPacks({
         config,
-        root: path.join(stage, 'public'),
+        root: path.join(stage, ZIP_ROOT, 'public'),
         packs: plan,
         tag: release.tag,
         repo: opts.repo,
@@ -599,7 +599,18 @@ async function publishArt(config, { opts, release, version, manifest, refs, inde
     contentType: 'application/json',
     cacheControl: SHORT,
   });
-  log(`published cdn/v1/art.json (schema 2: ${origins.length} origin(s), ${packs.length} pack(s))`);
+  // The aggregation interface: the mirror list and the picker that measures it.
+  await putObject(config, 'cdn/v1/mirrors.json', Buffer.from(mirrorsDoc, 'utf8'), {
+    contentType: 'application/json',
+    cacheControl: SHORT,
+  });
+  await putObject(config, 'cdn/v1/pick.js', Buffer.from(PICK_SOURCE, 'utf8'), {
+    contentType: 'text/javascript',
+    cacheControl: SHORT,
+  });
+  log(
+    `published cdn/v1/{art,mirrors}.json + pick.js (schema 2: ${origins.length} origin(s), ${packs.length} pack(s))`,
+  );
 }
 
 async function writeReports(root, report) {
@@ -615,6 +626,12 @@ async function writeReports(root, report) {
     `- tree: ${report.tree.files} files, ${(report.tree.bytes / 1048576).toFixed(1)} MB`,
     `- diff: add ${report.diff.add}, change ${report.diff.change}, same ${report.diff.same}, extra-on-CDN ${report.diff.remove} (${(report.diff.uploadBytes / 1048576).toFixed(1)} MB to upload)`,
     ...(report.uploaded ? [`- uploaded: ${report.uploaded.done} (${report.uploaded.failed} failed)`] : []),
+    ...(report.byteSample
+      ? [`- byte sample: ${report.byteSample.checked} files hashed, ${report.byteSample.mismatch.length} mismatch`]
+      : []),
+    ...(report.dropin
+      ? [`- drop-in zip: ${report.dropin.error ? `FAILED (${report.dropin.error})` : `${report.dropin.name} (${(report.dropin.size / 1024).toFixed(0)} KB)`}`]
+      : []),
     ...(report.pages ? [`- pages origin: ${report.pages.error ? `FAILED (${report.pages.error})` : `${report.pages.files} files → ${report.pages.base}`}`] : []),
     ...(report.packs
       ? [
