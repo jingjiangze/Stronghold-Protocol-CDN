@@ -9,6 +9,7 @@
 // The default is read-only and needs no credentials at all. When writing, the acceptance gate
 // runs *before* the interface files are published: if any URL the manifest references does not
 // resolve on the CDN, the job fails and consumers keep seeing the previous, known-good version.
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -277,7 +278,7 @@ async function main() {
 
   const urls = [
     ...new Set(
-      manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.base, version: release.tag })),
+      manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.base, version })),
     ),
   ].sort();
   const expected = {};
@@ -287,6 +288,12 @@ async function main() {
   }
 
   const indexJson = indexDocument({ release, index });
+  // The cache token must change whenever the bytes do, not only when the upstream tag does. A tag
+  // alone is not enough: the first population of a tree happens under a tag that was already
+  // requested (dry runs, retries), and Cloudflare's per-PoP copies then disagree — one edge serves
+  // the old bytes for hours. Deriving the token from the content index removes that whole class.
+  const indexHash = createHash('sha256').update(indexJson).digest('hex');
+  const version = `${release.tag}-${indexHash.slice(0, 8)}`;
 
   const report = {
     schema: 1,
@@ -345,7 +352,7 @@ async function main() {
     throw new Error('acceptance gate failed — the interface files were NOT published');
   }
 
-  await publishCore(config, { opts, manifests, release, indexJson });
+  await publishCore(config, { opts, manifests, version, indexJson });
 
   // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
   // invalidate it — the interface below simply reports one origin fewer.
@@ -357,7 +364,7 @@ async function main() {
         out: path.join(workDir, 'pages-dist'),
         manifests,
         base: opts.pagesBase,
-        tag: release.tag,
+        tag: version,
         indexJson,
       });
       log(`pages dist: ${dist.files} files → ${opts.pagesBase}`);
@@ -398,7 +405,7 @@ async function main() {
     }
   }
 
-  await publishArt(config, { opts, release, manifest, refs, index, probe, origins, packs });
+  await publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs });
   await writeReports(ROOT, report);
   log('done.');
 }
@@ -409,23 +416,23 @@ function indexDocument({ release, index }) {
 }
 
 /** Everything origin-neutral plus the primary-origin manifests: safe to publish once the gate passed. */
-async function publishCore(config, { opts, manifests, release, indexJson }) {
+async function publishCore(config, { opts, manifests, version, indexJson }) {
   let rewrittenCount = 0;
   const objects = [
     ...manifests.map((entry) => {
-      const rewritten = rewriteManifestText(entry.text, { base: opts.base, version: release.tag });
+      const rewritten = rewriteManifestText(entry.text, { base: opts.base, version });
       rewrittenCount += rewritten.count;
       return [`data/${entry.name}`, Buffer.from(rewritten.text, 'utf8'), 'application/json', SHORT];
     }),
     ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
-    [`cdn/v1/index-${release.tag}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
+    [`cdn/v1/index-${version}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
     ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
   ];
   for (const [key, body, contentType, cacheControl] of objects) {
     await putObject(config, key, body, { contentType, cacheControl });
     log(`published ${key} (${body.length} bytes)`);
   }
-  log(`rewrote ${rewrittenCount} manifest URLs → ${opts.base}/assets/…?v=${release.tag}`);
+  log(`rewrote ${rewrittenCount} manifest URLs → ${opts.base}/assets/…?v=${version}`);
 }
 
 /**
@@ -433,7 +440,7 @@ async function publishCore(config, { opts, manifests, release, indexJson }) {
  * deployed and every pack that uploaded. Field names follow the re line's `art` block
  * (`base`/`version`/`format`/`mirrors`/`packs`) so one parser reads both axes.
  */
-async function publishArt(config, { opts, release, manifest, refs, index, probe, origins, packs }) {
+async function publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs }) {
   const art = {
     schema: 2,
     upstream: {
@@ -447,6 +454,7 @@ async function publishArt(config, { opts, release, manifest, refs, index, probe,
       base: `${opts.base}/assets/`,
       version: 2,
       format: 1,
+      token: version,
       mirrors: origins,
       packs: packs.map((pack) => ({
         id: pack.id,
