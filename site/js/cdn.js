@@ -28,7 +28,10 @@ async function getJson(url, timeoutMs = 8000) {
 
 function fmtBytes(bytes) {
   if (!Number.isFinite(bytes)) return '—';
-  const mb = bytes / 1048576;
+  const kb = bytes / 1024;
+  // The drop-in zip is ~13 KB, and "0.0 MB" reads as a broken download.
+  if (kb < 1024) return `${kb < 10 ? kb.toFixed(1) : Math.round(kb)} KB`;
+  const mb = kb / 1024;
   return mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(1)} MB`;
 }
 
