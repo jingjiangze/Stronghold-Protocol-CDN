@@ -31,6 +31,9 @@ import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
 import { r2Config, putObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
 import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease } from './packs.mjs';
+import { buildDropin } from './dropin.mjs';
+import { PICK_SOURCE } from './pick-source.mjs';
+import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
@@ -46,6 +49,7 @@ function parseArgs(argv) {
     prune: false,
     reportOnly: false,
     force: false,
+    sample: DEFAULT_SAMPLE,
     pages: false,
     packs: false,
     tag: '',
@@ -71,6 +75,7 @@ function parseArgs(argv) {
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
     else if (arg.startsWith('--pages-base=')) opts.pagesBase = arg.slice('--pages-base='.length);
+    else if (arg.startsWith('--sample=')) opts.sample = Number(arg.slice('--sample='.length)) || DEFAULT_SAMPLE;
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (opts.prune && !opts.write) throw new Error('--prune only makes sense together with --write');
@@ -310,6 +315,8 @@ async function main() {
     verification: null,
     pages: null,
     packs: null,
+    dropin: null,
+    byteSample: null,
     ok: false,
   };
 
@@ -354,11 +361,30 @@ async function main() {
     throw new Error('acceptance gate failed — the interface files were NOT published');
   }
 
+  // The size gate proves the objects are the right length; this proves a sample is the upstream
+  // bytes, which is what rules out a re-encoded copy sitting under the same name.
+  const sampled = sampleKeys(index.files, { sample: opts.sample });
+  const byteSample = await verifyByteSample(urlsForKeys(sampled, { base: opts.base, version }), {
+    files: index.files,
+  });
+  report.byteSample = byteSample;
+  log(
+    `byte sample: ${byteSample.checked} files hashed, ${byteSample.mismatch.length} mismatch, ` +
+      `${byteSample.failed.length} unreachable`,
+  );
+  if (byteSample.mismatch.length) {
+    await writeReports(ROOT, report);
+    throw new Error(
+      `byte sample mismatch on ${byteSample.mismatch.length} file(s) — the CDN is not serving the ` +
+        `upstream bytes (first: ${byteSample.mismatch[0].key})`,
+    );
+  }
+
   await publishCore(config, { opts, manifests, version, indexJson });
 
   // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
   // invalidate it — the interface below simply reports one origin fewer.
-  const origins = [{ id: 'r2', base: `${opts.base}/assets/` }];
+  const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
   if (opts.pages) {
     try {
       const dist = await preparePagesDist({
@@ -371,7 +397,7 @@ async function main() {
       });
       log(`pages dist: ${dist.files} files → ${opts.pagesBase}`);
       deployPages({ dist: dist.out });
-      origins.push({ id: 'pages', base: `${opts.pagesBase}/assets/` });
+      origins.push({ id: 'pages', kind: 'pages', root: opts.pagesBase, base: `${opts.pagesBase}/assets/` });
       report.pages = { base: opts.pagesBase, files: dist.files };
     } catch (error) {
       console.error(`[sync] pages origin FAILED: ${error.message}`);
@@ -407,7 +433,68 @@ async function main() {
     }
   }
 
-  await publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs });
+  const mirrorsDoc = `${JSON.stringify(
+    {
+      schema: 1,
+      token: version,
+      upstream: {
+        repo: release.repo,
+        tag: release.tag,
+        zip: release.zip.name,
+        zipSha256: release.zip.sha256,
+      },
+      flat: origins.map((origin) => ({ id: origin.id, kind: origin.kind, root: origin.root, base: origin.base })),
+      packs: packs.map((pack) => ({ id: pack.id, sha256: pack.sha256, size: pack.bytes, urls: pack.urls })),
+      index: '/cdn/v1/index.json',
+      pick: '/cdn/v1/pick.js',
+    },
+    null,
+    2,
+  )}
+`;
+
+  if (opts.packs) {
+    try {
+      const dropin = await buildDropin({
+        root: ROOT,
+        out: path.join(workDir, 'packs'),
+        base: opts.base,
+        token: version,
+        upstreamTag: release.tag,
+        mirrorsJson: mirrorsDoc,
+      });
+      const key = `packs/assets-${release.tag}/${dropin.name}`;
+      await putObject(config, key, fs.readFileSync(dropin.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
+      const uploaded = spawnSync(
+        'gh',
+        ['release', 'upload', `assets-${release.tag}`, dropin.file, '--clobber', '-R', opts.repo],
+        { encoding: 'utf8' },
+      );
+      if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
+      report.dropin = { name: dropin.name, size: dropin.size, key };
+      log(`published the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB)`);
+    } catch (error) {
+      console.error(`[sync] drop-in zip FAILED: ${error.message}`);
+      report.dropin = { error: error.message };
+    }
+  }
+
+  await publishArt(config, {
+    opts,
+    release,
+    version,
+    manifest,
+    refs,
+    index,
+    probe,
+    origins,
+    packs,
+    mirrorsDoc,
+    byteSample,
+  });
   await writeReports(ROOT, report);
   log('done.');
 }
@@ -470,7 +557,7 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
  * deployed and every pack that uploaded. Field names follow the re line's `art` block
  * (`base`/`version`/`format`/`mirrors`/`packs`) so one parser reads both axes.
  */
-async function publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs }) {
+async function publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
   const art = {
     schema: 2,
     upstream: {
@@ -505,6 +592,7 @@ async function publishArt(config, { opts, release, version, manifest, refs, inde
       probed: probe.probed,
       unreachable: 0,
       verifiedByBucket: probe.verifiedByBucket ?? 0,
+      byteSample: byteSample ? { checked: byteSample.checked, mismatch: byteSample.mismatch.length } : null,
     },
   };
   await putObject(config, 'cdn/v1/art.json', Buffer.from(`${JSON.stringify(art, null, 2)}\n`, 'utf8'), {
