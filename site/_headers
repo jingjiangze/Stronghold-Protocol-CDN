@@ -19,11 +19,12 @@
 /
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
 
-# Written documents are meant to be found and read: allow indexing, and serve the Markdown as
-# text so a browser renders it instead of downloading it.
+# Written documents are meant to be found and read: allow indexing, and serve them as plain text
+# so a browser renders them inline. (Not text/markdown: the catch-all below adds `nosniff`, and
+# nosniff plus a type the browser has no viewer for turns into a download instead of a render.)
 /docs/*
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
-  Content-Type: text/markdown; charset=utf-8
+  Content-Type: text/plain; charset=utf-8
   X-Robots-Tag: all
 
 # Pages serves this at /bandwidth (it 308s /bandwidth.html there), so the rule must name both.
@@ -35,8 +36,25 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
-# Everything else on this site is an operator surface, not content: keep it out of search.
+# Everything else is an operator surface, not content: keep it out of search.
+# The catch-all deliberately carries no robots header. Pages applies every matching rule, so a
+# noindex here would stack a second, contradictory X-Robots-Tag onto the documents above, and
+# "all" plus "noindex" is not a signal a crawler can honour. Suppress the real paths instead.
 /*
-  X-Robots-Tag: noindex
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
+
+/
+  X-Robots-Tag: noindex
+
+/index.html
+  X-Robots-Tag: noindex
+
+/css/*
+  X-Robots-Tag: noindex
+
+/js/*
+  X-Robots-Tag: noindex
+
+/data/*
+  X-Robots-Tag: noindex
