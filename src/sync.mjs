@@ -26,11 +26,14 @@ import {
 import { buildIndex, serializeIndex, sha256File } from './index-tree.mjs';
 import { rewriteManifestText, collectManifestPaths, manifestUrls } from './rewrite-manifest.mjs';
 import { diffIndex, uploadBytes } from './diff.mjs';
-import { verifyUrls, summarizeVerification } from './verify-remote.mjs';
+import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
 import { r2Config, putObject, deleteObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
+
+/** The manifests the client reads, and the ones the game server rewrites. */
+const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
 
 function parseArgs(argv) {
   const opts = { write: false, prune: false, strict: false, tag: '', work: 'work', base: DEFAULT_BASE };
@@ -155,18 +158,25 @@ async function main() {
   await verifyPackageDigest(zipPath, release);
   extractPackage(zipPath, stage);
 
-  const manifestPath = path.join(stage, ZIP_ROOT, 'data', 'assets.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error(`the package has no ${ZIP_ROOT}/data/assets.json — layout changed?`);
+  const manifests = [];
+  for (const name of MANIFEST_NAMES) {
+    const file = path.join(stage, ZIP_ROOT, 'data', name);
+    if (fs.existsSync(file)) manifests.push({ name, text: await fsp.readFile(file, 'utf8') });
   }
-  const manifestText = await fsp.readFile(manifestPath, 'utf8');
-  const manifest = JSON.parse(manifestText);
+  const primary = manifests.find((entry) => entry.name === 'assets.json');
+  if (!primary) throw new Error(`the package has no ${ZIP_ROOT}/data/assets.json — layout changed?`);
+  const manifest = JSON.parse(primary.text);
   const manifestFiles = manifest?.stats?.files;
   if (!manifestFiles) {
     throw new Error('the manifest has no stats.files — refusing to mirror an empty asset set');
   }
-  const refs = collectManifestPaths(manifestText);
-  log(`manifest: ${manifestFiles} files, hash ${manifest.hash}, ${refs.length} asset refs`);
+
+  // The client reads three manifests and the game server rewrites all three, so the acceptance
+  // list is their union — checking only the primary one would leave local art and emotes
+  // unverified.
+  const refs = [...new Set(manifests.flatMap((entry) => collectManifestPaths(entry.text)))].sort();
+  log(`manifests present: ${manifests.map((entry) => entry.name).join(', ')}`);
+  log(`primary: ${manifestFiles} files, hash ${manifest.hash}, ${refs.length} asset refs (union)`);
 
   log('hashing the tree …');
   const index = await buildIndex(
@@ -187,7 +197,11 @@ async function main() {
       `(${(uploadSize / 1048576).toFixed(1)} MB to upload)`,
   );
 
-  const urls = manifestUrls(manifestText, { base: opts.base, version: release.tag });
+  const urls = [
+    ...new Set(
+      manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.base, version: release.tag })),
+    ),
+  ].sort();
   const expected = {};
   for (const url of urls) {
     const key = url.slice(opts.base.length + 1).split('?')[0];
@@ -200,7 +214,7 @@ async function main() {
     startedAt,
     base: opts.base,
     upstream: release,
-    manifest: { files: manifestFiles, hash: manifest.hash, refs: refs.length },
+    manifest: { files: manifestFiles, hash: manifest.hash, refs: refs.length, manifests: manifests.map((entry) => entry.name) },
     tree: { files: index.count, bytes: index.bytes },
     diff: { add: diff.add.length, change: diff.change.length, same: diff.same, remove: diff.remove.length, uploadBytes: uploadSize },
     removedSample: diff.remove.slice(0, 50),
@@ -213,7 +227,7 @@ async function main() {
     // Diagnosis mode: report the gap without touching anything, and only fail when asked to.
     const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
     report.verification = probe;
-    report.ok = probe.missing.length === 0 && probe.mismatch.length === 0 && probe.failed.length === 0;
+    report.ok = passes(probe);
     log(`gate (read-only): ${summarizeVerification(probe).split('\n')[0]}`);
     await writeReports(ROOT, report);
     process.exit(report.ok || !opts.strict ? 0 : 1);
@@ -237,20 +251,23 @@ async function main() {
 
   const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
   report.verification = probe;
-  report.ok = probe.missing.length === 0 && probe.mismatch.length === 0 && probe.failed.length === 0;
+  report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
   if (!report.ok) {
     await writeReports(ROOT, report);
     throw new Error('acceptance gate failed — the interface files were NOT published');
   }
 
-  await publishInterface(config, { opts, release, manifest, manifestText, index, probe });
+  await publishInterface(config, { opts, release, manifest, manifests, index, refs, probe });
   await writeReports(ROOT, report);
   log('done.');
 }
 
-async function publishInterface(config, { opts, release, manifest, manifestText, index, probe }) {
-  const rewritten = rewriteManifestText(manifestText, { base: opts.base, version: release.tag });
+async function publishInterface(config, { opts, release, manifest, manifests, index, refs, probe }) {
+  const rewritten = manifests.map((entry) => ({
+    key: `data/${entry.name}`,
+    ...rewriteManifestText(entry.text, { base: opts.base, version: release.tag }),
+  }));
   const indexJson = JSON.stringify({
     schema: 1,
     tag: release.tag,
@@ -269,14 +286,14 @@ async function publishInterface(config, { opts, release, manifest, manifestText,
       zipSha256: release.zip.sha256,
     },
     art: { base: `${opts.base}/assets/`, version: 1, format: 1, mirrors: [], packs: [] },
-    manifest: { url: '/data/assets.json', hash: manifest.hash, refs: collectManifestPaths(manifestText).length },
+    manifest: { url: '/data/assets.json', hash: manifest.hash, refs: refs.length },
     tree: { files: index.count, bytes: index.bytes, index: '/cdn/v1/index.json' },
     syncedAt: new Date().toISOString(),
     verified: { at: new Date().toISOString(), missing: 0, mismatch: 0, probed: probe.probed },
   };
 
   const objects = [
-    ['data/assets.json', Buffer.from(rewritten.text, 'utf8'), 'application/json', SHORT],
+    ...rewritten.map(({ key, text }) => [key, Buffer.from(text, 'utf8'), 'application/json', SHORT]),
     ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
     [`cdn/v1/index-${release.tag}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
     ['cdn/v1/art.json', Buffer.from(`${JSON.stringify(art, null, 2)}\n`, 'utf8'), 'application/json', SHORT],
@@ -286,7 +303,8 @@ async function publishInterface(config, { opts, release, manifest, manifestText,
     await putObject(config, key, body, { contentType, cacheControl });
     log(`published ${key} (${body.length} bytes)`);
   }
-  log(`rewrote ${rewritten.count} manifest URLs → ${opts.base}/assets/…?v=${release.tag}`);
+  const total = rewritten.reduce((sum, entry) => sum + entry.count, 0);
+  log(`rewrote ${total} manifest URLs → ${opts.base}/assets/…?v=${release.tag}`);
 }
 
 async function writeReports(root, report) {
@@ -298,7 +316,7 @@ async function writeReports(root, report) {
     '',
     `- upstream: **${report.upstream.tag}** (published ${report.upstream.publishedAt})`,
     `- source package: \`${report.upstream.zip.name}\` (${(report.upstream.zip.size / 1048576).toFixed(0)} MB)`,
-    `- manifest: ${report.manifest.files} files, hash \`${report.manifest.hash}\`, ${report.manifest.refs} asset refs`,
+    `- manifest: ${report.manifest.files} files, hash \`${report.manifest.hash}\`, ${report.manifest.refs} asset refs across ${report.manifest.manifests.join(', ')}`,
     `- tree: ${report.tree.files} files, ${(report.tree.bytes / 1048576).toFixed(1)} MB`,
     `- diff: add ${report.diff.add}, change ${report.diff.change}, same ${report.diff.same}, extra-on-CDN ${report.diff.remove} (${(report.diff.uploadBytes / 1048576).toFixed(1)} MB to upload)`,
     ...(report.uploaded ? [`- uploaded: ${report.uploaded.done} (${report.uploaded.failed} failed)`] : []),
