@@ -276,6 +276,14 @@ async function main() {
       `(${(uploadSize / 1048576).toFixed(1)} MB to upload)`,
   );
 
+  const indexJson = indexDocument({ release, index });
+  // The cache token must change whenever the bytes do, not only when the upstream tag does. A tag
+  // alone is not enough: the first population of a tree happens under a tag that was already
+  // requested (dry runs, retries), and Cloudflare's per-PoP copies then disagree — one edge serves
+  // the old bytes for hours. Deriving the token from the content index removes that whole class.
+  const indexHash = createHash('sha256').update(indexJson).digest('hex');
+  const version = `${release.tag}-${indexHash.slice(0, 8)}`;
+
   const urls = [
     ...new Set(
       manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.base, version })),
@@ -287,13 +295,6 @@ async function main() {
     if (index.files[key]) expected[url] = index.files[key].size;
   }
 
-  const indexJson = indexDocument({ release, index });
-  // The cache token must change whenever the bytes do, not only when the upstream tag does. A tag
-  // alone is not enough: the first population of a tree happens under a tag that was already
-  // requested (dry runs, retries), and Cloudflare's per-PoP copies then disagree — one edge serves
-  // the old bytes for hours. Deriving the token from the content index removes that whole class.
-  const indexHash = createHash('sha256').update(indexJson).digest('hex');
-  const version = `${release.tag}-${indexHash.slice(0, 8)}`;
 
   const report = {
     schema: 1,
