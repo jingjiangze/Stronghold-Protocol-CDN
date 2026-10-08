@@ -1,0 +1,3 @@
+name = "sp-git-mount-relay"
+main = "worker/git-mount-relay.worker.mjs"
+compatibility_date = "2026-09-01"
