@@ -49,16 +49,11 @@ async function resolveSize(fetchImpl, url, timeoutMs) {
   return { status: 200, size };
 }
 
-/** @returns {Promise<{probed:number, ok:number, missing:Array, mismatch:Array, failed:Array, unresolved:Array}>} */
-export async function verifyUrls(urls, options = {}) {
-  const {
-    concurrency = DEFAULT_CONCURRENCY,
-    timeoutMs = 20_000,
-    attempts = 3,
-    expected = null, // optional map url -> authoritative byte size
-    fetchImpl = fetch,
-  } = options;
-
+/**
+ * One pass over a list of URLs.
+ * @returns {Promise<{ok:number, missing:Array, mismatch:Array, failed:Array, unresolved:Array}>}
+ */
+async function runPass(urls, { concurrency, timeoutMs, attempts, expected, fetchImpl, onProgress }) {
   const missing = [];
   const mismatch = [];
   const failed = [];
@@ -90,15 +85,52 @@ export async function verifyUrls(urls, options = {}) {
         }
       }
       if (lastError) failed.push({ url, error: String(lastError.message || lastError) });
-      if (++done % 500 === 0) options.onProgress?.(done, urls.length);
+      if (++done % 500 === 0) onProgress?.(done, urls.length);
     }
   };
 
   await Promise.all(
     Array.from({ length: Math.max(1, Math.min(concurrency, urls.length)) }, worker),
   );
+  return { ok, missing, mismatch, failed, unresolved };
+}
 
-  return { probed: urls.length, ok, missing, mismatch, failed, unresolved };
+/**
+ * Verify every URL, with a second quiet pass for whatever failed the first time.
+ *
+ * A single runner making thousands of requests at once is exactly the shape a CDN throttles, and
+ * a connection error is not evidence that the object is absent — so the leftovers are retried
+ * slowly before any of them is reported as unreachable.
+ *
+ * @returns {Promise<{probed:number, ok:number, missing:Array, mismatch:Array, failed:Array, unresolved:Array}>}
+ */
+export async function verifyUrls(urls, options = {}) {
+  const {
+    concurrency = DEFAULT_CONCURRENCY,
+    retryConcurrency = 4,
+    timeoutMs = 20_000,
+    attempts = 3,
+    expected = null, // optional map url -> authoritative byte size
+    fetchImpl = fetch,
+    onProgress,
+  } = options;
+
+  const base = { timeoutMs, attempts, expected, fetchImpl, onProgress };
+  const first = await runPass(urls, { ...base, concurrency });
+
+  if (first.failed.length) {
+    const retried = await runPass(
+      first.failed.map((entry) => entry.url),
+      { ...base, concurrency: retryConcurrency, attempts: 2, onProgress: undefined },
+    );
+    first.ok += retried.ok;
+    first.missing.push(...retried.missing);
+    first.mismatch.push(...retried.mismatch);
+    first.unresolved.push(...retried.unresolved);
+    first.failed = retried.failed;
+  }
+
+  return { probed: urls.length, ...first };
 }
 
 /** A result passes when nothing is absent, wrong-sized or unreachable. */

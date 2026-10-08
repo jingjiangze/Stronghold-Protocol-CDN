@@ -72,10 +72,30 @@ test('when neither response yields a size the URL is unresolved, not failed', as
 test('a transient error is retried and then recorded as unreachable', async () => {
   const url = 'https://cdn.test/flaky.png';
   const fetchImpl = fakeFetch({ [url]: new Error('socket hang up') });
-  const result = await verifyUrls([url], { fetchImpl, attempts: 2 });
+  const result = await verifyUrls([url], { fetchImpl, attempts: 2, retryConcurrency: 1 });
   assert.equal(result.failed.length, 1);
   assert.match(result.failed[0].error, /socket hang up/);
   assert.ok(!passes(result));
+});
+
+// A single runner asking for thousands of URLs at once is what a CDN throttles; a connection
+// error is not evidence the object is missing, so leftovers get one slow second pass.
+test('a URL that only fails under load is recovered by the quiet second pass', async () => {
+  const url = 'https://cdn.test/throttled.png';
+  let calls = 0;
+  const fetchImpl = async (u, init = {}) => {
+    calls++;
+    if (calls <= 2) throw new Error('ECONNRESET'); // both attempts of the first pass
+    return new Response(init.method === 'GET' ? 'x' : null, {
+      status: 200,
+      headers: { 'content-length': '42' },
+    });
+  };
+  const result = await verifyUrls([url], { fetchImpl, attempts: 2, expected: { [url]: 42 }, retryConcurrency: 1 });
+  assert.equal(result.failed.length, 0);
+  assert.equal(result.ok, 1);
+  assert.ok(passes(result));
+  assert.equal(calls, 3);
 });
 
 test('the summary reports every bucket', () => {
