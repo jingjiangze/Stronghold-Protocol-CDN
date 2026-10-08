@@ -331,12 +331,15 @@ async function main() {
     const published = await readPublishedArt(opts.base);
     const missingPages = opts.pages && !(published?.art?.mirrors || []).some((m) => m.id === 'pages');
     const missingPacks = opts.packs && !(published?.art?.packs || []).length;
+    // A requested source that the interface does not list yet means its files are not mirrored.
+    const missingSources = opts.sources && !(published?.art?.sources || []).length;
     if (
       published?.upstream?.tag === release.tag &&
       published?.schema === ART_SCHEMA &&
       published?.verified?.missing === 0 &&
       !missingPages &&
-      !missingPacks
+      !missingPacks &&
+      !missingSources
     ) {
       log(
         `already mirrored ${release.tag}: ${published.verified.probed} URLs verified, 0 missing ` +
@@ -347,12 +350,13 @@ async function main() {
     if (published && published.schema !== ART_SCHEMA) {
       log(`the published interface is schema ${published.schema ?? 1}, this code publishes ${ART_SCHEMA} — continuing`);
     }
-    if (published?.upstream?.tag === release.tag && (missingPages || missingPacks)) {
-      log(
-        `already mirrored ${release.tag}, but ${[missingPages && 'the pages origin', missingPacks && 'the packs']
-          .filter(Boolean)
-          .join(' and ')} are not published yet — continuing`,
-      );
+    const pending = [
+      missingPages && 'the pages origin',
+      missingPacks && 'the packs',
+      missingSources && 'the extra sources',
+    ].filter(Boolean);
+    if (published?.upstream?.tag === release.tag && pending.length) {
+      log(`already mirrored ${release.tag}, but ${pending.join(' and ')} are not published yet — continuing`);
     }
   }
 
