@@ -5,21 +5,34 @@
 // It is served from the CDN itself (cdn/v1/pick.js) and is dependency-free ES module code, so a
 // consumer can either import it or paste the probe into their own loader.
 
-/** Race one small request per mirror; the first to answer wins, ties go to the earlier entry. */
-export async function pickFastest(mirrors, { path = '/cdn/v1/mirrors.json', timeoutMs = 4000, fetchImpl = fetch } = {}) {
-  const attempts = mirrors.map(async (mirror) => {
-    const started = Date.now();
-    const res = await fetchImpl(`${mirror.base.replace(/\/+$/, '')}${path}`, {
-      method: 'GET',
-      cache: 'no-store',
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!res.ok) throw new Error(`${mirror.id}: HTTP ${res.status}`);
-    await res.arrayBuffer();
-    return { ...mirror, ms: Date.now() - started };
-  });
+/**
+ * Race every mirror and return the fastest, with the full ranking.
+ *
+ * The probe path must exist on EVERY origin: asking for a file only the primary carries reports
+ * the others as broken. robots.txt is tiny, served by every origin, and needs no CORS preflight.
+ * Two attempts per mirror, best time wins, so a cold connection is not the verdict.
+ */
+export async function pickFastest(mirrors, { path = '/robots.txt', attempts = 2, timeoutMs = 6000, fetchImpl = fetch } = {}) {
+  const measure = async (mirror) => {
+    // `root` is the origin; `base` is its /assets/ subtree. Probing the subtree would 404.
+    const origin = String(mirror.root || mirror.base || '').replace(/\/+$/, '');
+    let best = null;
+    for (let i = 0; i < attempts; i++) {
+      const started = Date.now();
+      const res = await fetchImpl(`${origin}${path}?probe=${Date.now()}-${i}`, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) throw new Error(`${mirror.id}: HTTP ${res.status}`);
+      await res.arrayBuffer();
+      const ms = Date.now() - started;
+      if (best == null || ms < best) best = ms;
+    }
+    return { ...mirror, ms: best };
+  };
 
-  const settled = await Promise.allSettled(attempts);
+  const settled = await Promise.allSettled(mirrors.map(measure));
   const ok = settled
     .filter((entry) => entry.status === 'fulfilled')
     .map((entry) => entry.value)

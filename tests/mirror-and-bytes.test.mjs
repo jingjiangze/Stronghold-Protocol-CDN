@@ -59,9 +59,9 @@ test('the picker returns the fastest mirror and ranks the rest', async () => {
   };
   const { best, ranked } = await pickFastest(
     [
-      { id: 'slow', base: 'https://slow.test' },
-      { id: 'fast', base: 'https://fast.test' },
-      { id: 'dead', base: 'https://dead.test' },
+      { id: 'slow', root: 'https://slow.test' },
+      { id: 'fast', root: 'https://fast.test' },
+      { id: 'dead', root: 'https://dead.test' },
     ],
     { fetchImpl },
   );
@@ -73,7 +73,7 @@ test('the picker fails loudly when nothing answers', async () => {
   const fetchImpl = async () => {
     throw new Error('ECONNREFUSED');
   };
-  await assert.rejects(() => pickFastest([{ id: 'x', base: 'https://x.test' }], { fetchImpl }), /no mirror answered/);
+  await assert.rejects(() => pickFastest([{ id: 'x', root: 'https://x.test' }], { fetchImpl }), /no mirror answered/);
 });
 
 test('rebaseManifest swaps the origin without touching anything else', () => {

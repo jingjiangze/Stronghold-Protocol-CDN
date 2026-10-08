@@ -128,19 +128,36 @@ function renderDirs(dirs, totals) {
 
 // ---- mirror speed test -------------------------------------------------------------------
 
+/**
+ * Probe target. It has to exist on every origin — asking for a file only the primary carries
+ * reports the others as broken (which is exactly what the first version did: it asked for
+ * mirrors.json, which the Pages origin does not serve). robots.txt is tiny, present everywhere,
+ * and needs no preflight. Two attempts, best time wins, so a cold connection is not the verdict.
+ */
+const PROBE_PATH = '/robots.txt';
+
+async function timeMirror(mirror, attempts = 2) {
+  let best = null;
+  for (let i = 0; i < attempts; i++) {
+    const started = performance.now();
+    const res = await fetch(`${mirror.root}${PROBE_PATH}?probe=${Date.now()}-${i}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await res.arrayBuffer();
+    const ms = Math.round(performance.now() - started);
+    if (best == null || ms < best) best = ms;
+  }
+  return best;
+}
+
 async function probeMirrors(flat) {
   const ranked = await Promise.all(
     (flat || []).map(async (mirror) => {
       if (!httpsOnly(mirror.root)) return { ...mirror, ms: null, error: '非 https' };
-      const started = performance.now();
       try {
-        const res = await fetch(`${mirror.root}/cdn/v1/mirrors.json?probe=${Date.now()}`, {
-          cache: 'no-store',
-          signal: AbortSignal.timeout(6000),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        await res.arrayBuffer();
-        return { ...mirror, ms: Math.round(performance.now() - started) };
+        return { ...mirror, ms: await timeMirror(mirror) };
       } catch (error) {
         return { ...mirror, ms: null, error: String(error.message || error) };
       }
@@ -201,11 +218,18 @@ async function main() {
   let snapshot = null;
   let source = 'live';
 
-  try {
-    [art, mirrors] = await Promise.all([getJson(`${CDN}/cdn/v1/art.json`), getJson(`${CDN}/cdn/v1/mirrors.json`)]);
-  } catch {
+  // The snapshot is fetched either way: the interface gives the live numbers, but the directory
+  // table comes from it (aggregating 1.3 MB of index on every visit is not worth it), and it is
+  // the fallback when the interface is unreachable.
+  const [live, snap] = await Promise.all([
+    Promise.all([getJson(`${CDN}/cdn/v1/art.json`), getJson(`${CDN}/cdn/v1/mirrors.json`)]).catch(() => null),
+    getJson(SNAPSHOT).catch(() => null),
+  ]);
+  snapshot = snap;
+  if (live) {
+    [art, mirrors] = live;
+  } else {
     source = 'snapshot';
-    snapshot = await getJson(SNAPSHOT).catch(() => null);
     art = snapshot?.art || null;
     mirrors = snapshot?.mirrors || null;
   }
