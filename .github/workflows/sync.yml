@@ -52,6 +52,13 @@ jobs:
       - name: unit tests
         run: node --test tests/*.test.mjs
 
+      # The pack channel shells out to zip, which the runner image does not always carry.
+      - name: tools
+        run: |
+          if ! command -v zip >/dev/null; then sudo apt-get update -qq && sudo apt-get install -y -qq zip; fi
+          zip --version | head -2
+          unzip -v | head -1
+
       # Credentials are injected from repository secrets and read from the environment only.
       # The dry-run path needs none of them, so an empty value is harmless.
       - name: sync

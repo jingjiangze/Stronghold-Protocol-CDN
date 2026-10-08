@@ -10,6 +10,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import { rewriteManifestText } from './rewrite-manifest.mjs';
+import { ZIP_ROOT } from './names.mjs';
 
 export const PAGES_PROJECT = process.env.SP_PAGES_PROJECT || 'stronghold-assets-cdn';
 /** The pages.dev subdomain exists as soon as the project does; the custom domain rides DNS. */
@@ -49,7 +50,11 @@ const HEADERS = `/*
  * origin, the index and the robots file. Returns the directory and the file count.
  */
 export async function preparePagesDist({ stage, out, manifests, base, tag, indexJson }) {
-  const publicDir = path.join(stage, 'public');
+  // The extracted tree sits under the package's own top folder (ZIP_ROOT), not directly in stage.
+  const publicDir = path.join(stage, ZIP_ROOT, 'public');
+  if (!fs.existsSync(publicDir)) {
+    throw new Error(`preparePagesDist: no extracted tree at ${publicDir}`);
+  }
   fs.mkdirSync(out, { recursive: true });
   await fsp.writeFile(path.join(out, '_headers'), HEADERS, 'utf8');
 

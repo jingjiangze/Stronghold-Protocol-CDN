@@ -67,7 +67,10 @@ export function buildPack(root, keys, outFile) {
     stdio: ['pipe', 'ignore', 'pipe'],
     encoding: 'utf8',
   });
-  if (res.status !== 0) throw new Error(`zip failed (${res.status}): ${res.stderr?.slice(0, 300)}`);
+  if (res.error) {
+    throw new Error(`zip could not be started (${res.error.message}) — is the zip package installed?`);
+  }
+  if (res.status !== 0) throw new Error(`zip failed (${res.status}): ${(res.stderr || '').slice(0, 300)}`);
   return fs.statSync(outFile).size;
 }
 
