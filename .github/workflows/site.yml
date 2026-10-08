@@ -42,6 +42,11 @@ jobs:
       - name: snapshot
         run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
 
+      # This zone's /js/* Cache Rule ignores the query string, so ?v= cannot bust it. Rename the
+      # files to carry their content hash instead.
+      - name: content-hash the site assets
+        run: node src/site-hash.mjs --dir=site
+
       - name: deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
