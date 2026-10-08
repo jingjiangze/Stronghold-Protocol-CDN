@@ -186,3 +186,48 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
   .quick-stats strong { font-size: 14px; }
   .quick-stats > span + span { padding-left: 12px; }
 }
+
+/* ---- the two audience blocks -------------------------------------------------------------- */
+
+.block {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px 24px 24px;
+  margin-bottom: 26px;
+}
+.block + .block { margin-top: 0; }
+
+.block__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.block__num { width: 30px; height: 30px; border-radius: 9px; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 14px; font-weight: 650; background: #a5eccd08; flex-shrink: 0; }
+.block__title { font-size: 20px; font-weight: 650; letter-spacing: -.4px; }
+.block__who { margin-left: auto; font-size: 11px; color: var(--dim); letter-spacing: .4px; }
+.block__lead { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 82ch; margin-top: 6px; }
+
+.steps { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 14px; }
+.step { display: flex; gap: 14px; align-items: flex-start; }
+.step__n { width: 24px; height: 24px; border-radius: 50%; background: #a5eccd14; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 650; flex-shrink: 0; margin-top: 1px; }
+.step__body { min-width: 0; }
+.step__title { font-size: 14px; font-weight: 600; }
+.step__note { font-size: 12px; color: var(--dim); line-height: 1.8; margin-top: 4px; }
+
+.download {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  margin: 16px 0 4px; padding: 14px 16px;
+  background: var(--surface-raised); border: 1px solid var(--line); border-radius: 10px;
+}
+.download__meta { font-size: 12px; color: var(--dim); line-height: 1.7; }
+.download__meta b { color: var(--fg); font-weight: 600; }
+
+.two-col { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); margin-top: 16px; }
+.mini { background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.mini h4 { margin: 0 0 8px; font-size: 13px; font-weight: 650; color: var(--fg); }
+.mini p, .mini li { font-size: 12px; color: var(--muted); line-height: 1.8; }
+.mini ul { margin: 0; padding-left: 18px; }
+.mini code.inline { font-size: 11.5px; }
+
+@media (max-width: 720px) {
+  .block { padding: 18px 16px 20px; }
+  .block__title { font-size: 18px; }
+  .block__who { margin-left: 0; width: 100%; }
+}

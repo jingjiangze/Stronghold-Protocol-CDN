@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
-  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 上游静态资源的自动镜像、聚合接口与接入参数（非官方同人作品）" />
+  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 一键包、接入契约与镜像接口（非官方同人作品）" />
   <title>卫戍协议：盟约 · 素材 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
@@ -23,12 +23,11 @@
       </div>
     </div>
     <nav class="navigation">
-      <a href="#about">说明</a>
+      <a href="#players">玩家一键包</a>
+      <a href="#agents">agent 接入</a>
       <a href="#params">拉取参数</a>
       <a href="#mirrors">镜像站</a>
-      <a href="#layout">文件目录</a>
-      <a href="#api">API</a>
-      <a href="#integrate">接入方式</a>
+      <a href="#layout">目录与 API</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
   </div>
@@ -41,7 +40,7 @@
       <h1>素材 CDN</h1>
       <p class="hero-description">
         把上游（<a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">sganggs/Stronghold-Protocol</a>）
-        的静态素材自动镜像到边缘，并对外提供一套可校验、可引用的接口。内容就是上游 Release 完整包里的同一批文件，
+        的静态素材镜像到边缘，让部署机不再承担几百 MB 的重复流量。内容就是上游 Release 完整包里的同一批文件，
         逐文件校验过，不做任何转码。
       </p>
     </div>
@@ -52,36 +51,185 @@
       <span>校验 <strong id="s-verify">…</strong></span>
     </div>
   </section>
+  <p class="section-note" id="status-line" style="margin-bottom:26px"></p>
 
-  <section class="section" id="about">
-    <div class="section-heading">
-      <div><div class="eyebrow">WHY</div><h2>这是什么</h2></div>
-      <span class="section-status" id="s-synced">—</span>
+  <!-- ============================ 板块一：给玩家 ============================ -->
+  <section class="block" id="players">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">玩家：一键包</span>
+      <span class="block__who">不写代码 · 三步 · 随时撤销</span>
     </div>
-    <p>
-      上游把 <code class="inline">public/assets/**</code> 放在 <code class="inline">.gitignore</code> 里、安装期从第三方仓库下载，
-      运行期再由部署机自己发。这个 CDN 把「运行期分发」接走：素材只有一份、放在边缘，玩家就近取，
-      部署机的上行不再被几百 MB 的重复流量占满。
+    <p class="block__lead">
+      你手上已经有一份能跑的游戏服（上游完整包解压出来的目录，里面有 <code class="inline">package.json</code> 和
+      <code class="inline">server/</code>）。下载下面这个压缩包，解压，双击，素材就改从 CDN 发了——
+      <b>它不会改动你部署包里的任何文件</b>，删掉文件夹就完全回到原样。
     </p>
-    <p>
-      三层来源，一层比一层更抗单点：<b>主源</b>是 R2 自定义域，<b>次源</b>是 Cloudflare Pages（同一棵树、自己的边缘缓存与域名），
-      <b>批量通道</b>是把树打成的若干压缩包，走 GitHub Release 并由社区镜像链加速。
-    </p>
-    <div class="notice">
-      <span>
-        <b>与上游的关系：</b>上游
-        <a href="https://github.com/sganggs/Stronghold-Protocol/pull/24" target="_blank" rel="noopener">PR #24</a>
-        已经给素材下载器加了镜像层（<code class="inline">SP_ASSET_SOURCE=mirror</code> +
-        <code class="inline">SP_GITHUB_PROXY</code>），解决的是<b>安装期</b>从 GitHub 拉取的速度；本站解决的是<b>运行期</b>分发。
-        两者互补，本站也可以作为上游镜像链里的一个来源。
-      </span>
+
+    <div class="download">
+      <a class="button button-primary" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载一键包</a>
+      <div class="download__meta">
+        <b>stronghold-cdn-dropin-<span class="tag">v0.2.1</span>.zip</b> · 约 13 KB · 在 Releases 页面的 Assets 里<br />
+        内含：启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表
+      </div>
     </div>
-    <p class="section-note" id="status-line" style="margin-top:12px"></p>
+
+    <ol class="steps">
+      <li class="step">
+        <span class="step__n">1</span>
+        <div class="step__body">
+          <div class="step__title">下载并解压到部署目录旁边</div>
+          <div class="step__note">
+            解压后得到一个 <code class="inline">stronghold-cdn/</code> 文件夹。放<b>三种位置都行</b>：放进部署目录里面、
+            放在它旁边、或放在它上一级——启动脚本会自己找到部署目录。部署目录被改过名（例如 <code class="inline">servers/</code>）时，
+            启动前设一下 <code class="inline">SP_DEPLOY_DIR=部署目录</code>。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">2</span>
+        <div class="step__body">
+          <div class="step__title">双击启动</div>
+          <div class="step__note">
+            Windows 双击 <code class="inline">stronghold-cdn\start-with-cdn.cmd</code>；
+            Linux / macOS 运行 <code class="inline">sh stronghold-cdn/start-with-cdn.sh</code>。
+            它会把游戏服起在内部端口，在外层代理，并把三张素材清单在响应里改成 CDN 地址。房间与对局的 WebSocket 原样透传。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">3</span>
+        <div class="step__body">
+          <div class="step__title">验收：跑一条命令</div>
+          <div class="step__note">
+            另开一个终端：<code class="inline">node stronghold-cdn/verify-cdn.mjs http://127.0.0.1:3000</code><br />
+            看到 <code class="inline">OK: art is served from the CDN</code> 就成了（要求清单里 0 条素材仍指向本机）。
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>撤销 / 回退</h4>
+        <p>删掉 <code class="inline">stronghold-cdn/</code> 文件夹，按原来的方式启动即可。部署包自始至终没有被修改过。</p>
+      </div>
+      <div class="mini">
+        <h4>它做了什么 / 不做什么</h4>
+        <ul>
+          <li>做：把三张清单里的 <code class="inline">/assets/…</code>、<code class="inline">/fonts/…</code> 改写成 CDN 绝对地址</li>
+          <li>不做：不碰部署包里的文件、不动存档、不改游戏数据</li>
+          <li>需要：Node.js 18+（游戏服本来就要）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>遇到的情况</th><th>怎么处理</th></tr></thead>
+        <tbody>
+          <tr><td>素材还是本机在发</td><td>你连的是内部端口或另一个实例；请走启动脚本打印的那个端口</td></tr>
+          <tr><td>找不到部署目录</td><td>启动脚本会告诉你三种摆放位置；或显式设 <code class="inline">SP_DEPLOY_DIR</code></td></tr>
+          <tr><td>页面白块 / 控制台报 CORS</td><td>CDN 响应缺 <code class="inline">Access-Control-Allow-Origin</code>；把浏览器控制台的报错发出来</td></tr>
+          <tr><td>端口被占用</td><td><code class="inline">PORT=8080</code> 再启动（内部端口自动跟着变）</td></tr>
+          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；缺什么补什么，清单是唯一真源</td></tr>
+        </tbody>
+      </table>
+    </div>
   </section>
 
+  <!-- ============================ 板块二：给 agent ============================ -->
+  <section class="block" id="agents">
+    <div class="block__head">
+      <span class="block__num">2</span>
+      <span class="block__title">Agent：对所有服务器通用</span>
+      <span class="block__who">读契约 · 按拓扑套做法 · 跑验收</span>
+    </div>
+    <p class="block__lead">
+      不管目标是一份未修改的上游包、本项目的 fork、静态托管、nginx 反代还是 Docker，只有一条规则要遵守：
+      客户端取素材的唯一来源是清单（<code class="inline">data/assets.json</code>、<code class="inline">local-assets.json</code>、<code class="inline">emotes.json</code>），
+      所以把这三张清单里 <code class="inline">/assets/…</code> 与 <code class="inline">/fonts/…</code> 的 URL 改写成 CDN 绝对地址即可，
+      <b>不需要改客户端，也不需要改服务器代码</b>。
+    </p>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>四条硬约束</h4>
+        <ul>
+          <li><b>只在响应层改写</b>：服务器自己也要读这些清单做完整性校验，改磁盘文件会破坏更新与自检</li>
+          <li><b>素材必须带 CORS</b>：客户端用 <code class="inline">img.crossOrigin='anonymous'</code>，否则 WebGL 贴图被污染</li>
+          <li><b>URL 要带版本令牌</b>：<code class="inline">?v=&lt;令牌&gt;</code>，否则改版后边缘缓存会继续发旧字节</li>
+          <li><b>路径不要自己拼</b>：清单里的地址已经是绝对 URL，照用</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>先确认目标长什么样</h4>
+        <ul>
+          <li>找到部署目录：含 <code class="inline">package.json</code> 与 <code class="inline">server/</code>（或等价的服务入口）</li>
+          <li>确认服务端口：<code class="inline">GET /data/assets.json</code> 能返回 JSON</li>
+          <li>记下改写前的一个样本 URL，验收时对照</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>目标拓扑</th><th>做法</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>任何 HTTP 服务（通用）</td>
+            <td><b>侧车代理</b>：把服务起在内部端口，在外层代理，只改写三张清单的响应。一键包用的就是这个，<code class="inline">stronghold-cdn/cdn-serve.mjs</code> 可直接抄（含 WebSocket 透传与 <code class="inline">accept-encoding</code> 处理）。</td>
+          </tr>
+          <tr>
+            <td>本项目 fork</td>
+            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。</td>
+          </tr>
+          <tr>
+            <td>nginx 反代</td>
+            <td>
+<pre class="code" style="margin:0">location = /data/assets.json {
+  proxy_pass http://127.0.0.1:3001;
+  proxy_set_header Accept-Encoding "";   <i># 必须：否则拿到的是 gzip，替换不生效</i>
+  sub_filter '"/assets/'  '"<b>https://weishucdn.jiangjiangze.icu</b>/assets/';
+  sub_filter '"/fonts/'   '"<b>https://weishucdn.jiangjiangze.icu</b>/fonts/';
+  sub_filter_once off;
+}</pre>
+              <div class="section-note" style="margin-top:8px">三张清单各写一条 <code class="inline">location</code>（assets / local-assets / emotes）。</div>
+            </td>
+          </tr>
+          <tr>
+            <td>静态托管（无服务端逻辑）</td>
+            <td>直接取 CDN 上的 <code class="inline">/data/assets.json</code> 覆盖本地的同名文件（它已经是绝对地址）。<b>仅当没有服务端会读该文件做校验时</b>才可这么做。</td>
+          </tr>
+          <tr>
+            <td>Docker</td>
+            <td>在容器里跑侧车（把服务入口改成 <code class="inline">node cdn-serve.mjs</code>），或按 fork 那条设 <code class="inline">-e SP_ASSET_CDN=…</code>。</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mini" style="margin-top:16px">
+      <h4>验收（任何拓扑都跑同一套）</h4>
+      <ol style="margin:0;padding-left:18px">
+        <li>清单里 <b>0 条</b>素材仍指向本机：<code class="inline">node verify-cdn.mjs http://127.0.0.1:&lt;端口&gt;</code> 应输出 <code class="inline">OK</code></li>
+        <li>抽样 20 条 CDN URL 全部 200（同一脚本会做）</li>
+        <li>浏览器冷启动：控制台 0 报错、棋盘贴图与干员立绘正常、房间能进能打</li>
+        <li>回退演练一次：停掉侧车（或去掉环境变量）后按原方式启动，页面仍正常</li>
+      </ol>
+    </div>
+
+<pre class="code"><i># 清单里已经是绝对 CDN 地址，直接喂给客户端</i>
+curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"
+
+<i># 逐文件校验用这张表（size + sha256）</i>
+curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
+  </section>
+
+  <!-- ============================ 参考区 ============================ -->
   <section class="section" id="params">
     <div class="section-heading">
-      <div><div class="eyebrow">PULL PARAMETERS</div><h2>拉取参数</h2></div>
+      <div><div class="eyebrow">REFERENCE · PULL PARAMETERS</div><h2>拉取参数</h2></div>
       <span class="section-status">素材路径与上游部署树一致</span>
     </div>
     <div class="table-wrap">
@@ -121,16 +269,11 @@
         </tbody>
       </table>
     </div>
-<pre class="code"><i># 取一个素材（路径与上游一致）</i>
-curl -I "<b>https://weishucdn.jiangjiangze.icu</b>/assets/char/avatar/char_003_kalts.png?v=<span class="tok">v0.2.1-xxxxxxxx</span>"
-
-<i># 清单：里面已经是绝对 CDN 地址，直接喂给客户端</i>
-curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"</pre>
   </section>
 
   <section class="section" id="mirrors">
     <div class="section-heading">
-      <div><div class="eyebrow">MIRRORS</div><h2>镜像站</h2></div>
+      <div><div class="eyebrow">REFERENCE · MIRRORS</div><h2>镜像站</h2></div>
       <span class="section-status">哪个最快取决于访问者自己的网络</span>
     </div>
     <div class="toolbar">
@@ -140,7 +283,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"</pre>
     <div class="cards" id="mirror-cards"></div>
 
     <div class="section-heading" style="margin:26px 0 14px">
-      <div><div class="eyebrow">PACKS</div><h3>打包通道</h3></div>
+      <div><div class="eyebrow">REFERENCE · PACKS</div><h3>打包通道</h3></div>
       <span class="section-status">同一批字节，少数几个下载</span>
     </div>
     <p class="section-note" style="margin-bottom:12px">
@@ -157,7 +300,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"</pre>
 
   <section class="section" id="layout">
     <div class="section-heading">
-      <div><div class="eyebrow">LAYOUT</div><h2>文件目录</h2></div>
+      <div><div class="eyebrow">REFERENCE · LAYOUT</div><h2>文件目录</h2></div>
       <span class="section-status" id="dir-note"></span>
     </div>
     <div class="table-wrap">
@@ -170,7 +313,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"</pre>
 
   <section class="section" id="api">
     <div class="section-heading">
-      <div><div class="eyebrow">ENDPOINTS</div><h2>API 接入点</h2></div>
+      <div><div class="eyebrow">REFERENCE · ENDPOINTS</div><h2>API 接入点</h2></div>
       <span class="section-status">基址 <span data-base>https://weishucdn.jiangjiangze.icu</span></span>
     </div>
     <div class="table-wrap">
@@ -194,43 +337,6 @@ import { pickFastest } from "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/pi
 const list = await (await fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
 const { best, ranked } = await pickFastest(list.flat);
 console.log(best.id, best.base, best.ms + "ms");</pre>
-  </section>
-
-  <section class="section" id="integrate">
-    <div class="section-heading">
-      <div><div class="eyebrow">INTEGRATION</div><h2>接入方式</h2></div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>场景</th><th>做法</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>游戏服（本项目 fork）</td>
-            <td>设环境变量即可，服务端会把三张清单改写成 CDN 绝对地址：<br />
-              <code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code></td>
-          </tr>
-          <tr>
-            <td>纯静态 / 网页端</td>
-            <td>直接取 <code class="inline">/data/assets.json</code>，里面已经是绝对地址（带令牌），不要自己拼路径</td>
-          </tr>
-          <tr>
-            <td>二级镜像 / 需要校验</td>
-            <td>读 <code class="inline">/cdn/v1/index.json</code> 拿 <code class="inline">size</code> + <code class="inline">sha256</code> 逐文件比对</td>
-          </tr>
-          <tr>
-            <td>上游服务器部署包（未修改）</td>
-            <td>用一键包 <code class="inline">stronghold-cdn-dropin-&lt;tag&gt;.zip</code>：解压到部署目录旁边，运行启动脚本。
-              它代理未修改的部署并把清单在响应层改写，<b>不改部署包里任何文件</b>，撤销即删文件夹。<br />
-              下载：<a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">Releases</a></td>
-          </tr>
-          <tr>
-            <td>安装期加速</td>
-            <td>把 CDN 当作上游下载器的一个来源（路径与部署树一致）：<br />
-              <code class="inline">SP_ASSET_SOURCE=mirror SP_GITHUB_PROXY=&lt;CDN&gt;/ npm run assets</code></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </section>
 
 </main>

@@ -56,10 +56,11 @@ function renderStatus(art, source) {
   setText('s-files', fmtCount(art.tree?.files));
   setText('s-bytes', fmtBytes(art.tree?.bytes));
   setText('s-verify', clean ? '0 缺失' : `${v.missing} 缺失`);
-  setText('s-synced', `上次同步 ${fmtTime(art.syncedAt)}`);
   setText('nav-status', `${art.upstream?.tag || '?'} · ${clean ? '校验通过' : '校验异常'}`);
   setText('p-token', art.art?.token || '…');
   for (const el of document.querySelectorAll('.tok')) el.textContent = art.art?.token || '…';
+  // the download box names the zip by upstream tag, not by cache token
+  for (const el of document.querySelectorAll('.tag')) el.textContent = art.upstream?.tag || '…';
 
   const verifyEl = $('s-verify');
   verifyEl?.classList.toggle('ok', clean);
@@ -70,6 +71,7 @@ function renderStatus(art, source) {
   parts.push(clean ? `全量 ${fmtCount(v.probed)} 项校验通过` : `${v.missing} 缺失 / ${v.mismatch} 不符`);
   if (byteSample) parts.push(`字节抽样 ${byteSample.checked} 个文件 / ${byteSample.mismatch} 不符`);
   if (v.verifiedByBucket) parts.push(`${v.verifiedByBucket} 项由源桶兜底确认`);
+  parts.push(`上次同步 ${fmtTime(art.syncedAt)}`);
   parts.push(source === 'live' ? '数据实时读取自接口' : '接口不可达，显示的是上次部署的快照');
   setText('status-line', parts.join(' · '));
 }
