@@ -58,12 +58,15 @@ gh 取上游 latest release（或 --tag 指定）
 ## 运行
 
 ```bash
-node src/sync.mjs                 # dry-run：只读对账，打印报告
+node src/sync.mjs                 # dry-run：只读对账，打印报告（门禁不通过则退出码非 0）
+node src/sync.mjs --report-only   # 同上，但门禁失败也退出 0（只想读数字时用）
 node src/sync.mjs --tag=v0.2.1    # 指定版本
 node src/sync.mjs --write         # 真上传（需要 R2 凭据）
 node src/sync.mjs --write --prune # 额外删除 CDN 上已不在上游清单的对象（危险，默认关）
-node --test tests/                # 纯函数单测（不联网）
+node --test tests/*.test.mjs      # 纯函数单测（不联网）
 ```
+
+**门禁在两种模式下都是权威的**：红色 = CDN 与清单不一致。当前 `assets/` 树还不完整，所以不写数据的运行也会是红的 —— 那正是它要报告的事实；加 `--report-only` 才是"只看数字、不判失败"。
 
 CI 里由 [`.github/workflows/sync.yml`](.github/workflows/sync.yml) 调用，默认 dry-run。
 

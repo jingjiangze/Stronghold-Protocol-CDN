@@ -36,12 +36,21 @@ const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
 
 function parseArgs(argv) {
-  const opts = { write: false, prune: false, strict: false, tag: '', work: 'work', base: DEFAULT_BASE };
+  const opts = {
+    write: false,
+    prune: false,
+    reportOnly: false,
+    tag: '',
+    work: 'work',
+    base: DEFAULT_BASE,
+  };
   for (const arg of argv) {
     if (arg === '--write') opts.write = true;
     else if (arg === '--dry-run') opts.write = false;
     else if (arg === '--prune') opts.prune = true;
-    else if (arg === '--strict') opts.strict = true;
+    // The gate is authoritative in both modes: a red run means the CDN is not complete. Use
+    // --report-only when the point is just to read the numbers.
+    else if (arg === '--report-only') opts.reportOnly = true;
     else if (arg.startsWith('--tag=')) opts.tag = arg.slice('--tag='.length);
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
@@ -230,7 +239,12 @@ async function main() {
     report.ok = passes(probe);
     log(`gate (read-only): ${summarizeVerification(probe).split('\n')[0]}`);
     await writeReports(ROOT, report);
-    process.exit(report.ok || !opts.strict ? 0 : 1);
+    if (report.ok) return;
+    if (opts.reportOnly) {
+      log('gate failed, but --report-only was given — exiting 0 (nothing was written)');
+      return;
+    }
+    throw new Error('acceptance gate failed: the CDN is missing or mis-serving manifest assets');
   }
 
   // Write mode.

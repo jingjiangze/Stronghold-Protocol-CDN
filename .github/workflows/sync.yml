@@ -17,6 +17,10 @@ on:
         description: 'true = also delete keys upstream no longer lists (dangerous)'
         type: boolean
         default: false
+      report_only:
+        description: 'true = never fail on the gate; just report (a red run means the CDN is incomplete)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,6 +57,7 @@ jobs:
           if [ -n "${{ inputs.tag }}" ]; then args="$args --tag=${{ inputs.tag }}"; fi
           if [ "${{ inputs.write }}" = "true" ]; then args="$args --write"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
+          if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi
           echo "node src/sync.mjs $args"
           node src/sync.mjs $args
 
