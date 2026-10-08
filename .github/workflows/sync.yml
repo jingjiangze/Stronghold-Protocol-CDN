@@ -1,8 +1,15 @@
 name: sync
 
-# Manual only for now. The scheduled run is switched on once the write path has been exercised
-# against the live bucket; until then this workflow is a read-only reconciliation report.
+# Automatic: every six hours, plus manual runs.
+#
+# The scheduled run does the full job (mirror, pages, packs). It is cheap when nothing changed:
+# the job reads the interface it published last time and exits in seconds when that interface
+# already names the current upstream tag and verified clean — no 428 MB download, no hashing.
+#
+# Manual runs default to read-only. A red run means the CDN does not match the manifests.
 on:
+  schedule:
+    - cron: '17 */6 * * *'
   workflow_dispatch:
     inputs:
       tag:
@@ -81,11 +88,14 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
+          # A scheduled run has no inputs, so it does the full job; manual runs use the inputs.
+          scheduled=${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          want() { [ "$1" = "true" ] && echo true || echo false; }
           args=""
           if [ -n "${{ inputs.tag }}" ]; then args="$args --tag=${{ inputs.tag }}"; fi
-          if [ "${{ inputs.write }}" = "true" ]; then args="$args --write"; fi
-          if [ "${{ inputs.pages }}" = "true" ]; then args="$args --pages"; fi
-          if [ "${{ inputs.packs }}" = "true" ]; then args="$args --packs"; fi
+          if [ "$(want "${{ inputs.write }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --write"; fi
+          if [ "$(want "${{ inputs.pages }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --pages"; fi
+          if [ "$(want "${{ inputs.packs }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --packs"; fi
           if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
           if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi
