@@ -33,6 +33,14 @@
       "probe": "/probe/cdn-probe.bin",
       "coverage": "partial",
       "note": "ghfast 镜像链挂载 raw.githubusercontent（国内可用）"
+    },
+    {
+      "id": "gitcdn-own",
+      "kind": "git",
+      "root": "https://gitcdn.jiangjiangze.icu",
+      "probe": "/probe/cdn-probe.bin",
+      "coverage": "partial",
+      "note": "自有域中转（sp-git-mount-relay）：同一批 git 内容，但走我们自己的域名与边缘缓存；后端按 jsdelivr→ghfast→statically 顺序回退"
     }
   ]
 }

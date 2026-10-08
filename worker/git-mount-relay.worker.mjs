@@ -27,6 +27,12 @@ const MAX_BYTES = 32 * 1024 * 1024;
 const CACHE_TTL = 3600;
 const NEGATIVE_TTL = 60;
 
+// Where /dl/ sends a browser for a release asset. Ordered; only the first is used, because a
+// redirect has no retry -- a mirror that is down must not be the one every visitor lands on.
+// Same list as mirrors.json: ghfast measured fast, gh-proxy is the only one that sends
+// Access-Control-Allow-Origin on release assets (see audit section 19.6).
+const MIRROR_PREFIXES = ['https://ghfast.top/', 'https://gh-proxy.com/'];
+
 const MIME = {
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif',
   svg: 'image/svg+xml', ico: 'image/x-icon',
@@ -135,9 +141,25 @@ export default {
       const body = JSON.stringify({
         ok: true, repo: REPO, ref: REF,
         backends: BACKENDS.map((b) => b.id),
-        usage: '/<path-in-repo>',
+        usage: '/<path-in-repo> | /dl/<tag>/<pack>.zip',
       });
       return new Response(body, { status: 200, headers: cors({ 'content-type': 'application/json; charset=utf-8' }) });
+    }
+
+    // /dl/<tag>/<file> -- a stable own-domain short link to a GitHub release asset. Redirects
+    // rather than proxies: a 405 MiB pack pulled through the Worker would spend our request
+    // budget and our egress on bytes a mirror already has at the edge.
+    const dl = url.pathname.match(/^\/dl\/([^/]+)\/([^/]+)$/);
+    if (dl) {
+      const tag = decodeURIComponent(dl[1]);
+      const file = decodeURIComponent(dl[2]);
+      if (!/^[A-Za-z0-9._-]{1,80}$/.test(tag) || !/^[A-Za-z0-9._-]{1,120}$/.test(file)) {
+        return new Response('bad tag or file name', { status: 400, headers: cors() });
+      }
+      const target = 'https://github.com/' + REPO + '/releases/download/' + tag + '/' + file;
+      const headers = new Headers({ ...cors(), location: MIRROR_PREFIXES[0] + target.replace(/^https:\/\//, ''), 'cache-control': 'public, max-age=3600' });
+      headers.set('x-download-target', target);
+      return new Response(null, { status: 302, headers });
     }
 
     // Both checks read the raw request string; the parsed URL has already normalised '..' away.

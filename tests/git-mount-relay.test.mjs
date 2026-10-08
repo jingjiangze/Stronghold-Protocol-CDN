@@ -75,3 +75,16 @@ test('the asset tree is refused with an explanation, not forwarded', () => {
   assert.equal(isAssetTree('/probe/cdn-probe.bin'), false);
   assert.equal(isAssetTree('/README.md'), false);
 });
+
+// /dl/ is a redirect, not a proxy: pulling a 405 MiB pack through the Worker would spend our
+// request budget on bytes a mirror already serves. Only allow names that cannot escape the path.
+test('/dl/ accepts a plausible release name and rejects one that tries to', () => {
+  const okTag = /^[A-Za-z0-9._-]{1,80}$/;
+  const okFile = /^[A-Za-z0-9._-]{1,120}$/;
+  assert.equal(okTag.test('assets-v0.2.1'), true);
+  assert.equal(okFile.test('assets-ui-1.zip'), true);
+  for (const bad of ['../x', 'a/b', '', 'a b', '%2e%2e', 'a;b']) {
+    assert.equal(okTag.test(bad), false, 'tag should reject ' + bad);
+    assert.equal(okFile.test(bad), false, 'file should reject ' + bad);
+  }
+});
