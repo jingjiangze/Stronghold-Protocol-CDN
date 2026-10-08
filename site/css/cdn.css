@@ -157,6 +157,9 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
 .button-primary { background: var(--accent); color: var(--accent-ink); }
 .button-primary:hover { background: #c4f7df; }
 .button-primary:disabled { opacity: .55; cursor: wait; transform: none; }
+.button-secondary { background: #203230; color: var(--accent); border-color: #3b5750; }
+.button-secondary:hover { background: #2a403b; border-color: var(--accent); }
+.button[hidden] { display: none; }
 
 /* ---- footer ------------------------------------------------------------------------------ */
 

@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertPublicHttpsUrl } from './upstream.mjs';
-import { groupOf } from './packs.mjs';
+import { groupOf, readMirrorPrefixes } from './packs.mjs';
 
 async function getJson(url) {
   assertPublicHttpsUrl(url);
@@ -33,6 +33,56 @@ export function aggregate(files) {
   return [...groups.values()].sort((a, b) => b.bytes - a.bytes);
 }
 
+export const RELEASES_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
+
+/**
+ * The newest release asset that is this project's drop-in package.
+ *
+ * The page must not hard-code a version: the zip is rebuilt whenever the guide, the launchers or
+ * the stamped token change, and a stale link is worse than no link. Matching is by name
+ * ("stronghold-cdn…zip"), which the pack assets (assets-*.zip) never collide with.
+ */
+export function pickDropinAsset(releases) {
+  const candidates = (releases || [])
+    .map((release) => ({
+      release,
+      asset: (release.assets || []).find((asset) => /stronghold-cdn[^/]*\.zip$/i.test(asset.name || '')),
+    }))
+    .filter((entry) => entry.asset);
+  if (!candidates.length) return null;
+  candidates.sort((a, b) =>
+    String(b.release.published_at || '').localeCompare(String(a.release.published_at || '')),
+  );
+  const { release, asset } = candidates[0];
+  return {
+    tag: release.tag_name,
+    release: release.tag_name,
+    name: asset.name,
+    size: asset.size,
+    url: asset.browser_download_url,
+    publishedAt: release.published_at,
+  };
+}
+
+/** Resolve it from the releases API, with the mirror prefixes attached as extra download URLs. */
+export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN } = {}) {
+  const url = `https://api.github.com/repos/${repo}/releases?per_page=20`;
+  assertPublicHttpsUrl(url);
+  const res = await fetch(url, {
+    headers: {
+      accept: 'application/vnd.github+json',
+      'user-agent': 'stronghold-protocol-cdn-site',
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+  const picked = pickDropinAsset(await res.json());
+  if (!picked) return null;
+  const bare = picked.url.replace(/^https:\/\//, '');
+  return { ...picked, urls: [picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
+}
+
 export async function buildSnapshot({ base, out, log = console.log }) {
   const root = String(base).replace(/\/+$/, '');
   const [art, mirrors, index] = await Promise.all([
@@ -41,19 +91,32 @@ export async function buildSnapshot({ base, out, log = console.log }) {
     getJson(`${root}/cdn/v1/index.json`),
   ]);
 
+  // The download link is resolved here rather than in the page: api.github.com is unreliable from
+  // the networks this site is for, and a visitor should never wait on it.
+  let dropin = null;
+  try {
+    dropin = await resolveDropin({ prefixes: readMirrorPrefixes(process.cwd()) });
+  } catch (error) {
+    log(`site snapshot: could not resolve the drop-in asset (${error.message}) — the page will link to Releases`);
+  }
+
   const dirs = aggregate(index.files);
   const snapshot = {
     generatedAt: new Date().toISOString(),
     cdnBase: root,
     art,
     mirrors,
+    dropin,
     dirs,
     totals: { files: index.count ?? dirs.reduce((n, d) => n + d.files, 0), bytes: index.bytes ?? 0 },
   };
 
   await fsp.mkdir(path.dirname(out), { recursive: true });
   await fsp.writeFile(out, `${JSON.stringify(snapshot, null, 2)}\n`, 'utf8');
-  log(`site snapshot: ${snapshot.totals.files} files, ${dirs.length} directories → ${out}`);
+  log(
+    `site snapshot: ${snapshot.totals.files} files, ${dirs.length} directories, ` +
+      `drop-in ${dropin ? dropin.name : 'unresolved'} → ${out}`,
+  );
   return snapshot;
 }
 

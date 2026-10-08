@@ -30,7 +30,7 @@ import { diffIndex, uploadBytes } from './diff.mjs';
 import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
 import { r2Config, putObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
 import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
-import { planPacks, publishPacks, ensureRelease } from './packs.mjs';
+import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './packs.mjs';
 import { buildDropin } from './dropin.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
@@ -92,16 +92,6 @@ function parseArgs(argv) {
   opts.base = String(opts.base).replace(/\/+$/, '');
   opts.pagesBase = String(opts.pagesBase).replace(/\/+$/, '');
   return opts;
-}
-
-/** Mirror prefixes for the pack channel; the list is data (mirrors.json), not code. */
-function readMirrorPrefixes() {
-  try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'mirrors.json'), 'utf8'));
-    return Array.isArray(cfg.github) ? cfg.github : [];
-  } catch {
-    return [];
-  }
 }
 
 const log = (...args) => console.log('[sync]', ...args);
@@ -511,7 +501,7 @@ async function main() {
         tag: release.tag,
         repo: opts.repo,
         workDir: packDir,
-        mirrorPrefixes: readMirrorPrefixes(),
+        mirrorPrefixes: readMirrorPrefixes(ROOT),
       });
       report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
     } catch (error) {

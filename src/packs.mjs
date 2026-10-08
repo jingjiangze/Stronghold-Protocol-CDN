@@ -14,6 +14,16 @@ import { sha256File } from './index-tree.mjs';
 
 export const DEFAULT_PACK_BYTES = 96 * 1024 * 1024;
 
+/** Mirror prefixes applied to github.com URLs. The list is data (mirrors.json), not code. */
+export function readMirrorPrefixes(root) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(root, 'mirrors.json'), 'utf8'));
+    return Array.isArray(cfg.github) ? cfg.github : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Group key: `assets/<group>` for the art tree, else the top-level segment (`fonts`). */
 export function groupOf(key) {
   const parts = key.split('/');

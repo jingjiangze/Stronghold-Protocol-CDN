@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
 
-<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu">
+<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu" data-repo="jingjiangze/Stronghold-Protocol-CDN">
 
 <div class="topbar">
   <div class="container topbar-inner">
@@ -67,9 +67,11 @@
     </p>
 
     <div class="download">
-      <a class="button button-primary" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载一键包</a>
+      <a class="button button-primary" id="dropin-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载一键包</a>
+      <a class="button button-secondary" id="dropin-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
       <div class="download__meta">
-        <b>stronghold-cdn-dropin-<span class="tag">v0.2.1</span>.zip</b> · 约 13 KB · 在 Releases 页面的 Assets 里<br />
+        <b id="dropin-name">stronghold-cdn-dropin-<span class="tag">v0.2.1</span>.zip</b>
+        <span id="dropin-meta"> · 正在读取最新版本…</span><br />
         内含：启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表
       </div>
     </div>

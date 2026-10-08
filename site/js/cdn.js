@@ -19,9 +19,9 @@ const httpsOnly = (url) => {
   }
 };
 
-async function getJson(url) {
+async function getJson(url, timeoutMs = 8000) {
   if (!httpsOnly(url) && !url.startsWith('./')) throw new Error(`refusing non-https url: ${url}`);
-  const res = await fetch(url, { cache: 'no-store' });
+  const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
   return res.json();
 }
@@ -125,6 +125,57 @@ function renderDirs(dirs, totals) {
     )
     .join('');
   if (totals) setText('dir-note', `共 ${fmtCount(totals.files)} 个文件 / ${fmtBytes(totals.bytes)}`);
+}
+
+// ---- the drop-in download link -----------------------------------------------------------
+
+/**
+ * The zip is rebuilt whenever the guide, the launchers or the stamped token change, so the link
+ * must never name a version. The deploy-time snapshot carries the resolved asset; the page only
+ * falls back to the Releases page when that resolution failed.
+ */
+function renderDropin(dropin) {
+  const button = $('dropin-download');
+  if (!button) return;
+  if (!dropin?.url) {
+    setText('dropin-meta', ' · 在 Releases 页面的 Assets 里');
+    return;
+  }
+  button.href = dropin.url;
+  setText('dropin-name', dropin.name);
+  setText(
+    'dropin-meta',
+    ` · ${fmtBytes(dropin.size)}${dropin.release ? ` · release ${dropin.release}` : ''}`,
+  );
+  const mirror = $('dropin-mirror');
+  if (mirror && dropin.urls?.length > 1) {
+    mirror.href = dropin.urls[1];
+    mirror.hidden = false;
+  }
+}
+
+/** Best effort: pick up a zip published after the last deploy. Never blocks the page. */
+async function refreshDropin() {
+  const repo = document.body.dataset.repo;
+  if (!repo) return;
+  const releases = await getJson(`https://api.github.com/repos/${repo}/releases?per_page=20`, 6000);
+  const newest = (releases || [])
+    .map((release) => ({
+      release,
+      asset: (release.assets || []).find((asset) => /stronghold-cdn[^/]*\.zip$/i.test(asset.name || '')),
+    }))
+    .filter((entry) => entry.asset)
+    .sort((a, b) => String(b.release.published_at || '').localeCompare(String(a.release.published_at || '')))[0];
+  if (!newest) return;
+  const current = $('dropin-download')?.getAttribute('href');
+  if (current === newest.asset.browser_download_url) return;
+  renderDropin({
+    url: newest.asset.browser_download_url,
+    name: newest.asset.name,
+    size: newest.asset.size,
+    release: newest.release.tag_name,
+    urls: [newest.asset.browser_download_url],
+  });
 }
 
 // ---- mirror speed test -------------------------------------------------------------------
@@ -243,7 +294,10 @@ async function main() {
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderDirs(snapshot?.dirs || [], snapshot?.totals || null);
+  renderDropin(snapshot?.dropin || null);
   wireProbe(flat);
+  // Fire and forget: a blocked api.github.com must not delay or break the page.
+  refreshDropin().catch(() => {});
 }
 
 main().catch((error) => {

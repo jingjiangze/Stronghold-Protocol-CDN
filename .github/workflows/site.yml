@@ -40,6 +40,8 @@ jobs:
       # Reads the live interface and writes site/data/snapshot.json. It only ever contacts https
       # hosts, and refuses loopback/private/reserved ones.
       - name: snapshot
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
 
       # This zone's /js/* Cache Rule ignores the query string, so ?v= cannot bust it. Rename the
