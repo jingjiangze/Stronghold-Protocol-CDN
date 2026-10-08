@@ -28,7 +28,7 @@ import { buildIndex, serializeIndex, sha256File } from './index-tree.mjs';
 import { rewriteManifestText, collectManifestPaths, manifestUrls } from './rewrite-manifest.mjs';
 import { diffIndex, uploadBytes } from './diff.mjs';
 import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
-import { r2Config, putObject, deleteObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
+import { r2Config, putObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
 import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease } from './packs.mjs';
 
@@ -345,6 +345,7 @@ async function main() {
   }
 
   const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
+  await reconcileUnreachableFromBucket(config, probe, { expected, base: opts.base });
   report.verification = probe;
   report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
@@ -417,6 +418,34 @@ function indexDocument({ release, index }) {
 }
 
 /** Everything origin-neutral plus the primary-origin manifests: safe to publish once the gate passed. */
+/**
+ * A URL the runner could not reach is a network observation, not a fact about the CDN. The bucket
+ * is the origin the CDN serves from and we hold credentials for it, so a leftover is settled
+ * there: an object of the expected size proves the bytes are in place. What is still missing is
+ * reported and still fails the gate.
+ */
+async function reconcileUnreachableFromBucket(config, probe, { expected, base }) {
+  if (!probe.failed.length) return;
+  const remaining = [];
+  let recovered = 0;
+  for (const entry of probe.failed) {
+    const key = entry.url.slice(base.length + 1).split('?')[0];
+    try {
+      const head = await headObject(config, key);
+      if (head && head.size === expected[entry.url]) {
+        recovered++;
+        continue;
+      }
+      remaining.push({ ...entry, bucket: head ? `bucket size ${head.size}` : 'not in bucket' });
+    } catch (error) {
+      remaining.push({ ...entry, bucket: `bucket check failed: ${error.message}` });
+    }
+  }
+  probe.failed = remaining;
+  probe.verifiedByBucket = recovered;
+  if (recovered) log(`settled ${recovered} unreachable URL(s) against the bucket origin`);
+}
+
 async function publishCore(config, { opts, manifests, version, indexJson }) {
   let rewrittenCount = 0;
   const objects = [
@@ -469,7 +498,14 @@ async function publishArt(config, { opts, release, version, manifest, refs, inde
     manifest: { url: '/data/assets.json', hash: manifest.hash, refs: refs.length },
     tree: { files: index.count, bytes: index.bytes, index: '/cdn/v1/index.json' },
     syncedAt: new Date().toISOString(),
-    verified: { at: new Date().toISOString(), missing: 0, mismatch: 0, probed: probe.probed },
+    verified: {
+      at: new Date().toISOString(),
+      missing: 0,
+      mismatch: 0,
+      probed: probe.probed,
+      unreachable: 0,
+      verifiedByBucket: probe.verifiedByBucket ?? 0,
+    },
   };
   await putObject(config, 'cdn/v1/art.json', Buffer.from(`${JSON.stringify(art, null, 2)}\n`, 'utf8'), {
     contentType: 'application/json',

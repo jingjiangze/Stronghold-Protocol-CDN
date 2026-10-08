@@ -143,7 +143,8 @@ export function summarizeVerification(result, { sample = 10 } = {}) {
   const lines = [
     `probed ${result.probed} URLs → ok ${result.ok}, missing ${result.missing.length}, ` +
       `mismatch ${result.mismatch.length}, unreachable ${result.failed.length}, ` +
-      `size-unresolved ${result.unresolved?.length ?? 0}`,
+      `size-unresolved ${result.unresolved?.length ?? 0}` +
+      (result.verifiedByBucket ? `, settled-against-bucket ${result.verifiedByBucket}` : ''),
   ];
   const show = (label, list, render) => {
     if (!list?.length) return;
