@@ -32,6 +32,10 @@ on:
         description: 'true = only rebuild the drop-in zip from the published interface (seconds, no tree needed)'
         type: boolean
         default: false
+      sources:
+        description: 'true = also mirror the extra sources in sources.json (additive)'
+        type: boolean
+        default: false
       interface_only:
         description: 'true = only re-emit mirrors.json + pick.js from the published contract (seconds)'
         type: boolean

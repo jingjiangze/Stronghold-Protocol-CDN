@@ -1,0 +1,15 @@
+{
+  "_comment": "Extra art sources mirrored into the same tree. Each entry names a release package whose public/assets/** is extracted and uploaded ADDITIVELY: only paths the main (upstream) tree does not have are written, so an extra source can never overwrite the authoritative bytes. Data, not code — adding a source is one entry.",
+  "_why": "The fusion branch ships full skins, full voice (including jp) and complete operator spines that upstream does not. Its manifest lists 3,980 paths upstream never references, and they share the same relative paths (assets/…), so hosting them is purely additive.",
+  "sources": [
+    {
+      "id": "fusion",
+      "repo": "Paper-Yuan/Stronghold-Protocol",
+      "ref": "feature/v0.2.1-fusion-master",
+      "release": "v0.2.1-fusion",
+      "package": "Stronghold-Protocol-v0.2.1-Server.zip",
+      "manifest": "data/assets.json",
+      "note": "全皮肤（char/skin_avatar）+ 全语音（含 jp）+ 全骨架（spine/op）"
+    }
+  ]
+}

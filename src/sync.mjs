@@ -35,6 +35,7 @@ import { buildDropin } from './dropin.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins } from './origins.mjs';
+import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -66,6 +67,7 @@ function parseArgs(argv) {
     packs: false,
     dropinOnly: false,
     interfaceOnly: false,
+    sources: false,
     tag: '',
     work: 'work',
     base: DEFAULT_BASE,
@@ -90,6 +92,8 @@ function parseArgs(argv) {
     else if (arg === '--dropin-only') opts.dropinOnly = true;
     // Re-emit the aggregation files from the published contract — no tree, no verification.
     else if (arg === '--interface-only') opts.interfaceOnly = true;
+    // Mirror the extra sources declared in sources.json (additive: never overwrites the main tree).
+    else if (arg === '--sources') opts.sources = true;
     else if (arg.startsWith('--tag=')) opts.tag = arg.slice('--tag='.length);
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
@@ -205,6 +209,29 @@ async function readPublishedArt(base) {
   } catch {
     return null;
   }
+}
+
+/** Upload keys whose files live under `assetsDir` (a source package's own public/assets). */
+async function uploadSourceKeys(config, assetsDir, keys, files) {
+  let done = 0;
+  let failed = 0;
+  const queue = [...keys];
+  const worker = async () => {
+    for (let key = queue.shift(); key; key = queue.shift()) {
+      try {
+        const rel = key.startsWith('assets/') ? key.slice('assets/'.length) : key;
+        const body = await fsp.readFile(path.join(assetsDir, ...rel.split('/')));
+        if (body.length !== files[key]?.size) throw new Error(`size changed while uploading (${body.length})`);
+        await putObject(config, key, body, { contentType: mimeFor(key), cacheControl: IMMUTABLE });
+      } catch (error) {
+        failed++;
+        console.error(`[sync] FAIL ${key}: ${error.message}`);
+      }
+      if (++done % 500 === 0) log(`source: uploaded ${done}/${keys.length} (${failed} failed)`);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(8, Math.max(1, keys.length)) }, worker));
+  return { done, failed };
 }
 
 async function main() {
@@ -410,6 +437,7 @@ async function main() {
     packs: null,
     dropin: null,
     byteSample: null,
+    sources: null,
     ok: false,
   };
 
@@ -442,6 +470,62 @@ async function main() {
     log(`pruning ${diff.remove.length} objects upstream no longer lists …`);
     for (const key of diff.remove) await deleteObject(config, key);
     report.pruned = diff.remove.length;
+  }
+
+  // Extra sources: additive, and their manifest references join the acceptance list so "is this
+  // source complete?" is checked by the same gate as everything else.
+  const sourceReports = [];
+  if (opts.sources) {
+    for (const source of readSources(ROOT)) {
+      try {
+        const dir = path.join(workDir, `source-${source.id}`);
+        const zipPath = fetchSourcePackage({ source, dir });
+        const root = extractSourceTree({ source, zipPath, stage: dir });
+        const { layout, index: sourceIndex, manifestText } = await readSource({ source, root });
+
+        // Only paths the main tree lacks are written; a same-path difference is a divergence to
+        // report, never an overwrite of the authoritative upstream bytes.
+        const d = diffIndex(sourceIndex, index);
+        log(
+          `source ${source.id}: ${sourceIndex.count} files, ${d.add.length} new, ` +
+            `${d.change.length} divergent from the main tree`,
+        );
+        let uploaded = { done: 0, failed: 0 };
+        if (d.add.length) uploaded = await uploadSourceKeys(config, layout.assets, d.add, sourceIndex.files);
+
+        let refs = 0;
+        if (manifestText) {
+          for (const url of manifestUrls(manifestText, { base: opts.base, version })) {
+            if (urls.includes(url)) continue;
+            const key = url.slice(opts.base.length + 1).split('?')[0];
+            if (sourceIndex.files[key]) expected[url] = sourceIndex.files[key].size;
+            urls.push(url);
+            refs++;
+          }
+        }
+        sourceReports.push({
+          id: source.id,
+          repo: source.repo,
+          ref: source.ref,
+          release: source.release,
+          package: source.package,
+          note: source.note,
+          files: sourceIndex.count,
+          bytes: sourceIndex.bytes,
+          added: d.add.length,
+          divergent: d.change.length,
+          uploaded: uploaded.done,
+          failed: uploaded.failed,
+          refsAddedToGate: refs,
+        });
+        if (uploaded.failed) throw new Error(`${uploaded.failed} source uploads failed`);
+      } catch (error) {
+        console.error(`[sync] source ${source.id} FAILED: ${error.message}`);
+        sourceReports.push({ id: source.id, error: error.message });
+      }
+    }
+    report.sources = sourceReports;
+    log(`sources: ${sourceReports.map((s) => `${s.id}${s.error ? ' FAILED' : ` +${s.added}`}`).join(', ')}`);
   }
 
   const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
@@ -600,6 +684,7 @@ async function main() {
     opts,
     release,
     version,
+    sources: sourceReports,
     manifest,
     refs,
     index,
@@ -674,7 +759,7 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
  * deployed and every pack that uploaded. Field names follow the re line's `art` block
  * (`base`/`version`/`format`/`mirrors`/`packs`) so one parser reads both axes.
  */
-async function publishArt(config, { opts, release, version, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
+async function publishArt(config, { opts, release, version, sources, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
   const art = {
     schema: ART_SCHEMA,
     upstream: {
@@ -692,6 +777,10 @@ async function publishArt(config, { opts, release, version, manifest, refs, inde
       mirrors: origins,
       // Where a consumer can measure an origin's latency and throughput themselves.
       probe: { key: `/${PROBE_KEY}`, bytes: PROBE_BYTES },
+      // Extra art sources mirrored into the same tree (additive; see sources.json).
+      sources: (sources || [])
+        .filter((s) => !s.error)
+        .map((s) => ({ id: s.id, repo: s.repo, ref: s.ref, release: s.release, files: s.files, added: s.added, note: s.note })),
       packs: packs.map((pack) => ({
         id: pack.id,
         group: pack.group,
