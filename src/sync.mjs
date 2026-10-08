@@ -202,14 +202,31 @@ async function main() {
   // Watermark short-circuit: what we published last time already names this upstream tag and
   // verified clean, so there is nothing to do — and, more to the point, no reason to pull 428 MB
   // every six hours to find that out.
+  //
+  // The extras are part of "done": if Pages or the packs failed in the run that published the
+  // interface, art.json names the tag anyway, so a plain tag comparison would skip them forever.
   if (!opts.force) {
     const published = await readPublishedArt(opts.base);
-    if (published?.upstream?.tag === release.tag && published?.verified?.missing === 0) {
+    const missingPages = opts.pages && !(published?.art?.mirrors || []).some((m) => m.id === 'pages');
+    const missingPacks = opts.packs && !(published?.art?.packs || []).length;
+    if (
+      published?.upstream?.tag === release.tag &&
+      published?.verified?.missing === 0 &&
+      !missingPages &&
+      !missingPacks
+    ) {
       log(
         `already mirrored ${release.tag}: ${published.verified.probed} URLs verified, 0 missing ` +
           `(synced ${published.syncedAt}) — nothing to do (--force to re-run anyway)`,
       );
       return;
+    }
+    if (published?.upstream?.tag === release.tag && (missingPages || missingPacks)) {
+      log(
+        `already mirrored ${release.tag}, but ${[missingPages && 'the pages origin', missingPacks && 'the packs']
+          .filter(Boolean)
+          .join(' and ')} are not published yet — continuing`,
+      );
     }
   }
 
