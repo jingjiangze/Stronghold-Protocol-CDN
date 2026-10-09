@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark" />
+<meta name="theme-color" content="#101719" />
+<meta name="description" content="卫戍协议（Stronghold-Protocol）Mod 面离线梳理：APK 壳端的四条内容轴，与服务器端 mod 管理器的真实挂载点。" />
+<title>卫戍协议 · Mod 梳理（APK 端 / 服务器端）</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+<style>
+/* ============================================================================
+   样式取自 downcdn.jiangjiangze.icu（素材 CDN 文档站）的设计令牌与组件词汇：
+   近黑青灰面、薄荷绿强调色、14px 系统字、14px 圆角、topbar + hero + 编号板块。
+   单文件离线：CSS 内联、三张时序图内联，运行时零外部请求。
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --bg: #101719;
+  --surface: #172123;
+  --surface-raised: #1b2729;
+  --line: #2c3a3c;
+  --line-soft: #243234;
+  --fg: #e7efea;
+  --muted: #93a9a5;
+  --dim: #8b9e99;
+  --accent: #a5eccd;
+  --accent-ink: #142d24;
+  --amber: #e3bd72;
+  --red: #eea19c;
+  --radius: 14px;
+  --font: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
+
+  /* Aliases for the inlined sequence diagrams. The figures read custom properties literally
+     named --bg / --fg / --accent / --muted, so handing them the page tokens must go through a
+     second name: `--fg: var(--fg)` on the same element is a cycle, and a cyclic property turns
+     every fill="var(--fg)" in the figure black. */
+  --fig-bg: #1b2729;
+  --fig-fg: #e7efea;
+  --fig-line: #5d7c74;
+  --fig-accent: #a5eccd;
+  --fig-muted: #93a9a5;
+  --fig-surface: #223032;
+  --fig-border: #2c3a3c;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 76px; background: var(--bg); }
+
+body {
+  margin: 0; min-height: 100%; background: var(--bg); color: var(--fg);
+  font: 14px/1.6 var(--font); -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%;
+}
+
+a { color: inherit; text-decoration: none; }
+h1, h2, h3, h4, p { margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+::selection { background: #a5eccd33; }
+
+.container { width: min(1180px, calc(100% - 64px)); margin-inline: auto; }
+
+.topbar { border-bottom: 1px solid var(--line-soft); background: #101719cc; position: sticky; top: 0; z-index: 5; backdrop-filter: blur(6px); }
+.topbar-inner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+
+.brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; letter-spacing: .2px; }
+.brand b { color: var(--dim); font-weight: 400; }
+.brand small { display: block; font-size: 8px; letter-spacing: 2.2px; color: var(--dim); margin-top: 1px; }
+.brand-mark { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #618273; border-radius: 8px; color: var(--accent); font-size: 14px; letter-spacing: -.5px; background: #a5eccd08; flex-shrink: 0; }
+.brand-mark span { position: absolute; width: 6px; height: 6px; right: -3px; bottom: -3px; background: var(--accent); border: 2px solid var(--bg); }
+
+.navigation { display: flex; gap: 22px; font-size: 12px; color: var(--muted); }
+.navigation a:hover { color: var(--accent); }
+
+.nav-feedback { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+.hero { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; padding: 26px 0 20px; flex-wrap: wrap; }
+h1 { font-size: 26px; letter-spacing: -.5px; font-weight: 650; line-height: 1.35; }
+.hero-description { margin-top: 6px; font-size: 13px; color: var(--muted); line-height: 1.75; max-width: 68ch; }
+.hero-description a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+.quick-stats { display: flex; align-items: center; gap: 16px; color: var(--muted); font-size: 11px; flex-wrap: wrap; }
+.quick-stats strong { font-size: 16px; color: var(--fg); font-weight: 550; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.quick-stats > span + span { padding-left: 16px; border-left: 1px solid var(--line); }
+.quick-stats .warn { color: var(--amber); }
+
+.section { margin-bottom: 34px; }
+.section-note { font-size: 12px; color: var(--dim); line-height: 1.75; }
+
+/* ---- 编号板块 -------------------------------------------------------------- */
+
+section.block { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px 24px; margin-bottom: 26px; }
+/* `block` is also a class inside the inlined mermaid figure, so the component rule is
+   element-qualified: an SVG <g> must never inherit card chrome. */
+.block__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.block__num { width: 30px; height: 30px; border-radius: 9px; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 14px; font-weight: 650; background: #a5eccd08; flex-shrink: 0; }
+.block__title { font-size: 20px; font-weight: 650; letter-spacing: -.4px; }
+.block__who { margin-left: auto; font-size: 11px; color: var(--dim); letter-spacing: .4px; }
+.block__lead { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 86ch; margin-top: 6px; }
+.block h3 { font-size: 15px; font-weight: 600; margin: 26px 0 6px; }
+.block p { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 86ch; margin-top: 8px; }
+.block a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.sub { font-size: 11px; letter-spacing: 1.6px; color: var(--dim); text-transform: uppercase; font-weight: 600; }
+
+/* ---- 卡片 / 小格 ---------------------------------------------------------- */
+
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); margin-top: 16px; }
+.card { background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; position: relative; min-width: 0; }
+.card__title { font-size: 14px; font-weight: 650; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.card p { margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.85; }
+.card.is-flag { border-color: #618273; }
+
+.two-col { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); margin-top: 16px; }
+.mini { background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.mini h4 { margin: 0 0 8px; font-size: 13px; font-weight: 650; color: var(--fg); }
+.mini p, .mini li { font-size: 12px; color: var(--muted); line-height: 1.85; }
+.mini ul { margin: 0; padding-left: 18px; }
+.mini code.inline { font-size: 11.5px; }
+
+.badge { position: absolute; top: -9px; right: 14px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 650; letter-spacing: 1.2px; padding: 2px 8px; border-radius: 6px; }
+.chip { font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.muted { color: var(--muted); }
+
+/* ---- 状态词 -------------------------------------------------------------- */
+
+.st { font-family: var(--mono); font-size: 10px; letter-spacing: .6px; padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); color: var(--dim); white-space: nowrap; }
+.st-base { color: var(--muted); }
+.st-yes { color: var(--accent); border-color: #3b5750; background: #a5eccd0f; }
+.st-no { color: var(--red); border-color: #5b3b38; background: #eea19c0f; }
+.st-todo { color: var(--amber); border-color: #5a4a2c; background: #e3bd720f; }
+
+/* ---- 表格 ---------------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-raised); margin-top: 14px; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12.5px; }
+th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+thead th { background: #15201f; color: var(--dim); font-weight: 600; font-size: 11px; letter-spacing: .9px; text-transform: uppercase; white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover td { background: #a5eccd08; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.mono { font-family: var(--mono); font-size: 11.5px; overflow-wrap: anywhere; }
+tbody td:first-child { color: var(--fg); }
+table code.inline { font-size: 11.5px; }
+
+/* ---- 代码 ---------------------------------------------------------------- */
+
+pre.code {
+  margin: 14px 0 0; background: #0d1315; border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  color: var(--muted); white-space: pre;
+}
+pre.code b { color: var(--accent); font-weight: 500; }
+pre.code i { color: var(--dim); font-style: normal; }
+pre.code em { color: var(--amber); font-style: normal; }
+code.inline { font-family: var(--mono); font-size: 12px; background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: 6px; padding: 1px 6px; color: var(--accent); overflow-wrap: anywhere; }
+
+/* ---- 提示 ---------------------------------------------------------------- */
+
+.notice { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; background: #e3bd720a; border: 1px solid #e3bd722b; color: var(--amber); font-size: 12px; border-radius: 10px; padding: 12px 14px; line-height: 1.75; }
+.notice b { font-weight: 650; }
+.notice--bad { background: #eea19c0a; border-color: #eea19c2b; color: var(--red); }
+.notice--ok { background: #a5eccd0a; border-color: #a5eccd2b; color: var(--accent); }
+.notice svg { flex-shrink: 0; margin-top: 2px; }
+.notice code.inline { background: #0d131566; border-color: currentColor; color: inherit; }
+
+/* ---- 步骤 ---------------------------------------------------------------- */
+
+.steps { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 14px; }
+.step { display: flex; gap: 14px; align-items: flex-start; }
+.step__n { width: 24px; height: 24px; border-radius: 50%; background: #a5eccd14; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 650; flex-shrink: 0; margin-top: 1px; }
+.step__body { min-width: 0; }
+.step__title { font-size: 14px; font-weight: 600; }
+.step__note { font-size: 12px; color: var(--dim); line-height: 1.85; margin-top: 4px; }
+.step__note code.inline { font-size: 11.5px; color: var(--muted); }
+
+/* ---- 内联时序图 ---------------------------------------------------------- */
+
+.fig { margin-top: 16px; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px; }
+.fig__scroll { overflow-x: auto; overscroll-behavior-x: contain; border-radius: 9px; }
+.fig__canvas { min-width: var(--fig-w, 1080px); }
+.fig__canvas svg { display: block; width: 100%; height: auto; min-width: var(--fig-w, 1080px); }
+.fig__cap { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; padding: 10px 12px 6px; font-size: 11.5px; color: var(--dim); }
+.fig__cap b { color: var(--fg); font-weight: 650; font-size: 12.5px; }
+/* Captions carry long descriptive chips; the shared .chip is nowrap for table rows, where
+   a chip never runs this long. On phones an unbreakable chip pushes the whole document wide. */
+.fig__cap .chip { white-space: normal; max-width: 100%; }
+.fig__scroll::-webkit-scrollbar { height: 9px; }
+.fig__scroll::-webkit-scrollbar-thumb { background: #33464a; border-radius: 9px; }
+
+/* 方案 A / B 两张图自带变量色板：在这里把本站色板喂进去（图内已无写死的调色板）。 */
+.fig--a svg, .fig--b svg {
+  --bg: var(--fig-bg);
+  --fg: var(--fig-fg);
+  --line: var(--fig-line);
+  --accent: var(--fig-accent);
+  --muted: var(--fig-muted);
+  --surface: var(--fig-surface);
+  --border: var(--fig-border);
+}
+
+/* 原设计图（写死配色）改挂到本站色板：选择器多一层，压过图内 style。 */
+.fig--orig svg > rect[width="1780"] { fill: transparent; }
+.fig--orig svg text { fill: var(--fg); font-family: inherit; }
+.fig--orig svg .lifeline { stroke: #4d6560; }
+.fig--orig svg .msg, .fig--orig svg .ret { stroke: #8fb3a8; }
+.fig--orig svg .box { fill: #203230; stroke: #4d6560; }
+.fig--orig svg .act { fill: #24393a; stroke: #618273; }
+.fig--orig svg .notebox { fill: #15201f; stroke: #4d6560; }
+.fig--orig svg .frag { fill: rgba(165, 236, 205, .04); stroke: #3b5750; }
+.fig--orig svg .fragtag { fill: #203230; stroke: #4d6560; }
+.fig--orig svg .actor { stroke: var(--accent); }
+/* 生成器把 mermaid 的彩色分段画成了空心框，这里给分段一点底色。 */
+.fig--b svg g.block > rect:first-of-type { fill: rgba(165, 236, 205, .035); }
+
+/* ---- 页脚 ---------------------------------------------------------------- */
+
+.footer { border-top: 1px solid var(--line); margin-top: 44px; padding: 24px 0 34px; color: var(--dim); font-size: 11px; line-height: 1.9; }
+.footer .footer-links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 8px; }
+.footer a { color: var(--muted); }
+.footer a:hover { color: var(--accent); }
+
+@media (max-width: 1000px) {
+  .container { width: calc(100% - 40px); }
+  .navigation { gap: 16px; }
+}
+
+@media (max-width: 720px) {
+  .container { width: calc(100% - 32px); }
+  .topbar-inner { min-height: 60px; gap: 10px; }
+  .brand { font-size: 14px; gap: 9px; }
+  .brand small { font-size: 7px; letter-spacing: 1.3px; }
+  .brand-mark { width: 32px; height: 32px; font-size: 12px; }
+  .navigation { display: none; }
+  h1 { font-size: 23px; }
+  .hero { padding: 18px 0 14px; gap: 14px; }
+  .quick-stats { gap: 12px; font-size: 10px; }
+  .quick-stats strong { font-size: 14px; }
+  section.block { padding: 18px 16px 20px; }
+  .block__title { font-size: 18px; }
+  .block__who { margin-left: 0; width: 100%; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>
+        Mod 梳理 <b>Stronghold-Protocol</b>
+        <small>APK SHELL · SERVER MOD MANAGER · OFFLINE</small>
+      </div>
+    </div>
+    <nav class="navigation">
+      <a href="#verdict">结论</a>
+      <a href="#apk">APK 端</a>
+      <a href="#server">服务器端</a>
+      <a href="#diagrams">时序图</a>
+      <a href="#forks">两条分支</a>
+      <a href="#repro">复现</a>
+    </nav>
+    <div class="nav-feedback"><span class="status-dot"></span><span>离线单文件 · 零网络请求</span></div>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>卫戍协议 Mod 面梳理：APK 端与服务器端</h1>
+      <p class="hero-description">
+        两份清单，一套事实。<b class="muted">APK 端</b>看壳工程到底提供了哪几条能装内容的轴、每一轴的开关与回滚在哪里；
+        <b class="muted">服务器端</b>看 mod 管理器能挂进官方代码的每一个真实位置。
+        所有结论都落到 <code class="inline">文件:行号</code>，取自本地对比仓
+        <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">sganggs/Stronghold-Protocol</a>（上游 v0.2.1）、
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol" target="_blank" rel="noopener">jingjiangze/Stronghold-Protocol</a> 的
+        <code class="inline">mine/re-apk</code> 与 <code class="inline">py/feature/v0.2.1-fusion-master</code> 三棵分支树。
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span><strong>23</strong>盟约（8 核心 + 15 辅助）</span>
+      <span><strong>115</strong>装备记录（可售 51）</span>
+      <span class="warn"><strong>planned</strong>data 包类型</span>
+      <span><strong>0</strong>re-apk 对上游源码改动</span>
+    </div>
+  </section>
+
+  <p class="section-note" style="margin-bottom:26px">
+    <span class="st st-base">BASELINE</span>
+    取证时间 2026-10-09。上游 <code class="inline">origin/master = 3eced7b</code>（= tag <code class="inline">v0.2.1</code> <code class="inline">c2a2ef7</code> 之后 1 个提交）；
+    <code class="inline">mine/re-apk = 0d29c6e</code>；<code class="inline">py/feature/v0.2.1-fusion-master = 06cd3d0</code>。
+    仓库工作树为空，全部事实经 <code class="inline">git show / ls-tree / grep</code> 从 blob 取。状态词：<span class="st st-base">BASELINE</span> 初始事实 · <span class="st st-yes">PASS</span> 已实测 · <span class="st st-no">FAIL</span> 不成立 · <span class="st st-todo">PENDING</span> 待验证。
+  </p>
+
+  <!-- ==================== 板块零：一分钟结论 ==================== -->
+  <section class="block" id="verdict">
+    <div class="block__head">
+      <span class="block__num">0</span>
+      <span class="block__title">一分钟结论</span>
+      <span class="block__who">先看这六条，再看细节</span>
+    </div>
+    <p class="block__lead">
+      这份梳理否掉了原流程图（以及上一轮审计报告）里的几个前提。<b>好消息是：可行路径比原设计更短，而且大半已经存在。</b>
+    </p>
+
+    <div class="cards">
+      <div class="card is-flag">
+        <div class="card__title">APK 侧没有「mod 系统」，只有四条内容轴 <span class="chip">壳分支</span></div>
+        <p><code class="inline">mine/re-apk</code> 对上游 <code class="inline">server/</code>、<code class="inline">shared/</code>、<code class="inline">public/</code> 的改动是 <b>0 文件</b>；
+        204 个文件全为新增，落在 <code class="inline">android/</code>、<code class="inline">tools/apk/</code> 与工作流。
+        内容只能走：代码/数据 slim 整树、素材 pack、皮肤层、服务端 overlay。</p>
+      </div>
+      <div class="card is-flag">
+        <div class="card__title">服务器侧有 packs 骨架，但只有 lang 能装 <span class="chip">上游 0.2.1</span></div>
+        <p><code class="inline">shared/packs.js:55-62</code> 三型里 <code class="inline">assets</code> 与 <code class="inline">data</code> 都是
+        <span class="st st-todo">planned</span>；<code class="inline">server/packs.js:114-117</code> 遇到计划中类型直接 skipped，永不被服务。
+        <code class="inline">packs/</code> 目录里只有一个 README，仓库现存的真包是 4 个单文件语言包。</p>
+      </div>
+      <div class="card is-flag">
+        <div class="card__title">fanpack 要的内容是「净新增」，不是官方开关</div>
+        <p>在上游的 <code class="inline">data shared server public docs</code> 全域搜
+        <code class="inline">卡兹戴尔 / 提卡兹 / kazdel / tikaz / 黑板</code>：<b>0 命中</b>。
+        23 个盟约里没有「卡兹戴尔」（<code class="inline">kazimierzShip</code> 是卡西米尔）。所以这是加第 24 个盟约 + 第 116 件装备，不是打开某个现成字段。</p>
+      </div>
+      <div class="card is-flag">
+        <div class="card__title">战斗默认在玩家浏览器里算，不在服务器</div>
+        <p><code class="inline">clientCombat</code> 默认开（<code class="inline">docs/design/network.md:66</code>），<code class="inline">SP_COMBAT=server</code> 是遗留兜底。
+        → 纯<b>数据</b> mod 天然双端同源（客户端从同一台服务器取 <code class="inline">/data/*.json</code> 与 <code class="inline">/sim/*.js</code>）；
+        只挂服务端的<b>代码</b> hook 默认打不着玩家战场，还会被结果校验拒绝后重算。</p>
+      </div>
+      <div class="card is-flag">
+        <div class="card__title">图里 6 个名字在代码里不存在</div>
+        <p><code class="inline">giveBondBiasOnly</code>、<code class="inline">shopBondOrder</code>、<code class="inline">stripPackOperators</code>、
+        <code class="inline">sim/engine.js</code>、<code class="inline">diyj.js</code>、<code class="inline">room.settings / room.update</code> —— 三个分支 grep 全 0 命中。
+        真实名字见 <a href="#glossary">避雷表</a>，动手前先改名。</p>
+      </div>
+      <div class="card is-flag">
+        <div class="card__title">「运行时挂载再卸载 Overlay」不是官方语义</div>
+        <p>官方给 <code class="inline">data</code> 类型写死了 <code class="inline">live: false</code>（<code class="inline">docs/PACKS.md:123-126</code>）。
+        但「房间级不可变视图」这条正确路子，官方自己已经给了样板：<code class="inline">server/match/player/diy.js:91</code> 的
+        <code class="inline">Object.create(gd)</code>。照抄它，不造假想函数。</p>
+      </div>
+    </div>
+
+    <div class="notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v3h2v-3h-2zm0 4v2h2v-2h-2z"/></svg>
+      <div><b>范围声明。</b>本页只梳理机制与挂载点，不产 mod 代码，也不改任何上游仓库。
+      涉及第三方素材版权归属的内容不在这里分发；素材轴只描述其技术通道。</div>
+    </div>
+  </section>
+
+  <!-- ==================== 板块一：APK 端 ==================== -->
+  <section class="block" id="apk">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">APK 端的 mod 梳理</span>
+      <span class="block__who">分支 mine/re-apk · 壳轴 shell-v2.9.102 · 上游轴 v0.2.1</span>
+    </div>
+    <p class="block__lead">
+      壳的思路是<b>「零上游改动」</b>：上游源码逐字节不动，所有内容注入都发生在
+      ① 构建期装配（extras 覆盖 / patch 重放 / overlay 拷贝）与 ② 运行时拦截（资源解析优先级 + 页面全局通道
+      <code class="inline">globalThis.__SP__</code>）。所以梳理 APK 端，就是梳理<b>四条轴各自能装什么、谁覆盖谁、怎么关、怎么回滚</b>。
+    </p>
+
+    <h3>1.1 四条内容轴 <span class="sub">／ 载体、粒度、能否新增内容</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>轴</th><th>载体与落盘位置</th><th>粒度</th><th>能装什么</th><th>校验</th><th>房间级隔离</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>L1 代码 / 数据</b><br><span class="chip">slim 内容包</span></td>
+            <td class="mono">slim → filesDir/webroot（整树 swap）<br>SlimPaths.ROOT_ANCHORS 含 data/、shared/、server/</td>
+            <td>整树一次换掉</td>
+            <td>能改游戏数据（<code class="inline">data/*.json</code>），但<b>只能是上游发布的那一份</b>，没有「按 mod 叠加」的概念</td>
+            <td>Ed25519 签名 manifest + slim sha256</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><b>L2 素材</b><br><span class="chip">art.packs</span></td>
+            <td class="mono">filesDir/art/packs/&lt;id&gt;/<br>条目只允许 assets/**</td>
+            <td>按引用集分桶，超上限按实体目录（干员 / 敌人 / 语音角色）分卷</td>
+            <td>替换或补齐全站美术、音频、字体（<code class="inline">data/assets.json</code> 的 7969 条引用是构建期硬覆盖率闸门）</td>
+            <td>pack sha256 在签名清单内；未过校验的字节<b>永不落进 packs/</b></td>
+            <td>无（设备级）</td>
+          </tr>
+          <tr>
+            <td><b>皮肤</b><br><span class="chip">唯一按干员的 mod</span></td>
+            <td class="mono">skin-layer.js 重写<br>/data/assets.json 的响应体</td>
+            <td class="mono">charId → skinKey → replace 规则</td>
+            <td>换某位干员的头像 / 立绘 / Spine 模型。<b>不能新增干员，不能改数值</b></td>
+            <td>catalog 与选择都<b>不签名</b></td>
+            <td>无（设备级、全服生效）</td>
+          </tr>
+          <tr>
+            <td><b>服务端 overlay</b><br><span class="chip">server/overlay/*.mjs</span></td>
+            <td class="mono">随 slim 下发到 webroot/server/overlay/</td>
+            <td>一个文件 = 一个能力（自己的路由 / 钩子）</td>
+            <td>加<b>新端点与新协议面</b>（连接出口、大厅看板、局域网发现、房间探测）。契约写明 <b>strictly additive</b>，不许改上游文件</td>
+            <td>走 slim sha256（同 L1）；<code class="inline">overlayApi === 1</code> 不匹配就跳过</td>
+            <td><b>无</b>（<code class="inline">install()</code> 每 host 进程一次，<code class="inline">ctx</code> 里没有房间参数）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>1.2 资源解析优先级 <span class="sub">／ ResourceResolver.java，纯逻辑零 IO</span></h3>
+    <pre class="code"><i>// ResourceResolver.java:18-26 —— 谁覆盖谁，逐层</i>
+<b>①</b> filesDir/webroot     代码热更树（slim 解出来的那棵树）        <i>最高</i>
+<b>②</b> ArtStore packs       签名素材包（只 assets/**，按 pack id 升序找）
+<b>③</b> APK 内嵌资源         assets/webroot/**
+<b>④</b> filesDir/art/cache   未覆盖素材的同源回取缓存
+<b>⑤</b> 当前服务器          同一 origin
+<b>⑥</b> 官方 CDN            唯一跨域取字节处，必须同源回吐
+<b>⑦</b> ArtStore 后台补包    缺图先给占位，再入队
+
+<i>// classify() 的优先级刻意是：协议 &gt; 壳 &gt; 首页 &gt; 素材 &gt; 静态（:84-92）</i>
+protocolPlan() = [NETWORK]                     <i>// 没有任何本地层</i>
+homepagePlan() = [LOCAL]                       <i>// 服务器同名页面不参与</i>
+staticPlan()   = [LOCAL, NETWORK]
+assetPlan(srv) = [LOCAL] + (srv 声明才加 [SERVER]) + [CDN, ARTSTORE]   <i>// serveAssets 默认 false</i></pre>
+
+    <div class="notice notice--bad">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v3h2v-3h-2zm0 4v2h2v-2h-2z"/></svg>
+      <div><b>三条例外是硬门（:28-35）。</b>① <code class="inline">/api/**</code>、<code class="inline">/ws</code>、<code class="inline">/healthz</code> 永远直连当前服务器，
+      本地树里<b>绝不允许存在同名文件把它们顶掉</b> —— 原话：那会变成「假成功」；② <code class="inline">/index.html</code> 永远由壳提供；
+      ③ <code class="inline">/__sp/**</code> 永远从 APK 或热更树读，绝不走网络。<br />
+      这条短路被 <code class="inline">check-apk.mjs:191</code> 用字面正则钉死。<b>结论：任何 mod 都碰不到线协议端点，也改不动 <code class="inline">PROTOCOL_VERSION</code>。</b></div>
+    </div>
+
+    <h3>1.3 客户端注入层（extras/public/js） <span class="sub">／ APK 侧真正的 mod 面</span></h3>
+    <p>
+      统一装载模型：<code class="inline">shell-bridge.js</code> 由 <code class="inline">MainActivity.injectShellHtml()</code> 注入页面，
+      再从 <code class="inline">/__sp/&lt;name&gt;</code> 动态拉起其余模块（先读 filesDir 热更树、再读 APK，所以「即使页面来自服务器，这个钩子也一定能加载，且能随热更更新」）。
+      每个模块自带 <code class="inline">window.__SP_*</code> 幂等标记。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>模块</th><th>hook 的是什么</th><th>开关 / API</th><th>动了官方逻辑吗</th></tr></thead>
+        <tbody>
+          <tr><td><b>core-hooks.js</b><br><span class="chip">18.9 KB</span></td>
+            <td>不猜 DOM，直接订阅页面自己的模块实例：上游 <code class="inline">boot()</code> 末尾暴露的 <code class="inline">globalThis.__SP__ = {store, net, data, version}</code>；在<b>同一个 net 实例</b>上订 <code class="inline">room.state</code> / <code class="inline">m.result</code>、订阅 store、装返回键。轮询 150ms × 400 次（≈60 s）后静默放弃。</td>
+            <td><b>逐条实时 kill switch</b>：<code class="inline">window.__SP_CORE_HOOKS_OFF = {recordRoom, recordResult, observeRoom, back, recordProfile, recordLoadout, warmGameData}</code>（每次调用现读）</td>
+            <td>不改任何上游函数、不发自己的网络请求、不装 error handler（<code class="inline">core-hooks.test.mjs:430</code> 静态断言）。它复刻了 5 条被删补丁的<b>时序</b>，包括「被踢时不记档」。</td></tr>
+          <tr><td><b>skin-layer.js</b><br><span class="chip">29.8 KB</span></td>
+            <td>唯一拦截点 = 包 <code class="inline">window.fetch</code>，只重写 <code class="inline">/data/assets.json</code> 的响应体。证据链：官方取图函数纯读 <code class="inline">manifest.chars[charId]</code>，两者都只经 fetch。</td>
+            <td><code class="inline">__SP_SKIN.load / apply / clear / active / resolve / onReady</code>；选择四级：玩家数据 → 原生桥 → <code class="inline">__SP_SKIN_SELECT</code> → <code class="inline">localStorage['sp.skin.v1']</code>；全空 = 什么都不换</td>
+            <td>不动 <code class="inline">Image.src</code>、不做函数覆盖、无模块顺序依赖。任何错误退化为「无皮」，最多挂 1500 ms 等 catalog，且不延迟其他请求。</td></tr>
+          <tr><td><b>appearance.js</b><br><span class="chip">7.6 KB</span></td>
+            <td>不 hook 任何函数：只注入/移除<b>一个</b> <code class="inline">&lt;style id="sp-appearance"&gt;</code>，写 <code class="inline">--sp-font-scale</code> / <code class="inline">--sp-side-pad</code>。</td>
+            <td><code class="inline">__SP_APPEARANCE.get / set / reset</code>；默认值时整块 style 被删除（严格 no-op）</td>
+            <td>持久化双写 + 时间戳仲裁，且先 <code class="inline">exportJSON()</code> 再 merge —— 免得整份快照写回时踩掉玩家的音频设置。</td></tr>
+          <tr><td><b>home-layer.js</b><br><span class="chip">48 KB</span></td>
+            <td>标题屏控件叠加层：只盖一层 <code class="inline">pointer-events:none</code> 覆盖层；CSS 全部 scope 在 <code class="inline">#sp-home-layer</code> 下（上游 0.2.1 自己也用 <code class="inline">.title-conn</code> / <code class="inline">.title-foot</code>）。</td>
+            <td><code class="inline">__SP_HOME.suppress(true)</code> 让位；<code class="inline">__SP_HOME_MASK_UPSTREAM = 0</code> → <b>上游原样显示</b>（可逆）</td>
+            <td>不发明协议、零网络请求；上游 DOM 永不重构、不删节点。纯 ES5 + 纯 ASCII（中文写转义），为的是热更管道不必操心编码。</td></tr>
+          <tr><td><b>art-prefetch.js</b><br><span class="chip">43.3 KB</span></td>
+            <td>读同源 <code class="inline">/data/assets.json</code> 遍历全部 7969 条 <code class="inline">/assets/**</code> 后台并发取回；读 <code class="inline">/__sp/local-assets.txt</code> 把本机已能提供的条目直接计数、不发请求。</td>
+            <td><code class="inline">__SP_ART.start / cancel / state</code>；<code class="inline">__SP_ART_NO_AUTO</code>；<code class="inline">sessionStorage['sp.art.skip.v1']</code>；对局 / 结算屏在场时整体让路</td>
+            <td>不改任何官方行为（纯下载）。进度按 manifest hash + 枚举指纹续传；重试必须 <code class="inline">cache:'no-store'</code>，否则 WebView 重放上次的 404（实测 5553 次空转）。</td></tr>
+          <tr><td><b>room-hook.js</b><br><b>room-lifecycle.js</b><br><b>room-observer.js</b></td>
+            <td>房间页「复制密钥」按钮改文案「公开到大厅」；在同一 net 实例订 <code class="inline">room.closed</code> 清幽灵房；把「服务器 X 有可进房间 CODE」上报目录。</td>
+            <td>幂等标记 + <code class="inline">__SP_OBSERVE_STOP()</code> 立即撤回；页面隐藏时整块 parking 定时器</td>
+            <td>刻意<b>不用补丁</b>改 <code class="inline">js/screens/room.js</code>：房间页来自上传方版本，补丁必在对方换版本时失配。目录只存短 TTL，目标服务器自己的 <code class="inline">room.join</code> 才是最终权威 → 错误观测不可能把人带进错房间。</td></tr>
+          <tr><td><b>screen-fixes.js</b></td>
+            <td>只注入一个 <code class="inline">&lt;style&gt;</code>，且<b>总是注入</b>（修的是上游的屏，不是壳的设置）。</td>
+            <td>无开关</td>
+            <td>一条规则修上游 <code class="inline">.screen{overflow:hidden}</code> 把情报核查左列尾部裁掉（实测 844×390 超底 55.0 px）。选择器走完整链，不用裸类名。</td></tr>
+          <tr><td><b>server-config.js</b></td>
+            <td>当前服务器声明式配置的<b>只读视图</b>：<code class="inline">feature(id) / enabled(id) / packs() / announce()</code>，feature 带 <code class="inline">startAt / endAt</code> 窗口。</td>
+            <td><b>开关在服务器侧</b>，本地拨不动；缺失 / 停用 / 不在窗口 → false</td>
+            <td>从不自己 fetch、从不 eval。解析只在 Java 的 <code class="inline">ServerConfigHub</code> 一处 —— 一个解析路径 = 一处能审。</td></tr>
+          <tr><td><b>ui/shellPanels.js</b><br><span class="chip">43.5 KB</span></td>
+            <td>是 ESM 页面模块，<b>直接 import 上游模块</b>（<code class="inline">vendor/hooks.module.js</code>、<code class="inline">ui/components.js</code>、<code class="inline">ui/toasts.js</code>、<code class="inline">js/store.js</code>），用上游 Modal / Button / MicroLabel 画面板。</td>
+            <td><code class="inline">registerPanel(kind, component)</code> —— 额外面板自己注册，<b>而不是改本文件</b>；<code class="inline">openPanel(servers|params|join|config|records|lobby)</code></td>
+            <td>对局中禁切服（读 <code class="inline">store.get().room.inMatch</code>）；域名永不显示，服务器只用名字标识。<b>mod 管理器的 UI 就该挂在这里。</b></td></tr>
+          <tr><td><b>screens/title.js</b><br><span class="chip">vendored</span></td>
+            <td>不是 hook，是上游标题屏文件的<b>副本</b>（provenance 头写着上游 tag <code class="inline">v0.2.1</code>、commit <code class="inline">c2a2ef7…</code>、上游原文 sha256）。</td>
+            <td>无运行期开关；生效靠装载机制（extras 铺到 webroot 根，同名覆盖）</td>
+            <td>它与 <code class="inline">home-layer.js</code> 互斥（置 <code class="inline">__SP_TITLE_VENDORED</code>）。<b>不自动跟随上游</b>：上游一改，<code class="inline">vendor-title.test.mjs</code> 的基线哈希就大声失败，要求人工逐条重判。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>1.4 装机、回滚与「装 / 卸 / 生效」的真实入口</h3>
+    <ul class="steps">
+      <li class="step"><span class="step__n">1</span><div class="step__body">
+        <div class="step__title">签名清单 → 镜像链下载 → sha256 → L1 解包 → extras + patches → 清单改写 → 原子 swap → 健康标记</div>
+        <div class="step__note"><code class="inline">Updater.java:43-45</code> 原话。任一步失败<b>保留旧树</b>并把玩家指向 APK 下载页，不会留下半截树。需要 2 GB 可用空间；<code class="inline">IN_FLIGHT</code> 全局互斥防两条更新互删 staging。</div>
+      </div></li>
+      <li class="step"><span class="step__n">2</span><div class="step__body">
+        <div class="step__title">回滚 = 冷启动自检：<code class="inline">webroot.pending</code> 存在就把新树换下来</div>
+        <div class="step__note"><code class="inline">rollbackIfUnhealthy()</code>（:996）：<code class="inline">webroot → webroot.failed</code>、<code class="inline">webroot.old → webroot</code>、删 <code class="inline">meta.json</code>、<b>并删掉 shellUiVersion 记录</b>（回滚后的树配它自己那份叠加层）。rename 失败则换回去、保留 pending 下次再试。<code class="inline">markHealthy()</code> 只有确认页面确实来自本地树才关窗，之后才有人删 <code class="inline">webroot.old</code>。</div>
+      </div></li>
+      <li class="step"><span class="step__n">3</span><div class="step__body">
+        <div class="step__title">叠加层来源二选一：SLIM <b>XOR</b> ASSETS，且只允许严格大于</div>
+        <div class="step__note"><code class="inline">PatchEngine.chooseOverlaySource()</code>（:103）：<code class="inline">shouldUseSlimOverlay = slim != null && slim > device</code>。签名清单与内容包的叠加层版本<b>对不上 → 谁都不信，回落 APK 自带叠加层</b>（<code class="inline">Updater.java:581-604</code>）。总开关是 <code class="inline">tools/apk/shell-ui-version.txt</code>：要热更 extras / patches 就人工 +1，<code class="inline">0</code> 直接关闭这条通道。</div>
+      </div></li>
+      <li class="step"><span class="step__n">4</span><div class="step__body">
+        <div class="step__title">素材包安装 = <code class="inline">MainActivity.syncArt()</code>（原生桥）；实际生效的是被动那条</div>
+        <div class="step__note"><code class="inline">ArtStore.sync()</code> 内容寻址：装没装看 <code class="inline">packs/&lt;id&gt;/sha256.txt</code> 是否等于期望值 → 天然幂等、换版本即失效重装。三道门：条目名规范化、<b>只允许 assets/**</b>、canonical 前缀守卫。<b>只有必需包全部成功才抬 <code class="inline">art.json.version</code>，版本永不回退。</b></div>
+      </div></li>
+      <li class="step"><span class="step__n">5</span><div class="step__body">
+        <div class="step__title">服务端 overlay：装 = 放文件；卸 = 删文件；生效 = 下一次 host 启动</div>
+        <div class="step__note"><code class="inline">loadOverlays()</code> 按文件名字典序 <code class="inline">import()</code> 并调 <code class="inline">install(ctx)</code>；目录不存在就返回空。<code class="inline">loaded[]</code> 进 <code class="inline">handshake.json</code>，<b><code class="inline">skipped[]</code> 只进 stdout 日志</b>（→ <code class="inline">filesDir/run/server.log</code>）。缺目录、坏模块、<code class="inline">install()</code> 抛错 —— 一律记录并跳过，「host 绝不能因为 overlay 起不来」。</div>
+      </div></li>
+    </ul>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>构建期 / 装机后的四道闸门</h4>
+        <ul>
+          <li><code class="inline">check-patches.mjs</code> 三门串联：锚点重放 + <b>parse gate</b>（锚点全绿但产生重复声明，客户端会 <code class="inline">Identifier already declared</code> 当场死掉，这防的就是它）+ 运行时契约门，<b>空补丁集也照跑</b>。</li>
+          <li><code class="inline">check-upstream-contract.mjs</code>：壳零补丁 ⇒ check-patches 恒真，于是它直接对上游树断言 <code class="inline">globalThis.__SP__</code> 仍在 <code class="inline">boot()</code> 末尾、UI 模块导出仍在、DOM 锚点仍在、<code class="inline">startServer()</code> 返回仍含 <code class="inline">packs</code>（缺了叠加层就静默失效）、Lobby 成员仍在、「复制密钥」文案集仍在。</li>
+          <li><code class="inline">check-extras-overlap.mjs</code>：extras 在上游之后拷贝，路径相撞<b>我们的文件赢、上游代码静默消失</b>。白名单 <code class="inline">ALLOWED_OVERRIDES</code> 只有两项：<code class="inline">js/screens/title.js</code>、<code class="inline">css/screens/title.css</code>；<b>白名单项若上游文件消失，同样判红</b>。</li>
+          <li><code class="inline">check-apk.mjs</code>：验签、ABI 运行件、关键 assets、以及<b>「文件在但装载器没有条目」这类半失效</b>（要求构建出的 <code class="inline">shell-bridge.js</code> 源码里出现 <code class="inline">/__sp/server-config.js</code> 与 <code class="inline">/__sp/preload-center.js</code> 两个字面）。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>APK 侧「不存在」清单（省得重复发现）</h4>
+        <ul>
+          <li><span class="st st-no">FAIL</span> <code class="inline">skins.json</code> 仓库里根本没有 —— 现网形态就是 <code class="inline">/__sp/skins.json</code> 404 → 皮肤层全局 no-op。</li>
+          <li><span class="st st-no">FAIL</span> 素材包<b>没有卸载 / 清除 API</b>。只有注释写「一次清除能同时清 packs 与 cache」是设计性质，没有实现出来的方法或桥。</li>
+          <li><span class="st st-no">FAIL</span> <code class="inline">syncArt</code> / <code class="inline">artStatus</code> 在 extras JS 里<b>没有任何调用者</b>：原生桥有方法，面板没接。唯一实际生效路径是缺图被动触发 <code class="inline">requestArtSync()</code>。</li>
+          <li><span class="st st-no">FAIL</span> overlay 没有运行期开关，也没有房间级作用域（<code class="inline">ctx</code> 字段固定：api、id、server、port、host、url、upstreamDir、log）。</li>
+          <li><span class="st st-no">FAIL</span> 「新盟约 / 新装备 / 干员转正」在 APK 侧<b>没有任何落点</b>：搜相关关键词只命中副标题文案、战绩字段名与测试夹具。</li>
+          <li><span class="st st-todo">PENDING</span> <code class="inline">assets/shell/extras/**</code> 是构建产物且<b>当前落后真源</b>：装载条目 android 副本 9 条 vs <code class="inline">tools/apk/extras</code> 真源 14 条。<b>梳理应以 tools 真源为准。</b></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>1.5 版本闸门：两条轴绝不混 <span class="sub">／ 内容轴 vs 壳轴 vs 线协议</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>轴</th><th>判定字段</th><th>不匹配的后果</th></tr></thead>
+        <tbody>
+          <tr><td>线协议</td><td class="mono">PROTOCOL_VERSION = 1</td><td>WS <code class="inline">hello</code> 不等 → <code class="inline">version mismatch: server 1</code>，客户端归为版本类错误。<b>mod 面无法触达它</b></td></tr>
+          <tr><td>展示 / 兼容</td><td class="mono">APP_VERSION = 0.2.1</td><td>只决定补丁 <code class="inline">minApp / maxApp</code> 的命中集合，<b>不是线协议</b></td></tr>
+          <tr><td>APK 硬门</td><td class="mono">manifest.minApk = 2001</td><td><code class="inline">requiresNewApk()</code> → 抛「需要新版应用」，弹窗告知需要 X 当前 Y</td></tr>
+          <tr><td>壳线归属</td><td class="mono">belongsToLine()</td><td>签名体里必须含 <code class="inline">/assets-re/</code>，否则整份清单拒绝 —— 防「另一条产品线的清单把内容灌进这个壳」</td></tr>
+          <tr><td>L1 / L2 / 叠加层 / overlay / 远端配置</td><td class="mono">slim.sha256 · art.format=1 · shellOverlay.version · overlayApi=1 · schema≤1</td><td>一律 <b>fail-closed</b>：校验失败中止、format 未知则通道关闭、版本对不上回落 APK、overlay 不匹配只跳过非致命、schema 更高整份拒绝并保留 last-good</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v3h2v-3h-2zm0 4v2h2v-2h-2z"/></svg>
+      <div><b>别再犯这条（Updater.java:218-223 原话）：</b>「NEVER derive it from the shell's versionName —— the shell version and the content buildTag are <b>independent axes</b>」。
+      把两轴合起来曾导致「全新装机、没有热更历史」被判成比线上更旧，于是<b>每次启动都重下一遍</b>。镜像链也永不降级设备。</div>
+    </div>
+
+    <h3>1.6 那 APK 端做 mod，能做到哪一步？</h3>
+    <div class="cards">
+      <div class="card"><div class="card__title">能做到：换皮与素材</div><p>皮肤轴 + L2 素材轴。这是 APK 唯二「按内容粒度」可装可卸的通道；皮肤连 catalog 都不签名，属于玩家本机自选。</p></div>
+      <div class="card"><div class="card__title">能做到：加服务端能力（非内容）</div><p><code class="inline">server/overlay/*.mjs</code>。它是壳自己的插件面，<b>违反</b> <code class="inline">docs/PACKS.md:137-138</code> 的「No third-party code」，也不是 content pack（不经 <code class="inline">pack.json</code> / <code class="inline">server/packs.js</code>）。现网三条 overlay 都没碰 <code class="inline">ctx.server.packs</code>。</p></div>
+      <div class="card"><div class="card__title">有条件能做到：双端同源的代码 mod</div><p><code class="inline">/sim/</code> 是从磁盘直读 <code class="inline">server/sim/</code> 同一目录（<code class="inline">static.js:64</code>，只放 <code class="inline">.js</code>、私有 <code class="inline">nodedata.js</code>）。若用 extras 覆盖链把 hook 写进 <code class="inline">server/sim/content/…</code>，浏览器会拿到<b>同一份文件</b> → 真双端同构。代价：必须进 <code class="inline">ALLOWED_OVERRIDES</code> 白名单、破坏「零上游改动」前提，且 check-extras-overlap 会先判红。</p></div>
+      <div class="card"><div class="card__title">做不到：新盟约 / 新装备 / 干员转正</div><p>这三条属于数值与数据，APK 侧没有任何按 mod 叠加数据的路径（slim 只能整树换上游发布）。<b>唯一正解是服务器端 data 包</b>，见板块 2。</p></div>
+    </div>
+  </section>
+
+  <!-- ==================== 板块二：服务器端 ==================== -->
+  <section class="block" id="server">
+    <div class="block__head">
+      <span class="block__num">2</span>
+      <span class="block__title">服务器端的 mod 管理器梳理</span>
+      <span class="block__who">上游 0.2.1 · 全部挂载点带 文件:行号</span>
+    </div>
+    <p class="block__lead">
+      官方留了半套基础设施：<b>清单格式、注册表、扫描、热重扫、静态服务、CLI 全都在</b>，
+      但能装的类型只有 <code class="inline">lang</code>，<code class="inline">data</code> 明确 <span class="st st-todo">planned</span>，
+      而且<b>没有任何 mod / 管理界面</b>，HTTP 层甚至不接受写操作。
+      所以「做 mod 管理器」的真实工作量是：填 <code class="inline">data</code> 类型 + 接一个房间级视图 + 把开关塞进握手与房间状态。
+    </p>
+
+    <h3>2.1 官方 packs 体系的现状</h3>
+    <pre class="code"><i>// shared/packs.js:55-62 —— 原文，未改一字</i>
+export const PACK_TYPES = Object.freeze({
+  lang:   Object.freeze({ status: <b>'supported'</b>, live: <b>true</b>,  summary: 'a language: UI strings and, optionally, game texts', … }),
+  assets: Object.freeze({ status: <em>'planned'</em>, summary: 'art, audio and font replacements, client side' }),
+  data:   Object.freeze({ status: <em>'planned'</em>, summary: 'data patches the server applies at start' }),
+});
+
+<i>// server/packs.js:114-117 —— 计划中类型怎么处置</i>
+if (kind.status !== 'supported') {
+  skipped.push({ where, problems: ['type "' + manifest.type + '" is planned (…), not loaded by this version'] });
+  continue;   <i>// 永不被服务</i>
+}</pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>能力</th><th>真实位置</th><th>现状</th></tr></thead>
+        <tbody>
+          <tr><td>清单格式 / 校验</td><td class="mono">shared/packs.js:151-204 normalizeManifest</td><td><span class="st st-yes">PASS</span> problem 阻止加载、warning 不阻止（PACKS.md:69-72）；id 字符集 ≤64、大小写不敏感去重（Windows / macOS 会把两个文件夹看成一个）</td></tr>
+          <tr><td>路径穿越防线（两道）</td><td class="mono">shared/packs.js:75-76 isPackPath<br>server/packs.js:52-59 inside()</td><td><span class="st st-yes">PASS</span> 词法拒空段 / <code class="inline">.</code> / <code class="inline">..</code> / 隐藏段 / 前后空格；再 <code class="inline">fs.realpathSync</code> 双方后比前缀</td></tr>
+          <tr><td>扫描</td><td class="mono">server/packs.js:69-157 scanPacks</td><td><span class="st st-yes">PASS</span> 三段：单文件语言包、目录型 pack、去重让位（语言文件夹的文件优先于 pack 目录）</td></tr>
+          <tr><td>注册表</td><td class="mono">server/packs.js:199-245 createPackRegistry</td><td><span class="st st-yes">PASS</span> <code class="inline">{refresh, list, index, report, servable}</code>；<code class="inline">recheckMs</code> 默认 1000 ms，用目录指纹（名 + 大小 + mtime）比对，变了才重扫</td></tr>
+          <tr><td>「签名」</td><td class="mono">server/packs.js:173-191 signature()</td><td><span class="st st-no">FAIL</span> 那是<b>目录指纹</b>，不是密码学签名。PACKS.md 全文<b>没有任何签名要求</b>，只在未来守则里提「内容哈希」</td></tr>
+          <tr><td>HTTP 面</td><td class="mono">server/http/static.js:86-94</td><td><span class="st st-yes">PASS</span> 只有 <code class="inline">GET /packs/index.json</code> 与 <code class="inline">GET /packs/&lt;id&gt;/&lt;file&gt;</code>（<b>没有 /api/packs，项目里没有 REST API 层</b>）。只服务「manifest 以本类型 role 点名 + 扩展名匹配 + 在包目录内」的文件；<code class="inline">pack.json</code>、README、HTML、脚本永不外发</td></tr>
+          <tr><td>写操作</td><td class="mono">server/http/routes.js:45-49</td><td><span class="st st-no">FAIL</span> 非 GET / HEAD 一律 405。<b>「安装 / 删除 pack」走不了 HTTP</b>：要么走 WS 消息，要么改 routes.js</td></tr>
+          <tr><td>DoS 边界</td><td class="mono">server/packs.js:27 MAX_JSON_BYTES</td><td><span class="st st-yes">PASS</span> 8 MB / 份 JSON</td></tr>
+          <tr><td>CLI（唯一管理面）</td><td class="mono">tools/packs.mjs</td><td><span class="st st-yes">PASS</span> <code class="inline">list [--json] · index [--out] · check [--strict] · --root</code>。<b>没有 Web UI</b></td></tr>
+          <tr><td>packs 目录内容</td><td class="mono">packs/README.md</td><td><span class="st st-no">FAIL</span> 仓库里<b>没有任何真 pack 文件夹、没有任何 pack.json</b>；<code class="inline">packs/index.json</code> 被 gitignore。真包只有 4 个单文件语言包（en / ja / ko / zh-TW，<code class="inline">zh</code> 是源语言、按规则永不作包）</td></tr>
+          <tr><td>谁在用 packs</td><td class="mono">server/index.js:68-70 · :114</td><td>进程级单例、随 <code class="inline">close()</code> 返回；<b>只对外（浏览器）服务</b>。<code class="inline">lobby.js</code> / <code class="inline">match/**</code> / <code class="inline">sim/**</code> 全不引用 packs</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>2.2 官方给后世的四条守则（照抄，别自创）</h3>
+    <pre class="code"><i>// docs/PACKS.md:131-139 —— 「Things later types must keep」原文四条</i>
+<b>Server-side only for gameplay.</b>   数据包装在服务器上，房间内所有人用同一份内容，服务器仍能校验或复算战斗。
+                                   <i>// 玩家绝不自己装战斗内容。</i>
+<b>A content hash in the handshake</b>  在数据包出厂之前加进 welcome / /healthz / BattleSpec，
+                                   让客户端与服务器能判断「跑的是同一份内容」，并在 UI 与 bug 报告里打 modded 标。
+<b>No third-party code.</b>             清单与它的文件是数据（JSON、图片、音频、字体）；<em>会跑代码的包类型是拥有者的另一项单独决定。</em>
+<b>The golden results stay on the original content</b>；pack 永不改动金标准结果。</pre>
+    <div class="notice notice--ok">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+      <div><b>这条最要紧（docs/PACKS.md:123-126）：</b>「A server-side type (<code class="inline">data</code>) loads once at start (<code class="inline">live: false</code>): the simulation's code and data are fixed for the life of the process, and a battle must run the same data on the server and in every browser.」
+      —— 它与「房主勾选即时生效、取消勾选即时恢复」<b>正面冲突</b>。二者只能选一个（见 2.5 缺陷一）。</div>
+    </div>
+
+    <h3>2.3 数据基线（全部实测，可复现）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>数据文件</th><th class="num">条目</th><th>结构要点</th><th>mod 关系</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">data/bonds.json</td><td class="num">23</td><td>core 8 + addon 15；单条 36 键；<code class="inline">weight≤0</code> 的 4 个不参与每局禁用抽取</td><td>「卡兹戴尔 / 罗德岛」<b>不在其中</b>，新盟约是第 24 条</td></tr>
+          <tr><td class="mono">data/items.json</td><td class="num">115</td><td>59 基础 + 56 精锐；EQUIP 112 / MAGIC 3；<b>真能进商店的 51 件</b>（谓词 <code class="inline">sim/simdata.js:67-69 isShopItem</code>，5 件 shopExcluded）</td><td>【提卡兹之根】是第 116 条记录，且要判定是否可售</td></tr>
+          <tr><td class="mono">data/chess.json</td><td class="num">266</td><td>133 基础 <code class="inline">_a</code> + 133 精锐 <code class="inline">_b</code>；isDiy 记录 8 条</td><td>干员「转正」＝从 <code class="inline">backups.diy.ownedPool</code> 移进公共棋子</td></tr>
+          <tr><td class="mono">data/backups.json</td><td class="num">3 键</td><td><code class="inline">{units: 88, tokens: 38, diy: 6 键}</code>；diy = slots(4) / prototypes(5:15, 6:9) / locked / ownedPool(71) / excluded / operators(86)</td><td><b>没有 data/diy.json 这个文件</b>（上一轮审计把它当数据源是错的）</td></tr>
+          <tr><td class="mono">data/bands · bosses · config</td><td class="num">40 · 10 · 23</td><td>config.modes 9 个、economy 34 键、bans 6 项</td><td>模式表是 mod 管理器最省事的「多套配置」载体</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note">
+      服务端 <code class="inline">GameData</code> 读取的数据面（<code class="inline">server/match/gamedata.js</code>）：
+      chess · items · bonds · enemies · tokens · stages · waves · garrisons · bands · effects · backups。
+      客户端 sim 需要的前 11 项硬编码在 <code class="inline">public/js/battle/runner.js:114 SIM_DATA_FILES</code>。<b>数据类 mod 只需覆盖这些 JSON，就自动双端同源。</b>
+    </p>
+
+    <h3>2.4 挂载点清单 <span class="sub">／ mod 管理器要动的每一个位置</span></h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>要做什么</th><th>挂在哪里（真实行号）</th><th>为什么是这里</th></tr></thead>
+        <tbody>
+          <tr><td>新增「启用 / 停用包」消息</td><td class="mono">server/lobby.js:307-327 onMessage 的 switch</td><td>写操作只能走 WS（HTTP 只放 GET / HEAD）。加一条 <code class="inline">case 'room.mods'</code> 即可</td></tr>
+          <tr><td>声明它的字段谓词</td><td class="mono">shared/protocol.js:319-394 C2S</td><td>线路层白名单；不声明的 <code class="inline">t</code> 一律 BAD_MSG</td></tr>
+          <tr><td>存房间的启用列表</td><td class="mono">server/lobby.js:150-180 Room 构造</td><td>房间可调项现在<b>只有 mode + difficulty 两个</b>，其余全是运行时状态</td></tr>
+          <tr><td>让所有客户端看见</td><td class="mono">Room.toState() :198-211</td><td><b>没有 room.settings / room.update</b>；真实广播是 <code class="inline">room.state</code>，字段进这里就自动同步到 2~4 号位与旁观者</td></tr>
+          <tr><td>变更后推送</td><td class="mono">broadcastState :1059 / broadcastRoom :1070</td><td><code class="inline">isDroppable()</code> 只把 <code class="inline">b.snap</code> 当可丢帧（<code class="inline">net.js:287</code>），状态帧不丢</td></tr>
+          <tr><td>房主门（别自创）</td><td class="mono">server/lobby.js:488-500 setDifficulty</td><td>现成模板：host 判定 + 非比赛中 + dropReplay + 改完把他人 ready 置 false + broadcastState。房主门全代码库只有一种内联写法：<code class="inline">room.hostId !== session.playerId → fail(ERR.NOT_HOST)</code>（:460 · :491 · :505 · :523 · :537 · :560）</td></tr>
+          <tr><td>「下局才生效」的每人级设置</td><td class="mono">server/lobby.js:630-641 diy()</td><td>比赛中也存、但不生效，回 <code class="inline">ROOM_STARTED 'stored for the next match'</code></td></tr>
+          <tr><td>把内容哈希发给客户端</td><td class="mono">welcomeInfo() :644-646 ＋ server/net.js:665</td><td>PACKS.md:136 要的 content hash 就加在 welcome 的 extra；<code class="inline">/healthz</code>（<code class="inline">routes.js:24</code> 已带 version / app）顺手带同一个哈希</td></tr>
+          <tr><td>把包数据透给一整场对局</td><td class="mono">startMatch :653-687（<code class="inline">data: this.safeData()</code> 在 :681）</td><td><b>一处注入就决定整场比赛的 GameData 来源</b>；safeData() 同时被 diy(:631) 与 loadout(:583) 使用</td></tr>
+          <tr><td>房间级不可变视图（关键）</td><td class="mono">server/match/player/diy.js:90-131 diyGameData</td><td>官方样板：<code class="inline">const view = Object.create(gd)</code>（:91）只覆写 chess / token / placeableTokens，<code class="inline">matchData</code> 指回原对象；<b>没有 picks 的玩家仍用原 GameData（:168）</b> —— 「不侵入他人」的同构做法，mod 直接照抄</td></tr>
+          <tr><td>复用 pack 注册表</td><td class="mono">server/index.js:68-70 ＋ :114</td><td>进程级单例、已随返回值暴露；管理后端不必新建第二份扫描器</td></tr>
+          <tr><td>商店偏置（玩家上下文）</td><td class="mono">server/match/player/economy.js:69-72 _rollItemSlot</td><td>真函数名就叫 <code class="inline">_rollItemSlot()</code>；它拿得到 this.m / this.gd / 玩家场上羁绊。<b>不是 match/pool.js</b></td></tr>
+          <tr><td>装备定价拦截</td><td class="mono">economy.js:55-61 priceOf → m.dispatch('onPrice')</td><td>已有的可派发钩子，比改 <code class="inline">pool.rollItem</code> 干净</td></tr>
+          <tr><td>盟约计算（含新字段判定）</td><td class="mono">server/match/bondsMeta.js:28-51 pieceBonds</td><td>原生只有 canGiveBond（全库仅 2 条记录：chess_item_6_09_e_a / _b）与 giveBondId（覆盖 14 个盟约）。要新语义就得在这里加分支，<b>且同步 sim 侧</b></td></tr>
+          <tr><td>战斗 hook 注入（Node-only）</td><td class="mono">server/sim/Battle.js:169-170 extraContent → content/index.js:262-264</td><td>现成口子，但<b>不经 BattleSpec</b>（spec.js 的 content 只传 full / generic / none）⇒ <b>到不了浏览器</b>，且当前只有测试在用</td></tr>
+          <tr><td>盟约模块加载</td><td class="mono">server/sim/content/bonds.js:21-22</td><td><code class="inline">PARTS = Object.freeze([['bonds/core', core], ['bonds/addon', addon]])</code> —— 硬编码冻结，<b>没有 custom.js 注入点</b>；派发是 <code class="inline">runAll('install', battle)</code>（:36）+ 异常隔离</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>2.5 原设计的五个问题，逐条按代码复核</h3>
+    <p>
+      上一轮审计给出的五条「致命缺陷」，<b>方向对，但两条证据错了</b>。逐条重判（图上写什么 → 代码里是什么 → 怎么改）：
+    </p>
+    <div class="cards">
+      <div class="card"><div class="card__title">缺陷一 · 全局挂载 + 手动回滚 <span class="st st-no">FAIL</span></div>
+        <p><b>判定成立，但根因不是并发写内存，而是与官方语义冲突。</b>data 类型被规范钉在 <code class="inline">live:false</code>（进程生命周期内固定）。
+        两条合法解法：<b>(A)</b> 启动时确定启用哪些包（进程级；多房间天然一致，代价 = 要重启 host 才换配置）；
+        <b>(B)</b> 房间级派生视图 <code class="inline">Object.create(officialGd)</code>（房间销毁由 GC 回收，<b>不需要「卸载 / 恢复官方数据」这段脆弱逻辑</b>）。
+        选 (B) 就必须承认它<b>不是</b>官方 packs 的 data 语义，而是自己的派生视图层；别在文档里把它叫「pack 热重载」。
+        现网风险确实存在：单进程多房间，原地覆写会让别的房间刷出 mod 装备。</p></div>
+      <div class="card"><div class="card__title">缺陷二 · 双端确定性 <span class="st st-todo">改述</span></div>
+        <p>原述「只在服务端跑 custom.js 会 Desync」<b>不准确</b>。真实默认是<b>客户端算战斗</b>（clientCombat 默认 on），
+        服务端做的是<b>结果校验 + 必要时重算</b>（<code class="inline">validateClientResult</code>，network.md:86：结构白名单 + 合理性上下界，例如
+        每盟约 <code class="inline">layerGains ≤ min(60 + 4·round, 999 − 起始层)</code>、盟约必须存在且被玩家快照点名、coins ≤ Σ bounty）。
+        所以后果是：<b>客户端不懂这个盟约 → 报不出这个层数 → 服务端判结果可疑并自己重算 → 玩家看到的画面与实际结算不一致</b>，而不是「双端各自算歪」。
+        规范里那句「a battle must run the same data on the server and in every browser」就是解药：<b>纯数据天然满足；代码 hook 天然不满足。</b></p></div>
+      <div class="card"><div class="card__title">缺陷三 · 商店偏置归属 <span class="st st-yes">PASS</span></div>
+        <p><b>完全成立。</b><code class="inline">SharedPool.rollItem(rng, maxTier)</code>（pool.js:148-168）连「是谁在刷新」都不知道，
+        档位概率还<b>跟随棋子池剩余拷贝</b>（tierShares），只做纯随机 + 向低档 / 高档回退。
+        玩家级落点是 economy.js:69-72。
+        而 giveBondBiasOnly 与 shopBondOrder 三个分支<b>全 0 命中</b> —— 要它就得<b>新增字段</b>并同时改 pieceBonds 与 sim 侧读取。</p></div>
+      <div class="card"><div class="card__title">缺陷四 · 自选清洗与联机同步 <span class="st st-yes">PASS（细节纠正）</span></div>
+        <p><b>结论对：不该外挂 stripPackOperators()，数据驱动就够。</b>纠正三处：
+        ① checkDiyPicks 在 <code class="inline">shared/protocol.js:237</code>（<b>宽松语义</b>：逐槽累加、冲突时前槽胜出、返回 dropped 计数），
+        shared/diy.js 里只有<b>单数</b> checkDiyPick(:156) 与<b>严格</b>的 validateDiyPicks(:249)；
+        ② 数据源是 data/backups.json 的 diy 键，<b>没有 data/diy.json</b>；
+        ③ 同步广播是 room.state，不是 room.update。另外：<b>任何玩家都能发 room.diy</b>（没有房主门），旁观者被排除。</p></div>
+      <div class="card"><div class="card__title">缺陷五 · 分支断层 <span class="st st-todo">已纠正</span></div>
+        <p>原述「py 分支完全没有 packs 代码」<b>只对一半</b>：shared/packs.js 在 py 分支上<b>存在且与官方逐字节相同</b>（悬空：它注释引用的 server/packs.js 与 docs/PACKS.md 都没有）。
+        缺的是 server/packs.js、packs/、tools/packs.mjs、/packs 路由、docs/PACKS.md。详见板块 4。</p></div>
+      <div class="card"><div class="card__title">新增缺陷六 · 原审计漏了一条：结果校验白名单 <span class="st st-todo">需实测</span></div>
+        <p>服务端会把玩家上报的战斗结果<b>按白名单重建</b>（泄漏归属、层数上界、金币上界、单位状态只允许自己的 board uid）。
+        mod 若新增会大量叠层的盟约或新敌人，<b>可能撞到静态上界</b>而被判可疑 → 触发重算路径。
+        这条必须在 mod 管理器的验收里跑，而不是等玩家上报。</p></div>
+    </div>
+
+    <h3 id="glossary">2.6 避雷表：图上的名字 → 代码里的真名</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>图上 / 上一轮审计写的</th><th>真实情况</th><th>证据</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">sim/engine.js</td><td><b>不存在</b>。战斗核心是 server/sim/Battle.js，内容注册在 server/sim/content/</td><td class="mono">ls-tree server/sim · grep engine → 空</td></tr>
+          <tr><td class="mono">diyj.js</td><td><b>不存在</b>。shared/diy.js（校验）＋ server/match/player/diy.js（局内原型视图与库存）</td><td class="mono">两文件均在</td></tr>
+          <tr><td class="mono">room.settings / room.update</td><td><b>不存在</b>。广播是 room.state</td><td class="mono">git grep -nE "room[.](settings|update)" → 0</td></tr>
+          <tr><td class="mono">giveBondBiasOnly</td><td><b>三个分支都 0 命中</b>。存在的是 giveBondId / giveBondName / canGiveBond</td><td class="mono">git grep -n → rc=1 ×3</td></tr>
+          <tr><td class="mono">shopBondOrder</td><td><b>不存在</b>。装备抽取只有 <code class="inline">gd.shopItemsByTier[t]</code> 均匀抽 + 档位回退</td><td class="mono">pool.js:148-168</td></tr>
+          <tr><td class="mono">stripPackOperators()</td><td><b>不存在，且不该存在</b>：数据驱动后 checkDiyPick 自动判非法</td><td class="mono">shared/diy.js:156-190</td></tr>
+          <tr><td>事件 roundStart / unitAttack</td><td><b>不存在</b>。真实 36 个 emit 名：battleStart · beforeAttack · attack · damaged · hit · tick · layerGain · skillStart / skillEnd · deploy · death · kill · heal · spGain · statusApplied · elementHit · fatal · dodge · blocked …</td><td class="mono">server/sim 全树 emit(...) 去重</td></tr>
+          <tr><td>/api/packs，任何 /api/*</td><td><b>不存在</b>。项目没有 REST 层，只有 GET /healthz ＋ 静态兜底</td><td class="mono">routes.js:50 · :54</td></tr>
+          <tr><td>packs/fanpack/content.json + records.json</td><td>官方规范是 <code class="inline">packs/&lt;id&gt;/pack.json</code>（清单）＋ 清单按 role 点名的文件</td><td class="mono">PACKS.md:18-35 · :65</td></tr>
+          <tr><td>「packs 有签名校验」</td><td><b>没有</b>。signature() 是目录指纹（名 + 大小 + mtime）用于热重扫</td><td class="mono">server/packs.js:173-191</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>2.7 mod 管理器该做哪七件事</h3>
+    <ul class="steps">
+      <li class="step"><span class="step__n">1</span><div class="step__body"><div class="step__title">把 data 类型从 planned 升级为 supported</div><div class="step__note">改动面很小：shared/packs.js:61 一处状态 + server/packs.js:114 的跳过分支 + 新增数据合并加载器。<b>但必须先决定「进程级」还是「房间级」</b>（缺陷一），因为这决定后四步的形状。</div></div></li>
+      <li class="step"><span class="step__n">2</span><div class="step__body"><div class="step__title">算一个内容哈希，并进握手三处</div><div class="step__note">welcome（welcomeInfo :644-646 ＋ net.js:665）、/healthz（routes.js:24）、BattleSpec（spec.js）。这是 PACKS.md 明令「数据包出厂之前」的前置条件，<b>顺序不能倒</b>。</div></div></li>
+      <li class="step"><span class="step__n">3</span><div class="step__body"><div class="step__title">房间级派生视图照抄 diyGameData</div><div class="step__note"><code class="inline">Object.create(gd)</code> ＋ 只覆写需要的取数函数 ＋ 指回 matchData ＋ 不启 mod 的房间继续用原对象。零「反向卸载」代码，零全局污染。</div></div></li>
+      <li class="step"><span class="step__n">4</span><div class="step__body"><div class="step__title">开关落在房间状态里，用 setDifficulty 当模板</div><div class="step__note">房主门、比赛中门、dropReplay、把他人 ready 置 false、broadcastState —— 五件事一个不少。<b>不要用 HTTP POST</b>（routes.js 会 405）。</div></div></li>
+      <li class="step"><span class="step__n">5</span><div class="step__body"><div class="step__title">内容只走数据文件，代码 hook 一律拒绝</div><div class="step__note">这条同时满足「No third-party code」与双端确定性（客户端从同一台机器取 /data/ 与 /sim/）。extraContent 那类 Node-only 口子对玩家房间不要开。</div></div></li>
+      <li class="step"><span class="step__n">6</span><div class="step__body"><div class="step__title">UI 挂在壳的面板注册表上（APK 已有插槽）</div><div class="step__note">ui/shellPanels.js 的 registerPanel(kind, component) 明确写着「额外面板自己注册，而不是改本文件」；server-config.js 已经给了只读 feature / packs 视图。网页端做同一件事要新增一个上游面板（官方 public/js 里 pack 相关只有语言菜单 ui/lang.js）。</div></div></li>
+      <li class="step"><span class="step__n">7</span><div class="step__body"><div class="step__title">金标准与结果校验进验收，不进生产</div><div class="step__note">PACKS.md 要求金标准结果保持原版内容；SP_VERIFY=all 是开发期复算利器（DEPLOY.md:10 明说会明显加 CPU，小主机建议 off 或 sample）。测试面：test/i18n-packs.test.js、test/package.test.js、tools/packs.mjs check --strict。</div></div></li>
+    </ul>
+  </section>
+
+  <!-- ==================== 板块三：时序图 ==================== -->
+  <section class="block" id="diagrams">
+    <div class="block__head">
+      <span class="block__num">3</span>
+      <span class="block__title">三张时序图，与它们各自要改的地方</span>
+      <span class="block__who">图内联在本文件里 · 断网可看</span>
+    </div>
+    <p class="block__lead">
+      图一是最初的设计（fanpack-mod-flow），图二是<b>方案 A 双端同构</b>，图三是<b>方案 B 纯服务端权威</b>。
+      两张方案图<b>不是同一件事的两种画法</b>：它们对「谁算战斗」的假设相反，而官方默认值已经替你选了（clientCombat 默认 on）。
+    </p>
+
+    <div class="fig fig--orig">
+      <div class="fig__scroll"><div class="fig__canvas" style="--fig-w:1780px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1780 1215">
+  <defs>
+    <marker id="figO-ah" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#9aa3b0"/>
+    </marker>
+    <style>.fig--orig text { fill:#d7dbe2; font-size:14px; font-family:"Microsoft YaHei","Noto Sans SC","PingFang SC","Segoe UI",sans-serif; }.fig--orig .hdr { font-size:14px; }.fig--orig .note { font-size:13px; }.fig--orig .lifeline { fill:none; stroke:#5f6672; stroke-width:1.2; stroke-dasharray:5 5; }.fig--orig .msg { fill:none; stroke:#9aa3b0; stroke-width:1.4; marker-end:url(#figO-ah); }.fig--orig .ret { fill:none; stroke:#9aa3b0; stroke-width:1.4; stroke-dasharray:7 5; marker-end:url(#figO-ah); }.fig--orig .box { fill:#2a2d33; stroke:#98a0ab; stroke-width:1.2; }.fig--orig .act { fill:#3a4150; stroke:#8b93a1; stroke-width:1; }.fig--orig .notebox { fill:#25272c; stroke:#8b93a1; stroke-width:1.1; }.fig--orig .frag { fill:rgba(140,160,200,0.05); stroke:#7c879a; stroke-width:1.2; }.fig--orig .fragtag { fill:#2a2d33; stroke:#7c879a; stroke-width:1.1; }.fig--orig .actor { fill:none; stroke:#c3c9d2; stroke-width:1.4; }
+    </style>
+  </defs>
+
+  <rect width="1780" height="1215" fill="#1b1c1f"/>
+
+  <!-- ================= lifelines ================= -->
+  <path class="lifeline" d="M120,112 V1195"/>
+  <path class="lifeline" d="M340,112 V1195"/>
+  <path class="lifeline" d="M570,112 V1195"/>
+  <path class="lifeline" d="M810,112 V1195"/>
+  <path class="lifeline" d="M1090,112 V1195"/>
+  <path class="lifeline" d="M1330,112 V1195"/>
+
+  <!-- ================= headers ================= -->
+  <!-- actor: 玩家 / 房主 -->
+  <circle class="actor" cx="120" cy="45" r="11"/>
+  <path class="actor" d="M120,56 V78 M104,65 H136 M120,78 L110,94 M120,78 L130,94"/>
+  <text x="120" y="108" text-anchor="middle">玩家 / 房主</text>
+
+  <rect class="box" x="270" y="28" width="140" height="34" rx="4"/>
+  <text class="hdr" x="340" y="50" text-anchor="middle">主页与设置弹窗</text>
+
+  <rect class="box" x="479" y="28" width="182" height="34" rx="4"/>
+  <text class="hdr" x="570" y="50" text-anchor="middle">Mod 加载器 (Overlay)</text>
+
+  <rect class="box" x="710" y="28" width="200" height="34" rx="4"/>
+  <text class="hdr" x="810" y="50" text-anchor="middle">自选干员系统 (diyj.js)</text>
+
+  <rect class="box" x="974" y="28" width="232" height="34" rx="4"/>
+  <text class="hdr" x="1090" y="50" text-anchor="middle">局内匹配商店 (match/pool.js)</text>
+
+  <rect class="box" x="1223" y="28" width="214" height="34" rx="4"/>
+  <text class="hdr" x="1330" y="50" text-anchor="middle">战斗模拟器 (sim/engine.js)</text>
+
+  <!-- ================= activation bars ================= -->
+  <rect class="act" x="336" y="145" width="8" height="45"/>
+  <rect class="act" x="566" y="190" width="8" height="105"/>
+  <rect class="act" x="566" y="356" width="8" height="16"/>
+  <rect class="act" x="806" y="362" width="8" height="186"/>
+  <rect class="act" x="1086" y="615" width="8" height="145"/>
+  <rect class="act" x="1326" y="890" width="8" height="55"/>
+  <rect class="act" x="336" y="1020" width="8" height="45"/>
+  <rect class="act" x="566" y="1065" width="8" height="50"/>
+  <rect class="act" x="806" y="1110" width="8" height="50"/>
+
+  <!-- ================= 阶段一：加载 ================= -->
+  <path class="msg" d="M120,145 H336"/>
+  <text x="228" y="139" text-anchor="middle">勾选 "fanpack" 模组并点击保存</text>
+
+  <path class="msg" d="M344,190 H566"/>
+  <text x="455" y="184" text-anchor="middle">发送加载请求 (activePacks: ["fanpack"])</text>
+
+  <path class="msg" d="M570,226 H610 V244 H576"/>
+  <text x="620" y="239">读取 packs/fanpack/content.json 与 records.json</text>
+
+  <path class="msg" d="M570,276 H610 V294 H576"/>
+  <text x="620" y="289">内存动态挂载 Overlay (chess, bonds, items)</text>
+
+  <!-- ================= 阶段二 note ================= -->
+  <rect class="notebox" x="587" y="306" width="206" height="30" rx="2"/>
+  <text class="note" x="690" y="325" text-anchor="middle">阶段二：干员转正与自选清洗</text>
+
+  <path class="msg" d="M574,362 H806"/>
+  <text x="690" y="356" text-anchor="middle">传入包内干员黑名单 (charId 列表)</text>
+
+  <path class="msg" d="M810,398 H850 V416 H816"/>
+  <text x="860" y="411">stripPackOperators() 过滤候选池</text>
+
+  <!-- ================= alt 片段 ================= -->
+  <rect class="frag" x="170" y="437" width="710" height="111"/>
+  <path class="fragtag" d="M170,437 H212 L220,447 L212,457 H170 Z"/>
+  <text class="note" x="178" y="451">alt</text>
+  <rect class="fragtag" x="228" y="431" width="164" height="24" rx="2"/>
+  <text class="note" x="310" y="447" text-anchor="middle">[玩家 1~4 槽位装有该干员]</text>
+
+  <path class="msg" d="M810,468 H850 V486 H816"/>
+  <text x="860" y="481">强制清空该槽位并打标 [转正移出]</text>
+
+  <path class="ret" d="M806,522 H120"/>
+  <text x="463" y="516" text-anchor="middle">提示：相关干员已转正至公共池，请重新调配自选</text>
+
+  <!-- ================= 阶段三 ================= -->
+  <rect class="notebox" x="587" y="560" width="206" height="30" rx="2"/>
+  <text class="note" x="690" y="579" text-anchor="middle">阶段三：对局与装备商店偏置</text>
+
+  <path class="msg" d="M120,615 H1086"/>
+  <text x="603" y="609" text-anchor="middle">进入对局，休整期刷新装备商店</text>
+
+  <path class="msg" d="M1090,651 H1130 V669 H1096"/>
+  <text x="1140" y="664">检测玩家场上羁绊 (如 卡兹戴尔 &gt;= 4)</text>
+
+  <path class="msg" d="M1090,701 H1130 V719 H1096"/>
+  <text x="1140" y="714">计算 shopBondOrder 偏置权重</text>
+
+  <path class="ret" d="M1086,755 H120"/>
+  <text x="603" y="749" text-anchor="middle">50% 概率刷出专属签名装备【提卡兹之根】</text>
+
+  <rect class="notebox" x="1330" y="778" width="394" height="30" rx="2"/>
+  <text class="note" x="1342" y="797">giveBondBiasOnly=true生效：装备不计入同构体羁绊人数</text>
+
+  <rect class="notebox" x="878" y="833" width="130" height="30" rx="2"/>
+  <text class="note" x="943" y="852" text-anchor="middle">阶段四：战斗结算</text>
+
+  <path class="msg" d="M120,890 H1326"/>
+  <text x="723" y="884" text-anchor="middle">双方布阵完成，开始战斗</text>
+
+  <path class="msg" d="M1330,926 H1370 V944 H1336"/>
+  <text x="1380" y="939">动态调用 bonds/custom.js 执行卡兹戴尔/罗德岛黑板光环</text>
+
+  <!-- ================= 阶段五：回滚 ================= -->
+  <rect class="notebox" x="212" y="960" width="256" height="30" rx="2"/>
+  <text class="note" x="340" y="979" text-anchor="middle">阶段五：关闭 Mod (回滚 Default OFF)</text>
+
+  <path class="msg" d="M120,1020 H336"/>
+  <text x="228" y="1014" text-anchor="middle">取消勾选 "fanpack"</text>
+
+  <path class="msg" d="M344,1065 H566"/>
+  <text x="455" y="1059" text-anchor="middle">卸载 Overlay，恢复官方数据</text>
+
+  <path class="msg" d="M574,1110 H806"/>
+  <text x="690" y="1104" text-anchor="middle">解除 stripPackOperators 限制</text>
+
+  <path class="ret" d="M806,1155 H344"/>
+  <text x="575" y="1149" text-anchor="middle">干员重新回归自选候选池，UI恢复官方 23 黑约 / 115 装备</text>
+</svg>
+</div></div>
+      <div class="fig__cap"><b>图一 · 原设计（5 阶段）</b><span class="chip">含 6 个不存在的名字</span><span class="chip">原尺寸 · 横向可滚动</span></div>
+    </div>
+    <div class="notice notice--bad">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v3h2v-3h-2zm0 4v2h2v-2h-2z"/></svg>
+      <div><b>照这张图实施会当场失败。</b>阶段一「内存动态挂载 Overlay」→ 与 live:false 冲突且污染其他房间；
+      阶段二 stripPackOperators() / diyj.js 不存在、数据源写错；
+      阶段三 shopBondOrder / giveBondBiasOnly 不存在，且指向 match/pool.js 是职责错位；
+      阶段四 sim/engine.js 与 bonds/custom.js 不存在；
+      阶段五「卸载 Overlay、恢复官方数据」是要整段删掉的设计。<b>它也没有画房间同步</b>：2~4 号位凭什么知道房主启了什么。</div>
+    </div>
+
+    <div class="fig fig--a">
+      <div class="fig__scroll"><div class="fig__canvas" style="--fig-w:1991px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1990.1929999999998 982.45" style="background:transparent">
+<style>.fig--a text { font-family: inherit; }.fig--a svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="figA-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="figA-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<line class="lifeline" data-actor="Host" x1="79.9495" y1="92.45" x2="79.9495" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="UI" x1="266.902" y1="70" x2="266.902" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Lobby" x1="524.9904999999999" y1="70" x2="524.9904999999999" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="RoomGD" x1="824.2044999999998" y1="70" x2="824.2044999999998" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="DIY" x1="1092.667" y1="70" x2="1092.667" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Econ" x1="1328.8959999999997" y1="70" x2="1328.8959999999997" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Sim" x1="1600.6929999999998" y1="70" x2="1600.6929999999998" y2="952.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="Host" data-to="UI" data-label="勾选 &quot;fanpack&quot; 模组" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="79.9495" y1="112.45" x2="266.902" y2="112.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="173.42575" y="102.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">勾选 &quot;fanpack&quot; 模组</text>
+</g>
+<g class="message" data-from="UI" data-to="Lobby" data-label="发送 c2s &quot;room.setMod&quot; { activePacks: [&quot;fanpack&quot;] }" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="266.902" y1="152.45" x2="524.9904999999999" y2="152.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="395.94624999999996" y="142.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">发送 c2s &quot;room.setMod&quot; { activePacks: [&quot;fanpack&quot;] }</text>
+</g>
+<g class="message" data-from="Lobby" data-to="RoomGD" data-label="基于官方数据创建派生视图 Object.create(gd)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="524.9904999999999" y1="192.45" x2="824.2044999999998" y2="192.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="674.5974999999999" y="182.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">基于官方数据创建派生视图 Object.create(gd)</text>
+</g>
+<g class="message" data-from="RoomGD" data-to="RoomGD" data-label="载入 packs/fanpack/pack.json 补丁 (覆盖 chess, bonds, items)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="824.2044999999998,232.45 854.2044999999998,232.45 854.2044999999998,252.45 824.2044999999998,252.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="862.2044999999998" y="242.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">载入 packs/fanpack/pack.json 补丁 (覆盖 chess, bonds, items)</text>
+</g>
+<g class="message" data-from="Lobby" data-to="UI" data-label="s2c 广播 &quot;room.update&quot; (同步 activePacks 与 Mod Hash)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="524.9904999999999" y1="302.45" x2="266.902" y2="302.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figA-seq-arrow)" />
+  <text x="395.94624999999996" y="292.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c 广播 &quot;room.update&quot; (同步 activePacks 与 Mod Hash)</text>
+</g>
+<g class="message" data-from="UI" data-to="UI" data-label="刷新自选池 (转正干员已在公共池，自动置灰或清空槽位)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="266.902,357.45 296.902,357.45 296.902,377.45 266.902,377.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="304.902" y="367.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">刷新自选池 (转正干员已在公共池，自动置灰或清空槽位)</text>
+</g>
+<g class="message" data-from="UI" data-to="Lobby" data-label="上报合法自选 c2s &quot;room.diy&quot; { picks }" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="266.902" y1="427.45" x2="524.9904999999999" y2="427.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="395.94624999999996" y="417.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">上报合法自选 c2s &quot;room.diy&quot; { picks }</text>
+</g>
+<g class="message" data-from="Lobby" data-to="DIY" data-label="validateDiyPicks(picks, { data: roomGd }) 校验通过" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="524.9904999999999" y1="467.45" x2="1092.667" y2="467.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="808.8287499999999" y="457.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">validateDiyPicks(picks, { data: roomGd }) 校验通过</text>
+</g>
+<g class="message" data-from="Econ" data-to="Econ" data-label="_rollItemSlot(playerState) 刷新装备" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1328.8959999999997,522.45 1358.8959999999997,522.45 1358.8959999999997,542.45 1328.8959999999997,542.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="1366.8959999999997" y="532.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">_rollItemSlot(playerState) 刷新装备</text>
+</g>
+<g class="message" data-from="Econ" data-to="Econ" data-label="检查 playerState.bonds (如 卡兹戴尔 &gt;= 4)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1328.8959999999997,592.45 1358.8959999999997,592.45 1358.8959999999997,612.45 1328.8959999999997,612.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="1366.8959999999997" y="602.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">检查 playerState.bonds (如 卡兹戴尔 &gt;= 4)</text>
+</g>
+<g class="message" data-from="Econ" data-to="Econ" data-label="判定专用装备偏置 (giveBondBiasOnly 装备不赋予羁绊计数)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1328.8959999999997,662.45 1358.8959999999997,662.45 1358.8959999999997,682.45 1328.8959999999997,682.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="1366.8959999999997" y="672.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">判定专用装备偏置 (giveBondBiasOnly 装备不赋予羁绊计数)</text>
+</g>
+<g class="message" data-from="Econ" data-to="UI" data-label="下发商店卡槽信息" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1328.8959999999997" y1="732.45" x2="266.902" y2="732.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figA-seq-arrow)" />
+  <text x="797.8989999999999" y="722.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">下发商店卡槽信息</text>
+</g>
+<g class="message" data-from="Lobby" data-to="Sim" data-label="传入 roomGd 启动战斗 Battle.install()" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="524.9904999999999" y1="787.45" x2="1600.6929999999998" y2="787.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="1062.8417499999998" y="777.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">传入 roomGd 启动战斗 Battle.install()</text>
+</g>
+<g class="message" data-from="Sim" data-to="Sim" data-label="content/bonds.js 派发至 mod 扩展光环钩子 (双端运行同份代码)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1600.6929999999998,827.45 1630.6929999999998,827.45 1630.6929999999998,847.45 1600.6929999999998,847.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="1638.6929999999998" y="837.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">content/bonds.js 派发至 mod 扩展光环钩子 (双端运行同份代码)</text>
+</g>
+<g class="message" data-from="Lobby" data-to="RoomGD" data-label="房间生命周期结束，视图对象自然 GC 销毁 (无全局污染，无需手动回滚)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="524.9904999999999" y1="912.45" x2="824.2044999999998" y2="912.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figA-seq-arrow)" />
+  <text x="674.5974999999999" y="902.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">房间生命周期结束，视图对象自然 GC 销毁 (无全局污染，无需手动回滚)</text>
+</g>
+<g class="note" data-position="over" data-actors="UI,DIY">
+  <polygon points="583.7995,310.45 769.7695,310.45 775.7695,316.45 775.7695,333.45 583.7995,333.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="769.7695,310.45 775.7695,316.45 769.7695,316.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="679.7845" y="321.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">阶段二：客户端响应与自选清洗</text>
+</g>
+<g class="note" data-position="over" data-actors="Econ">
+  <polygon points="1208.5569999999998,475.45 1443.2349999999997,475.45 1449.2349999999997,481.45 1449.2349999999997,498.45 1208.5569999999998,498.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="1443.2349999999997,475.45 1449.2349999999997,481.45 1443.2349999999997,481.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1328.8959999999997" y="486.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">阶段三：对局与专属装备偏置 (Per-Player)</text>
+</g>
+<g class="note" data-position="over" data-actors="Sim">
+  <polygon points="1516.5879999999997,740.45 1678.7979999999998,740.45 1684.7979999999998,746.45 1684.7979999999998,763.45 1516.5879999999997,763.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="1678.7979999999998,740.45 1684.7979999999998,746.45 1678.7979999999998,746.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1600.6929999999998" y="751.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">阶段四：双端同构战斗执行</text>
+</g>
+<g class="note" data-position="over" data-actors="Lobby,RoomGD">
+  <polygon points="589.0074999999998,865.45 754.1874999999998,865.45 760.1874999999998,871.45 760.1874999999998,888.45 589.0074999999998,888.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="754.1874999999998,865.45 760.1874999999998,871.45 754.1874999999998,871.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="674.5974999999999" y="876.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">阶段五：对局结束/房间关闭</text>
+</g>
+<g class="actor" data-id="figA-Host" data-label="房主 (Host)" data-type="actor">
+  <g transform="translate(61.9495,32) scale(1.5)">
+    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+  </g>
+  <text x="79.9495" y="84" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">房主 (Host)</text>
+</g>
+<g class="actor" data-id="figA-UI" data-label="客户端房间设置 (Room UI)" data-type="participant">
+  <rect x="169.899" y="30" width="194.00599999999994" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="266.902" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">客户端房间设置 (Room UI)</text>
+</g>
+<g class="actor" data-id="figA-Lobby" data-label="服务端大厅/房间 (server/lobby.js)" data-type="participant">
+  <rect x="403.9049999999999" y="30" width="242.17099999999994" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="524.9904999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">服务端大厅/房间 (server/lobby.js)</text>
+</g>
+<g class="actor" data-id="figA-RoomGD" data-label="房间数据视图 (Room Overlay GameData)" data-type="participant">
+  <rect x="686.0759999999998" y="30" width="276.25699999999995" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="824.2044999999998" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">房间数据视图 (Room Overlay GameData)</text>
+</g>
+<g class="actor" data-id="figA-DIY" data-label="自选验证 (shared/diy.js)" data-type="participant">
+  <rect x="1002.333" y="30" width="180.66799999999995" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1092.667" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">自选验证 (shared/diy.js)</text>
+</g>
+<g class="actor" data-id="figA-Econ" data-label="玩家商店 (player/economy.js)" data-type="participant">
+  <rect x="1223.0009999999997" y="30" width="211.78999999999994" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1328.8959999999997" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">玩家商店 (player/economy.js)</text>
+</g>
+<g class="actor" data-id="figA-Sim" data-label="双方战斗引擎 (server &amp; client Battle)" data-type="participant">
+  <rect x="1474.7909999999997" y="30" width="251.80399999999995" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1600.6929999999998" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">双方战斗引擎 (server &amp; client Battle)</text>
+</g>
+</svg></div></div>
+      <div class="fig__cap"><b>图二 · 方案 A：双端同构（推荐）</b><span class="chip">参与者：房主 / Room UI / lobby / Room Overlay GD / shared-diy / economy / 双端 Battle</span><span class="chip">原尺寸 · 横向可滚动</span></div>
+    </div>
+    <div class="two-col">
+      <div class="mini">
+        <h4>这张图离「可实现」只差两处</h4>
+        <ul>
+          <li><code class="inline">s2c 广播 "room.update"</code> → 改成 <code class="inline">room.state</code>（Room.toState() :198-211）。</li>
+          <li><code class="inline">content/bonds.js 派发至 mod 扩展光环钩子</code> → 现状是 PARTS 冻结，<b>没有这个派发口</b>。若内容只走数据（新盟约只是 bonds.json 多一条），这一格整条都不需要。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>为什么推荐它</h4>
+        <ul>
+          <li>与官方默认战斗模型一致：<b>数据双端同源</b>，服务端只做校验与必要重算。</li>
+          <li>房间派生视图有官方样板（diyGameData），不是新发明。</li>
+          <li>「阶段五」在方案 A 里根本不存在 —— 视图随房间 GC，没有回滚代码可写坏。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="fig fig--b">
+      <div class="fig__scroll"><div class="fig__canvas" style="--fig-w:2017px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2016.0825 1654.45" style="background:transparent">
+<style>.fig--b text { font-family: inherit; }.fig--b svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="figB-seq-arrow" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" />
+  </marker>
+  <marker id="figB-seq-arrow-open" markerWidth="8" markerHeight="5" refX="8" refY="2.5" orient="auto-start-reverse">
+    <polyline points="0 0, 8 2.5, 0 5" fill="none" stroke="var(--_arrow)" stroke-width="1" />
+  </marker>
+</defs>
+<g class="block" data-type="rect" data-label="phase">
+  <rect x="30" y="100.44999999999999" width="981.2319999999997" height="320" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="100.44999999999999" width="121.27000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="109.44999999999999" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">阶段一 · 房间模组挂载（原型链隔离）</text>
+</g>
+<g class="block" data-type="alt" data-label="玩家槽位包含已转正干员 (该干员已在 roomGd.visibleChess 中)">
+  <rect x="30" y="551.45" width="1197.4539999999997" height="194" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="551.45" width="387.24999999999994" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="560.45" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">分支 · 玩家槽位包含已转正干员 (该干员已在 roomGd.visibleChess 中)</text>
+  <line x1="30" y1="697.45" x2="1227.4539999999997" y2="697.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+  <text x="38" y="711.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">否则 · 槽位合法</text>
+</g>
+<g class="block" data-type="rect" data-label="phase">
+  <rect x="30" y="443.45" width="1197.4539999999997" height="302.00000000000006" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="443.45" width="121.27000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="452.45" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">阶段二 · 干员转正与自选清洗</text>
+</g>
+<g class="block" data-type="rect" data-label="phase">
+  <rect x="30" y="768.45" width="1478.8839999999998" height="325" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="768.45" width="121.27000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="777.45" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">阶段三 · 局内装备商店偏置</text>
+</g>
+<g class="block" data-type="rect" data-label="phase">
+  <rect x="30" y="1116.45" width="1735.8609999999999" height="280" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="1116.45" width="121.27000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="1125.45" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">阶段四 · 权威战斗与光环</text>
+</g>
+<g class="block" data-type="rect" data-label="phase">
+  <rect x="30" y="1419.45" width="412.4439999999999" height="185" rx="0" ry="0" fill="none" stroke="var(--_node-stroke)" stroke-width="1" />
+  <rect x="30" y="1419.45" width="121.27000000000002" height="18" fill="var(--_group-hdr)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="36" y="1428.45" font-size="11" font-weight="600" fill="var(--_text-sec)" dy="3.8499999999999996">阶段五 · 关闭模组（GC 回收）</text>
+</g>
+<line class="lifeline" data-actor="Host" x1="111.809" y1="92.45" x2="111.809" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Lobby" x1="328.03099999999995" y1="70" x2="328.03099999999995" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="ModLoader" x1="599.4574999999999" y1="70" x2="599.4574999999999" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="RoomGD" x1="883.8514999999998" y1="70" x2="883.8514999999998" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="DIY" x1="1129.3429999999998" y1="70" x2="1129.3429999999998" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Economy" x1="1378.1689999999999" y1="70" x2="1378.1689999999999" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<line class="lifeline" data-actor="Sim" x1="1647.3725" y1="70" x2="1647.3725" y2="1624.45" stroke="var(--_line)" stroke-width="0.75" stroke-dasharray="6 4" />
+<g class="message" data-from="Host" data-to="Lobby" data-label="c2s &quot;room.setMod&quot; { activePacks: [&quot;fanpack&quot;] }" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="111.809" y1="140.45" x2="328.03099999999995" y2="140.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="130.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">c2s &quot;room.setMod&quot; { activePacks: [&quot;fanpack&quot;] }</text>
+</g>
+<g class="message" data-from="Lobby" data-to="ModLoader" data-label="loadPackOverlay(&quot;fanpack&quot;)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="328.03099999999995" y1="180.45" x2="599.4574999999999" y2="180.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="463.7442499999999" y="170.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">loadPackOverlay(&quot;fanpack&quot;)</text>
+</g>
+<g class="message" data-from="ModLoader" data-to="ModLoader" data-label="读取 packs/fanpack/pack.json 与 content.json" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="599.4574999999999,220.45 629.4574999999999,220.45 629.4574999999999,240.45 599.4574999999999,240.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="637.4574999999999" y="230.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">读取 packs/fanpack/pack.json 与 content.json</text>
+</g>
+<g class="message" data-from="ModLoader" data-to="RoomGD" data-label="Object.create(officialGd) 生成独立房间数据视图" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="599.4574999999999" y1="290.45" x2="883.8514999999998" y2="290.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="741.6544999999999" y="280.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">Object.create(officialGd) 生成独立房间数据视图</text>
+</g>
+<g class="message" data-from="RoomGD" data-to="RoomGD" data-label="内存覆盖：公共池扩充 + 自选池剔除 + 注入签名装备" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="883.8514999999998,330.45 913.8514999999998,330.45 913.8514999999998,350.45 883.8514999999998,350.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="921.8514999999998" y="340.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">内存覆盖：公共池扩充 + 自选池剔除 + 注入签名装备</text>
+</g>
+<g class="message" data-from="Lobby" data-to="Host" data-label="s2c &quot;room.update&quot; (确认 Mod 启用，同步公共卡池变化)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="328.03099999999995" y1="400.45" x2="111.809" y2="400.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="390.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c &quot;room.update&quot; (确认 Mod 启用，同步公共卡池变化)</text>
+</g>
+<g class="message" data-from="Host" data-to="Lobby" data-label="c2s &quot;room.diy&quot; 上报自选阵容 (槽位 1~4)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="111.809" y1="483.45" x2="328.03099999999995" y2="483.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="473.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">c2s &quot;room.diy&quot; 上报自选阵容 (槽位 1~4)</text>
+</g>
+<g class="message" data-from="Lobby" data-to="DIY" data-label="checkDiyPicks(picks, { data: roomGd })" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="328.03099999999995" y1="523.45" x2="1129.3429999999998" y2="523.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="728.6869999999999" y="513.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">checkDiyPicks(picks, { data: roomGd })</text>
+</g>
+<g class="message" data-from="DIY" data-to="DIY" data-label="强制清空该槽位，打标 [转正移出]" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1129.3429999999998,591.45 1159.3429999999998,591.45 1159.3429999999998,611.45 1129.3429999999998,611.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1167.3429999999998" y="601.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">强制清空该槽位，打标 [转正移出]</text>
+</g>
+<g class="message" data-from="DIY" data-to="Host" data-label="s2c 响应: 清洗提示 (相关干员已转正至公共池，请重新配置)" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1129.3429999999998" y1="661.45" x2="111.809" y2="661.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figB-seq-arrow)" />
+  <text x="620.5759999999999" y="651.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c 响应: 清洗提示 (相关干员已转正至公共池，请重新配置)</text>
+</g>
+<g class="message" data-from="DIY" data-to="Lobby" data-label="存储合法配置至 seat.diy" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="1129.3429999999998" y1="725.45" x2="328.03099999999995" y2="725.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="728.6869999999999" y="715.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">存储合法配置至 seat.diy</text>
+</g>
+<g class="message" data-from="Host" data-to="Economy" data-label="进入休整期，玩家刷新装备商店" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="111.809" y1="808.45" x2="1378.1689999999999" y2="808.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="744.9889999999999" y="798.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">进入休整期，玩家刷新装备商店</text>
+</g>
+<g class="message" data-from="Economy" data-to="Economy" data-label="获取当前玩家场上状态 (ps.board)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1378.1689999999999,848.45 1408.1689999999999,848.45 1408.1689999999999,868.45 1378.1689999999999,868.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1416.1689999999999" y="858.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">获取当前玩家场上状态 (ps.board)</text>
+</g>
+<g class="message" data-from="Economy" data-to="Economy" data-label="检测玩家卡兹戴尔羁绊 (kazdel &gt;= 4)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1378.1689999999999,918.45 1408.1689999999999,918.45 1408.1689999999999,938.45 1378.1689999999999,938.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1416.1689999999999" y="928.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">检测玩家卡兹戴尔羁绊 (kazdel &gt;= 4)</text>
+</g>
+<g class="message" data-from="Economy" data-to="Economy" data-label="50% 权重偏置命中 -&gt; 刷出【提卡兹之根】" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1378.1689999999999,988.45 1408.1689999999999,988.45 1408.1689999999999,1008.45 1378.1689999999999,1008.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1416.1689999999999" y="998.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">50% 权重偏置命中 -&gt; 刷出【提卡兹之根】</text>
+</g>
+<g class="message" data-from="Economy" data-to="Host" data-label="s2c 下发玩家个性化商店装备卡槽" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1378.1689999999999" y1="1073.45" x2="111.809" y2="1073.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figB-seq-arrow)" />
+  <text x="744.9889999999999" y="1063.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c 下发玩家个性化商店装备卡槽</text>
+</g>
+<g class="message" data-from="Host" data-to="Lobby" data-label="布阵完成，开始战斗" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="111.809" y1="1156.45" x2="328.03099999999995" y2="1156.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="1146.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">布阵完成，开始战斗</text>
+</g>
+<g class="message" data-from="Lobby" data-to="Sim" data-label="new Battle(spec, { gd: roomGd })" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="328.03099999999995" y1="1196.45" x2="1647.3725" y2="1196.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="987.70175" y="1186.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">new Battle(spec, { gd: roomGd })</text>
+</g>
+<g class="message" data-from="Sim" data-to="Sim" data-label="动态挂载 bonds/custom.js (执行卡兹戴尔/罗德岛黑板光环)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1647.3725,1236.45 1677.3725,1236.45 1677.3725,1256.45 1647.3725,1256.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1685.3725" y="1246.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">动态挂载 bonds/custom.js (执行卡兹戴尔/罗德岛黑板光环)</text>
+</g>
+<g class="message" data-from="Sim" data-to="Sim" data-label="纯服务端权威推进 Tick，计算属性、Buff 与伤害" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="1647.3725,1306.45 1677.3725,1306.45 1677.3725,1326.45 1647.3725,1326.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="1685.3725" y="1316.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">纯服务端权威推进 Tick，计算属性、Buff 与伤害</text>
+</g>
+<g class="message" data-from="Sim" data-to="Host" data-label="s2c 广播权威战斗快照与伤害事件，前端仅负责渲染回放" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="1647.3725" y1="1376.45" x2="111.809" y2="1376.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figB-seq-arrow)" />
+  <text x="879.59075" y="1366.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c 广播权威战斗快照与伤害事件，前端仅负责渲染回放</text>
+</g>
+<g class="message" data-from="Host" data-to="Lobby" data-label="取消勾选 &quot;fanpack&quot; (或对局结束/房间解散)" data-line-style="solid" data-arrow-head="filled" data-self="false">
+  <line x1="111.809" y1="1459.45" x2="328.03099999999995" y2="1459.45" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="1449.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">取消勾选 &quot;fanpack&quot; (或对局结束/房间解散)</text>
+</g>
+<g class="message" data-from="Lobby" data-to="Lobby" data-label="room.gd 引用重置为 officialGd (原 roomGd 被 GC 自然回收)" data-line-style="solid" data-arrow-head="filled" data-self="true">
+  <polyline points="328.03099999999995,1499.45 358.03099999999995,1499.45 358.03099999999995,1519.45 328.03099999999995,1519.45" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#figB-seq-arrow)" />
+  <text x="366.03099999999995" y="1509.45" font-size="11" text-anchor="start" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">room.gd 引用重置为 officialGd (原 roomGd 被 GC 自然回收)</text>
+</g>
+<g class="message" data-from="Lobby" data-to="Host" data-label="s2c 恢复官方默认自选池与公共池" data-line-style="dashed" data-arrow-head="filled" data-self="false">
+  <line x1="328.03099999999995" y1="1584.45" x2="111.809" y2="1584.45" stroke="var(--_line)" stroke-width="1" stroke-dasharray="6 4" marker-end="url(#figB-seq-arrow)" />
+  <text x="219.91999999999996" y="1574.45" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">s2c 恢复官方默认自选池与公共池</text>
+</g>
+<g class="note" data-position="over" data-actors="Host,DIY">
+  <polygon points="465.1909999999999,408.45 769.9609999999999,408.45 775.9609999999999,414.45 775.9609999999999,431.45 465.1909999999999,431.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="769.9609999999999,408.45 775.9609999999999,414.45 769.9609999999999,414.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="620.5759999999999" y="419.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">【阶段二：干员转正与自选清洗（服务端权威拦截）】</text>
+</g>
+<g class="note" data-position="over" data-actors="Host,Economy">
+  <polygon points="551.885,733.45 932.0929999999998,733.45 938.0929999999998,739.45 938.0929999999998,756.45 551.885,756.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="932.0929999999998,733.45 938.0929999999998,739.45 932.0929999999998,739.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="744.9889999999999" y="744.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">【阶段三：局内装备商店偏置（挂载于 player/economy，非 pool.js）】</text>
+</g>
+<g class="note" data-position="over" data-actors="Economy">
+  <polygon points="1180.3129999999999,1026.45 1570.0249999999999,1026.45 1576.0249999999999,1032.45 1576.0249999999999,1049.45 1180.3129999999999,1049.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="1570.0249999999999,1026.45 1576.0249999999999,1032.45 1570.0249999999999,1032.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="1378.1689999999999" y="1037.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">生效 giveBondBiasOnly: true (同构体配对时忽略该装备，不增加盟约人数)</text>
+</g>
+<g class="note" data-position="over" data-actors="Host,Sim">
+  <polygon points="765.78575,1081.45 987.39575,1081.45 993.39575,1087.45 993.39575,1104.45 765.78575,1104.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="987.39575,1081.45 993.39575,1087.45 987.39575,1087.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="879.5907500000001" y="1092.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">【阶段四：权威战斗模拟与光环执行】</text>
+</g>
+<g class="note" data-position="over" data-actors="Host,RoomGD">
+  <polygon points="366.20524999999986,1384.45 623.4552499999999,1384.45 629.4552499999999,1390.45 629.4552499999999,1407.45 366.20524999999986,1407.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="623.4552499999999,1384.45 629.4552499999999,1390.45 623.4552499999999,1390.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="497.83024999999986" y="1395.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">【阶段五：关闭模组（天然免疫回滚崩溃）】</text>
+</g>
+<g class="note" data-position="over" data-actors="Lobby">
+  <polygon points="167.29999999999998,1537.45 482.76199999999994,1537.45 488.76199999999994,1543.45 488.76199999999994,1560.45 167.29999999999998,1560.45" fill="var(--bg)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <polygon points="482.76199999999994,1537.45 488.76199999999994,1543.45 482.76199999999994,1543.45" fill="var(--_inner-stroke)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.03099999999995" y="1548.95" font-size="11" text-anchor="middle" font-weight="400" fill="var(--_text-muted)" dy="3.8499999999999996">无需执行复杂的反向卸载，官方 23 盟约 / 115 装备立即可用</text>
+</g>
+<g class="actor" data-id="figB-Host" data-label="玩家 / 房主 (Client)" data-type="actor">
+  <g transform="translate(93.809,32) scale(1.5)">
+    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M15 10C15 11.6569 13.6569 13 12 13C10.3431 13 9 11.6569 9 10C9 8.34315 10.3431 7 12 7C13.6569 7 15 8.34315 15 10Z" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+    <path d="M5.62842 18.3563C7.08963 17.0398 9.39997 16 12 16C14.6 16 16.9104 17.0398 18.3716 18.3563" fill="none" stroke="var(--_line)" stroke-width="0.6666666666666666" />
+  </g>
+  <text x="111.809" y="84" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">玩家 / 房主 (Client)</text>
+</g>
+<g class="actor" data-id="figB-Lobby" data-label="服务端大厅 (server/lobby.js)" data-type="participant">
+  <rect x="223.618" y="30" width="208.82599999999994" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="328.03099999999995" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">服务端大厅 (server/lobby.js)</text>
+</g>
+<g class="actor" data-id="figB-ModLoader" data-label="服务端Mod加载器 (server/packs.js)" data-type="participant">
+  <rect x="472.4439999999999" y="30" width="254.02699999999996" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="599.4574999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">服务端Mod加载器 (server/packs.js)</text>
+</g>
+<g class="actor" data-id="figB-RoomGD" data-label="房间数据视图 (Room Overlay GD)" data-type="participant">
+  <rect x="766.4709999999998" y="30" width="234.76099999999994" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="883.8514999999998" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">房间数据视图 (Room Overlay GD)</text>
+</g>
+<g class="actor" data-id="figB-DIY" data-label="自选清洗 (player/diy.js)" data-type="participant">
+  <rect x="1041.232" y="30" width="176.22199999999998" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1129.3429999999998" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">自选清洗 (player/diy.js)</text>
+</g>
+<g class="actor" data-id="figB-Economy" data-label="玩家经济商店 (player/economy.js)" data-type="participant">
+  <rect x="1257.454" y="30" width="241.42999999999998" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1378.1689999999999" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">玩家经济商店 (player/economy.js)</text>
+</g>
+<g class="actor" data-id="figB-Sim" data-label="权威战斗 (server/sim/Battle.js)" data-type="participant">
+  <rect x="1538.884" y="30" width="216.97699999999992" height="40" rx="4" ry="4" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="1" />
+  <text x="1647.3725" y="50" font-size="13" text-anchor="middle" font-weight="500" fill="var(--_text)" dy="4.55">权威战斗 (server/sim/Battle.js)</text>
+</g>
+</svg></div></div>
+      <div class="fig__cap"><b>图三 · 方案 B：纯服务端权威（前端只渲染回放）</b><span class="chip">五阶段带分段框；已把生成器残留的 rgb() 标签换成阶段名</span><span class="chip">原尺寸 · 横向可滚动</span></div>
+    </div>
+    <div class="notice">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 1 21h22L12 2zm0 6 6.5 11h-13L12 8zm-1 3v3h2v-3h-2zm0 4v2h2v-2h-2z"/></svg>
+      <div><b>方案 B 不是不能做，而是它把代价写在了别处。</b>官方确实保留了服务端跑战斗 + 推快照的模式，但那是<b>遗留兜底</b>：
+      <code class="inline">SP_COMBAT=server</code> → <code class="inline">clientCombat=false</code>，<code class="inline">m.public.combatMode</code> 告诉 UI 谁在算（Match.js:107 · :201）。
+      选它意味着：每个战斗回合的 CPU 从「每房间约 1 ms」搬到服务端（docs/DEPLOY.md:10），
+      帧链路从「各端自算」变成「服务端 b.snap 流（唯一可丢帧）」，
+      而<b>掉线托管与 AI 战场本来就在服务端算</b>，负载方差会变大。
+      代价换到的收益只有一条：可以让只有 Node 才有的 extraContent 代码 hook 生效。</div>
+    </div>
+
+    <h3>3.1 两个方案怎么选</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>A · 双端同构（数据包）</th><th>B · 纯服务端权威</th></tr></thead>
+        <tbody>
+          <tr><td>与官方规范</td><td>直接对应 data 类型与「同数据双端跑」</td><td>合规，但需要 SP_COMBAT=server 关掉默认路径</td></tr>
+          <tr><td>能表达的内容</td><td>数值、新棋子、新装备、新盟约的<b>数据可表达部分</b>（含阈值、成员、权重）</td><td>外加<b>任意代码逻辑</b>（如条件光环、动态派发）</td></tr>
+          <tr><td>服务端 CPU</td><td>几乎不变（仍只校验 / 抽样复算）</td><td>每个战斗回合都在服务端（真人战场也复算时要 SP_VERIFY=all）</td></tr>
+          <tr><td>带宽</td><td>结果帧不变</td><td>b.snap 快照流，可丢帧、要重传</td></tr>
+          <tr><td>反作弊</td><td>服务端可复算（现成白名单校验）</td><td>天然权威，但客户端连伤害都不算了，UI 依赖服务端节奏</td></tr>
+          <tr><td>实施风险</td><td>低：改动集中在 packs + 视图 + 房间状态</td><td>高：碰战斗推进与广播主链路，回归面是整个对战</td></tr>
+          <tr><td>建议</td><td><b>先按 A 落地</b>；fanpack 那三条内容（新盟约 / 签名装备 / 转正）用 A 就能表达</td><td>只有在出现「数据无法表达的机制」时再单独评估</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ==================== 板块四：两条分支 ==================== -->
+  <section class="block" id="forks">
+    <div class="block__head">
+      <span class="block__num">4</span>
+      <span class="block__title">两条分支的落地路线</span>
+      <span class="block__who">同一份改动，两种前置工作量</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>事实</th><th>mine/re-apk（jingjiangze）</th><th>py/feature/v0.2.1-fusion-master</th></tr></thead>
+        <tbody>
+          <tr><td>tip</td><td class="mono">0d29c6e · 2026-10-08 21:49</td><td class="mono">06cd3d0 · 2026-10-08 10:51</td></tr>
+          <tr><td>与上游的分叉点</td><td class="mono">c2a2ef7 = tag v0.2.1</td><td class="mono">9f93096 = tag v0.1.4（2026-10-06 17:33）</td></tr>
+          <tr><td>落后上游提交数</td><td class="num">1</td><td class="num">387</td></tr>
+          <tr><td>自有提交数</td><td class="num">612</td><td class="num">96</td></tr>
+          <tr><td>server/packs.js</td><td><span class="st st-yes">在</span>（与上游逐字节相同）</td><td><span class="st st-no">缺</span></td></tr>
+          <tr><td>shared/packs.js</td><td><span class="st st-yes">在</span></td><td><span class="st st-yes">在</span> —— 且与上游<b>字节相同</b>，但悬空：它注释引用的注册表与规范文档都不存在</td></tr>
+          <tr><td>docs/PACKS.md · packs/ · tools/packs.mjs · /packs 路由</td><td><span class="st st-yes">全在</span></td><td><span class="st st-no">全缺</span></td></tr>
+          <tr><td>server/ + shared/ + public/ 相对上游</td><td><b>0 文件差异</b>（204 个文件全为新增）</td><td>有自维护改动（含 bonds/addon/battle.js 等战斗定制）</td></tr>
+          <tr><td>SIM_DATA_FILES（客户端 sim 数据清单）</td><td>跟随上游（已含 backups）</td><td><b>自己维护</b>：tip 提交正在补 backups.json，而官方那行早就有了 → <b>双端数据清单漂移风险</b></td></tr>
+          <tr><td>重心</td><td>安卓壳、WebRTC / 局域网联机适配、构建闸门</td><td>移动端嵌入式 Node、玩法 bug 修复、多人聊天同步</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="steps">
+      <li class="step"><span class="step__n">1</span><div class="step__body"><div class="step__title">先在 mine/re-apk 做（唯一合理顺序）</div><div class="step__note">packs 骨架齐、与上游零差异，改动能直接回流上游而不冲突；APK 侧还自带面板插槽与热更通道，做完能在手机上验。</div></div></li>
+      <li class="step"><span class="step__n">2</span><div class="step__body"><div class="step__title">py 分支的前置补课 = 移 5 件，不是重写</div><div class="step__note">从 origin/master 取 shared/packs.js（已同，跳过）、server/packs.js、docs/PACKS.md、packs/README.md、tools/packs.mjs ＋ server/http/static.js 的 /packs 分支。注意 .gitignore 里的 packs/index.json。</div></div></li>
+      <li class="step"><span class="step__n">3</span><div class="step__body"><div class="step__title">落后 387 提交的现实</div><div class="step__note">别指望整支 merge（历史对比结论：只有极少数文件能干净套用）。要么把 mod 改动做成<b>可移植的补丁集</b>逐件应用，要么先做上游同步再谈 mod。它自己的战斗定制要一并回归。</div></div></li>
+      <li class="step"><span class="step__n">4</span><div class="step__body"><div class="step__title">Android 宿主特有的一条坑</div><div class="step__note">包扫描目录是 <code class="inline">path.join(ROOT, 'packs')</code>（server/http/config.js:45）。手机上 webroot 是 filesDir/webroot 的<b>整树 swap</b>，而 SlimPaths 已改成 deny-list 语义（白名单曾静默丢掉 i18n/），所以新目录要确认它在设备解包后仍在 —— 一次热更就消失的 mod 目录是最难查的那类 bug。</div></div></li>
+    </ul>
+  </section>
+
+  <!-- ==================== 板块五：复现 ==================== -->
+  <section class="block" id="repro">
+    <div class="block__head">
+      <span class="block__num">5</span>
+      <span class="block__title">复现命令与验收</span>
+      <span class="block__who">每条结论都能自己跑出来</span>
+    </div>
+    <p class="block__lead">本地仓 <code class="inline">C:\DDDD\Agent Work\spcmp\repo</code>（工作树为空，只能读 blob）。远程：origin=上游、mine=jingjiangze、py=Paper-Yuan。</p>
+    <pre class="code"><i># 盟约数 / 装备记录数 / 可购买装备数</i>
+git show origin/master:data/bonds.json | node -pe 'Object.keys(JSON.parse(require("fs").readFileSync(0,"utf8"))).length'    <i>→ 23</i>
+git show origin/master:data/items.json | node -pe 'Object.keys(JSON.parse(require("fs").readFileSync(0,"utf8"))).length'   <i>→ 115</i>
+git show origin/master:data/items.json | node -pe '<i>…isShopItem 谓词…</i>'                                              <i>→ 51</i>
+
+<i># 三个「不存在」</i>
+git grep -n giveBondBiasOnly origin/master mine/re-apk py/feature/v0.2.1-fusion-master   <i>→ rc=1，三个都无</i>
+git grep -nE "room[.](settings|update)" origin/master -- server shared                  <i>→ 0</i>
+git ls-tree -r origin/master --name-only server/sim | grep -i engine                     <i>→ 空</i>
+
+<i># fanpack 的三个内容名在上游是否存在</i>
+git grep -c -e 卡兹戴尔 -e 提卡兹 -e kazdel -e tikaz origin/master -- data shared server public docs   <i>→ 无输出</i>
+
+<i># 分支断层</i>
+git rev-list --count py/feature/v0.2.1-fusion-master..origin/master   <i>→ 387</i>
+git rev-list --count mine/re-apk..origin/master                        <i>→ 1</i>
+git diff --name-only origin/master mine/re-apk -- server shared public  <i>→ 空</i>
+git ls-tree py/feature/v0.2.1-fusion-master -- shared/packs.js server/packs.js   <i>→ 只有前者</i></pre>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>验收清单（改完必须全绿）</h4>
+        <ul>
+          <li><code class="inline">node tools/packs.mjs check --strict</code> —— 清单合规。</li>
+          <li>test/i18n-packs.test.js、test/package.test.js 不回归（packs 轴）。</li>
+          <li><b>同一 seed 双端同结果</b>：浏览器 createBattleFromSpec 与 Node 同一函数（runner.js:678 / spec.js:127），开发期开 SP_VERIFY=all 复算一轮。</li>
+          <li><b>不启 mod 的房间逐字节不变</b>：金标准结果仍走原版内容（PACKS.md 守则）。</li>
+          <li><b>房间隔离</b>：A 房开包时 B 房的商店、自选池、战斗不受影响。</li>
+          <li><b>握手三处带 content hash</b>，且客户端据此打 modded 标。</li>
+          <li>APK 侧：check-patches.mjs、check-extras-overlap.mjs、check-apk.mjs 全过（若动了 extras）。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>仍未验证 <span class="st st-todo">PENDING</span></h4>
+        <ul>
+          <li><b>fanpack 包本体不存在</b>：全工作区只搜到那张流程图文件，没有 packs/fanpack/、没有 content.json。「里面到底放哪些字段」目前只是设计意图。</li>
+          <li>data 类型的<b>合并语义</b>未定：整文件替换，还是按键补丁（后者才能只加第 24 条盟约而不动其余 23 条）。</li>
+          <li>新盟约会不会撞结果校验的层数上界（60 + 4·round）—— 取决于机制设计，需实测。</li>
+          <li>pack.app 版本范围目前只用于 lang；data 包的兼容判定要不要同一套，规范没写。</li>
+          <li>壳侧 server-config.js 已经有 packs() 视图，但服务器要按什么形状下发这份声明，还没有实现方。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="footer">
+  <div class="container">
+    <div>非官方同人作品整理，仅供学习交流。游戏与素材版权归 Hypergryph / Yostar 所有；本页不分发任何第三方素材，只描述技术通道。
+      页面为<b>离线单文件</b>：CSS 与三张时序图全部内联，构建时已断言运行时零外部请求（构建：built 2026-10-09 16:05 UTC · build.mjs）。</div>
+    <div class="footer-links">
+      <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">上游仓库</a>
+      <a href="https://github.com/jingjiangze/Stronghold-Protocol" target="_blank" rel="noopener">壳分支 re-apk</a>
+      <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
+      <a href="https://downcdn.jiangjiangze.icu/" target="_blank" rel="noopener">素材 CDN 文档</a>
+      <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
