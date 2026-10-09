@@ -4,7 +4,7 @@
 // 权威判定在发布轮：那里才拿得到上游 index.json（1.7 MB）与 APK 素材包清单，
 // 也才改得动 git 里的 hosted.json。在这里假装判过，等于给一个「看起来安全」的空壳。
 import { headKey, r2Config, readJson, s3fetch } from './_edge.js';
-import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
+import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone, triggerPublish } from './_http.js';
 import { LOG_KEY, cleanNote, removalKeyFor, validateKey } from '../../../../src/upload.mjs';
 
 export async function onRequestPost(context) {
