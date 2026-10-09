@@ -48,6 +48,13 @@ gh 取上游 latest release（或 --tag 指定）
 | 路径 | 内容 |
 |---|---|
 | `<CDN>/assets/**` | 素材本体（键 = 上游 `public/assets/**` 去掉 `public/`） |
+
+同一个桶还有第二个入口 <https://weishucdn2.jiangjiangze.icu>（`origins.json` 里的 `r2-alt`）：
+零额外存储、不占额度，只多一条路。两者的响应头必须逐字一致（200/206、ACAO `*`、
+`expose Content-Length, Content-Range, ETag`、`immutable`），因为 ACAO 是 **zone 级改写规则**加的、
+不是 R2 自带的 —— 那条规则的表达式按 host 匹配，**换/加域名时必须同步改它**，
+否则新域名取图会被浏览器以「WebGL 贴图被污染」的形式静默失败。撤回第二个域名：
+`wrangler r2 bucket domain remove stronghold-assets --domain …` 并把规则表达式改回单 host。
 | `<CDN>/fonts/**` | 字体 |
 | `<CDN>/data/assets.json` | 上游清单，`/assets/…`、`/fonts/…` 已改写为绝对 URL 且带 `?v=<tag>` |
 | `<CDN>/cdn/v1/art.json` | art 契约 + 版本水位 + 校验结果（字段名与 re 线 `site/manifest-re.json` 的 `art` 块对齐） |
