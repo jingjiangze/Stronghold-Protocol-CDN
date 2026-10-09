@@ -371,15 +371,15 @@
       ]
     },
     {
-      "id": "admin-selftest",
-      "what": "后台端到端自检用的 1x1 PNG，不属于上游素材；不需要时可删",
+      "id": "trigger-selftest",
+      "what": "触发式发布验证，验完下线",
       "addedAt": "2026-10-09",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
       "files": 1,
       "bytes": 70,
       "keys": [
         [
-          "assets/local/admin-selftest-20261010.png",
+          "assets/local/trigger-selftest-20261010.png",
           70
         ]
       ]
