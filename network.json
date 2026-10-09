@@ -40,9 +40,13 @@
       "host": "gitcdn.jiangjiangze.icu",
       "probe": "/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": null, "联通": null, "移动": 26 },
-      "http": {},
-      "note": "测量时 DNS 记录缺失（公网 NXDOMAIN），电信/联通完全连不上 —— 表里这一行是故障记录，不是性能数据。见审计 §27.6。"
+      "tcpRttMs": { "电信": 221, "联通": 182, "移动": 68 },
+      "http": {
+        "电信": { "ok": 5, "bad": 0, "ttfbMs": 241 },
+        "联通": { "ok": 5, "bad": 0, "ttfbMs": 713 },
+        "移动": { "ok": 4, "bad": 1, "ttfbMs": 277 }
+      },
+      "note": "自有域中继（Worker，按路径选 main / assets-raw 分支，后端 jsdelivr→ghfast 回退）。TCP 时延很好（移动 68ms，联通优于 gh-proxy），但 TTFB 241-713ms —— 比自有 R2 源高，因为它要多一跳再取上游。两轮复测里偶见单格 1 次失败，与上游有关。2026-10-09 曾因 DNS 记录缺失而完全不可达，记录已按本 zone 惯例（AAAA 100:: 代理，同 arknights）补回。"
     },
     {
       "id": "jsdelivr",
@@ -97,12 +101,8 @@
     {
       "id": "raw.githubusercontent",
       "reason": "三网 HTTP 成功率均为 3/5（40% 失败），时延数据是污染下的假象。"
-    },
-    {
-      "id": "gitcdn",
-      "reason": "DNS 记录缺失，内地电信/联通不可达（待补记录后重新评测）。"
     }
   ],
-  "defaultOrderHint": ["r2-primary", "pages", "gh-proxy", "jsdelivr"],
+  "defaultOrderHint": ["r2-primary", "pages", "gh-proxy", "gitcdn"],
   "_defaultOrderHint_note": "仅在客户端测速**完成之前**作为初始次序；测速完成后一律以现场结果为准。r2-primary/pages 排前是因为它们 15/15 全绿——先出内容，再让测速把更快的源顶上来。"
 }
