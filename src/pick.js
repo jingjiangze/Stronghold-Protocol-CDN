@@ -8,24 +8,40 @@
 /**
  * Race every mirror and return the fastest, with the full ranking.
  *
- * The probe path must exist on EVERY origin: asking for a file only the primary carries reports
- * the others as broken. robots.txt is tiny, served by every origin, and needs no CORS preflight.
+ * The probe path has to exist on EVERY origin, and no single path does: the R2/Pages origins carry
+ * the `/cdn/v1/` interface, while a git-mount origin serves the repository and therefore answers
+ * 502 on `/cdn/v1/probe.bin` and 404 on `/robots.txt` (measured: ghfast/gitcdn give 502 for
+ * `/robots.txt` but 200 for `/probe/cdn-probe.bin`). So each mirror's own published `probe` wins
+ * over the caller's default -- without that, every git mirror is thrown out as broken, which is
+ * exactly the bug this used to have: the site's own speed test read `mirror.probe`, this did not.
+ *
  * Two attempts per mirror, best time wins, so a cold connection is not the verdict.
  */
 export async function pickFastest(mirrors, { path = '/robots.txt', attempts = 2, timeoutMs = 6000, fetchImpl = fetch } = {}) {
   const measure = async (mirror) => {
     // `root` is the origin; `base` is its /assets/ subtree. Probing the subtree would 404.
     const origin = String(mirror.root || mirror.base || '').replace(/\/+$/, '');
+    const probePath = mirror.probe || path;
     let best = null;
     for (let i = 0; i < attempts; i++) {
       const started = Date.now();
-      const res = await fetchImpl(`${origin}${path}?probe=${Date.now()}-${i}`, {
+      const res = await fetchImpl(`${origin}${probePath}?probe=${Date.now()}-${i}`, {
         method: 'GET',
         cache: 'no-store',
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (!res.ok) throw new Error(`${mirror.id}: HTTP ${res.status}`);
-      await res.arrayBuffer();
+      const body = await res.arrayBuffer();
+      // 200 is not enough on its own. A mirror that answers with a short body but no error has been
+      // observed in this project, and it is the worst kind of failure: the status looks fine, the
+      // first chunk is fine, and the caller only finds out much later. So compare what arrived
+      // against what was declared, and treat a short read as a broken mirror.
+      // ArrayBuffer, not Buffer: this module is served to browsers as well as imported by Node.
+      const declared = Number(res.headers.get('content-length') || 0);
+      if (declared > 0 && body.byteLength !== declared) {
+        throw new Error(`${mirror.id}: truncated ${body.byteLength}/${declared}`);
+      }
+      if (body.byteLength === 0) throw new Error(`${mirror.id}: empty body`);
       const ms = Date.now() - started;
       if (best == null || ms < best) best = ms;
     }

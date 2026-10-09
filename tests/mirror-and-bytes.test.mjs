@@ -81,3 +81,66 @@ test('rebaseManifest swaps the origin without touching anything else', () => {
   const out = rebaseManifest(text, { from: 'https://a.test', to: 'https://c.test' });
   assert.equal(out, '{"a":"https://c.test/assets/x.png?v=1","b":"https://b.test/keep"}');
 });
+
+// A git-mount origin cannot serve the R2-only interface paths, so it publishes its own probe. If
+// the picker ignores that, every git mirror is discarded as broken -- which is what it used to do,
+// while the site's own speed test (which does read `probe`) ranked them fine. The two must agree.
+test('the picker probes each mirror on the path that mirror declares', async () => {
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(url);
+    // The git mirror only answers its own probe path; the R2-only default 404s there.
+    if (url.includes('git.test') && !url.includes('/probe/cdn-probe.bin')) return new Response('nope', { status: 404 });
+    return new Response('{}');
+  };
+  const { best, ranked } = await pickFastest(
+    [
+      { id: 'r2', root: 'https://r2.test' },
+      { id: 'git', root: 'https://git.test', probe: '/probe/cdn-probe.bin' },
+    ],
+    { fetchImpl, attempts: 1 },
+  );
+
+  assert.deepEqual(ranked.map((m) => m.id).sort(), ['git', 'r2'], 'the git mirror must survive the race');
+  assert.ok(best, 'a winner is still chosen');
+  // Each mirror was asked for its own path, and the git one was never asked for the default.
+  assert.ok(asked.some((u) => u.startsWith('https://r2.test/robots.txt')), 'the R2 mirror keeps the default path');
+  assert.ok(asked.some((u) => u.startsWith('https://git.test/probe/cdn-probe.bin')), 'the git mirror uses its declared probe');
+  assert.ok(!asked.some((u) => u.startsWith('https://git.test/robots.txt')), 'the git mirror must not be probed on /robots.txt');
+});
+
+// Without a declared probe the caller's default still applies, so nothing changes for flat origins.
+test('a mirror without a declared probe uses the default path', async () => {
+  const asked = [];
+  await pickFastest([{ id: 'x', root: 'https://x.test' }], {
+    fetchImpl: async (url) => { asked.push(url); return new Response('{}'); },
+    attempts: 1,
+    path: '/custom.bin',
+  });
+  assert.ok(asked.every((u) => u.startsWith('https://x.test/custom.bin')), `unexpected probe: ${asked[0]}`);
+});
+
+// A short body with a 200 is the failure mode this project has actually hit on a third-party
+// mirror. It must count as broken, not as "fastest".
+test('a truncated 200 is treated as broken, not as the winner', async () => {
+  const fetchImpl = async (url) => {
+    if (url.includes('liar.test')) {
+      return new Response('12345', { status: 200, headers: { 'content-length': '100' } });
+    }
+    return new Response('{}', { status: 200, headers: { 'content-length': '2' } });
+  };
+  const { best, ranked } = await pickFastest(
+    [
+      { id: 'liar', root: 'https://liar.test' },
+      { id: 'honest', root: 'https://honest.test' },
+    ],
+    { fetchImpl, attempts: 1 },
+  );
+  assert.equal(best.id, 'honest');
+  assert.deepEqual(ranked.map((m) => m.id), ['honest'], 'the truncating mirror must be dropped entirely');
+});
+
+test('an empty 200 is treated as broken', async () => {
+  const fetchImpl = async () => new Response('', { status: 200, headers: { 'content-length': '0' } });
+  await assert.rejects(() => pickFastest([{ id: 'x', root: 'https://x.test' }], { fetchImpl, attempts: 1 }), /no mirror answered/);
+});

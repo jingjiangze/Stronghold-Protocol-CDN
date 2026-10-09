@@ -1,0 +1,108 @@
+{
+  "_comment": "内地三运营商到各源的真实测量结果。这是**决策证据**，不是运行时配置：浏览器无法识别自己的运营商，所以客户端不可能按这张表选源——客户端只能现场测速（cdn/v1/pick.js）。这张表的用途是 (1) 记录事实与出处，(2) 决定哪些源**根本不该进入运行时候选**，(3) 在客户端测速完成前提供一个默认次序。",
+  "_method": "Globalping 公共探针，locations = 中国 + 指定 ASN，每条 5-6 个样本。TCP:443 连接时延；HTTP 为 GET 256 KiB 探针（/cdn/v1/probe.bin 或仓库内 /probe/cdn-probe.bin）并统计成功数、失败数与首字节时间。",
+  "_caveats": [
+    "256 KiB 样本太短，下载相位落进毫秒噪声，会算出 35-250 MiB/s 这种不可能值 —— 因此本表只用首字节时间(TTFB)作吞吐的代理指标，不报 MiB/s。",
+    "TCP 时延单独看会误导：DNS 污染下连到劫持 IP 很快但取字节失败（raw.githubusercontent 就是这种）。判断可用性必须看 HTTP 成功数。",
+    "样本量有限（每格 5-6），用于排序与排除，不足以做精细数值比较。"
+  ],
+  "measuredAt": "2026-10-09",
+  "carriers": { "电信": 4134, "联通": 4837, "移动": 9808 },
+  "sources": [
+    {
+      "id": "r2-primary",
+      "host": "weishucdn.jiangjiangze.icu",
+      "probe": "/cdn/v1/probe.bin",
+      "kind": "flat",
+      "tcpRttMs": { "电信": 227, "联通": 184, "移动": 211 },
+      "http": {
+        "电信": { "ok": 5, "bad": 0, "ttfbMs": 246 },
+        "联通": { "ok": 5, "bad": 0, "ttfbMs": 195 },
+        "移动": { "ok": 5, "bad": 0, "ttfbMs": 244 }
+      },
+      "note": "最稳（15/15），最慢。Cloudflare 免费档把内地路由到圣何塞（实测 CF-RAY 尾缀 -SJC），195-321ms 是这条跨境链路的代价。"
+    },
+    {
+      "id": "pages",
+      "host": "spages.jiangjiangze.icu",
+      "probe": "/cdn/v1/probe.bin",
+      "kind": "flat",
+      "tcpRttMs": { "电信": 212, "联通": 184, "移动": 231 },
+      "http": {
+        "电信": { "ok": 5, "bad": 0, "ttfbMs": 283 },
+        "联通": { "ok": 5, "bad": 0, "ttfbMs": 321 },
+        "移动": { "ok": 5, "bad": 0, "ttfbMs": 294 }
+      },
+      "note": "与 r2-primary 同稳，同样跨太平洋。二者互为冗余，不是速度上的选择。"
+    },
+    {
+      "id": "gitcdn",
+      "host": "gitcdn.jiangjiangze.icu",
+      "probe": "/probe/cdn-probe.bin",
+      "kind": "git",
+      "tcpRttMs": { "电信": null, "联通": null, "移动": 26 },
+      "http": {},
+      "note": "测量时 DNS 记录缺失（公网 NXDOMAIN），电信/联通完全连不上 —— 表里这一行是故障记录，不是性能数据。见审计 §27.6。"
+    },
+    {
+      "id": "jsdelivr",
+      "host": "cdn.jsdelivr.net",
+      "probe": "/gh/jingjiangze/Stronghold-Protocol-CDN@main/probe/cdn-probe.bin",
+      "kind": "git",
+      "tcpRttMs": { "电信": 157, "联通": 107, "移动": 83 },
+      "http": {
+        "电信": { "ok": 3, "bad": 2, "ttfbMs": 2700 },
+        "联通": { "ok": 5, "bad": 0, "ttfbMs": 747 },
+        "移动": { "ok": 4, "bad": 1, "ttfbMs": 493 }
+      },
+      "note": "联通最好（107ms / 5-5），电信最差（2/5 失败且 TTFB 2700ms）。单看 TCP 会高估它。"
+    },
+    {
+      "id": "ghfast",
+      "host": "ghfast.top",
+      "probe": "/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
+      "kind": "git",
+      "tcpRttMs": { "电信": 175, "联通": 220, "移动": 3275 },
+      "http": {},
+      "note": "移动上是灾难（3275ms）。移动用户占比高，因此不作运行时首选。"
+    },
+    {
+      "id": "gh-proxy",
+      "host": "gh-proxy.com",
+      "probe": "/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
+      "kind": "git",
+      "tcpRttMs": { "电信": 57, "联通": 180, "移动": 49 },
+      "http": {
+        "电信": { "ok": 5, "bad": 0, "ttfbMs": 290 },
+        "联通": { "ok": 5, "bad": 0, "ttfbMs": 444 },
+        "移动": { "ok": 5, "bad": 0, "ttfbMs": 358 }
+      },
+      "note": "第三方里唯一三网全绿（15/15），且电信/移动的 TCP 时延只有我们自己源的 1/4。可用，但受第三方可用性约束。"
+    },
+    {
+      "id": "raw.githubusercontent",
+      "host": "raw.githubusercontent.com",
+      "probe": "/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
+      "kind": "git",
+      "tcpRttMs": { "电信": 74, "联通": 170, "移动": 86 },
+      "http": {
+        "电信": { "ok": 3, "bad": 2, "ttfbMs": 72 },
+        "联通": { "ok": 3, "bad": 2, "ttfbMs": 176 },
+        "移动": { "ok": 3, "bad": 2, "ttfbMs": 92 }
+      },
+      "note": "时延最好看，成功率最差：三网一律 3/5。典型 DNS 污染——连得上劫持 IP，取不到字节。**不得进入运行时候选。**"
+    }
+  ],
+  "excluded": [
+    {
+      "id": "raw.githubusercontent",
+      "reason": "三网 HTTP 成功率均为 3/5（40% 失败），时延数据是污染下的假象。"
+    },
+    {
+      "id": "gitcdn",
+      "reason": "DNS 记录缺失，内地电信/联通不可达（待补记录后重新评测）。"
+    }
+  ],
+  "defaultOrderHint": ["r2-primary", "pages", "gh-proxy", "jsdelivr"],
+  "_defaultOrderHint_note": "仅在客户端测速**完成之前**作为初始次序；测速完成后一律以现场结果为准。r2-primary/pages 排前是因为它们 15/15 全绿——先出内容，再让测速把更快的源顶上来。"
+}

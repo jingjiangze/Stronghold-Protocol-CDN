@@ -36,6 +36,7 @@ import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins, readGitOrigins } from './origins.mjs';
+import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -817,6 +818,14 @@ async function reconcileUnreachableFromBucket(config, probe, { expected, base })
 
 async function publishCore(config, { opts, manifests, version, indexJson }) {
   let rewrittenCount = 0;
+  // Documentation, not a dependency: if the measured table is malformed the sync still publishes
+  // the assets, and the problem is reported rather than silently shipping an empty file.
+  let networkDoc = null;
+  try {
+    networkDoc = readNetworkTable(ROOT);
+  } catch (error) {
+    console.error(`[sync] ${NETWORK_TABLE} not published: ${error.message}`);
+  }
   const objects = [
     ...manifests.map((entry) => {
       const rewritten = rewriteManifestText(entry.text, { base: opts.base, version });
@@ -829,6 +838,11 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
     // The speed-test probe: a known 256 KiB that every origin serves, so a browser can measure
     // latency and throughput without Range (which the Pages origin's CORS preflight rejects).
     [PROBE_KEY, makeProbeBuffer(), 'application/octet-stream', IMMUTABLE],
+    // Measured mainland-carrier behaviour per origin. Documentation rather than configuration --
+    // a browser cannot know its own carrier, so the client still has to measure for itself; this is
+    // what justifies which origins are runtime candidates at all, and it is republished with every
+    // sync so it cannot silently describe a network that no longer exists.
+    ...(networkDoc ? [['cdn/v1/network.json', Buffer.from(networkDoc, 'utf8'), 'application/json', SHORT]] : []),
   ];
   for (const [key, body, contentType, cacheControl] of objects) {
     await putObject(config, key, body, { contentType, cacheControl });

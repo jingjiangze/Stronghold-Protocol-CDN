@@ -92,9 +92,16 @@ function renderMirrors(flat) {
       mirror.coverage === 'partial'
         ? '<span class="chip" title="只挂载本仓 main 分支的工具文件，不含素材树">部分覆盖</span>'
         : '';
+    // Show the path this card is measured on. It is not cosmetic: no single path exists on every
+    // origin (the R2-only /cdn/v1/ tree 502s on a git mount), so the number below is only
+    // comparable if the reader can see which object produced it.
+    const probe = mirror.probe
+      ? `<div class="mono muted" style="margin-top:6px;word-break:break-all">探针 ${mirror.probe}</div>`
+      : '';
     card.innerHTML =
       `<div class="card__title">${mirror.id}</div>` +
       `<div class="mono muted" style="margin-top:8px;word-break:break-all">${mirror.base || mirror.root}</div>` +
+      probe +
       `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>${coverage}` +
       `<span class="card__value is-bad" data-ms>未测速</span></div>` +
       `<div class="card__stats" data-stats hidden>` +
