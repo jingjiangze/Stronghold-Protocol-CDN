@@ -59,10 +59,14 @@ const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Pr
  * every interface change cost exactly one re-publish, which is the point.
  *
  * 4: every pack's `urls` gained our own origin, and both download zips gained it too. Without a
- * bump the packs already being present would satisfy the watermark and the change would never
- * reach the published interface.
+ *    bump the packs already being present would satisfy the watermark and the change would never
+ *    reach the published interface.
+ *
+ * 5: the tree gained `docs/` (the official documentation the package ships). This is the same trap
+ *    as 4 in a different place: the upstream tag has not moved, so every other clause of the
+ *    watermark holds and the run would report "nothing to do" while the docs stayed unpublished.
  */
-export const ART_SCHEMA = 4;
+export const ART_SCHEMA = 5;
 
 /** The manifests the client reads, and the ones the game server rewrites. */
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
