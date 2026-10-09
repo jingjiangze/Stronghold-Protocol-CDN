@@ -1,0 +1,3 @@
+# Local scanner scratch state. It is not part of the asset snapshot and it changes constantly,
+# so it must never become a blob on this branch -- every rewrite would add another copy.
+.mimosa/

@@ -1,0 +1,10 @@
+# The asset tree is binary art ripped from the upstream release package. Nothing here may ever be
+# treated as text:
+#
+#  - `text=auto` / `eol=lf` would let git normalise line endings. That corrupts PNG/MP3/skel bytes,
+#    and the sha256 in cdn/v1/index.json would stop matching what this branch serves.
+#  - `diff`/merge can never work on these formats, so they are marked binary outright.
+#
+# This branch exists to be served by git-mount CDNs (jsDelivr / ghfast / gh-proxy), which deliver
+# whatever bytes git holds. Byte fidelity is therefore not cosmetic, it is the contract.
+* -text -diff -merge binary
