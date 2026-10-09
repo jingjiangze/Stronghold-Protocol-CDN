@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="description" content="帧率与传输协议的关系、60 帧上限为什么制造抖动，以及自适应高刷的三件事（非官方同人作品）" />
+  <title>帧率 · 传输协议 · 自适应高刷 · 卫戍协议 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>素材 CDN<small>STRONGHOLD PROTOCOL</small></div>
+    </div>
+    <nav class="navigation">
+      <a href="./">CDN 首页</a>
+      <a href="#rates">三个「率」</a>
+      <a href="#cap">60 上限做了什么</a>
+      <a href="#plan">方案</a>
+      <a href="#limits">边界</a>
+    </nav>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>帧率、传输协议与自适应高刷</h1>
+      <p class="hero-description">
+        起因：<b>「帧率和传输协议有关吗，目前 60 帧体感卡顿，要自适应高刷」</b>。
+        下面是逐帧仿真与源码核对的结论 —— 与带宽无关，但和同一台服务器上跑的那个客户端有关，
+        所以放在同一个文档站里。
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span>帧率与 ws 耦合 <strong>0 处</strong></span>
+      <span>144 Hz 屏律动 <strong>3:2</strong></span>
+      <span>必须一起做 <strong>3 件事</strong></span>
+    </div>
+  </section>
+
+  <!-- ===================== 三个率 ===================== -->
+  <section class="section" id="rates">
+    <div class="section-heading">
+      <div><div class="eyebrow">FRAME RATE vs TRANSPORT</div><h2>三个「率」，先分清楚</h2></div>
+      <span class="section-status">帧率与传输协议基本无关</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>率</th><th>由谁决定</th><th>当前值</th></tr></thead>
+        <tbody>
+          <tr><td><b>渲染帧率</b></td><td>本地 rAF + Pixi ticker（<code class="inline">app.ticker.maxFPS</code>）</td><td>被<b>硬钉 60</b></td></tr>
+          <tr><td><b>状态更新率（本地战斗）</b></td><td>本地确定性 sim，固定步长 <code class="inline">1/30</code> 游戏秒 × 2 倍速</td><td><b>60 tick / 真实秒</b></td></tr>
+          <tr><td><b>状态更新率（服务端观战）</b></td><td>快照率（含按链路抖动自适应那套）</td><td>10 Hz，抖动链路 20 Hz</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="section-note" style="margin-top:14px">
+      <b>自己打的那一局是本地模拟</b>（<code class="inline">clientCombat</code>，默认路径）：战斗在浏览器里跑，
+      ws 只传控制与元数据 —— 帧率和传输协议<b>彻底解耦</b>，延迟里也不含网络往返。<br />
+      唯一有耦合的是<b>看队友的场</b>（服务端跑、推 <code class="inline">b.snap</code>）：状态新鲜度由快照率决定。
+      但因为客户端有插值器，<b>渲染帧率仍可高于快照率</b> —— 那是「状态有多新」（延迟），不是帧率。
+    </p>
+  </section>
+
+  <!-- ===================== 60 上限做了什么 ===================== -->
+  <section class="section" id="cap">
+    <div class="section-heading">
+      <div><div class="eyebrow">THE 60 FPS CAP</div><h2>那个上限不是「少画」，是「画得不匀」</h2></div>
+      <span class="section-status">逐帧仿真 Pixi 的算法</span>
+    </div>
+
+    <p class="section-note">
+      Pixi 的 <code class="inline">maxFPS</code> 做的<b>不是</b>把这一帧画快一点，而是<b>整帧跳过</b>；
+      判据里还有一个向零截断：
+    </p>
+    <pre class="code">set maxFPS(t) { if (t === 0) this._minElapsedMS = 0; else this._minElapsedMS = 1000 / Math.max(minFPS, t); }
+update(t) {
+  ...
+  if (this._minElapsedMS) {
+    const n = (t - this._lastFrame) | 0;        <i>// ← 向零截断</i>
+    if (n &lt; this._minElapsedMS) return;         <i>// ← 不够就整帧跳过</i>
+    this._lastFrame = t - (n % this._minElapsedMS);
+  }
+  ...渲染...
+}</pre>
+
+    <h3 style="margin-top:24px">逐帧仿真：相邻两个「真正渲染」帧之间的间隔</h3>
+    <div class="table-wrap" style="margin-top:10px">
+      <table>
+        <thead><tr><th>屏刷新</th><th>60 帧上限下的帧间隔</th><th>判读</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">60 Hz</td><td class="mono">16.667 ms × 99% / <b>33.333 ms × 1%</b></td><td>周期性掉一帧（可见微顿）</td></tr>
+          <tr><td class="mono">120 Hz</td><td class="mono">16.667 × 98% / <b>25.000 × 2%</b></td><td>周期性晚帧</td></tr>
+          <tr><td class="mono"><b>144 Hz</b></td><td class="mono"><b>13.889 × 57% / 20.833 × 43%</b></td><td><b>3:2 律动 = 真·抖动</b></td></tr>
+          <tr><td class="mono">165 Hz</td><td class="mono">18.182 × 83% / 12.121 × 17%</td><td>抖动</td></tr>
+          <tr><td class="mono">240 Hz</td><td class="mono">16.667 × 96% / 20.833 × 4%</td><td>周期性晚帧</td></tr>
+          <tr><td class="mono">任意</td><td class="mono"><code class="inline">maxFPS = 0</code>（不限）→ <b>完全均匀</b></td><td>间隔 = 屏间隔</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="notice">
+      <span><b>两个要点。</b>① 144 Hz 上是最典型的 3:2 —— 一半帧停 2 个刷新、一半停 3 个，等效 48/72 fps 交替，
+      这不需要「掉帧」就足够让人一眼看出顿。<br />
+      ② <b>连 60 Hz 屏上也有约 1% 的 33.3 ms 间隔</b>：累计时间差一丝不够阈值（<code class="inline">| 0</code> 截断），
+      整帧被跳过，之后 <code class="inline">%</code> 复位也追不回来。也就是说这个上限<b>对任何刷新率都在制造瑕疵</b>。</span>
+    </div>
+
+    <h3 style="margin-top:26px">顺带推翻一条写在注释里的论证</h3>
+    <p class="section-note">
+      原注释的理由是「sim 每秒 60 tick，多画的帧只是把同一状态画两遍」。<b>这条不成立</b>：
+      插值器是按<b>游戏时间</b>插值的，渲染时钟连续推进、在相邻快照之间 lerp；
+      本地战斗把插值延迟设成 2 个 tick 间隔，余量足够，144 fps 下每个 tick 区间会画出约 2.4 个
+      <b>不同位置</b>的帧。也专门验过不会退化：本地是每动画帧推快照、而游戏时间只在 tick 时前进，
+      但插值器会<b>丢弃游戏时间没前进的快照</b>，所以不存在零长度区间。<br />
+      <b>收益的边界：</b>单位是直线匀速时线性插值本来就精确，多画帧看不出差别；
+      真正受益的是<b>转向 / 加减速、镜头平移缩放、UI、特效、动画采样</b>。
+    </p>
+
+    <h3 style="margin-top:26px">还有一处也被 60 写死：自适应负载控制器</h3>
+    <p class="section-note">
+      客户端已有一个「负载等级 0–3」控制器（降粒子、降 LOD、远处单位转低频 impostor），判据就是帧时间，
+      但阈值是<b>按 60 Hz 的帧预算写死</b>的（<code class="inline">frameMs &gt; 19.5</code> 判慢、
+      <code class="inline">&lt; 17.6</code> 判够快，而 60 Hz 的预算正是 16.67 ms）。
+      上限一提到 120，帧预算变成 8.33 ms，这两个阈值立刻失去意义 ——
+      一台在 120 Hz 下只能跑 45 fps 的设备刚好卡在「不算慢」那一侧，却已经丢掉了大半刷新。
+    </p>
+  </section>
+
+  <!-- ===================== 方案 ===================== -->
+  <section class="section" id="plan">
+    <div class="section-heading">
+      <div><div class="eyebrow">PLAN</div><h2>三件事必须一起做</h2></div>
+      <span class="section-status">缺一件都白做</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>做什么</th><th>为什么</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>A</b></td>
+            <td><b>解除数值上限</b>（上限抬到 120，并按显示器间隔取整数分之一）</td>
+            <td>仿真实证：只有「不限帧 / 整数分之一」在<b>每种</b>刷新率上都均匀</td>
+          </tr>
+          <tr>
+            <td><b>B</b></td>
+            <td><b>负载控制器改成相对帧预算</b>（<code class="inline">frameMs &gt; refreshMs × 1.25</code> 判慢）</td>
+            <td>19.5 / 17.6 是 60 Hz 的数；不改成相对值，高刷下等于关掉了这个控制器</td>
+          </tr>
+          <tr>
+            <td><b>C</b></td>
+            <td><b>安卓侧申请高刷模式</b>（清单 <code class="inline">preferredDisplayModeId</code> / <code class="inline">setFrameRate</code>）</td>
+            <td>WebView 的 rAF 跟随<b>窗口</b>刷新率；不申请，很多机器默认 60 Hz，A 与 B 全部白做</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="section-note" style="margin-top:14px">
+      <b>为什么不直接设成「测出来的 120/144」：</b>那等于用数值上限去逼近一个本来就是它的东西，
+      反而会因测量误差与漂移重新引入不匀。正确形式是<b>「每 k 个刷新画一帧」</b>
+      （<code class="inline">maxFPS = refresh / k</code>）：120 Hz 屏 k=1 → 120；
+      144 Hz 屏 k=2 → 72（而不是 120 那个会抖的 6.944 / 13.889 交替）。
+    </p>
+
+    <div class="notice">
+      <span><b>验收判据要用「帧间隔直方图」，不是平均 fps。</b>
+      平均值会把 3:2 律动藏起来 —— 144 Hz 屏上平均仍然是 60。
+      合格 = 帧间隔只有<b>一个</b>取值（等于显示器间隔），或退档时恰好是它的整数分之一。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 边界 ===================== -->
+  <section class="section" id="limits">
+    <div class="section-heading">
+      <div><div class="eyebrow">HONEST LIMITS</div><h2>风险与边界</h2></div>
+      <span class="section-status">不是纯赚的改动</span>
+    </div>
+    <ul class="section-note">
+      <li><b>不限帧会涨 CPU / GPU 与耗电</b>，弱机上可能更糟 —— 所以必须配 B 的相对阈值与「退回 60」的开关。</li>
+      <li><b>收益主要在镜头 / UI / 特效 / 动画采样</b>，不在单位路径（线性插值本来就精确）。别期待「所有东西都变顺」。</li>
+      <li><b>安卓不一定给</b>：有些机型或省电模式会把窗口钉回 60。必须先在真机上量出显示器间隔，再谈优化。</li>
+      <li><b>2D + 3D 棋盘同时渲染</b>可能才是帧预算的大头；上高刷前值得先量「谁在吃帧时间」。</li>
+      <li>本页的量化部分全部来自 <b>Pixi 算法的逐帧仿真 + 源码逐行核对</b>，<b>没有真机数据</b>。</li>
+    </ul>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-links">
+      <a href="./">CDN 首页</a>
+      <a href="./bandwidth">上行带宽最大化压缩</a>
+    </div>
+    <p class="download__meta">
+      非官方同人作品，与鹰角网络无关。数据来自本仓库与线上探测的实测，非估算值。
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

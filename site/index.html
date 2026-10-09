@@ -31,6 +31,8 @@
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="./bandwidth">↗ 文档</a>
+      <a href="#fps">帧率与高刷</a>
+      <a href="./fps">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
   </div>
@@ -409,6 +411,38 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__stats">
           <span>含 <b>10 Mbps</b> 前后对比</span>
           <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="fps">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · FRAME RATE</div><h2>帧率、传输协议与自适应高刷</h2></div>
+      <span class="section-status">60 帧上限为什么制造卡顿，以及高刷要一起做的三件事</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      帧率与传输协议<b>基本无关</b>：自己打的那一局是本地模拟，ws 只传控制与元数据。
+      而"60 帧体感卡顿"有一个与显示器无关的解释 —— 那个数值上限做的不是"少画"，是<b>整帧跳过</b>，
+      逐帧仿真 Pixi 的算法后：144 Hz 屏上帧间隔一半 13.9 ms、一半 20.8 ms（<b>3:2 律动</b>），
+      <b>连 60 Hz 屏都有约 1% 的帧被拉成 33.3 ms</b>。
+    </p>
+    <div class="cards">
+      <a class="card" href="./fps">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>三个「率」/ 节拍仿真 / 方案 A·B·C / 风险</span></div>
+        <div class="card__stats">
+          <span>帧率与 ws 耦合 <b>0 处</b></span>
+          <span>144 Hz 律动 <b>3:2</b></span>
+          <span>必须一起做 <b>3 件事</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/framerate-and-adaptive-refresh.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>帧间隔表</b></span>
+          <span>含 <b>验收判据</b></span>
         </div>
       </a>
     </div>
