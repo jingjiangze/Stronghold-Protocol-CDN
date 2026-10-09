@@ -259,12 +259,21 @@ async function main() {
     const published = await readPublishedArt(opts.base);
     if (!published?.art?.token) throw new Error('--interface-only needs a published cdn/v1/art.json');
     const config = r2Config();
+    // 来源表要按**当前配置**重算，不能照抄已发布的那份：往 origins.json 加一个镜像，
+    // 本该是一次「重发接口」就能生效的事；照抄旧列表会让它永远等不到下一次上游版本才出现。
+    const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
+    const extraOrigins = readExtraOrigins(ROOT);
+    if (extraOrigins.length) log(`extra origins: ${extraOrigins.map((o) => o.id).join(', ')}`);
+    origins.push(...extraOrigins);
+    const gitOrigins = readGitOrigins(ROOT);
+    origins.push(...gitOrigins);
+    const flatOrigins = carryForwardOrigins(origins, published.art.mirrors);
     const mirrorsDoc = `${JSON.stringify(
       {
         schema: 1,
         token: published.art.token,
         upstream: published.upstream,
-        flat: published.art.mirrors,
+        flat: flatOrigins,
         packs: published.art.packs,
         index: '/cdn/v1/index.json',
         pick: '/cdn/v1/pick.js',
@@ -316,7 +325,16 @@ async function main() {
     } catch (error) {
       console.error(`[sync] tree not published: ${error.message}`);
     }
-    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js${net ? ' + network.json' : ''}${tree ? ` + tree (${tree.files} files)` : ''}`);
+    // art.json 也是同一份事实：只改 mirrors.json 会让两份接口不一致，
+    // 而客户端与页面读的是 art.json —— 不一致就等于新来源没发布。
+    // 其余字段一律沿用已发布的那份：这一轮没有重新哈希，verified/syncedAt 不该被说成新数值。
+    await putObject(
+      config,
+      'cdn/v1/art.json',
+      Buffer.from(`${JSON.stringify({ ...published, art: { ...published.art, mirrors: flatOrigins } }, null, 2)}\n`, 'utf8'),
+      { contentType: 'application/json', cacheControl: SHORT },
+    );
+    log(`republished cdn/v1/mirrors.json + art.json (${published.art.packs?.length ?? 0} packs, ${flatOrigins.length} origins) + pick.js${net ? ' + network.json' : ''}${tree ? ` + tree (${tree.files} files)` : ''}`);
     return;
   }
 
