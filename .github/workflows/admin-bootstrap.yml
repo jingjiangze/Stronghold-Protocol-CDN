@@ -74,9 +74,10 @@ jobs:
             printf '%s' "${!name}" | npx --yes wrangler@4 pages secret put "$name" --project-name "$PROJECT"
           done
           # put 的 stdout 不带值，但要确认名字真的进去了（曾经踩过「只输出升级提示就结束」的静默失败）。
+          # 注意：secret list 的输出形状不是带引号的 JSON 数组，按名字本身匹配，别按引号匹配。
           names=$(npx --yes wrangler@4 pages secret list --project-name "$PROJECT")
           for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
-            echo "$names" | grep -q "\"$name\"" || { echo "secret $name 没落到项目里"; exit 1; }
+            echo "$names" | grep -q "$name" || { echo "secret $name 没落到项目里"; exit 1; }
           done
           echo "5 个 Pages secret 都在位"
 
