@@ -24,6 +24,7 @@
       <a href="#breakdown">带宽去向</a>
       <a href="#measures">落地措施</a>
       <a href="#capacity">10 Mbps 容量</a>
+      <a href="#mpub">m.public / 2000 人</a>
       <a href="#verify">验收</a>
     </nav>
   </div>
@@ -41,7 +42,7 @@
     </div>
     <div class="quick-stats">
       <span>首载提速 <strong>316×</strong></span>
-      <span>稳态人均 <strong>60 B/s</strong></span>
+      <span>稳态人均 <strong>2,048 B/s</strong></span>
       <span>移出素材 <strong>462.6 MiB</strong></span>
     </div>
   </section>
@@ -51,28 +52,28 @@
     <div class="block__head">
       <span class="block__num">1</span>
       <span class="block__title">结论先行</span>
-      <span class="block__who">上行不是稳态瓶颈，是首载瓶颈</span>
+      <span class="block__who">首载要压 · 稳态也要压（2026-10-10 修正）</span>
     </div>
     <p class="block__lead">
-      一句话：<b>服务器平时几乎不发东西，真正卡死的是「新玩家第一次进场」那一次。</b>
-      稳态人均只要约 60 B/s，而优化前一个新玩家要吃掉 467.9 MiB —— 在 10 Mbps 上等于把上行占死 6 分半。
+      两件事分开看：<b>首载</b>是「新玩家第一次进场吃掉几百 MiB」，<b>稳态</b>是「一个席位对局中持续的上行」。
+      首载靠把素材挪走解决；<b>稳态实测人均 2,048 B/s，几乎全是 <code class="inline">m.public</code></b>（早前那句「只要 60 B/s」漏了它）。
     </p>
 
     <div class="table-wrap" style="margin-top:16px">
       <table>
         <thead><tr><th></th><th>稳态（默认配置）</th><th>首次进场（新玩家）</th></tr></thead>
         <tbody>
-          <tr><td>优化前人均上行</td><td class="num">≈60 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
-          <tr><td>优化后人均上行</td><td class="num">≈60 B/s</td><td class="num"><b>1.48 MiB</b></td></tr>
-          <tr><td>10 Mbps 下的体感</td><td>20,000+ 人（先撞 CPU / fd）</td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
+          <tr><td>优化前人均上行</td><td class="num">≈2,048 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
+          <tr><td>优化后人均上行</td><td class="num"><b>≈505 B/s</b>（压缩后）</td><td class="num"><b>1.48 MiB</b></td></tr>
+          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>2,475 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="notice">
-      <span><b>取舍：</b>压 WebSocket 帧的收益接近零，把素材和代码挪走的收益是几百倍。
-      本轮 <b>90% 的收益来自「不让盒子发字节」</b>，而不是「把字节压得更小」。
-      如果你的时间只够做一件事，做<a href="#measures">措施 1</a>。</span>
+      <span><b>取舍：</b>把素材和代码挪走消掉的是<b>首载</b>（几百 MiB → 1.48 MiB，几百倍）；
+      压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → 505 B/s，约 4×），
+      而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。</span>
     </div>
   </section>
 
@@ -261,8 +262,8 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
           </tr>
           <tr>
             <td><b>B. 对局中</b><br /><span class="section-note">默认 <code class="inline">clientCombat</code></span></td>
-            <td class="num">≈60 B/s</td><td class="num">≈480 bps</td><td class="num"><b>20,833 人</b></td>
-            <td>服务端几乎不发 <code class="inline">b.snap</code></td>
+            <td class="num">≈2,048 B/s</td><td class="num">≈16 kbps</td><td class="num"><b>610 人</b></td>
+            <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）。压缩后 505 B/s → <b>2,475 人</b></td>
           </tr>
           <tr>
             <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">10,580 B/s</td><td class="num">85 kbps</td><td class="num"><b>118 人</b></td>
@@ -295,7 +296,13 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       <h4>总结</h4>
       <p class="download__meta">
         优化前，10 Mbps 上行的实际容量是 <b>1~2 个新玩家排队进场</b>（素材占死）；
-        优化后，稳态容量由 <b>CPU 决定（万级）</b>，首载吞吐 <b>0.81 人/s</b>，复访为 <b>0</b>。
+        优化后，首载吞吐 <b>0.81 人/s</b>，复访为 <b>0</b>。
+      </p>
+      <p class="download__meta" style="margin-top:8px">
+        ⚠️ <b>2026-10-10 修正</b>：稳态容量<b>不是</b>「由 CPU 决定（万级）」—— 那个数字建立在漏了
+        <code class="inline">m.public</code> 的 60 B/s 建模值上。实测稳态人均 <b>2,048 B/s</b>，
+        10 Mbps 只能带 <b>~610 人</b>；开了 <code class="inline">m.public</code> 压缩后 <b>~2,475 人</b>。
+        详见下一节。
       </p>
     </div>
   </section>
@@ -376,6 +383,130 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       阈值 50 ms 由上面的表推出，因此做成了可调项，并在换档时打一行日志
       （<code class="inline">[snap] &lt;房号&gt; &lt;玩家&gt; → 20 Hz (jitter NN ms)</code>），运维可直接从线上日志看分布再调。
     </p>
+  </section>
+
+  <!-- ===================== m.public / 2000 人 ===================== -->
+  <section class="section" id="mpub">
+    <div class="section-heading">
+      <div><div class="eyebrow">ANALYSIS · THE REAL STEADY STREAM</div><h2>m.public 才是稳态的全部（2026-10-10）</h2></div>
+      <span class="section-status">一个席位收到的字节里 98% 是它</span>
+    </div>
+
+    <p class="section-note" style="margin-bottom:14px">
+      上一轮把 <code class="inline">b.snap</code> 压到 10 Hz —— 但<b>默认路径（<code class="inline">clientCombat=on</code>）根本不发 <code class="inline">b.snap</code></b>。
+      真正占满上行的是另一条流：<b><code class="inline">m.public</code></b>（对局的公开状态广播）。
+      用生产 <code class="inline">Match</code> 引擎跑真实 4 人对局、拦截每一帧出站消息：
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>消息</th><th class="num">占比</th><th class="num">帧大小</th><th>频率</th></tr></thead>
+        <tbody>
+          <tr><td><b><code class="inline">m.public</code></b></td><td class="num"><b>≈98%</b></td><td class="num">4,610 B（最大 6,647）</td><td>对局内 ~0.76 帧/s</td></tr>
+          <tr><td><code class="inline">m.ticker</code></td><td class="num">~2%</td><td class="num">178 B</td><td>偶发（且不可压：105%）</td></tr>
+          <tr><td><code class="inline">b.snap</code> / <code class="inline">b.ev</code></td><td class="num">0</td><td class="num">—</td><td>默认 <code class="inline">clientCombat</code> 无观战者时不发</td></tr>
+          <tr><td>WS ping（心跳）</td><td class="num">~0</td><td class="num">2 B</td><td>30 s / 次</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:10px">
+      <b>每席位实测 ≈2,048 B/s（未压）</b>，几乎全是 <code class="inline">m.public</code>。
+      上一版表 B 的「≈60 B/s」是建模值，<b>漏了 <code class="inline">m.public</code></b> —— 与线上日志的 p90 = 1,352.7 B/s 差 30 倍，根因就在这里。
+    </p>
+
+    <div class="two-col" style="margin-top:18px">
+      <div class="mini">
+        <h4>找到的真 bug：广播路径从来没压过</h4>
+        <p class="download__meta">
+          <code class="inline">m.public</code> 走的是<b>广播</b>（<code class="inline">Lobby.broadcastRoom → sendRaw</code>），
+          而压缩白名单<b>只在 <code class="inline">send()</code>（单播）里被查询</b> —— 广播那条路径从来没传
+          <code class="inline">compress</code>。所以无论白名单怎么写，<code class="inline">m.public</code>
+          <b>永远不会被压缩</b>，白名单对它等于死代码。
+        </p>
+        <p class="download__meta" style="margin-top:8px">
+          修法：<code class="inline">broadcastRoom</code> 按 <code class="inline">isCompressibleType</code> 传
+          <code class="inline">compress</code>；两条重放路径（<code class="inline">pendingResult</code> /
+          <code class="inline">runResync</code>）同样压。
+        </p>
+      </div>
+      <div class="mini">
+        <h4>窗口 9 → 12</h4>
+        <div class="table-wrap" style="margin-top:8px">
+          <table>
+            <thead><tr><th><code class="inline">serverMaxWindowBits</code></th><th class="num"><code class="inline">m.public</code> 压缩后</th></tr></thead>
+            <tbody>
+              <tr><td>9（上一轮为 ~250 B 战斗帧调的）</td><td class="num">29.8%（<b>3.36×</b>）</td></tr>
+              <tr><td><b>12</b></td><td class="num"><b>20.3%（4.94×）</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="download__meta" style="margin-top:8px">
+          <code class="inline">m.public</code> 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块。
+          浏览器 WebSocket 自动解压，<b>对客户端完全透明</b>。
+        </p>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-top:18px">
+      <span><b>观战 / AI 节流：</b>不是本场球员的观战者每 2 帧才收一次 <code class="inline">b.snap</code>，本场球员照收每一帧。
+      覆盖两类 —— <b>纯观战者</b>（被淘汰队友、观战席）与 <b>没人打的场</b>（全 AI 场，watcher 全是非球员）。
+      <code class="inline">b.ev</code> 永不丢。它与「链路自适应速率」合成：非球员拿到的是该场当前发射速率的一半。</span>
+    </div>
+
+    <h3 style="margin-top:26px">10 Mbps 到底能不能带 2000 人</h3>
+    <div class="table-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th></th><th class="num">每席位上行</th><th class="num">10 Mbps 容纳</th><th>2000 人</th></tr></thead>
+        <tbody>
+          <tr><td>未压</td><td class="num">2,048 B/s</td><td class="num"><b>610 人</b></td><td>✗ 差 3.3×</td></tr>
+          <tr><td><b>压缩后（本轮）</b></td><td class="num"><b>505 B/s</b>（24.7%）</td><td class="num"><b>2,475 人</b></td><td>✓ 余量 ~24%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice" style="margin-top:12px">
+      <span><b>结论：本轮之前，10 Mbps 只能带 ~610 人，远达不到 2000；开上 <code class="inline">m.public</code> 压缩后是 ~2,475 人，
+      2000 人「能」跑，但余量只有约 24%</b> —— 是「刚好够」，不是「宽裕」。
+      （留 20% 余量的习惯口径下安全值 ≈1,980 人，正好卡在 2000 线上。）<br />
+      ⚠️ 前提：<code class="inline">SP_WS_COMPRESSION=on</code> 必须真的在<b>生效槽</b>上。盒子更新器会重写槽脚本、抹掉手工加的那行 ——
+      已修 <code class="inline">tools/box/sp_update_zip.ps1</code> 让它每次都写；否则切槽后压缩静默失效，容量掉回 610。</span>
+    </div>
+
+    <h3 style="margin-top:26px">下一个瓶颈：增量（delta）</h3>
+    <p class="section-note" style="margin-bottom:10px">
+      压完之后 <code class="inline">m.public</code> 仍是<b>唯一</b>的大头。它的 JSON 高度重复
+      （<code class="inline">players[].bonds</code> 一个字段就占整帧 ~2/3），所以下一步是 delta：
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>做法</th><th class="num">实测倍数</th></tr></thead>
+        <tbody>
+          <tr><td>顶层字段 delta</td><td class="num">1.4×</td></tr>
+          <tr><td><code class="inline">players[]</code> 逐人 diff</td><td class="num"><b>5.2×</b></td></tr>
+          <tr><td>顶层 delta + deflate wb9</td><td class="num"><b>4.8×</b>（588 → 122 KiB / 场）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:10px">
+      delta 之后每席位可望降到 <b>~130–170 B/s</b> → 10 Mbps 容纳 <b>~7,000–9,000 人</b>，2000 人变得很宽裕。
+      代价：要同时改<b>客户端合并逻辑</b>，风险高于本轮，建议单开一轮 + golden 验收。
+    </p>
+
+    <div class="mini" style="margin-top:18px">
+      <h4>再进一步：「客户端本地推演 + 服务端只发事件」会砍掉哪些可见内容</h4>
+      <p class="download__meta">这是 delta 的极端版。它会<b>看得见地</b>砍掉 / 劣化：</p>
+      <ol style="margin:8px 0 0;padding-left:18px">
+        <li><b>队友的实时棋盘与羁绊</b> —— 现在由服务端权威下发；事件化后客户端自己回放，<b>任何 RNG / 时序分叉都显示成错的棋盘 / 羁绊 / LP</b>。</li>
+        <li><b>敌人预览与波次</b> —— 来自服务端 RNG，客户端拿不到种子就<b>复现不出</b>。</li>
+        <li><b>Boss 血池 / 团队 LP / 联防计数</b> —— 共享权威值，本地累加<b>分叉即错</b>。</li>
+        <li><b>隐藏信息</b> —— 别人的商店 / 手牌服务端故意不发；要推演就得发 → 要么泄露（外挂面），要么推不出来。</li>
+        <li><b>结算结果 <code class="inline">m.result</code></b> —— 服务端判定；事件化让客户端自算 = 可伪造胜负，<b>必须保留服务端权威，砍不掉</b>。</li>
+        <li><b>倒计时 / deadline 与断线重连</b> —— 现在重连靠重放一份全量 <code class="inline">m.public</code>；事件化后要重放整条事件日志，<b>重连成本回来了</b>。</li>
+      </ol>
+      <p class="download__meta" style="margin-top:8px">
+        <b>结论：</b>服务端不能放弃对结果 / 伤害的权威（否则就是外挂），所以砍得掉的是<b>队友状态保真度</b>与<b>敌人预览</b>，砍不掉权威层。
+        能落地的是「服务端发增量 / 事件、客户端维护本地镜像」—— 正是上面的 delta。
+      </p>
+    </div>
   </section>
 
   <!-- ===================== 验收 ===================== -->

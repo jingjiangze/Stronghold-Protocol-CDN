@@ -351,18 +351,19 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <span class="section-status">小上行带宽盒子的实测优化与容量表</span>
     </div>
     <p class="section-note" style="margin-bottom:14px">
-      如果你的部署机上行很小（家用宽带、4G 路由、小水管 VPS），这一份是为你写的。核心结论是反直觉的：
-      <b>上行不是稳态瓶颈，是首载瓶颈</b> —— 稳态人均只要约 60 B/s，而优化前一个新玩家进场要吃掉 <b>467.9 MiB</b>，
-      在 10 Mbps 上等于<b>占死 6.5 分钟</b>。所以收益几乎全部来自「让盒子不发字节」，而不是「把字节压得更小」。
+      如果你的部署机上行很小（家用宽带、4G 路由、小水管 VPS），这一份是为你写的。两件事要分开看：
+      <b>首载</b>是「新玩家第一次进场吃掉几百 MiB」（优化前 <b>467.9 MiB</b>，10 Mbps 上占死 6.5 分钟），
+      靠把素材挪到 CDN 解决；<b>稳态</b>实测人均 <b>2,048 B/s</b>，几乎全是 <code class="inline">m.public</code>，
+      压完 <b>505 B/s</b> —— 稳态正是 <b>10 Mbps 带 2000 人</b>的天花板所在（610 → 2,475 人）。
     </p>
     <div class="cards">
       <a class="card" href="./bandwidth">
         <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / 验收命令</span></div>
+        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / m.public 与 2000 人 / 验收命令</span></div>
         <div class="card__stats">
           <span>首载提速 <b>316×</b></span>
-          <span>稳态人均 <b>60 B/s</b></span>
-          <span>移出素材 <b>462.6 MiB</b></span>
+          <span>稳态人均 <b>2,048 B/s</b></span>
+          <span>10 Mbps 带 <b>2,475 人</b></span>
         </div>
       </a>
       <a class="card" href="./docs/bandwidth-max-compression.md">

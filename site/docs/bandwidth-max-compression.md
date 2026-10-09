@@ -19,6 +19,10 @@
 也就是说：**花力气压 WS 帧收益接近零，花力气把素材和代码挪走收益是几百倍。**
 本轮 90% 的收益来自「不让你盒子发字节」，而不是「把字节压得更小」。
 
+> ⚠️ **2026-10-10 修正**：上面这张表的「稳态 ≈60 B/s」是**建模值，漏了 `m.public`** —— 实测稳态是
+> **≈2,048 B/s/人**（差 30 倍），所以「上行不是稳态瓶颈」这句**不成立**：默认配置下 10 Mbps 稳态只够 **~610 人**。
+> 修正过程、`m.public` 压缩与 10 Mbps × 2000 的审计见 **§九**。
+
 ---
 
 ## 二、带宽被谁吃掉了
@@ -79,12 +83,12 @@ SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/
 
 > 为什么 `js` / `css` 故意不进 `LONG_CACHE_DIRS`：靠 `?v=` 走 immutable（一年）比靠 1 天 + 304 更彻底 —— 304 也是一次往返，也占上行。
 
-### 措施 4 — permessage-deflate `serverMaxWindowBits` 12 → 9
+### 措施 4 — permessage-deflate `serverMaxWindowBits` 12 → 9 → **回到 12**（2026-10-10）
 
 `server/wsCompression.js`：
 
 ```js
-serverMaxWindowBits: 9,          // 512 B 滑动窗口（原 12 = 4 KiB）
+serverMaxWindowBits: 12,         // 4 KiB 滑动窗口（本轮定稿）
 serverNoContextTakeover: true,   // 保内存上界
 clientNoContextTakeover: true,
 threshold: 512,                  // 小帧不压
@@ -92,9 +96,11 @@ concurrencyLimit: 8,
 zlibDeflateOptions: { level: 6, memLevel: 5 },
 ```
 
-- 小窗口用更便宜的距离码，实测**反而更省**：35.8% vs 36.5%、28.8% vs 30.0%。
-- 只压 `b.snap` / `b.ev` / `m.field`，其余帧照常。
-- ⚠️ **这个功能默认 `off`，且默认路径几乎用不到它**：`clientCombat` 默认 `on`（DESIGN §14），战斗跑在玩家浏览器里，服务端只在 AI / 接管 / `SP_COMBAT=server` 时才发 `b.snap`。
+- 上一轮把它从 12 调到 9（小窗口用更便宜的距离码，对 ~250 B 的战斗帧实测**反而更省**：35.8% vs 36.5%）。
+- **2026-10-10 调回 12**：因为真正的大头是 `m.public`（~4.6 KB），512 B 窗口够不到它重复的羁绊 / 状态块 ——
+  实测 **wb9 = 3.36×、wb12 = 4.94×**（见 §9.3）。
+- ⚠️ **这个功能默认 `off`**：只有 `SP_WS_COMPRESSION=on` 时才压。默认路径（`clientCombat=on`）不发 `b.snap`，
+  但 `m.public` **每次都发** —— 所以它现在才是这个开关的主战场（见 §九）。
 
 ### 措施 5 — `clientCombat: on`（别退回去）
 
@@ -162,6 +168,10 @@ C/D 两行按**当前**快照率算：默认 **10 Hz**（`SNAPSHOT_EVERY = 6`）
 
 > 优化前，10 Mbps 上行的实际容量是 **1~2 个新玩家排队进场**（素材占死）；
 > 优化后，稳态容量由 CPU 决定（万级），首载吞吐 **0.81 人/s** 且复访为 **0**。
+
+> ⚠️ **2026-10-10 修正**：「稳态容量由 CPU 决定（万级）」**不成立** —— 那句建立在漏了 `m.public` 的
+> 60 B/s 建模值上。实测稳态人均 **2,048 B/s**，10 Mbps 只能带 **~610 人**；开了 `m.public` 压缩后 **~2,475 人**。
+> 完整审计见 **§9.5**。首载那一半（`0.81 人/s`、复访 0）仍然成立。
 
 ---
 
@@ -369,8 +379,8 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 | `test/match/combat.test.js` | 帧率断言改为从 `TICK`/`GAME_SPEED`/`SNAPSHOT_EVERY` 派生 | ✅ 7/7 pass |
 | `update/sp_slot_3001.cmd`（盒） | 加 `set SP_WS_COMPRESSION=on` | ✅ 已落盘，已重启生效 |
 | `update/sp_slot_3002.cmd`（盒） | 同上 | ✅ 已落盘，待该槽下次重启 |
-| `server/wsCompression.js` | `serverMaxWindowBits` 12 → 9 | ✅ 已改，5/5 测试通过 |
-| `test/ws-compression.test.js` | 同步断言为 9 | ✅ 5/5 pass |
+| `server/wsCompression.js` | `serverMaxWindowBits` 12 → 9 | ✅ 已改，5/5 测试通过（**2026-10-10 又调回 12，见 §9.8**） |
+| `test/ws-compression.test.js` | 同步断言为 9 | ✅ 5/5 pass（**同上，已改回 12**） |
 | `server/http/static.js` | 新增 `versionIndexHtml()` + `serveVersionedIndex()`，接线 `index.html` | ✅ 已改 |
 | `test/index-version.test.js` | 新增 4 项（25/25 覆盖、幂等、线上 buildTag 一致、immutable 分支） | ✅ 4/4 pass |
 | `server/http/files.js` | 仅注释：说明 `js`/`css` 为什么不进 `LONG_CACHE_DIRS` | ✅ 已改 |
@@ -386,3 +396,121 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 **回归基线**：全量测试 5849 项中 8 项失败，全部是「缺美术素材」相关
 （`assets.json` / Spine / atlas / 语言包的本地文件缺失）与 1 项 perf 抖动；
 **用 `git stash` 对照跑同一批文件，基线同样失败**，与本轮改动无关（盒子上跑的本来就是无素材版）。
+
+---
+
+## 九、m.public 才是稳态的全部（2026-10-10）
+
+上一轮把 `b.snap` 压到 10 Hz —— 但**默认路径（`clientCombat=on`）根本不发 `b.snap`**。
+真正占满上行的，是另一条流：`m.public`（对局的公开状态广播）。
+
+### 9.1 实测：一个席位收到的字节里 98% 是 m.public
+
+用生产 `Match` 引擎跑真实 4 人 co-op 对局，拦截每一帧出站消息：
+
+| 消息 | 占比 | 帧大小 | 频率 |
+|---|---|---|---|
+| **`m.public`** | **≈98%** | 4,610 B（后期最大 6,647 B） | 对局内 ~0.76 帧/s |
+| `m.ticker` | ~2% | 178 B | 偶发（且不可压：105%） |
+| `b.snap` / `b.ev` | **0** | — | 默认 `clientCombat` 无观战者时不发 |
+| WS ping（心跳） | ~0 | 2 B | 30 s / 次 |
+
+**每席位实测 ≈2,048 B/s（未压）**，几乎全是 `m.public`。
+⚠️ 上一版 §四表 B 的「稳态人均 ≈60 B/s」是**建模值，漏了 `m.public`**；§七线上日志的
+**p90 = 1,352.7 B/s** 才是真相 —— 两者差 30 倍，根因就在这里。
+
+`m.public` 内部：`players[]` 占整帧 **59–81%**，而 `players[].bonds`（羁绊表）一个字段就占 `players[]` 的 **78%** ——
+**每帧重发一份几乎不变的羁绊表**。
+
+### 9.2 找到的真 bug：广播路径从来没压过
+
+`m.public` 走的是**广播**（`Lobby.broadcastRoom → sendRaw`），而压缩白名单
+**只在 `send()`（单播）里被查询** —— 广播那条路径从来没传 `compress` 标志。
+所以无论白名单怎么写，`m.public` **永远不会被压缩**，白名单对它等于死代码。
+
+修法：`broadcastRoom` 按 `isCompressibleType` 传 `compress`；两条重放路径
+（`pendingResult` / `runResync`，发的也是 `m.public` / `m.result`）同样压。
+
+### 9.3 白名单加 `m.public` / `m.private` / `m.result`，窗口 9 → 12
+
+`m.public` 有 ~4.6 KB，512 B 的窗口够不到它重复的羁绊 / 状态块，所以把窗口调回去：
+
+| `serverMaxWindowBits` | `m.public` deflate 后 |
+|---|---|
+| 9（上一轮为 ~250 B 战斗帧调的） | 29.8%（**3.36×**） |
+| **12** | **20.3%（4.94×）** |
+
+浏览器 WebSocket 自动解压，**对客户端完全透明** —— 不用改客户端、不用改协议、老版本客户端一样有效。
+
+### 9.4 观战 / AI 节流
+
+`server/match/fields.js` 的 `_emit`：**不是本场球员的观战者**每 2 帧才收一次 `b.snap`，
+本场球员照收每一帧。覆盖两类，都是「全速位置更新买不到任何东西」的场合：
+
+- **纯观战者** —— 被淘汰的队友、观战席，其客户端本来就在快照之间插值；
+- **没人打的场** —— 每个球员都是 AI 的场（全 AI 场），它的 watcher 全是非球员。
+
+`b.ev` 永不丢（它带的是伤害数字 / 阵亡，观战 UI 仍要读）。
+这与 §7.1.2 的**链路自适应速率**合成：非球员拿到的是「该场当前发射速率的一半」。
+
+### 9.5 10 Mbps 到底能不能带 2000 人
+
+**实测每席位稳态 ≈2,048 B/s（未压）→ 505 B/s（压缩后，占 24.7%）。** 10 Mbps = 1,250,000 B/s：
+
+| | 每席位上行 | 10 Mbps 容纳 | 2000 人 |
+|---|---|---|---|
+| 未压 | 2,048 B/s | **610 人** | ✗ 差 3.3× |
+| **压缩后（本轮）** | **505 B/s** | **2,475 人** | ✓ 余量 ~24% |
+
+**结论：本轮之前，10 Mbps 只能带 ~610 人，远达不到 2000；开上 `m.public` 压缩后是 ~2,475 人，
+2000 人「能」跑，但余量只有约 24%** —— 是「刚好够」，不是「宽裕」。
+（10 Mbps 留 20% 余量的习惯口径下，安全值 ≈1,980 人，正好卡在 2000 线上。）
+
+⚠️ 前提：`SP_WS_COMPRESSION=on` 必须真的在**生效槽**上。盒子的更新器会**重写槽脚本**，
+把手工加的那行抹掉 —— 已修 `tools/box/sp_update_zip.ps1`，让它每次都写这一行；否则切槽后压缩静默失效，
+容量掉回 610。
+
+### 9.6 下一个瓶颈与优化方向
+
+压完之后，`m.public` 仍是**唯一**的大头（98%）。它的 JSON 高度重复，所以下一步是**增量（delta）**：
+
+| 做法 | 实测倍数 |
+|---|---|
+| 顶层字段 delta | 1.4× |
+| `players[]` 逐人 diff | **5.2×** |
+| 顶层 delta + deflate wb9 | **4.8×**（588 → 122 KiB / 场） |
+
+delta 之后每席位可望降到 **~130–170 B/s** → 10 Mbps 容纳 **~7,000–9,000 人**，2000 人变成「很宽裕」。
+代价：要同时改**客户端合并逻辑**（服务端只发变化字段，客户端维护本地镜像），风险高于本轮，
+建议单开一轮 + golden 验收。
+
+### 9.7 再进一步：「客户端本地推演 + 服务端只发事件」会砍掉哪些可见内容
+
+这是 §9.6 的极端版（服务端连 `m.public` 全量都不发，只发离散事件）。它会**看得见地**砍掉 / 劣化：
+
+1. **队友的实时棋盘与羁绊**。现在 `players[].bonds / boardCount / shopLevel / lp / status` 是服务端权威下发的；
+   事件化后每个客户端要自己回放队友动作 —— **任何 RNG / 时序分叉都显示成错的棋盘 / 羁绊 / LP**。
+2. **敌人预览与波次**（`m.private.nextEnemies`、侦察 `m.field`）。来自服务端波次 RNG；客户端拿不到种子就**复现不出**，预览缺失或错。
+3. **Boss 血池 / 团队 LP / 联防计数**。服务端算的共享权威值，事件化后靠本地累加，**分叉即错**。
+4. **隐藏信息**。别的玩家的商店 / 手牌服务端**故意不发**；要本地推演就得发 → 要么**泄露**（外挂面），要么推不出来。
+5. **结算结果 `m.result`**。服务端判定的；事件化让客户端自算 = **可伪造胜负 / 伤害**，所以这一块**必须保留服务端权威，砍不掉**。
+6. **倒计时 / deadline** 与 **断线重连**。现在重连靠重放一份 `m.public` 全量状态；事件化后要重放整条事件日志，**重连成本回来了**。
+
+**结论**：服务端不能放弃对结果 / 伤害的权威（否则就是外挂），所以「只发事件」砍得掉的是
+**队友状态保真度**与**敌人预览**，砍不掉权威层。真正能落地的是「服务端发**增量 / 事件**、客户端维护本地镜像」——
+正是 §9.6 的 delta。
+
+### 9.8 本轮改动与验收
+
+| 文件 | 改动 |
+|---|---|
+| `server/lobby.js` | `broadcastRoom` 传 `compress`；两条重放路径同样压（**真 bug 修复**） |
+| `server/wsCompression.js` | 白名单加 `m.public` / `m.private` / `m.result`；`serverMaxWindowBits` 9 → 12 |
+| `server/match/fields.js` | `_emit` 的观战 / AI 节流（非本场球员每 2 帧一发，事件不丢） |
+| `tools/box/sp_update_zip.ps1` | 生成的槽脚本补 `set SP_WS_COMPRESSION=on`（否则切槽后压缩失效） |
+| `test/ws-compression.test.js` · `test/match/spectator.test.js` | 新增广播压缩断言 + 观战节流断言 |
+
+**回归**：`test/match/*` + `test/ws-compression` = **789 项，787 通过，2 skipped，0 失败**。
+
+**复现**：`node _bw-rate.mjs 45`（实时速率）、`node _cap.mjs 60`（未压 / 压缩后容量）。
+
