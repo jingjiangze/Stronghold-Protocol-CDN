@@ -58,6 +58,6 @@ jobs:
           mode="${{ inputs.mode }}"
           if [ "$scheduled" = "true" ]; then mode="apply"; fi
           args="--keep=${{ inputs.keep || 1 }}"
-          [ "$mode" = "apply" ] && args="$args --apply"
+          if [ "$mode" = "apply" ]; then args="$args --apply"; fi
           echo "node src/prune-packs.mjs $args"
           node src/prune-packs.mjs $args
