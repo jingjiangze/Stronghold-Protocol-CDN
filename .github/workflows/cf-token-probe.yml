@@ -57,12 +57,28 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          zones=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID?filters=*" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
-          echo "账户可读=$(echo "$zones" | node -pe 'try{String(JSON.parse(require("fs").readFileSync(0,"utf8")).success)}catch(e){"false"}')"
-          z=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/zones?name=jiangjiangze.icu" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
-          echo "该账户能看到 jiangjiangze.icu 这个区=$(echo "$z" | node -pe 'try{String((JSON.parse(require("fs").readFileSync(0,"utf8")).result||[]).length>0)}catch(e){"false"}')"
-          d=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/zones/00000000000000000000000000000000/dns_records" \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
-          echo "（用假 zone id 探端点可达性，只为区分「无权限」与「区不存在」）code=$(echo "$d" | node -pe 'try{const j=JSON.parse(require("fs").readFileSync(0,"utf8"));String((j.errors||[]).map(e=>e.code).join(","))}catch(e){"-"}')"
+          cf() { curl -sS -m 30 "$@" -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json"; }
+          # 只报布尔值与 Cloudflare 错误码，不打印任何 id、名称或响应体细节。
+          ask() { # 说明 路径
+            local out code
+            out=$(cf "https://api.cloudflare.com/client/v4$2" || true)
+            echo "$out" | node -e '
+              let raw="";process.stdin.on("data",d=>raw+=d).on("end",()=>{
+                const label = process.argv[1];
+                let j=null; try { j=JSON.parse(raw); } catch { console.log(label, "→ 非 JSON 响应"); return; }
+                const codes=(j.errors||[]).map(e=>e.code).join(",")||"-";
+                const n=Array.isArray(j.result)?j.result.length:(j.result?1:0);
+                console.log(`${label} → success=${j.success} 结果数=${n} 错误码=${codes}`);
+              });' "$1"
+          }
+          ask "能列出本账户的区" "/zones?name=jiangjiangze.icu&account_id=$CLOUDFLARE_ACCOUNT_ID"
+          ZID=$(cf "https://api.cloudflare.com/client/v4/zones?name=jiangjiangze.icu" | node -pe 'try{const j=JSON.parse(require("fs").readFileSync(0,"utf8"));(j.result||[])[0]?.id||""}catch(e){""}')
+          if [ -n "$ZID" ]; then
+            echo "找到本账户下的区（id 已省略）"
+            ask "区内的 DNS 记录可读（要写必须先能读）" "/zones/$ZID/dns_records?per_page=1"
+          else
+            echo "本账户下看不到 jiangjiangze.icu 这个区 —— D2 需要先解决区归属，而不是权限"
+          fi
+          ask "R2 桶可读" "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets"
+          ask "R2 自定义域名可读（D2 的必经端点）" "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/stronghold-assets/custom_domains"
+          ask "Pages 项目可读（现状确认）" "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
