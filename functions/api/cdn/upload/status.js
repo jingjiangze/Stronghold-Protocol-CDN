@@ -2,7 +2,7 @@
 // 读的是事实而不是缓存：staging 前缀列一遍（S3 列举强一致）+ 发布日志尾部。
 import { r2Config, s3fetch } from './_edge.js';
 import { checkAuth, deny, json, sameOriginOrNone } from './_http.js';
-import { LOG_KEY, STAGING_PREFIX, claimsFromListing } from '../../../../src/upload.mjs';
+import { LOG_KEY, REMOVAL_PREFIX, STAGING_PREFIX, claimsFromListing } from '../../../../src/upload.mjs';
 
 // 与 r2.mjs 的 mimeFor 同源：这里只用于把 claim 里的键显示成人类认得出的类型。
 const TYPE_BY_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', json: 'application/json', txt: 'text/plain', mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf', zip: 'application/zip', bin: 'application/octet-stream' };
@@ -80,14 +80,45 @@ export async function onRequestGet(context) {
     // 第一次发布之前这张表还不存在，属于正常状态。
   }
 
+  // 待处理的撤销请求：让页面能显示「已提交撤销、等发布轮」，而不是让人以为按钮没生效。
+  let removals = [];
+  try {
+    const rq = `list-type=2&max-keys=1000&prefix=${encodeURIComponent(REMOVAL_PREFIX)}`;
+    const rr = await s3fetch(cfg, 'GET', null, { query: rq });
+    if (rr.ok) {
+      const xml = await rr.text();
+      for (const m of xml.matchAll(/<Contents>[\s\S]*?<Key>([^<]+)<\/Key>[\s\S]*?<\/Contents>/g)) {
+        try {
+          const one = await s3fetch(cfg, 'GET', m[1]);
+          if (one.ok) {
+            const doc = await one.json();
+            removals.push({ id: doc.id, key: doc.key, requestedAt: doc.requestedAt, reason: doc.reason });
+          }
+        } catch {
+          removals.push({ key: m[1], requestedAt: null, reason: '（读不到请求内容）' });
+        }
+      }
+    }
+  } catch {
+    removals = [];
+  }
+
+  const CDN_BASE = 'https://weishucdn.jiangjiangze.icu';
+  const linkable = (key) => (key ? `${CDN_BASE}/${String(key).split('/').map(encodeURIComponent).join('/')}` : null);
+  for (const item of items) item.url = linkable(item.key || item.stagingKey);
+  for (const entry of log.items || []) entry.url = linkable(entry.key);
+
   return json({
     ok: true,
+    cdnBase: CDN_BASE,
     staging: items,
     pending: items.filter((i) => i.hasClaim).length,
     awaitingCommit: items.filter((i) => !i.hasClaim).length,
+    removals,
     log: (log.items || []).slice(0, 20),
     hostedIndex: '/cdn/v1/hosted-index.json',
     tree: '/cdn/v1/tree.json',
+    docs: '/docs/agent-upload.md',
   });
 }
 

@@ -55,10 +55,14 @@
       <span class="block__title">口令</span>
       <span class="block__who">只存在本次浏览标签页里，关掉就没了</span>
     </div>
-    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px">
+    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px;flex-wrap:wrap">
       <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
       <button class="button button-primary" type="submit" id="gate-go">进入</button>
       <span class="section-note" id="gate-msg"></span>
+      <span style="flex:1 1 auto"></span>
+      <button class="button button-secondary" type="button" id="copy-doc" title="复制 agent 接入说明的链接">复制接入说明</button>
+      <button class="button button-secondary" type="button" id="copy-key" title="复制直连后台用的密钥（agent 的 x-admin-key）">复制直连密钥</button>
+      <span class="section-note" id="copy-msg"></span>
     </form>
   </section>
 
@@ -70,6 +74,8 @@
       <span class="block__who">单个 ≤ 64 MiB（经代理域名的请求体上限是 100 MB）；更大的请用 agent 通道</span>
     </div>
 
+    <details id="manual">
+      <summary>手动上传（默认收起 · 主要通道是给 agent 的接口，见上面的复制按钮）</summary>
     <div class="table-wrap">
       <table>
         <tbody>
@@ -109,6 +115,7 @@
         <tbody><tr><td colspan="5" class="muted">还没选文件</td></tr></tbody>
       </table>
     </div>
+    </details>
   </section>
 
   <!-- 待办与日志 -->
@@ -120,14 +127,14 @@
     </div>
     <div class="table-wrap">
       <table id="staging-table">
-        <thead><tr><th>目标键</th><th class="num">大小</th><th>状态</th><th>来源</th><th>提交时间</th></tr></thead>
-        <tbody><tr><td colspan="5" class="muted">读取中…</td></tr></tbody>
+        <thead><tr><th>目标键</th><th class="num">大小</th><th>状态</th><th>来源</th><th>提交时间</th><th>操作</th></tr></thead>
+        <tbody><tr><td colspan="6" class="muted">读取中…</td></tr></tbody>
       </table>
     </div>
     <div class="table-wrap" style="margin-top:14px">
       <table id="log-table">
-        <thead><tr><th>时间</th><th>键</th><th class="num">大小</th><th>来源</th></tr></thead>
-        <tbody><tr><td colspan="4" class="muted">读取中…</td></tr></tbody>
+        <thead><tr><th>时间</th><th>键</th><th class="num">大小</th><th>来源</th><th>操作</th></tr></thead>
+        <tbody><tr><td colspan="5" class="muted">读取中…</td></tr></tbody>
       </table>
     </div>
     <p class="section-note" style="margin-top:12px">

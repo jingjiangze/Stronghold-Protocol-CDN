@@ -87,8 +87,10 @@ CI 里由 [`.github/workflows/sync.yml`](.github/workflows/sync.yml) 调用，�
 ## 上传后台（人 + agent 都走这一条）
 
 入口 <https://downcdn.jiangjiangze.icu/admin>，口令即 Pages secret `ADMIN_UPLOAD_KEY`（不在仓库里）。
-能力面**只有新增**：没有覆盖入口、没有删除入口，也写不到 `cdn/` `data/` `apk/` `site/` 这些
-契约与其它产品线的键上。字节先进 `cdn/incoming/<id>/`，由
+能力面**只有新增**：没有覆盖入口、删除只针对后台自己上线过的键（要在 `cdn/v1/upload-log.json` 里、
+不在上游 `cdn/v1/index.json`、且没有任何线上清单引用），也写不到 `cdn/` `data/` `apk/` `site/` 这些
+契约与其它产品线的键上 —— 上游镜像件与 APK 按需素材包删不掉，不是界面藏了按钮，是判定拒绝。
+字节先进 `cdn/incoming/<id>/`，由
 `.github/workflows/promote-uploads.yml` 逐字节核对 sha256 后 `CopyObject` 到对外键，
 同时登记 `hosted.json`（进 git —— prune 才挡得住例行清理）、`cdn/v1/hosted-index.json`（补摘要）
 与 `cdn/v1/upload-log.json`（谁传的单一答案）。

@@ -95,6 +95,69 @@ export function claimKeyFor(id) {
   return `${STAGING_PREFIX}${id}/claim.json`;
 }
 
+/**
+ * 撤销请求的前缀。放在暂存区之外：撤销不是「一次上传」，混在 cdn/incoming/ 里
+ * 会让发布轮把「要上线的」和「要下线的」当成同一批事务处理。
+ */
+export const REMOVAL_PREFIX = 'cdn/removals/';
+
+export function removalKeyFor(id) {
+  return `${REMOVAL_PREFIX}${id}.json`;
+}
+
+/** 撤销请求的判定：只允许删「后台自己上线、且现在没人引用」的键。 */
+export function removalVerdict(rawKey, { logged, inUpstreamIndex, referenced, exists }) {
+  const k = validateKey(rawKey);
+  if (!k.ok) return { ok: false, reason: k.reason };
+  const key = k.key;
+  if (!exists) return { ok: false, reason: `键 ${key} 在桶里不存在，无需撤销`, key };
+  if (!logged) return { ok: false, reason: `撤销只针对后台上线过的文件（要在 upload-log.json 里）；${key} 不是这条通道上线的`, key };
+  if (inUpstreamIndex) return { ok: false, reason: `${key} 在上游素材清单里，属于镜像内容，后台无权删`, key };
+  if (referenced) return { ok: false, reason: `${key} 仍被线上契约引用（${referenced}），删了会静默 404`, key };
+  return { ok: true, key };
+}
+
+/**
+ * 从 hosted.json 里摘掉这些键（mergeHosted 的反向）。
+ * 分组被清空时整组删掉 —— 留一个 files:0 的空组，只会让下一个人以为还有内容受保护。
+ */
+export function removeKeysFromHosted(doc, keys) {
+  const drop = new Set(keys);
+  const out = [];
+  let removed = 0;
+  let emptied = 0;
+  for (const entry of doc?.hosted || []) {
+    const kept = (entry.keys || []).filter((row) => !drop.has(Array.isArray(row) ? row[0] : row));
+    const gone = (entry.keys || []).length - kept.length;
+    if (gone) removed += gone;
+    if (!kept.length) {
+      emptied++;
+      continue;
+    }
+    out.push({
+      ...entry,
+      keys: kept,
+      files: kept.length,
+      bytes: kept.reduce((a, row) => a + (Array.isArray(row) ? Number(row[1]) || 0 : 0), 0),
+    });
+  }
+  return { doc: { ...doc, hosted: out }, removed, emptied };
+}
+
+/** 被引用的键集合：上游 index、APK 素材包清单、以及三张客户端清单里出现过的路径。 */
+export function collectReferences({ indexFiles, packKeys, manifestTexts = [] }) {
+  const refs = new Set();
+  for (const key of Object.keys(indexFiles || {})) refs.add(key);
+  for (const key of packKeys || []) refs.add(key);
+  for (const text of manifestTexts) {
+    if (typeof text !== 'string') continue;
+    for (const m of text.matchAll(/(?:assets|fonts|packs)\/[\w.\-\/%]+/g)) {
+      refs.add(decodeURIComponent(m[0]));
+    }
+  }
+  return refs;
+}
+
 /** 新上传 id：随机串由调用方注入（测试要确定性），这里只做形状约束。 */
 export function makeId(randomHex) {
   const hex = String(randomHex());

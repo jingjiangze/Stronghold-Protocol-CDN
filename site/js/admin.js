@@ -87,52 +87,110 @@
     }
   }
 
+  function cellLink(row, text, href) {
+    const td = row.insertCell();
+    if (!href) {
+      td.textContent = text;
+      return td;
+    }
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = text;
+    a.title = href;
+    td.appendChild(a);
+    return td;
+  }
+
+  function actionButton(row, label, title, handler) {
+    const td = row.insertCell();
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'button button-secondary';
+    b.style.padding = '2px 10px';
+    b.textContent = label;
+    b.title = title;
+    b.addEventListener('click', handler);
+    td.appendChild(b);
+    return td;
+  }
+
+  async function purgeStaging(item) {
+    if (!window.confirm(`清掉暂存区这一组？\n${item.stagingKey || item.id}\n\n这些字节还没上线，删掉不影响任何对外地址。`)) return;
+    const { status, doc } = await api(`/api/cdn/upload/staging?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
+    if (doc && doc.ok) line(`已清掉 ${doc.deleted} 个暂存对象，回收 ${(doc.freed / 1024).toFixed(1)} KiB`);
+    else line(`清理失败：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
+    await refresh();
+  }
+
+  async function removePublished(entry) {
+    if (!entry.key) return;
+    if (!window.confirm(`提交下线这个文件？\n${entry.key}\n\n发布轮会先核对「不在上游素材清单、且没有任何线上清单引用」才真删；被引用的会拒绝并写明原因。`)) return;
+    const { status, doc } = await api('/api/cdn/upload/remove', { method: 'POST', body: { key: entry.key, reason: '后台手动下线' } });
+    if (status === 202 || (doc && doc.ok)) line('撤销请求已入队，等发布轮处理（约 20 分钟内）');
+    else line(`撤销被拒：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
+    await refresh();
+  }
+
   function renderStatus(doc) {
     const staged = (doc.staging || []);
     $('q-staged').textContent = String(staged.length);
     $('q-pending').textContent = String(doc.pending || 0);
-    $('q-published').textContent = String((doc.log || []).length);
+    $('q-published').textContent = String((doc.log || []).filter((l) => !l.removedAt).length);
 
     const sbody = $('staging-table').tBodies[0];
     sbody.textContent = '';
     if (!staged.length) {
       const tr = sbody.insertRow();
       const td = tr.insertCell();
-      td.colSpan = 5;
+      td.colSpan = 6;
       td.className = 'muted';
       td.textContent = '暂存区是空的';
     }
     const STATE_CN = { queued: '等发布', 'verified-at-edge': '边缘已核对', 'awaiting-commit': '只传了字节、没提交' };
     for (const item of staged) {
       const tr = sbody.insertRow();
-      tr.insertCell().textContent = item.key || item.stagingKey || item.id;
+      cellLink(tr, item.key || item.stagingKey || item.id, item.url);
       const size = tr.insertCell();
       size.className = 'num';
       size.textContent = fmt(item.size || item.stagedSize);
       tr.insertCell().textContent = STATE_CN[item.state] || item.state;
       tr.insertCell().textContent = item.source || '—';
       tr.insertCell().textContent = item.claimedAt ? item.claimedAt.replace('T', ' ').slice(0, 19) : '—';
+      actionButton(tr, '清暂存', '删掉这一组还没上线的字节（立即生效）', () => purgeStaging(item));
     }
 
     const lbody = $('log-table').tBodies[0];
     lbody.textContent = '';
     const logs = doc.log || [];
+    const pendingRemoval = new Set((doc.removals || []).map((r) => r.key));
     if (!logs.length) {
       const tr = lbody.insertRow();
       const td = tr.insertCell();
-      td.colSpan = 4;
+      td.colSpan = 5;
       td.className = 'muted';
       td.textContent = '还没有发布记录（第一次上线之后才会有）';
     }
     for (const entry of logs) {
       const tr = lbody.insertRow();
       tr.insertCell().textContent = (entry.at || '').replace('T', ' ').slice(0, 19);
-      tr.insertCell().textContent = entry.key || '';
+      cellLink(tr, entry.key || '', entry.url);
       const size = tr.insertCell();
       size.className = 'num';
       size.textContent = fmt(entry.size);
       tr.insertCell().textContent = entry.source || '—';
+      if (entry.removedAt) {
+        const td = tr.insertCell();
+        td.textContent = `已下线 ${entry.removedAt.slice(0, 10)}`;
+      } else if (pendingRemoval.has(entry.key)) {
+        const td = tr.insertCell();
+        td.textContent = '撤销排队中';
+      } else {
+        actionButton(tr, '下线', '提交撤销请求（发布轮核对无引用后才真删）', () => removePublished(entry));
+      }
     }
+    // 撤销排队中的条目已经在上面按 key 标出来了；被拒的请求由发布轮直接丢弃并记在 Actions 日志里。
   }
 
   async function refresh() {
@@ -240,6 +298,33 @@
     }
     setTimeout(refresh, 90000);
   }
+
+  async function copyText(text, label) {
+    const box = $('copy-msg');
+    try {
+      await navigator.clipboard.writeText(text);
+      box.textContent = `已复制${label}`;
+    } catch {
+      // 剪贴板 API 在非安全上下文或被拒时会抛；退回到一次性的选中复制。
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch { ok = false; }
+      ta.remove();
+      box.textContent = ok ? `已复制${label}` : `复制失败，请手动选中：${text}`;
+    }
+    setTimeout(() => { box.textContent = ''; }, 4000);
+  }
+
+  $('copy-doc').addEventListener('click', () => copyText(`${location.origin}/docs/agent-upload.md`, '接入说明链接'));
+  $('copy-key').addEventListener('click', () => {
+    if (!key()) { $('gate-msg').textContent = '先进入再复制'; return; }
+    copyText(key(), '直连密钥');
+  });
 
   $('gate-form').addEventListener('submit', async (event) => {
     event.preventDefault();

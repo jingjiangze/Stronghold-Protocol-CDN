@@ -33,15 +33,19 @@ import {
 import {
   HOSTED_INDEX_KEY,
   LOG_KEY,
+  REMOVAL_PREFIX,
   STAGING_PREFIX,
   appendToLog,
   buildHostedIndex,
   claimIsPublishable,
   claimKeyFor,
   claimsFromListing,
+  collectReferences,
   emptyLog,
   hostedGroupFor,
   mergeHosted,
+  removeKeysFromHosted,
+  removalVerdict,
 } from './upload.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -84,6 +88,132 @@ async function readJsonKey(config, key) {
   } catch {
     return null;
   }
+}
+
+/**
+ * 处理撤销请求（下线后台自己上线过的键）。
+ *
+ * 判定顺序是有意的：先确认它是后台上线的（日志 + hosted.json 两处都要在），
+ * 再确认现在没人引用它（上游 index、APK 素材包清单、三张客户端清单的正文）。
+ * 任一不成立就整条拒绝，删下去的代价是玩家端静默 404 —— 那种问题查起来极慢。
+ * 删完要连带摘 hosted.json 的登记、重建 hosted-index、并在日志里留 tombstone（记录不抹，只标已下线）。
+ */
+export async function processRemovals(config, { dry = false, log = console.log } = {}) {
+  const out = { removed: [], refused: [], errors: [] };
+  let requests;
+  try {
+    requests = await listKeys(config, REMOVAL_PREFIX);
+  } catch (error) {
+    out.errors.push({ error: `列撤销请求失败：${error.message}` });
+    return out;
+  }
+  if (!requests.length) return out;
+
+  const indexDoc = (await readJsonKey(config, 'cdn/v1/index.json')) || {};
+  const indexFiles = indexDoc.files || indexDoc;
+  const packKeys = new Set();
+  const manifestTexts = [];
+  for (const key of ['site/manifest.json', 'site/manifest-re.json', 'data/assets.json', 'data/local-assets.json', 'data/emotes.json']) {
+    const body = await getObject(config, key);
+    if (!body) continue;
+    const text = body.toString('utf8');
+    manifestTexts.push(text);
+    if (key.startsWith('site/manifest')) {
+      try {
+        const doc = JSON.parse(text);
+        for (const pack of doc?.art?.packs || []) {
+          for (const url of pack.urls || []) {
+            try {
+              packKeys.add(decodeURIComponent(new URL(url).pathname).replace(/^\//, ''));
+            } catch {
+              /* 镜像前缀那条不是绝对 URL，忽略 */
+            }
+          }
+        }
+      } catch {
+        /* 解析不了就把这一份正文留在 manifestTexts 里做字符串引用检查 */
+      }
+    }
+  }
+  const references = collectReferences({ indexFiles, packKeys, manifestTexts });
+  const uploadLog = (await readJsonKey(config, LOG_KEY)) || emptyLog();
+  const loggedKeys = new Set((uploadLog.items || []).filter((i) => i && i.key && !i.removedAt).map((i) => i.key));
+
+  const hostedPath = path.join(ROOT, HOSTED_FILE);
+  let hostedDoc = fs.existsSync(hostedPath) ? JSON.parse(fs.readFileSync(hostedPath, 'utf8')) : { hosted: [] };
+  let hostedTouched = false;
+  const removedRows = [];
+
+  for (const row of requests) {
+    let req = null;
+    try {
+      req = await readJsonKey(config, row.key);
+    } catch (error) {
+      out.errors.push({ key: row.key, error: `读请求失败：${error.message}` });
+      continue;
+    }
+    if (!req || typeof req.key !== 'string') {
+      out.errors.push({ key: row.key, error: '撤销请求不是合法 JSON' });
+      continue;
+    }
+    const exists = await headObject(config, req.key);
+    const verdict = removalVerdict(req.key, {
+      logged: loggedKeys.has(req.key),
+      inUpstreamIndex: Boolean(indexFiles[req.key]),
+      referenced: references.has(req.key) ? '线上清单仍写着这个路径' : null,
+      exists: Boolean(exists),
+    });
+    if (!verdict.ok) {
+      out.refused.push({ key: req.key, reason: verdict.reason });
+      if (!dry) await deleteObject(config, row.key); // 明确拒绝的请求也不留着：它会每次重跑同一个判定
+      continue;
+    }
+
+    if (dry) {
+      out.removed.push({ key: req.key, size: exists.size, dry: true });
+      log(`dry-run：会下线 ${req.key}（${exists.size} 字节）`);
+      continue;
+    }
+
+    await deleteObject(config, req.key);
+    const after = await headObject(config, req.key);
+    if (after) {
+      out.errors.push({ key: req.key, error: '删完 HEAD 还在，桶没响应一致，保留登记不动' });
+      continue;
+    }
+    const strip = removeKeysFromHosted(hostedDoc, [req.key]);
+    if (strip.removed) {
+      hostedDoc = strip.doc;
+      hostedTouched = true;
+    }
+    removedRows.push(req.key);
+    uploadLog.items = (uploadLog.items || []).map((i) => (i && i.key === req.key ? { ...i, removedAt: new Date().toISOString(), removedReason: req.reason || '' } : i));
+    await deleteObject(config, row.key);
+    out.removed.push({ key: req.key, size: exists.size, source: req.publishedSource });
+    log(`removed ${req.key}（${exists.size} 字节）`);
+  }
+
+  if (removedRows.length && !dry) {
+    if (hostedTouched) fs.writeFileSync(hostedPath, `${JSON.stringify(hostedDoc, null, 2)}\n`, 'utf8');
+    const existingIndex = (await readJsonKey(config, HOSTED_INDEX_KEY)) || { files: {} };
+    const files = { ...(existingIndex.files || {}) };
+    for (const key of removedRows) delete files[key];
+    const bySource = {};
+    for (const [key, v] of Object.entries(files)) {
+      const source = v.source || 'unknown';
+      (bySource[source] = bySource[source] || []).push({ key, size: Number(v.size) || 0, sha256: v.sha256 });
+    }
+    const rebuilt = buildHostedIndex(bySource);
+    await putObject(config, HOSTED_INDEX_KEY, Buffer.from(rebuilt.json, 'utf8'), { contentType: 'application/json', cacheControl: SHORT });
+    await putObject(config, LOG_KEY, Buffer.from(`${JSON.stringify(uploadLog, null, 2)}\n`, 'utf8'), { contentType: 'application/json', cacheControl: SHORT });
+    out.hostedIndexTotals = rebuilt.doc.totals;
+    reportRemovalChange(out, removedRows.length);
+  }
+  return out;
+}
+
+function reportRemovalChange(out, count) {
+  out.hostedRewritten = count;
 }
 
 /** 按来源分组，喂给 buildHostedIndex（它要的形状是 {source: [{key,size,sha256}]}）。 */
@@ -277,16 +407,32 @@ export async function promote({ dry = false, max = 20 } = {}) {
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const report = await promote(opts);
+  // 下线独立跑一遍：哪怕这一轮没有任何新上传，撤销请求也得被处理掉。
+  let removals = { removed: [], refused: [], errors: [] };
+  try {
+    removals = await processRemovals(r2Config(process.env), { dry: opts.dry, log });
+  } catch (error) {
+    removals.errors.push({ error: `撤销阶段整体失败：${error.message}` });
+  }
+  report.removals = removals;
+
   console.log(`\n== 发布结果${opts.dry ? '（dry-run）' : ''} ==`);
   console.log(`staging 对象 ${report.scanned} 个；未提交 claim ${report.skippedNoClaim} 组`);
   console.log(`published ${report.published.length}，already ${report.already.length}，rejected ${report.rejected.length}，errors ${report.errors.length}`);
   for (const p of report.published) console.log(`  + ${p.key}  ${p.size} B  ${p.source}`);
   for (const r of report.rejected) console.log(`  ✗ ${r.key || r.id} — ${r.reason}`);
   for (const e of report.errors) console.log(`  ! ${e.key || e.id} — ${e.error}`);
+  console.log(`\n== 撤销结果 ==`);
+  console.log(`removed ${removals.removed.length}，refused ${removals.refused.length}，errors ${removals.errors.length}`);
+  for (const r of removals.removed) console.log(`  − ${r.key}${r.dry ? '（干跑）' : ''}`);
+  for (const r of removals.refused) console.log(`  ✗ 拒撤 ${r.key} — ${r.reason}`);
+  for (const e of removals.errors) console.log(`  ! ${e.key || ''} ${e.error}`);
   if (report.hosted) console.log('hosted.json：', report.hosted.map((h) => `${h.source} +${h.added}`).join(', '));
   if (report.hostedIndexTotals) console.log('hosted-index.json：', JSON.stringify(report.hostedIndexTotals));
-  // 供工作流判断「要不要接着刷 tree.json / 部署站点」
+  if (removals.hostedIndexTotals) console.log('hosted-index.json（撤销后）：', JSON.stringify(removals.hostedIndexTotals));
+  // 供工作流判断「要不要接着提交 hosted.json / 刷 tree.json / 部署站点」
   console.log(`PUBLISHED_COUNT=${report.published.length}`);
+  console.log(`REMOVED_COUNT=${removals.removed.length}`);
   return report;
 }
 

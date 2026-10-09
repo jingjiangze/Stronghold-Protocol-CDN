@@ -13,10 +13,13 @@ import {
   claimsFromListing,
   cleanNote,
   cleanSource,
+  collectReferences,
   emptyLog,
   hostedGroupFor,
   makeId,
   mergeHosted,
+  removeKeysFromHosted,
+  removalVerdict,
   stagingKeyFor,
   validateKey,
   validateSha,
@@ -136,4 +139,49 @@ test('the log keeps the newest entries first', () => {
   log = appendToLog(log, { at: '2026-10-10T02:00:00Z', key: 'assets/three.png' }, { keep: 2 });
   assert.deepEqual(log.items.map((i) => i.key), ['assets/three.png', 'assets/two.png']);
   assert.ok(LOG_KEY.startsWith('cdn/'));
+});
+
+// 撤销的边界比上传更要紧：删错的代价是玩家端静默 404，而且没有回滚副本。
+test('removal only accepts backend-published, currently unreferenced keys', () => {
+  const base = { logged: true, inUpstreamIndex: false, referenced: null, exists: true };
+  assert.equal(removalVerdict('assets/local/x.png', base).ok, true);
+  assert.equal(removalVerdict('assets/local/x.png', { ...base, logged: false }).ok, false, '不是后台上线的不许从这里删');
+  assert.equal(removalVerdict('assets/audio/bgm/m.png', { ...base, inUpstreamIndex: true }).ok, false, '上游镜像件不许删');
+  assert.equal(removalVerdict('assets/packs/a.zip', { ...base, referenced: '线上清单仍写着这个路径' }).ok, false, '仍被引用不许删');
+  assert.equal(removalVerdict('assets/gone.png', { ...base, exists: false }).ok, false, '不存在就没什么可删');
+  assert.equal(removalVerdict('cdn/v1/art.json', base).ok, false, '契约文件不在可删前缀里');
+  assert.equal(removalVerdict('apk/x.apk', base).ok, false, '别人产品线不在可删前缀里');
+});
+
+test('de-registering keys from hosted.json keeps other entries and drops empty groups', () => {
+  const doc = {
+    _comment: '保持',
+    hosted: [
+      { id: 'a', what: '第一组', keys: [['assets/1.png', 10], ['assets/2.png', 20]], files: 2, bytes: 30 },
+      { id: 'b', what: '第二组', keys: [['assets/3.png', 5]], files: 1, bytes: 5 },
+    ],
+  };
+  const onlyOne = removeKeysFromHosted(doc, ['assets/3.png']);
+  assert.equal(onlyOne.removed, 1);
+  assert.equal(onlyOne.emptied, 1, '整组空了就删掉这一组，别留 files:0 的假保护');
+  assert.equal(onlyOne.doc.hosted.length, 1);
+  assert.deepEqual(onlyOne.doc.hosted[0].keys.map((k) => k[0]), ['assets/1.png', 'assets/2.png']);
+  assert.equal(onlyOne.doc._comment, '保持');
+
+  const partial = removeKeysFromHosted(doc, ['assets/1.png']);
+  assert.equal(partial.doc.hosted.length, 2);
+  assert.deepEqual(partial.doc.hosted[0].keys.map((k) => k[0]), ['assets/2.png']);
+  assert.equal(partial.doc.hosted[0].bytes, 20, '分组体积要重算');
+});
+
+test('reference collection covers upstream index, pack urls and manifest text', () => {
+  const refs = collectReferences({
+    indexFiles: { 'assets/a.png': { size: 1 } },
+    packKeys: ['assets/packs/p-4.zip'],
+    manifestTexts: ['{"url":"https://weishucdn.jiangjiangze.icu/assets/local/b.png?v=1"}'],
+  });
+  assert.ok(refs.has('assets/a.png'));
+  assert.ok(refs.has('assets/packs/p-4.zip'));
+  assert.ok(refs.has('assets/local/b.png'), '清单正文里出现过的路径也算引用');
+  assert.equal(refs.has('assets/nope.png'), false);
 });
