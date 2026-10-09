@@ -105,6 +105,28 @@ test('the file tree is expandable, filterable, and fed by the compact tree file'
   assert.match(script, /let built = false/, 'child rows must be built lazily');
 });
 
+// The official docs are the one part of the tree a reader wants as a page rather than a file, so
+// the site lists them. It renders from the tree it already fetches, so there is no second list.
+test('the page lists the official docs from the tree it already fetches', () => {
+  assert.match(html, /id="official-docs"/, 'the docs section is missing');
+  assert.match(html, /id="doc-rows"/, 'the docs table needs a host to render into');
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /function renderDocs/, 'the docs list needs a renderer');
+  assert.match(script, /renderDocs\(treePromise\)/, 'the docs must reuse the tree fetch, not add one');
+  assert.match(html, /href="#official-docs"/, 'the docs section needs a nav entry');
+});
+
+// The manifest table used to assert "git mounts have it" for every row. That stopped being true
+// when docs/ joined the tree, so the column is computed now.
+test('the git-mount column is computed, not a constant 是', () => {
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /onGitMount/, 'the git-mount column must be derived per row');
+  assert.ok(
+    !/<td class="num">是<\/td><\/tr>/.test(script),
+    'a hard-coded 是 would claim the git mounts serve docs, which they do not',
+  );
+});
+
 // The agent-facing query surface is documented where the rest of the API is, so it is discoverable
 // rather than folklore.
 test('the page documents how an agent queries the tree', () => {

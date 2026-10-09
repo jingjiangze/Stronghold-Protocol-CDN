@@ -45,12 +45,25 @@ const art = await (await fetch(`${CDN}/cdn/v1/art.json`)).json();
 
 `art` 块的字段名与 re 线 `site/manifest-re.json` 的 `art` 块一致（`base` / `version` / `format` / `mirrors` / `packs`），同一套解析代码可以同时吃两条轴。
 
+## 5. 要读官方文档 / wiki 数据的
+
+```js
+// 键就是上游包内路径，和 /assets/** 同构
+const playing = await (await fetch(`${CDN}/docs/PLAYING.md`)).text();
+const ops = await (await fetch(`${CDN}/docs/research/03-operators.json`)).json();
+```
+
+`docs/**` 来自上游发布包，原样镜像：`PLAYING.md`（玩家手册）、`DEPLOY.md`（部署）、
+`docs/research/*.json`（干员 / 敌人 / 地图 / 素材四份数据集）。上游游戏服务器**没有** `/docs/` 路由，
+所以这是这些文件唯一走 CDN 的入口。**`.md` 以 `text/plain` 发送**，浏览器会内联显示而不是下载
+（`text/markdown` 在 `nosniff` 下会被当未知类型下载）；要原始文件请用 `curl -O`。
+
 ## 缓存约定
 
 | 内容 | 头 |
 |---|---|
 | 素材 / 字体（带 `?v=<令牌>`） | `public, max-age=31536000, immutable` |
-| 素材 / 字体（裸路径，无令牌） | `public, max-age=3600` |
+| 素材 / 字体 / 文档（裸路径，无令牌） | `public, max-age=3600` |
 | 清单与 `cdn/v1/*.json` | `public, max-age=300` |
 | 按令牌冻结的副本（`cdn/v1/*-<令牌>.json`、`packs/**`） | `public, max-age=31536000, immutable` |
 

@@ -27,6 +27,7 @@
       <a href="#agents">agent 接入</a>
       <a href="#params">拉取参数</a>
       <a href="#mirrors">镜像站</a>
+      <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="./bandwidth">↗ 文档</a>
@@ -319,7 +320,9 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <span><b>关于「部分覆盖」这个标记：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
         所以 git 挂载源只能给出本仓几十 KB 的工具文件，请求素材只会得到 404。这<b>不是不稳定，是源里当时就没有</b>。
         <b>现在已解决</b>：素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，各源现在都能给出全部素材；
-        抽样 40 条路径 × 3 个源（jsDelivr / ghfast / gh-proxy）逐字节 sha256 校验一致，MIME、CORS 与 Range 206 均已实测。</span>
+        抽样 40 条路径 × 3 个源（jsDelivr / ghfast / gh-proxy）逐字节 sha256 校验一致，MIME、CORS 与 Range 206 均已实测。
+        <b>唯一例外是 docs/</b>（官方文档）：它只发布到 R2 / Pages，不在本仓里，所以 git 挂载源对它 404 ——
+        表格最后一列按实际标注。</span>
       </div>
     </div>
 
@@ -385,7 +388,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <p class="section-lead">
       这个桶里实际托管的每一个文件，按目录展开。点目录名展开下一层，点文件名直接打开它。
       带 <span class="chip chip--mod">托管</span> 的是本仓<b>刻意托管</b>的第三方 mod 素材
-      （上游清单里没有，见 <code class="inline">hosted.json</code>），其余是上游素材树。
+      （上游清单里没有，见 <code class="inline">hosted.json</code>），其余是上游素材树；
+      <code class="inline">docs/</code> 是上游包内的官方文档与 wiki 数据（见上一节）。
     </p>
     <div class="toolbar">
       <input id="tree-filter" type="search" placeholder="按路径筛选，例如 spine/op/char_1016 或 .skel" autocomplete="off" />
@@ -394,6 +398,33 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
     <div class="table-wrap">
       <div id="tree" class="tree" role="tree" aria-label="托管文件目录"><p class="muted">加载中…</p></div>
+    </div>
+  </section>
+
+  <section class="section" id="official-docs">
+    <div class="section-heading">
+      <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
+      <span class="section-status" id="doc-status">读取中…</span>
+    </div>
+    <p class="section-lead">
+      上游发布包里的 <code class="inline">docs/**</code>，原样镜像到本 CDN，键就是包内路径。
+      这里面是<b>官方自己写的</b>资料：<code class="inline">PLAYING.md</code>（玩家手册）、
+      <code class="inline">DEPLOY.md</code>（部署），以及 <code class="inline">docs/research/*.json</code>
+      ——干员 / 敌人 / 地图 / 素材四份数据集，也就是通常说的 wiki 数据。
+      <b>这些文件游戏服务器不提供</b>（上游没有 <code class="inline">/docs/</code> 路由），
+      以前只能去 GitHub 取；现在和素材一样走这个域名。
+    </p>
+    <div class="notice">
+      <span><code class="inline">.md</code> 用 <code class="inline">text/plain</code> 发送，
+      所以点开是<b>直接显示</b>而不是下载——<code class="inline">text/markdown</code> 在
+      <code class="inline">nosniff</code> 下会被浏览器当成未知类型直接下载。手机浏览器上也能直接读。
+      需要原始文件就右键另存，或者 <code class="inline">curl -O</code>。</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>体积</th><th>直接打开</th></tr></thead>
+        <tbody id="doc-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
+      </table>
     </div>
   </section>
 

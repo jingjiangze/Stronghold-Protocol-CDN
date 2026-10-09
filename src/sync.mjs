@@ -21,6 +21,8 @@ import {
   ZIP_ROOT,
   ZIP_ASSETS_DIR,
   ZIP_FONTS_DIR,
+  ZIP_DOCS_DIR,
+  DOCS_PREFIX,
   ZIP_PACKS_DIR,
   zipIncludePatterns,
 } from './names.mjs';
@@ -181,9 +183,17 @@ async function readRemoteIndex(base) {
   }
 }
 
-function localPathFor(stage, key) {
+/**
+ * Where an index key lives inside the extracted package.
+ *
+ * Exported so a test can pin the agreement between this mapping and `zipIncludePatterns()`: if the
+ * two ever disagree, the key is hashed from a directory the extraction never created and the upload
+ * fails at the end of a long run.
+ */
+export function localPathFor(stage, key) {
   if (key.startsWith('assets/')) return path.join(stage, ZIP_ASSETS_DIR, key.slice('assets/'.length));
   if (key.startsWith('fonts/')) return path.join(stage, ZIP_FONTS_DIR, key.slice('fonts/'.length));
+  if (key.startsWith(DOCS_PREFIX)) return path.join(stage, ZIP_DOCS_DIR, key.slice(DOCS_PREFIX.length));
   throw new Error(`no local source for index key ${key}`);
 }
 
@@ -486,6 +496,9 @@ async function main() {
     [
       { abs: path.join(stage, ZIP_ASSETS_DIR), prefix: 'assets/' },
       { abs: path.join(stage, ZIP_FONTS_DIR), prefix: 'fonts/' },
+      // The official docs travel in the same index, so prune spares them and tree.json lists them.
+      // They are small (a few MB) and the package is already unpacked, so this costs no download.
+      { abs: path.join(stage, ZIP_DOCS_DIR), prefix: DOCS_PREFIX },
     ],
     { concurrency: 8, onProgress: (done, total) => log(`hashed ${done}/${total}`) },
   );

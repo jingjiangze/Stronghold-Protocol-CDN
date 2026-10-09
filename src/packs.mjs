@@ -11,8 +11,19 @@ import { spawnSync } from 'node:child_process';
 
 import { putObject, IMMUTABLE } from './r2.mjs';
 import { sha256File } from './index-tree.mjs';
+import { DOCS_PREFIX } from './names.mjs';
 
 export const DEFAULT_PACK_BYTES = 96 * 1024 * 1024;
+
+/**
+ * Prefixes that stay out of the pack channel.
+ *
+ * Packs exist because the art tree is ~9.5k small files and a client fetching them one at a time is
+ * latency-bound. The docs are the opposite: a handful of files, a few MB in total, usually wanted
+ * individually and readable straight from the CDN. Packing them would add a ~3 MB zip nobody needs
+ * and a "docs" group that means nothing.
+ */
+export const PACK_EXCLUDED_PREFIXES = [DOCS_PREFIX];
 
 /** Mirror prefixes applied to github.com URLs. The list is data (mirrors.json), not code. */
 export function readMirrorPrefixes(root) {
@@ -42,6 +53,7 @@ const slug = (group, index) => `${group}-${index}`.replace(/[^a-z0-9-]+/gi, '-')
 export function planPacks(files, { maxBytes = DEFAULT_PACK_BYTES } = {}) {
   const groups = new Map();
   for (const key of Object.keys(files).sort()) {
+    if (PACK_EXCLUDED_PREFIXES.some((p) => key.startsWith(p))) continue;
     const group = groupOf(key);
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(key);

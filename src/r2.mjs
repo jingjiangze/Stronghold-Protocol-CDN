@@ -197,6 +197,11 @@ export const MIME = {
   skel: 'application/octet-stream',
   json: 'application/json',
   css: 'text/css',
+  // `text/plain`, deliberately not `text/markdown`: the edge sends `X-Content-Type-Options:
+  // nosniff` and browsers have no built-in markdown renderer, so `text/markdown` is served as a
+  // download instead of rendered. As plain text it renders inline and is readable on a phone,
+  // which is the whole point of mirroring the docs.
+  md: 'text/plain',
 };
 
 export function mimeFor(key) {

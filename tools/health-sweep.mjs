@@ -114,6 +114,10 @@ const objects = [
   ['/data/local-assets.json', 'application/json', 100000],
   ['/assets/char/avatar/char_1016_agoat2.png', 'image/png', 60000],
   ['/fonts/bender-regular.otf', 'font/otf', 40000],
+  // The official docs ride the same tree now. `text/plain` is the assertion that matters: a
+  // `text/markdown` regression would still be a 200 but would download instead of render.
+  ['/docs/PLAYING.md', 'text/plain', 50000],
+  ['/docs/research/03-operators.json', 'application/json', 1000000],
 ];
 const A = 'weishucdn.jiangjiangze.icu';
 const B = 'weishucdn2.jiangjiangze.icu';

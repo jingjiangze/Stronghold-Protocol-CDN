@@ -12,6 +12,18 @@ export const ZIP_ROOT = 'Stronghold-Protocol';
 export const ZIP_ASSETS_DIR = `${ZIP_ROOT}/public/assets`;
 /** `<ZIP_ROOT>/public/fonts` — mirrored to `fonts/`. */
 export const ZIP_FONTS_DIR = `${ZIP_ROOT}/public/fonts`;
+/**
+ * `<ZIP_ROOT>/docs` — the official documentation the package ships, mirrored to `docs/`.
+ *
+ * These are the game's own reference material: `PLAYING.md` and `DEPLOY.md` plus the
+ * `docs/research/*.json` datasets (operators / enemies / maps / assets) — the wiki data the client
+ * never fetches but a human or an agent wants, and the only part of the package that is neither
+ * art nor code. The server has no `/docs/` mount, so today they are reachable only from GitHub;
+ * mirroring them puts them on the CDN domain like everything else.
+ */
+export const ZIP_DOCS_DIR = `${ZIP_ROOT}/docs`;
+/** Index prefix the docs are published under. */
+export const DOCS_PREFIX = 'docs/';
 /** Manifests the client reads; also the source of truth for "what must exist". */
 export const ZIP_DATA_FILES = [
   `${ZIP_ROOT}/data/assets.json`,
@@ -21,7 +33,7 @@ export const ZIP_DATA_FILES = [
 export const ZIP_PACKS_DIR = `${ZIP_ROOT}/packs`;
 
 /** Prefixes this repository owns on the bucket. Everything else belongs to other lines. */
-export const OWNED_PREFIXES = ['assets/', 'fonts/', 'data/', 'cdn/', 'packs/'];
+export const OWNED_PREFIXES = ['assets/', 'fonts/', DOCS_PREFIX, 'data/', 'cdn/', 'packs/'];
 
 /** Root-level objects owned by exact name — `robots.txt` only works from the root. */
 export const OWNED_KEYS = ['robots.txt'];
@@ -55,6 +67,7 @@ export function zipIncludePatterns() {
   return [
     `${ZIP_ASSETS_DIR}/*`,
     `${ZIP_FONTS_DIR}/*`,
+    `${ZIP_DOCS_DIR}/*`,
     ...ZIP_DATA_FILES,
     `${ZIP_PACKS_DIR}/*`,
   ];

@@ -95,14 +95,14 @@ const packKeys = new Set(((manifest.art && manifest.art.packs) || []).flatMap((p
   try { return decodeURIComponent(new URL(u).pathname).replace(/^\//, ''); } catch { return null; }
 }).filter(Boolean)));
 
-const rows = listAll('assets/').concat(listAll('fonts/'));
+const rows = listAll('assets/').concat(listAll('fonts/')).concat(listAll('docs/'));
 const inIndex = rows.filter((r) => indexFiles[r.key]);
 const declared = rows.filter((r) => !indexFiles[r.key] && hosted.has(r.key));
 const referenced = rows.filter((r) => !indexFiles[r.key] && !hosted.has(r.key) && packKeys.has(r.key));
 const unknown = rows.filter((r) => !indexFiles[r.key] && !hosted.has(r.key) && !packKeys.has(r.key));
 const sum = (a) => a.reduce((s, r) => s + r.size, 0);
 
-console.log(`assets/+fonts/ 实际对象 ${rows.length} 个 / ${(sum(rows) / 1048576).toFixed(1)} MB`);
+console.log(`assets/+fonts/+docs/ 实际对象 ${rows.length} 个 / ${(sum(rows) / 1048576).toFixed(1)} MB`);
 console.log(`  上游 index.json 覆盖   ${inIndex.length} 个 / ${(sum(inIndex) / 1048576).toFixed(1)} MB`);
 console.log(`  hosted.json 已登记      ${declared.length} 个 / ${(sum(declared) / 1048576).toFixed(1)} MB`);
 console.log(`  APK 素材包清单引用      ${referenced.length} 个 / ${(sum(referenced) / 1048576).toFixed(1)} MB   ← 该登记但现在没登记`);

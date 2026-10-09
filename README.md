@@ -60,6 +60,7 @@ gh 取上游 latest release（或 --tag 指定）
 否则新域名取图会被浏览器以「WebGL 贴图被污染」的形式静默失败。撤回第二个域名：
 `wrangler r2 bucket domain remove stronghold-assets --domain …` 并把规则表达式改回单 host。
 | `<CDN>/fonts/**` | 字体 |
+| `<CDN>/docs/**` | **官方文档**（上游包内 `docs/**`）：`PLAYING.md`、`DEPLOY.md` 与 `docs/research/*.json`（干员/敌人/地图/素材数据集，即 wiki 数据）。`.md` 用 `text/plain` 发送以便内联渲染 |
 | `<CDN>/data/assets.json` | 上游清单，`/assets/…`、`/fonts/…` 已改写为绝对 URL 且带 `?v=<tag>` |
 | `<CDN>/cdn/v1/art.json` | art 契约 + 版本水位 + 校验结果（字段名与 re 线 `site/manifest-re.json` 的 `art` 块对齐） |
 | `<CDN>/cdn/v1/index.json` | 全量键表 `{ "assets/…": { size, sha256 } }`，供二级镜像与逐文件校验 |

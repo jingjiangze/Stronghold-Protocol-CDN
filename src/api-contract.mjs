@@ -91,6 +91,12 @@ export const API_ENDPOINTS = [
     what: '字体本体（woff2 为主）。与 /assets/** 同构：键 = 上游 public/fonts/** 去掉 public/',
   },
   {
+    path: '/docs/**',
+    contentType: '.md → text/plain；.json → application/json',
+    cache: '带 ?v= 令牌 1 年 / 裸路径 1 小时',
+    what: '官方文档本体（PLAYING.md / DEPLOY.md / docs/research/*.json 的 wiki 数据）。键 = 上游包内 docs/**。.md 用 text/plain 是为了内联渲染——text/markdown 在 nosniff 下会被浏览器当下载',
+  },
+  {
     path: '/packs/assets-<tag>/<id>.zip',
     contentType: 'application/zip',
     cache: 'public, max-age=31536000, immutable',

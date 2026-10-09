@@ -138,6 +138,45 @@ function renderPacks(packs) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
 /**
+ * The official documentation the release package ships, listed from the tree rather than typed out.
+ *
+ * `docs/**` rides the same index as the art, so it arrives with tree.json — no extra fetch and no
+ * second list to keep in step. Files are linked absolutely (this page is served from the site
+ * origin, which has no `/docs/`), and `.md` is served as `text/plain` by the CDN so it renders
+ * instead of downloading.
+ */
+function renderDocs(treePromise) {
+  const body = $('doc-rows');
+  if (!body) return;
+  const dirs = treePromise ? treePromise.then((d) => d?.dirs || []).catch(() => []) : Promise.resolve([]);
+  return dirs.then((list) => {
+    const rows = [];
+    for (const d of list) {
+      if (d.path !== 'docs' && !d.path.startsWith('docs/')) continue;
+      for (const f of d.files || []) {
+        rows.push({ path: `${d.path}/${f[0]}`, size: f[1] });
+      }
+    }
+    rows.sort((a, b) => a.path.localeCompare(b.path));
+    setText('doc-status', rows.length ? `${rows.length} 个文件` : '');
+    if (!rows.length) {
+      body.innerHTML =
+        '<tr><td colspan="3" class="muted">这次发布的包里没有 docs/（或者清单还没重建）。</td></tr>';
+      return;
+    }
+    body.innerHTML = rows
+      .map((r) => {
+        const name = r.path.slice('docs/'.length);
+        return (
+          `<tr><td class="mono">${esc(name)}</td><td class="num">${fmtBytes(r.size)}</td>` +
+          `<td><a class="mono" href="${CDN}/${r.path}" target="_blank" rel="noopener">打开</a></td></tr>`
+        );
+      })
+      .join('');
+  });
+}
+
+/**
  * The endpoint table, rendered from the published contract rather than hand-copied.
  *
  * The hand-copied table had already drifted: it listed /fonts/** as immutable when the real policy
@@ -173,29 +212,39 @@ function renderManifest(dirs, totals, art) {
   const total = totals?.bytes || dirs.reduce((s, d) => s + d.bytes, 0);
   const files = totals?.files || dirs.reduce((s, d) => s + d.files, 0);
 
-  // Every directory is committed now, so the last column is the same for all of them. It is still
-  // rendered per row rather than typed once per row, so it cannot drift out of step with the rest.
+  // The last column used to be a constant "是". It is not one any more: `docs/**` is served by R2
+  // and Pages like the rest, but it is not in the repo, so the git mounts answer 404 for it. A
+  // column that says "是" for every row would be a claim the docs row cannot keep.
+  const onGitMount = (prefix) => !prefix.startsWith('docs');
   body.innerHTML = dirs
     .map((d) => {
       const pct = total ? (d.bytes / total) * 100 : 0;
+      const git = onGitMount(d.prefix)
+        ? '<td class="num">是</td>'
+        : '<td class="num">否 <span class="muted">（仅 R2 / Pages）</span></td>';
       return (
         `<tr><td class="mono">${d.prefix}</td><td class="num">${fmtCount(d.files)}</td>` +
         `<td class="num">${fmtBytes(d.bytes)}</td><td class="num">${pct.toFixed(1)}%</td>` +
-        `<td class="num">是</td></tr>`
+        git +
+        `</tr>`
       );
     })
     .join('');
 
   const tag = art?.upstream?.tag ? `上游 ${art.upstream.tag} 发布包` : '上游发布包';
+  const docBytes = dirs.filter((d) => d.prefix.startsWith('docs')).reduce((s, d) => s + d.bytes, 0);
   const lead = $('manifest-lead');
   if (lead) {
     // innerHTML, not setText: the emphasis is the point, and setText escapes it into visible tags.
     lead.innerHTML =
-      `这一批源在分发的是同一棵素材树：<b>${fmtCount(files)} 个文件 / ${fmtBytes(total)}</b>，全部由 ${tag} 解出。` +
-      `R2 与 Pages 持有<b>全部</b>；git 挂载源（jsDelivr / ghfast / gitcdn）现在也持有<b>全部</b> —— ` +
-      `素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支（12,261 个文件 / ${fmtBytes(total)}），` +
-      `抽样 40 条路径 × 3 个源逐字节 sha256 校验全部一致。` +
-      `在此之前它们只持有本仓几十 KB 的工具文件，「部分覆盖」不是说还没同步完，而是当时这批字节在源里确实不存在。`;
+      `这一批源在分发的是同一棵官方树：<b>${fmtCount(files)} 个文件 / ${fmtBytes(total)}</b>，全部由 ${tag} 解出。` +
+      `R2 与 Pages 持有<b>全部</b>；git 挂载源（jsDelivr / ghfast / gitcdn）持有<b>素材部分</b> —— ` +
+      `素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，抽样 40 条路径 × 3 个源逐字节 sha256 校验一致。` +
+      (docBytes
+        ? `其中 <b>docs/</b>（${fmtBytes(docBytes)} 官方文档与 wiki 数据）<b>只在 R2 / Pages 上</b>：` +
+          `它不在本仓里，git 挂载源对它返回 404，下表最后一行已按实际情况标注。`
+        : '') +
+      `「部分覆盖」这个说法在素材树进 git 之前是对的 —— 不是说还没同步完，而是当时这批字节在源里确实不存在。`;
   }
 }
 
@@ -269,16 +318,18 @@ function treeRow(node, depth, isDir) {
  * Filtering switches to a flat list of matching paths: a tree of matches would be mostly empty
  * directories, and the question being asked is "where is this file", not "what is this directory".
  */
-async function renderTree(snapshotDirs, snapshotTotals) {
+async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
   const host = $('tree');
   if (!host) return;
   const status = (t) => setText('tree-status', t);
 
-  let doc = null;
-  try {
-    doc = await getJson(`${CDN}/cdn/v1/tree.json`, 20000);
-  } catch {
-    /* fall through to the snapshot */
+  let doc = treePromise ? await treePromise : null;
+  if (!doc?.dirs) {
+    try {
+      doc = await getJson(`${CDN}/cdn/v1/tree.json`, 20000);
+    } catch {
+      /* fall through to the snapshot */
+    }
   }
   if (!doc?.dirs) {
     // Degraded: the deploy snapshot only carries per-directory totals, so say so rather than
@@ -674,8 +725,11 @@ async function main() {
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
-  // Fire and forget: the tree is 85 KiB gzipped and must not hold up the rest of the page.
-  renderTree(snapshot?.dirs || [], snapshot?.totals || null).catch(() => {});
+  // One fetch of the 85 KiB tree feeds both the directory browser and the docs list; neither may
+  // hold up the rest of the page, so the promise is handed to each and awaited inside.
+  const treePromise = getJson(`${CDN}/cdn/v1/tree.json`, 20000).catch(() => null);
+  renderDocs(treePromise).catch(() => {});
+  renderTree(snapshot?.dirs || [], snapshot?.totals || null, treePromise).catch(() => {});
   renderDownloads(snapshot);
   wireProbe(flat);
   // Fire and forget: a blocked api.github.com must not delay or break the page.
