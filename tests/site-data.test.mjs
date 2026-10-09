@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { aggregate, pickDropinAsset, pickOfficialCdnAsset } from '../src/site-data.mjs';
+import { aggregate, pickDropinAsset, pickOfficialCdnAsset, withMirrors } from '../src/site-data.mjs';
 
 test('aggregates the flat index into directories, biggest first', () => {
   const dirs = aggregate({
@@ -96,4 +96,21 @@ test('a release with only a drop-in zip yields no variant', () => {
 
 test('pack assets are never mistaken for the variant', () => {
   assert.equal(pickOfficialCdnAsset([release('assets-v0.2.2', '2026-10-08T19:32:00Z', ['assets-audio-1.zip', 'fonts-1.zip'])]), null);
+});
+
+// Both zips are uploaded to R2 under packs/<release>/, so the page must offer our own origin as
+// well as github and the third-party mirrors -- otherwise there is no way to download through our
+// own domain at all.
+test('the download list leads with our own origin when one is given', () => {
+  const picked = { tag: 'v0.2.2', release: 'assets-v0.2.2', name: 'stronghold-cdn-dropin-v0.2.2.zip', size: 1, url: 'https://github.com/o/r/releases/download/assets-v0.2.2/stronghold-cdn-dropin-v0.2.2.zip' };
+  const out = withMirrors(picked, ['https://ghfast.top'], 'https://cdn.example');
+  assert.equal(out.urls[0], 'https://cdn.example/packs/assets-v0.2.2/stronghold-cdn-dropin-v0.2.2.zip');
+  assert.equal(out.urls[1], picked.url);
+  assert.equal(out.urls[2], 'https://ghfast.top/github.com/o/r/releases/download/assets-v0.2.2/stronghold-cdn-dropin-v0.2.2.zip');
+});
+
+test('without an own base the download list is unchanged, and null stays null', () => {
+  const picked = { release: 'assets-v0.2.2', name: 'x.zip', url: 'https://github.com/o/r/releases/download/assets-v0.2.2/x.zip' };
+  assert.deepEqual(withMirrors(picked, [], '').urls, [picked.url]);
+  assert.equal(withMirrors(null, [], 'https://cdn.example'), null);
 });

@@ -83,11 +83,18 @@ export function pickOfficialCdnAsset(releases) {
   return pickReleaseAsset(releases, OFFICIAL_CDN_PATTERN);
 }
 
-/** Attach the mirror prefixes as extra download URLs to a picked asset. */
-function withMirrors(picked, prefixes) {
+/**
+ * Attach the download URLs to a picked asset.
+ *
+ * `ownBase` is the CDN's own origin. Both zips are uploaded to R2 under `packs/<release>/`, so
+ * without this the page could only offer github.com and third-party mirrors -- there would be no
+ * way to download through our own domain at all.
+ */
+export function withMirrors(picked, prefixes, ownBase) {
   if (!picked) return null;
   const bare = picked.url.replace(/^https:\/\//, '');
-  return { ...picked, urls: [picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
+  const own = ownBase ? [`${String(ownBase).replace(/\/+$/, '')}/packs/${picked.release}/${picked.name}`] : [];
+  return { ...picked, urls: [...own, picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
 }
 
 async function fetchReleases({ repo, token }) {
@@ -109,18 +116,19 @@ async function fetchReleases({ repo, token }) {
 export async function resolveReleaseAssets({
   repo = RELEASES_REPO,
   prefixes = [],
+  ownBase = '',
   token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
 } = {}) {
   const releases = await fetchReleases({ repo, token });
   return {
-    dropin: withMirrors(pickDropinAsset(releases), prefixes),
-    officialCdn: withMirrors(pickOfficialCdnAsset(releases), prefixes),
+    dropin: withMirrors(pickDropinAsset(releases), prefixes, ownBase),
+    officialCdn: withMirrors(pickOfficialCdnAsset(releases), prefixes, ownBase),
   };
 }
 
 /** Resolve the drop-in alone, with the mirror prefixes attached as extra download URLs. */
-export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN } = {}) {
-  return (await resolveReleaseAssets({ repo, prefixes, token })).dropin;
+export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], ownBase = '', token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN } = {}) {
+  return (await resolveReleaseAssets({ repo, prefixes, ownBase, token })).dropin;
 }
 
 export async function buildSnapshot({ base, out, log = console.log }) {
@@ -136,7 +144,7 @@ export async function buildSnapshot({ base, out, log = console.log }) {
   let dropin = null;
   let officialCdn = null;
   try {
-    ({ dropin, officialCdn } = await resolveReleaseAssets({ prefixes: readMirrorPrefixes(process.cwd()) }));
+    ({ dropin, officialCdn } = await resolveReleaseAssets({ prefixes: readMirrorPrefixes(process.cwd()), ownBase: root }));
   } catch (error) {
     log(`site snapshot: could not resolve the download assets (${error.message}) — the page will link to Releases`);
   }

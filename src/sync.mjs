@@ -668,6 +668,9 @@ async function main() {
         repo: opts.repo,
         workDir: packDir,
         mirrorPrefixes: readMirrorPrefixes(ROOT),
+        // The R2 copy of each pack, so the URL list offers our own domain and not only github and
+        // third-party mirrors.
+        ownBase: opts.base,
       });
       report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
     } catch (error) {

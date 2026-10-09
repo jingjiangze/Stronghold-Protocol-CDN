@@ -70,6 +70,42 @@ async function download(url, file) {
   return fs.statSync(file).size;
 }
 
+/**
+ * Which URL to try for a pack, and in what order.
+ *
+ * The old code reordered the list positionally (`[...list.slice(1), list[0]]`), which silently
+ * depends on the list being exactly `[github, mirror…]`. The own-domain URL is now also in that
+ * list, so the order is derived from what each URL actually is instead of from its position.
+ *
+ *   mirror (default) third-party mirrors first, then our own domain, then github last
+ *   own              our own domain first — set this to keep downloads on your own domain
+ *   direct           github first
+ *
+ * Measured on the box: the own domain (R2) gave 0.47 MiB/s against gh-proxy's 1.77, so `own` is
+ * deliberately not the default — it is 3.8x slower for a 481 MB pull. It is one env var away.
+ */
+function orderFor(pack, from) {
+  const list = pack.urls || [];
+  const own = list.filter((u) => u.startsWith(`${CDN}/`));
+  const github = list.filter((u) => /^https:\/\/github\.com\//i.test(u));
+  const mirrors = list.filter((u) => !own.includes(u) && !github.includes(u));
+  if (from === 'own') return [...own, ...mirrors, ...github];
+  if (from === 'direct') return [...github, ...own, ...mirrors];
+  return [...mirrors, ...own, ...github];
+}
+
+/**
+ * How many packs to pull at once.
+ *
+ * Capped at 4 and defaulted to 2, and the reason is resilience rather than speed: on the box,
+ * going from one stream to two measured 0.5x-0.72x, i.e. the link is the ceiling and extra streams
+ * do not add throughput. What concurrency does buy is that one stalled host no longer blocks the
+ * whole run — a github stream was measured failing with ECONNRESET, and serially that costs a full
+ * timeout before the next URL is even tried. Beyond 4 there is no measurement showing a gain, and
+ * it only multiplies load on third-party mirrors.
+ */
+const CONCURRENCY = Math.min(4, Math.max(1, Math.round(Number(process.env.SP_LOCALIZE_CONCURRENCY) || 2)));
+
 /** Fetch and unpack the packs once; later starts find the directory already populated. */
 async function localize() {
   const marker = path.join(LOCAL_DIR, '.ready');
@@ -84,29 +120,49 @@ async function localize() {
   if (!packs.length) throw new Error('no packs to localize');
 
   fs.mkdirSync(LOCAL_DIR, { recursive: true });
+  const from = (process.env.SP_LOCALIZE_FROM || 'mirror').toLowerCase();
+  log(`localize: ${packs.length} pack(s), ${CONCURRENCY} at a time, order=${from}`);
+
   let bytes = 0;
-  for (const pack of packs) {
-    const file = path.join(LOCAL_DIR, `${pack.id}.zip`);
-    // Default to the mirror: this mode exists to pull 533 MB quickly on a Chinese link, and the
-    // pack's URL list is [github, mirror, mirror] — so try the mirrors first and github last.
-    const from = (process.env.SP_LOCALIZE_FROM || 'mirror').toLowerCase();
-    const list = pack.urls || [];
-    const urls = from === 'direct' ? list : [...list.slice(1), list[0]];
-    let lastError;
-    for (const url of urls) {
-      try {
-        log(`localize: ${pack.id} ← ${url.split('/')[2]}`);
-        bytes += await download(url, file);
-        lastError = null;
-        break;
-      } catch (error) {
-        lastError = error;
+  let done = 0;
+  const failures = [];
+  let next = 0;
+
+  const worker = async () => {
+    while (next < packs.length) {
+      const pack = packs[next++];
+      const file = path.join(LOCAL_DIR, `${pack.id}.zip`);
+      const urls = orderFor(pack, from);
+      let lastError = null;
+      let ok = false;
+      for (const url of urls) {
+        try {
+          log(`localize: ${pack.id} ← ${url.split('/')[2]}`);
+          bytes += await download(url, file);
+          ok = true;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
       }
+      if (!ok) {
+        // Collected, not thrown: throwing here would abandon the packs still in flight and leave
+        // the caller with no idea which ones succeeded.
+        failures.push(`${pack.id}: ${lastError && lastError.message}`);
+        continue;
+      }
+      try {
+        unpack(file, LOCAL_DIR);
+      } finally {
+        fs.rmSync(file, { force: true });
+      }
+      done++;
+      log(`localize: ${done}/${packs.length} done, ${(bytes / 1048576).toFixed(0)} MiB so far`);
     }
-    if (lastError) throw new Error(`${pack.id}: ${lastError.message}`);
-    unpack(file, LOCAL_DIR);
-    fs.rmSync(file, { force: true });
-  }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, packs.length) }, worker));
+  if (failures.length) throw new Error(`${failures.length} pack(s) failed — ${failures.slice(0, 3).join('; ')}`);
   fs.writeFileSync(marker, `${new Date().toISOString()}
 `);
   log(`localize: ${packs.length} pack(s), ${(bytes / 1048576).toFixed(1)} MB unpacked into ${LOCAL_DIR}`);

@@ -92,16 +92,22 @@ export { sha256File } from './index-tree.mjs';
 /**
  * Mirror prefixes applied to a github.com URL. The list is data (`mirrors.json`), not code, so
  * adding a mirror is an edit to a JSON file.
+ *
+ * `ownUrl` is the copy on our own origin, and it is included because otherwise no pack URL uses
+ * our domain at all -- the list was github plus third-party mirrors only, so "download through my
+ * domain" was impossible for the 481 MB of packs even though R2 already holds every one of them.
+ * It is listed first for readability; consumers classify by URL, not position.
  */
-export function mirrorUrls(githubUrl, prefixes) {
-  return [githubUrl, ...prefixes.map((p) => `${String(p).replace(/\/+$/, '')}/${githubUrl.replace(/^https:\/\//, '')}`)];
+export function mirrorUrls(githubUrl, prefixes, ownUrl) {
+  const list = [githubUrl, ...prefixes.map((p) => `${String(p).replace(/\/+$/, '')}/${githubUrl.replace(/^https:\/\//, '')}`)];
+  return ownUrl ? [String(ownUrl), ...list] : list;
 }
 
 /**
  * Upload the packs to R2 and attach them to this repository's GitHub release
  * `assets-<tag>`, which is what the mirror chain accelerates.
  */
-export async function publishPacks({ config, root, packs, tag, repo, workDir, mirrorPrefixes }) {
+export async function publishPacks({ config, root, packs, tag, repo, workDir, mirrorPrefixes, ownBase }) {
   const releaseTag = `assets-${tag}`;
   const published = [];
   for (const pack of packs) {
@@ -125,7 +131,11 @@ export async function publishPacks({ config, root, packs, tag, repo, workDir, mi
       bytes: size,
       sha256,
       key,
-      urls: mirrorUrls(`https://github.com/${repo}/releases/download/${releaseTag}/${name}`, mirrorPrefixes),
+      urls: mirrorUrls(
+        `https://github.com/${repo}/releases/download/${releaseTag}/${name}`,
+        mirrorPrefixes,
+        ownBase ? `${String(ownBase).replace(/\/+$/, '')}/${key}` : null,
+      ),
     });
   }
   return published;

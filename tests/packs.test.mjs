@@ -61,3 +61,21 @@ test('mirror urls put the canonical github url first', () => {
     'https://gh-proxy.com/github.com/o/r/releases/download/t/p.zip',
   ]);
 });
+
+// The pack URL list used to be github plus third-party mirrors only, so no pack could be fetched
+// through our own domain even though R2 already holds every one of them. "Download through my
+// domain" was simply impossible for the 481 MB of packs.
+test('the own-domain copy is offered alongside github and the mirrors', () => {
+  const github = 'https://github.com/o/r/releases/download/assets-v0.2.2/a.zip';
+  const urls = mirrorUrls(github, ['https://ghfast.top'], 'https://cdn.example/packs/assets-v0.2.2/a.zip');
+  assert.equal(urls[0], 'https://cdn.example/packs/assets-v0.2.2/a.zip');
+  assert.ok(urls.includes(github), 'github must stay in the list as the canonical source');
+  assert.ok(urls.some((u) => u.startsWith('https://ghfast.top/')), 'mirrors must stay');
+  assert.equal(urls.length, 3);
+});
+
+test('without an own base the list is unchanged', () => {
+  const github = 'https://github.com/o/r/releases/download/assets-v0.2.2/a.zip';
+  assert.deepEqual(mirrorUrls(github, ['https://ghfast.top']), [github, 'https://ghfast.top/github.com/o/r/releases/download/assets-v0.2.2/a.zip']);
+  assert.deepEqual(mirrorUrls(github, []), [github]);
+});
