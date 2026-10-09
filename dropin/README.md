@@ -91,7 +91,10 @@ SP_ASSET_SOURCE=mirror SP_GITHUB_PROXY=__SP_CDN_BASE__/ npm run assets
 
 ## 4. 聚合接口与镜像选择
 
-CDN 自己发布聚合接口，机器可读：
+CDN 自己发布聚合接口，机器可读。
+
+**完整清单以 `__SP_CDN_BASE__/cdn/v1/api.json` 为准**（字段 `{ schema, base, token, endpoints[] }`，
+每个端点带路径 / 类型 / 缓存 / 用途）。下表只列侧车最常用的四个：
 
 | 路径 | 内容 |
 |---|---|
