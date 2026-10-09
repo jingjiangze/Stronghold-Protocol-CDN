@@ -7,7 +7,7 @@
 //
 // Public repository: no credentials needed. In Actions the default GITHUB_TOKEN is used when
 // present, which also lifts the anonymous API rate limit.
-import { FULL_ZIP_NAME } from './names.mjs';
+import { FULL_ZIP_NAME, liteZipName } from './names.mjs';
 
 export const UPSTREAM_REPO = process.env.SP_UPSTREAM_REPO || 'sganggs/Stronghold-Protocol';
 
@@ -22,7 +22,7 @@ function headers() {
 
 /**
  * @param {string} [tag] upstream tag; empty means "latest release"
- * @returns {Promise<{repo:string, tag:string, publishedAt:string, zip:{name:string,size:number,url:string,sha256:string|null}}>}
+ * @returns {Promise<{repo:string, tag:string, publishedAt:string, zip:{name:string,size:number,url:string,sha256:string|null}, lite:{name:string,size:number,url:string,sha256:string|null}|null}>}
  */
 export async function resolveRelease(tag) {
   const path = tag
@@ -40,17 +40,25 @@ export async function resolveRelease(tag) {
       `release ${release.tag_name} has no ${wanted} — the packaging layout changed, refusing to guess`,
     );
   }
+  // Asset shape shared by the two zips; GitHub publishes a sha256 digest per asset, and older
+  // releases may not have one.
+  const asset = (a) => ({
+    name: a.name,
+    size: a.size,
+    url: a.browser_download_url,
+    sha256: (a.digest || '').replace(/^sha256:/, '') || null,
+  });
+  // The lite zip is optional where the full one is mandatory: a release without it only costs the
+  // derived variant, so its absence is reported rather than thrown.
+  const liteName = liteZipName(release.tag_name);
+  const lite = (release.assets || []).find((a) => a.name === liteName) || null;
+
   return {
     repo: UPSTREAM_REPO,
     tag: release.tag_name,
     publishedAt: release.published_at,
-    zip: {
-      name: zip.name,
-      size: zip.size,
-      url: zip.browser_download_url,
-      // GitHub publishes a sha256 digest per asset; older releases may not have one.
-      sha256: (zip.digest || '').replace(/^sha256:/, '') || null,
-    },
+    zip: asset(zip),
+    lite: lite ? asset(lite) : null,
   };
 }
 

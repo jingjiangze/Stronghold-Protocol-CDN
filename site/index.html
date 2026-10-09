@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
-  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 一键包、接入契约与镜像接口（非官方同人作品）" />
+  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 玩家下载、接入契约与镜像接口（非官方同人作品）" />
   <title>卫戍协议：盟约 · 素材 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
@@ -23,7 +23,7 @@
       </div>
     </div>
     <nav class="navigation">
-      <a href="#players">玩家一键包</a>
+      <a href="#players">玩家下载</a>
       <a href="#agents">agent 接入</a>
       <a href="#params">拉取参数</a>
       <a href="#mirrors">镜像站</a>
@@ -60,23 +60,44 @@
   <section class="block" id="players">
     <div class="block__head">
       <span class="block__num">1</span>
-      <span class="block__title">玩家：一键包</span>
-      <span class="block__who">不写代码 · 三步 · 随时撤销</span>
+      <span class="block__title">玩家：两种下载，按你的情况选一个</span>
+      <span class="block__who">不写代码 · 解压即用 · 随时撤销</span>
     </div>
     <p class="block__lead">
-      你手上已经有一份能跑的游戏服（上游完整包解压出来的目录，里面有 <code class="inline">package.json</code> 和
-      <code class="inline">server/</code>）。下载下面这个压缩包，解压，双击，素材就改从 CDN 发了——
-      <b>它不会改动你部署包里的任何文件</b>，删掉文件夹就完全回到原样。
+      两条路都能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
+      <b>区别只在于你手上有没有一份能跑的游戏服</b>——有就选 A，没有就选 B。
     </p>
 
     <div class="download">
-      <a class="button button-primary" id="dropin-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载一键包</a>
+      <div class="download__label">A · 你已经有能跑的游戏服</div>
+      <a class="button button-primary" id="dropin-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载侧车包</a>
       <a class="button button-secondary" id="dropin-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
       <div class="download__meta">
-        <b id="dropin-name">stronghold-cdn-dropin-<span class="tag">v0.2.1</span>.zip</b>
+        <b id="dropin-name">stronghold-cdn-dropin-<span class="tag">v0.2.2</span>.zip</b>
         <span id="dropin-meta"> · 正在读取最新版本…</span><br />
-        内含：启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表
+        十几天 KB。内含启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表。
+        <b>它不会改动你部署包里的任何文件</b>，删掉文件夹就完全回到原样。
       </div>
+    </div>
+
+    <div class="download">
+      <div class="download__label">B · 你还没有游戏服，想直接开一个</div>
+      <a class="button button-primary" id="official-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载整合包</a>
+      <a class="button button-secondary" id="official-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
+      <div class="download__meta">
+        <b id="official-name">stronghold-official-cdn-<span class="tag">v0.2.2</span>.zip</b>
+        <span id="official-meta"> · 正在读取最新版本…</span><br />
+        二十几 MB 的官方最新包，<b>不含素材</b>，<b>只把素材地址改成了本 CDN</b>，
+        其余（代码、数据、依赖、启动脚本）与官方包完全一致。依赖已打包，<b>不需要 npm install</b>：
+        解压后 <code class="inline">node server/index.js</code> 就能跑。
+        首次进游戏时素材按需从 CDN 拉取，所以它不占你任何上行带宽。
+      </div>
+    </div>
+
+    <div class="notice">
+      <span><b>两个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
+      上游发新版后，A 只需重下一次（十几 KB），B 请重新下整包，<b>不要</b>用官方的 update 增量包升级
+      （那会把你带回需要本地素材的状态）。</span>
     </div>
 
     <ol class="steps">
@@ -183,11 +204,11 @@
         <tbody>
           <tr>
             <td>任何 HTTP 服务（通用）</td>
-            <td><b>侧车代理</b>：把服务起在内部端口，在外层代理，只改写三张清单的响应。一键包用的就是这个，<code class="inline">stronghold-cdn/cdn-serve.mjs</code> 可直接抄（含 WebSocket 透传与 <code class="inline">accept-encoding</code> 处理）。</td>
+            <td><b>侧车代理</b>：把服务起在内部端口，在外层代理，只改写三张清单的响应。<b>下载 A（侧车包）</b>用的就是这个，<code class="inline">stronghold-cdn/cdn-serve.mjs</code> 可直接抄（含 WebSocket 透传与 <code class="inline">accept-encoding</code> 处理）。<b>下载 B（整合包）</b>不用它：清单已经在包里被改成绝对 CDN 地址，服务端不需要任何改动。</td>
           </tr>
           <tr>
             <td>本项目 fork</td>
-            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。</td>
+            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。<b>注意：这个开关是本项目 fork 加的，上游官方包没有</b>——上游的 <code class="inline">-lite.zip</code> 里 grep 不到它，所以下载 B 走的是改清单而不是设变量。</td>
           </tr>
           <tr>
             <td>nginx 反代</td>

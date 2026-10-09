@@ -55,6 +55,20 @@ gh 取上游 latest release（或 --tag 指定）
 
 接法见 [`docs/INTEGRATION.md`](docs/INTEGRATION.md)。
 
+## 对外产物
+
+除素材接口外，每轮同步还发布三类**给人下载**的产物（R2 `packs/assets-<tag>/` + GitHub release `assets-<tag>` 双写）：
+
+| 产物 | 体积 | 给谁 | 它怎么让素材走 CDN |
+|---|---|---|---|
+| `stronghold-cdn-dropin-<tag>.zip` | 十几 KB | **已经有**能跑的上游部署包 | 侧车代理，运行时改写三张清单的响应；**不改动部署包里任何文件** |
+| `stronghold-official-cdn-<tag>.zip` | ~23 MB | **还没有**部署包 | 取上游 `-lite.zip`（不含素材、自带 node_modules），**把包内 `data/assets.json` 与 `data/emotes.json` 改写成绝对 CDN 地址**；解压即跑 |
+| 17 个 `assets-<tag>/<id>.zip` | 481 MB | 打包通道 / `SP_LOCALIZE` | 批量取素材到本地，不再逐文件走 CDN |
+
+后两者由 `src/packs.mjs` 与 `src/official-cdn.mjs` 产出。整合包改动了上游受管的
+`data/emotes.json`，因此会**同步更正 `MANIFEST.json` 里对应的 `{size, sha256}`**，保证
+`npm run doctor` 的文件校验自洽（`data/assets.json` 属上游 setup 管理，不在 MANIFEST 里，可自由改写）。
+
 ## 运行
 
 ```bash

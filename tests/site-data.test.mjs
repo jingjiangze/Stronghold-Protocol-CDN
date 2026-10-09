@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { aggregate, pickDropinAsset } from '../src/site-data.mjs';
+import { aggregate, pickDropinAsset, pickOfficialCdnAsset } from '../src/site-data.mjs';
 
 test('aggregates the flat index into directories, biggest first', () => {
   const dirs = aggregate({
@@ -58,4 +58,42 @@ test('no releases, or none with a matching asset, resolves to null', () => {
 test('a release whose published_at is missing still counts', () => {
   const picked = pickDropinAsset([{ tag_name: 'assets-v9', assets: [{ name: 'stronghold-cdn-dropin-v9.zip', size: 1, browser_download_url: 'u' }] }]);
   assert.equal(picked.release, 'assets-v9');
+});
+
+// ---- the second variant: the upstream lite package with our CDN ---------------------------------
+
+// The two buttons sit next to each other, so the one thing that must never happen is a button
+// resolving the other variant's zip. "stronghold-official-cdn-…" does not contain the drop-in's
+// "stronghold-cdn" (the substring is "official-cdn"), which is what keeps the patterns disjoint.
+test('the two download patterns never pick up each other asset', () => {
+  const releases = [
+    release('assets-v0.2.2', '2026-10-08T19:32:00Z', [
+      'assets-audio-1.zip',
+      'stronghold-cdn-dropin-v0.2.2.zip',
+      'stronghold-official-cdn-v0.2.2.zip',
+    ]),
+  ];
+  assert.equal(pickDropinAsset(releases).name, 'stronghold-cdn-dropin-v0.2.2.zip');
+  assert.equal(pickOfficialCdnAsset(releases).name, 'stronghold-official-cdn-v0.2.2.zip');
+});
+
+test('the variant resolves to the newest release that carries one', () => {
+  const picked = pickOfficialCdnAsset([
+    release('assets-v0.2.1', '2026-10-07T00:00:00Z', ['stronghold-official-cdn-v0.2.1.zip']),
+    release('assets-v0.2.2', '2026-10-08T19:32:00Z', ['stronghold-cdn-dropin-v0.2.2.zip', 'stronghold-official-cdn-v0.2.2.zip']),
+  ]);
+  assert.equal(picked.name, 'stronghold-official-cdn-v0.2.2.zip');
+  assert.equal(picked.release, 'assets-v0.2.2');
+});
+
+// A release built before the variant existed has only the drop-in: the second button must degrade
+// to the Releases page, not silently point at the drop-in zip.
+test('a release with only a drop-in zip yields no variant', () => {
+  const releases = [release('assets-v0.2.1', '2026-10-07T00:00:00Z', ['stronghold-cdn-dropin-v0.2.1.zip'])];
+  assert.equal(pickOfficialCdnAsset(releases), null);
+  assert.ok(pickDropinAsset(releases));
+});
+
+test('pack assets are never mistaken for the variant', () => {
+  assert.equal(pickOfficialCdnAsset([release('assets-v0.2.2', '2026-10-08T19:32:00Z', ['assets-audio-1.zip', 'fonts-1.zip'])]), null);
 });

@@ -32,6 +32,24 @@ export const REWRITE_PREFIXES = ['/assets/', '/fonts/'];
 export const fullZipName = (tag) => `Stronghold-Protocol-${tag}.zip`;
 export { fullZipName as FULL_ZIP_NAME };
 
+/**
+ * The upstream lite zip: the same release with `public/assets`, `public/fonts` and the two art
+ * manifests left out (22.5 MB against the full package's 505 MB at v0.2.2). `node_modules` is
+ * bundled, so it runs unpacked with no install step.
+ *
+ * It is an OPTIONAL asset: the full zip is the sync's source of truth and must exist, but a
+ * release that ships no lite zip must not fail the run — the derived variant is simply skipped.
+ */
+export const liteZipName = (tag) => `Stronghold-Protocol-${tag}-lite.zip`;
+
+/**
+ * The name of the derived variant this repository publishes: the upstream lite package with its
+ * art manifests pointing at our CDN. Deliberately NOT under the `stronghold-cdn` prefix the
+ * drop-in zip uses — `pickDropinAsset` and `refreshDropin` scan releases by that prefix, and a
+ * second match there would let the two variants overwrite each other's link on the page.
+ */
+export const officialCdnZipName = (tag) => `stronghold-official-cdn-${tag}.zip`;
+
 /** Unzip include patterns: selective extraction keeps the 428 MB package from being unpacked. */
 export function zipIncludePatterns() {
   return [

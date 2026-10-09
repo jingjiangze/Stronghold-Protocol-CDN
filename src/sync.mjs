@@ -32,6 +32,7 @@ import { r2Config, putObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHOR
 import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './packs.mjs';
 import { buildDropin } from './dropin.mjs';
+import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins, readGitOrigins } from './origins.mjs';
@@ -318,6 +319,34 @@ async function main() {
     );
     if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
     log(`rebuilt the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → R2 + release`);
+
+    // The official-CDN variant rebuilds here too: it needs the upstream release's lite asset, not
+    // the extracted tree, so it fits the fast path exactly like the drop-in does.
+    try {
+      const release = await resolveRelease(published.upstream.tag);
+      const variant = await buildOfficialCdn({
+        out: outDir,
+        base: opts.base,
+        token: published.art.token,
+        release,
+        cacheDir: path.join(ROOT, opts.work, 'upstream-lite'),
+      });
+      const check = await verifyOfficialCdn(variant.file);
+      if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
+      await putObject(config, `packs/assets-${release.tag}/${variant.name}`, fs.readFileSync(variant.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
+      const up = spawnSync(
+        'gh',
+        ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
+        { encoding: 'utf8' },
+      );
+      if (up.status !== 0) throw new Error((up.stderr || 'gh release upload failed').slice(0, 200));
+      log(`rebuilt the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → R2 + release`);
+    } catch (error) {
+      console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
+    }
     return;
   }
 
@@ -440,6 +469,7 @@ async function main() {
     pages: null,
     packs: null,
     dropin: null,
+    officialCdn: null,
     byteSample: null,
     sources: null,
     ok: false,
@@ -699,6 +729,37 @@ async function main() {
     } catch (error) {
       console.error(`[sync] drop-in zip FAILED: ${error.message}`);
       report.dropin = { error: error.message };
+    }
+
+    // The second variant of the same offer: the upstream lite package with its art manifests
+    // repointed at this CDN, for a player who has no deployment yet. Deliberately independent of
+    // the drop-in above -- either can fail without taking the other down.
+    try {
+      const variant = await buildOfficialCdn({
+        out: path.join(workDir, 'packs'),
+        base: opts.base,
+        token: version,
+        release,
+        cacheDir: path.join(workDir, 'upstream-lite'),
+      });
+      const check = await verifyOfficialCdn(variant.file);
+      if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
+      const key = `packs/assets-${release.tag}/${variant.name}`;
+      await putObject(config, key, fs.readFileSync(variant.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
+      const uploaded = spawnSync(
+        'gh',
+        ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
+        { encoding: 'utf8' },
+      );
+      if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
+      report.officialCdn = { name: variant.name, size: variant.size, key, refs: variant.refs };
+      log(`published the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB)`);
+    } catch (error) {
+      console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
+      report.officialCdn = { error: error.message };
     }
   }
 

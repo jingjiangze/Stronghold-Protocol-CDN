@@ -36,17 +36,26 @@ export function aggregate(files) {
 export const RELEASES_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
 
 /**
- * The newest release asset that is this project's drop-in package.
+ * The two name patterns the page resolves its downloads by, and they must stay disjoint.
  *
- * The page must not hard-code a version: the zip is rebuilt whenever the guide, the launchers or
- * the stamped token change, and a stale link is worse than no link. Matching is by name
- * ("stronghold-cdn…zip"), which the pack assets (assets-*.zip) never collide with.
+ * The page must not hard-code a version: each zip is rebuilt whenever the guide, the launchers or
+ * the stamped token change, and a stale link is worse than no link. Matching is by name, which the
+ * pack assets (assets-*.zip) never collide with.
+ *
+ * The variant's pattern is anchored to `stronghold-official-cdn` rather than reusing the drop-in's
+ * `stronghold-cdn` prefix: "stronghold-official-cdn-…" does not contain "stronghold-cdn" (the
+ * substring is "official-cdn"), so the two cannot pick up each other's asset and put the wrong
+ * download behind the wrong button.
  */
-export function pickDropinAsset(releases) {
+const DROPIN_PATTERN = /stronghold-cdn[^/]*\.zip$/i;
+const OFFICIAL_CDN_PATTERN = /^stronghold-official-cdn[^/]*\.zip$/i;
+
+/** The newest release asset whose name matches `pattern`, with the release it came from. */
+export function pickReleaseAsset(releases, pattern) {
   const candidates = (releases || [])
     .map((release) => ({
       release,
-      asset: (release.assets || []).find((asset) => /stronghold-cdn[^/]*\.zip$/i.test(asset.name || '')),
+      asset: (release.assets || []).find((asset) => pattern.test(asset.name || '')),
     }))
     .filter((entry) => entry.asset);
   if (!candidates.length) return null;
@@ -64,8 +73,24 @@ export function pickDropinAsset(releases) {
   };
 }
 
-/** Resolve it from the releases API, with the mirror prefixes attached as extra download URLs. */
-export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN } = {}) {
+/** The newest release asset that is this project's drop-in package. */
+export function pickDropinAsset(releases) {
+  return pickReleaseAsset(releases, DROPIN_PATTERN);
+}
+
+/** The newest release asset that is the "upstream lite package, CDN swapped to ours" variant. */
+export function pickOfficialCdnAsset(releases) {
+  return pickReleaseAsset(releases, OFFICIAL_CDN_PATTERN);
+}
+
+/** Attach the mirror prefixes as extra download URLs to a picked asset. */
+function withMirrors(picked, prefixes) {
+  if (!picked) return null;
+  const bare = picked.url.replace(/^https:\/\//, '');
+  return { ...picked, urls: [picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
+}
+
+async function fetchReleases({ repo, token }) {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=20`;
   assertPublicHttpsUrl(url);
   const res = await fetch(url, {
@@ -77,10 +102,25 @@ export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], token
     signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
-  const picked = pickDropinAsset(await res.json());
-  if (!picked) return null;
-  const bare = picked.url.replace(/^https:\/\//, '');
-  return { ...picked, urls: [picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
+  return res.json();
+}
+
+/** Both downloads in one API call: the page offers them side by side. */
+export async function resolveReleaseAssets({
+  repo = RELEASES_REPO,
+  prefixes = [],
+  token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN,
+} = {}) {
+  const releases = await fetchReleases({ repo, token });
+  return {
+    dropin: withMirrors(pickDropinAsset(releases), prefixes),
+    officialCdn: withMirrors(pickOfficialCdnAsset(releases), prefixes),
+  };
+}
+
+/** Resolve the drop-in alone, with the mirror prefixes attached as extra download URLs. */
+export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN } = {}) {
+  return (await resolveReleaseAssets({ repo, prefixes, token })).dropin;
 }
 
 export async function buildSnapshot({ base, out, log = console.log }) {
@@ -91,13 +131,14 @@ export async function buildSnapshot({ base, out, log = console.log }) {
     getJson(`${root}/cdn/v1/index.json`),
   ]);
 
-  // The download link is resolved here rather than in the page: api.github.com is unreliable from
+  // The download links are resolved here rather than in the page: api.github.com is unreliable from
   // the networks this site is for, and a visitor should never wait on it.
   let dropin = null;
+  let officialCdn = null;
   try {
-    dropin = await resolveDropin({ prefixes: readMirrorPrefixes(process.cwd()) });
+    ({ dropin, officialCdn } = await resolveReleaseAssets({ prefixes: readMirrorPrefixes(process.cwd()) }));
   } catch (error) {
-    log(`site snapshot: could not resolve the drop-in asset (${error.message}) — the page will link to Releases`);
+    log(`site snapshot: could not resolve the download assets (${error.message}) — the page will link to Releases`);
   }
 
   const dirs = aggregate(index.files);
@@ -107,6 +148,7 @@ export async function buildSnapshot({ base, out, log = console.log }) {
     art,
     mirrors,
     dropin,
+    officialCdn,
     dirs,
     totals: { files: index.count ?? dirs.reduce((n, d) => n + d.files, 0), bytes: index.bytes ?? 0 },
   };

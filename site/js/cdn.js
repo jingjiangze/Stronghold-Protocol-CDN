@@ -181,55 +181,66 @@ function renderDirs(dirs, totals) {
   if (totals) setText('dir-note', `共 ${fmtCount(totals.files)} 个文件 / ${fmtBytes(totals.bytes)}`);
 }
 
-// ---- the drop-in download link -----------------------------------------------------------
+// ---- the two download links --------------------------------------------------------------
 
 /**
- * The zip is rebuilt whenever the guide, the launchers or the stamped token change, so the link
- * must never name a version. The deploy-time snapshot carries the resolved asset; the page only
+ * Each zip is rebuilt whenever the guide, the launchers or the stamped token change, so a link
+ * must never name a version. The deploy-time snapshot carries the resolved assets; the page only
  * falls back to the Releases page when that resolution failed.
+ *
+ * The two variants are the same shape, so they share one renderer. The name patterns are kept
+ * disjoint on purpose: "stronghold-official-cdn-…" does not contain "stronghold-cdn" (the
+ * substring is "official-cdn"), so neither can put the other's zip behind its own button.
  */
-function renderDropin(dropin) {
-  const button = $('dropin-download');
+const DOWNLOADS = [
+  { key: 'dropin', id: 'dropin', pattern: /stronghold-cdn[^/]*\.zip$/i },
+  { key: 'officialCdn', id: 'official', pattern: /^stronghold-official-cdn[^/]*\.zip$/i },
+];
+
+function renderDownload({ id }, asset) {
+  const button = $(`${id}-download`);
   if (!button) return;
-  if (!dropin?.url) {
-    setText('dropin-meta', ' · 在 Releases 页面的 Assets 里');
+  if (!asset?.url) {
+    setText(`${id}-meta`, ' · 在 Releases 页面的 Assets 里');
     return;
   }
-  button.href = dropin.url;
-  setText('dropin-name', dropin.name);
-  setText(
-    'dropin-meta',
-    ` · ${fmtBytes(dropin.size)}${dropin.release ? ` · release ${dropin.release}` : ''}`,
-  );
-  const mirror = $('dropin-mirror');
-  if (mirror && dropin.urls?.length > 1) {
-    mirror.href = dropin.urls[1];
+  button.href = asset.url;
+  setText(`${id}-name`, asset.name);
+  setText(`${id}-meta`, ` · ${fmtBytes(asset.size)}${asset.release ? ` · release ${asset.release}` : ''}`);
+  const mirror = $(`${id}-mirror`);
+  if (mirror && asset.urls?.length > 1) {
+    mirror.href = asset.urls[1];
     mirror.hidden = false;
   }
 }
 
+function renderDownloads(snapshot) {
+  for (const variant of DOWNLOADS) renderDownload(variant, snapshot?.[variant.key]);
+}
+
 /** Best effort: pick up a zip published after the last deploy. Never blocks the page. */
-async function refreshDropin() {
+async function refreshDownloads() {
   const repo = document.body.dataset.repo;
   if (!repo) return;
   const releases = await getJson(`https://api.github.com/repos/${repo}/releases?per_page=20`, 6000);
-  const newest = (releases || [])
-    .map((release) => ({
-      release,
-      asset: (release.assets || []).find((asset) => /stronghold-cdn[^/]*\.zip$/i.test(asset.name || '')),
-    }))
-    .filter((entry) => entry.asset)
-    .sort((a, b) => String(b.release.published_at || '').localeCompare(String(a.release.published_at || '')))[0];
-  if (!newest) return;
-  const current = $('dropin-download')?.getAttribute('href');
-  if (current === newest.asset.browser_download_url) return;
-  renderDropin({
-    url: newest.asset.browser_download_url,
-    name: newest.asset.name,
-    size: newest.asset.size,
-    release: newest.release.tag_name,
-    urls: [newest.asset.browser_download_url],
-  });
+  for (const { id, pattern } of DOWNLOADS) {
+    const newest = (releases || [])
+      .map((release) => ({
+        release,
+        asset: (release.assets || []).find((asset) => pattern.test(asset.name || '')),
+      }))
+      .filter((entry) => entry.asset)
+      .sort((a, b) => String(b.release.published_at || '').localeCompare(String(a.release.published_at || '')))[0];
+    if (!newest) continue;
+    if ($(`${id}-download`)?.getAttribute('href') === newest.asset.browser_download_url) continue;
+    renderDownload({ id }, {
+      url: newest.asset.browser_download_url,
+      name: newest.asset.name,
+      size: newest.asset.size,
+      release: newest.release.tag_name,
+      urls: [newest.asset.browser_download_url],
+    });
+  }
 }
 
 // ---- mirror speed test -------------------------------------------------------------------
@@ -400,10 +411,10 @@ async function main() {
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
   renderDirs(snapshot?.dirs || [], snapshot?.totals || null);
-  renderDropin(snapshot?.dropin || null);
+  renderDownloads(snapshot);
   wireProbe(flat);
   // Fire and forget: a blocked api.github.com must not delay or break the page.
-  refreshDropin().catch(() => {});
+  refreshDownloads().catch(() => {});
 }
 
 main().catch((error) => {
