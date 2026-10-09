@@ -87,7 +87,9 @@ export async function signedHeaders(cfg, method, key, { query = '', bodyBytes = 
     ...Object.fromEntries(Object.entries(extraHeaders).map(([k, v]) => [k.toLowerCase(), String(v)])),
   };
   const names = Object.keys(all).sort();
-  const canonicalUri = key === null ? `/${cfg.bucket}` : `/${encodeKeyPath(key)}`;
+  // path-style：桶名永远是第一段，键名在其后。少写桶名会把键的第一段（assets / cdn）当成桶名，
+  // 而 R2 对不存在的桶回 404 —— 看起来就像「这个键还不存在」，配置错误会伪装成空结果。
+  const canonicalUri = `/${cfg.bucket}${key === null ? '' : `/${encodeKeyPath(key)}`}`;
   const canonicalHeaders = names.map((n) => `${n}:${String(all[n]).trim()}\n`).join('');
   const canonicalRequest = [method, canonicalUri, canonicalQuerySorted(query), canonicalHeaders, names.join(';'), payloadHash].join('\n');
   const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, await sha256Hex(canonicalRequest)].join('\n');
@@ -102,8 +104,10 @@ export async function signedHeaders(cfg, method, key, { query = '', bodyBytes = 
 /** 只读/小对象读写用的 fetch 封装。状态码交给调用方判断，不在此处抛。 */
 export async function s3fetch(cfg, method, key, { query = '', body = null, extraHeaders = {} } = {}) {
   const bodyBytes = body === null || body === undefined ? '' : body;
-  const { headers } = await signedHeaders(cfg, method, key, { query, bodyBytes, extraHeaders });
-  const uri = key === null ? `https://${cfg.host}/${cfg.bucket}` : `https://${cfg.host}/${encodeKeyPath(key)}`;
+  const { headers, canonicalUri } = await signedHeaders(cfg, method, key, { query, bodyBytes, extraHeaders });
+  // 直接用签名时那条 canonicalUri 拼 URL：两者必须是同一个字符串，否则签的路径与发的路径
+  // 差一个斜杠就变成 SignatureDoesNotMatch，而这种错极难从响应里看出来。
+  const uri = `https://${cfg.host}${canonicalUri}`;
   const res = await fetch(uri + (query ? `?${query}` : ''), {
     method,
     headers,
@@ -132,7 +136,15 @@ export async function writeJson(cfg, key, doc) {
 /** 目标键是否已有对象 —— 「只增不改」的判据就靠它。返回 {exists, size}。 */
 export async function headKey(cfg, key) {
   const res = await s3fetch(cfg, 'HEAD', key);
-  if (res.status === 404) return { exists: false };
+  if (res.status === 404) {
+    // HEAD 没有响应体，分不清「键不存在」与「桶名/端点配错了」—— 后者会把「不存在」当成
+    // 「还没人传过」，于是只增守卫永远放行。这里补一次桶级探测，把配错变成明确错误。
+    const probe = await s3fetch(cfg, 'GET', null, { query: 'max-keys=0' });
+    if (probe.status !== 200) {
+      throw new Error(`桶 ${cfg.bucket} 在 ${cfg.host} 上不可用（HTTP ${probe.status}）—— 检查 R2_BUCKET / R2_ENDPOINT / 密钥`);
+    }
+    return { exists: false };
+  }
   if (!res.ok) throw new Error(`HEAD ${key} → HTTP ${res.status}`);
   return { exists: true, size: Number(res.headers.get('content-length') || 0), etag: res.headers.get('etag') || '' };
 }
@@ -158,7 +170,9 @@ export async function presignPut(cfg, key, { expiresSec = 900 } = {}) {
     .sort()
     .map((k) => `${qencode(k)}=${qencode(params[k])}`)
     .join('&');
-  const canonicalUri = `/${encodeKeyPath(key)}`;
+  // path-style寻址：桶名是第一段，键名从第二段开始。少写桶名会把键的第一段（cdn）当桶名，
+  // R2 回 NoSuchBucket —— 而在此之前先撞上的是凭证斜杠没编码导致的 SignatureDoesNotMatch。
+  const canonicalUri = `/${cfg.bucket}/${encodeKeyPath(key)}`;
   const canonicalRequest = ['PUT', canonicalUri, query, `host:${cfg.host}\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
   // canonicalRequest 里那行 query 必须和最终 URL 上的一模一样，所以这里不再二次编码。
   const stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, await sha256Hex(canonicalRequest)].join('\n');
