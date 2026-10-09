@@ -281,7 +281,28 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <div><div class="eyebrow">REFERENCE · MIRRORS</div><h2>镜像站</h2></div>
       <span class="section-status">哪个最快取决于访问者自己的网络</span>
     </div>
-    <div class="toolbar">
+
+    <div class="block" id="manifest">
+      <div class="block__head">
+        <span class="block__num">·</span>
+        <span class="block__title">当前素材清单</span>
+        <span class="block__who">下面这些源在分发的东西</span>
+      </div>
+      <p class="block__lead" id="manifest-lead">读取中…</p>
+      <div class="table-wrap" style="margin-top:16px">
+        <table id="manifest-dirs">
+          <thead><tr><th>目录</th><th class="num">文件</th><th class="num">体积</th><th class="num">占比</th><th>git 挂载源是否提供</th></tr></thead>
+          <tbody><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="notice">
+        <span><b>为什么很多源标着「部分覆盖」：</b>标这个的源挂的是<b>本仓库的 git 内容</b>，不是素材树。
+        素材树是从上游发布包解出来的，<b>从不进 git</b>（进 git 会让仓库变成 600 MB 且每次上游发版都要提交一遍），
+        所以任何 git 挂载源都拿不到它 —— 这不是不稳定，是<b>源里就没有</b>，请求只会得到 404。</span>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:26px">
       <button class="button button-primary" id="probe" type="button">开始测速</button>
       <span class="section-note" id="probe-line"></span>
     </div>
