@@ -17,11 +17,14 @@ export async function onRequestPut(context) {
   const authProblem = checkAuth(request, env);
   if (authProblem) return deny(authProblem, 401);
 
-  const declaredKey = request.headers.get('x-sp-key') || '';
-  const declaredSha = request.headers.get('x-sp-sha256') || '';
-  const declaredSize = request.headers.get('x-sp-size') || '';
-  const rawSource = request.headers.get('x-sp-source') || '';
-  const what = cleanNote(request.headers.get('x-sp-what') || '', 200);
+  // 元数据走查询串，不走请求头：HTTP 头只允许 ISO-8859-1，而「这批是什么」是中文的 ——
+  // 用 header 传会在浏览器里直接抛异常，还是个跟业务无关的错。
+  const q = new URL(request.url).searchParams;
+  const declaredKey = q.get('key') || '';
+  const declaredSha = q.get('sha256') || '';
+  const declaredSize = q.get('size') || '';
+  const rawSource = q.get('source') || '';
+  const what = cleanNote(q.get('what') || '', 200);
 
   const k = validateKey(declaredKey);
   if (!k.ok) return deny(k.reason, 400);

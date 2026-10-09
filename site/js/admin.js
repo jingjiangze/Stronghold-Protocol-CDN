@@ -202,16 +202,13 @@
       row.state = '上传中…';
       renderPlan(plan);
       const targetKey = `${prefix}/${row.rel}`;
+      // 元数据进查询串：HTTP 头只允许 ISO-8859-1，中文说明放头里会让 fetch 直接抛异常。
+      const qs = new URLSearchParams({ key: targetKey, sha256: row.sha256, size: String(row.size), source, what });
       try {
-        const res = await fetch('/api/cdn/upload/put', {
+        const res = await fetch(`/api/cdn/upload/put?${qs}`, {
           method: 'PUT',
           headers: {
             'x-admin-key': key(),
-            'x-sp-key': targetKey,
-            'x-sp-sha256': row.sha256,
-            'x-sp-size': String(row.size),
-            'x-sp-source': source,
-            'x-sp-what': what,
             'content-type': 'application/octet-stream',
           },
           body: row.file,

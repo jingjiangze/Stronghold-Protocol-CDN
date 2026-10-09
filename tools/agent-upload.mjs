@@ -47,7 +47,7 @@ async function api(method, urlPath, body, extraHeaders = {}) {
   const headers = { 'x-admin-key': adminKey(), 'content-type': 'application/json', ...extraHeaders };
   const payload = body === undefined ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(base + urlPath, { method, headers, body: payload, signal: controller.signal });
     clearTimeout(timer);
@@ -61,12 +61,18 @@ async function api(method, urlPath, body, extraHeaders = {}) {
 
 function apiViaCurl(method, urlPath, payload, headers, firstError) {
   const cfg = path.join(os.tmpdir(), `cdn-admin-${process.pid}-${Date.now()}.cfg`);
+  const bodyFile = path.join(os.tmpdir(), `cdn-admin-body-${process.pid}-${Date.now()}.json`);
   const lines = [`url = "${base}${urlPath}"`, `request = "${method}"`];
   for (const [k, v] of Object.entries(headers)) lines.push(`header = "${k}: ${v}"`);
-  if (payload !== undefined) lines.push(`data = ${JSON.stringify(payload)}`);
   fs.writeFileSync(cfg, `${lines.join('\n')}\n`);
+  const args = ['-sS', '--ssl-no-revoke', '-m', '45', '-w', '\nHTTPCODE=%{http_code}', '-K', cfg];
+  // body 走文件而不是 config：JSON 里全是引号，写进 curl 配置文件会被当成语法解析，报一个跟业务无关的错。
+  if (payload !== undefined) {
+    fs.writeFileSync(bodyFile, payload);
+    args.push('--data-binary', `@${bodyFile}`);
+  }
   try {
-    const out = execFileSync('curl', ['-sS', '--ssl-no-revoke', '-m', '45', '-w', '\\nHTTPCODE=%{http_code}', '-K', cfg], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+    const out = execFileSync('curl', args, { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
     const status = Number((out.match(/HTTPCODE=(\d+)/) || [])[1] || 0);
     const text = out.replace(/\n?HTTPCODE=\d+$/, '');
     let doc = { ok: false, error: text.slice(0, 200) };
@@ -74,7 +80,9 @@ function apiViaCurl(method, urlPath, payload, headers, firstError) {
     if (!status) throw new Error(`curl 也没拿到状态码（先试 Node fetch：${firstError && firstError.message}）`);
     return { status, doc };
   } finally {
-    fs.unlinkSync(cfg);
+    for (const f of [cfg, bodyFile]) {
+      try { fs.unlinkSync(f); } catch { /* 临时文件删不掉不影响结果 */ }
+    }
   }
 }
 
