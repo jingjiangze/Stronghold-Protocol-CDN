@@ -176,7 +176,7 @@
 
       <div class="mini">
         <h4>措施 4 · permessage-deflate 窗口 12 → 9</h4>
-        <p class="download__meta">收益：<b>39 → 160 人</b>，但<b>只在非默认路径上成立</b></p>
+        <p class="download__meta">收益：<b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b></p>
         <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）</i>
 serverNoContextTakeover: true,   <i>// 保内存上界</i>
 clientNoContextTakeover: true,
@@ -193,13 +193,13 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       <div class="mini">
         <h4>措施 5 · <code class="inline">clientCombat: on</code>（别退回去）</h4>
         <p class="download__meta">收益：<b>天然的最大带宽优化</b> —— 不是我们做的，但必须守住</p>
-        <p>战斗逻辑在各端浏览器跑，服务端不广播 30 Hz 快照。</p>
+        <p>战斗逻辑在各端浏览器跑，服务端不广播快照。</p>
         <div class="table-wrap" style="margin-top:10px">
           <table>
-            <thead><tr><th></th><th class="num">单帧</th><th class="num">30 Hz 每秒</th><th class="num">10 Mbps 容纳</th></tr></thead>
+            <thead><tr><th></th><th class="num">单帧</th><th class="num">10 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
             <tbody>
-              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">31.0 KiB/s</td><td class="num"><b>39 人</b></td></tr>
-              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">7.6 KiB/s</td><td class="num"><b>160 人</b></td></tr>
+              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">10.3 KiB/s</td><td class="num"><b>118 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
+              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">2.5 KiB/s</td><td class="num"><b>496 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
             </tbody>
           </table>
         </div>
@@ -207,6 +207,12 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
           压完是 4 倍差距，但<b>只要 <code class="inline">clientCombat</code> 退成 off，这两种都比默认路径贵 100 倍以上</b>。
           这是本轮唯一有数量级意义的风险点。
         </p>
+        <div class="notice">
+          <span><b>两档并存的说明：</b>快照率已从原来的固定 30 Hz 降到 <b>10 Hz（默认，<code class="inline">SNAPSHOT_EVERY = 6</code>）</b>，
+          并在链路抖动时**按连接**自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
+          所以"30 Hz"那一栏是历史口径：按它算出的 <b>39 / 160 人</b> 只能当特定压力场景的算例，
+          <b>不是当前默认配置下的容量</b>。本表两档都列出，请按实际档位读。</span>
+        </div>
       </div>
 
       <div class="mini">
@@ -259,12 +265,16 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
             <td>服务端几乎不发 <code class="inline">b.snap</code></td>
           </tr>
           <tr>
-            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">31,744 B/s</td><td class="num">254 kbps</td><td class="num"><b>39 人</b></td>
-            <td><code class="inline">SP_COMBAT=server</code> / AI 接管</td>
+            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">10,580 B/s</td><td class="num">85 kbps</td><td class="num"><b>118 人</b></td>
+            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>10 Hz</b></td>
           </tr>
           <tr>
-            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">7,782 B/s</td><td class="num">62 kbps</td><td class="num"><b>160 人</b></td>
+            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">2,520 B/s</td><td class="num">20 kbps</td><td class="num"><b>496 人</b></td>
             <td>同上，开启压缩</td>
+          </tr>
+          <tr>
+            <td>C′ / D′. 同上，但链路抖动升到 <b>20 Hz</b></td><td class="num">21,160 / 5,040 B/s</td><td class="num">169 / 40 kbps</td><td class="num"><b>59 / 248 人</b></td>
+            <td>按连接自适应升档（仅抖动链路）</td>
           </tr>
         </tbody>
       </table>
@@ -273,7 +283,12 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     <div class="notice">
       <span><b>怎么读这张表：</b>A / B 的数字大到没有意义 —— 现实中会先撞 CPU、每进程 fd 上限、<code class="inline">maxConnections</code>。
       也就是说<b>默认配置下上行根本不构成限制</b>，2 万人只用来说明余量有多大。<br />
-      <b>C → D 的 39 → 160 人</b>才是压缩的真实价值，但它只在非默认路径上成立。</span>
+      <b>C → D 的 118 → 496 人</b>才是压缩的真实价值（约 4.2×），但它只在非默认路径上成立。<br />
+      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>10 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 6</code>），
+      抖动链路按连接自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
+      早期版本的 30 Hz 口径（31,744 B/s → 39 人 / 160 人）<b>只是历史压力算例，不是当前容量</b>。<br />
+      另注：这只算 <code class="inline">b.snap</code> 一种消息 —— 同频的 <code class="inline">b.ev</code> 与
+      <code class="inline">m.field</code> 也会占用上行，单帧 × 帧率不等于完整 ws 流量。</span>
     </div>
 
     <div class="mini" style="margin-top:16px">
@@ -294,8 +309,12 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
 
     <p class="section-note">
       素材搬走、代码压好之后，剩下的上行几乎只剩一件事：服务端跑的战斗场给观战者推的
-      <code class="inline">b.snap</code>。线上 nginx 日志 56,404 条里，<b>前 10% 的连接占了 ws 总上行的 88.8%</b>
-      （600.1 / 675.7 MiB），而且全是 45 分钟 ~ 3 小时的超长连接。
+      <code class="inline">b.snap</code>。线上 nginx 日志（约 6.1 万条，跨 5 天）里，
+      <b>长连接（<code class="inline">rt&gt;5s</code>，n=1,503）中按速率排前 10% 的那 151 条，占了全部 ws 上行的 90.5%</b>
+      （618.2 / 682.8 MiB），而且都是 45 分钟 ~ 3 小时的超长连接。
+      <br /><span class="section-note">口径说明：分母是<b>全部 <code class="inline">/ws</code> 请求的上行字节</b>
+      （682.8 MiB，其中长连接占 682.7 MiB）；分位取自同一集合 ——
+      p50 15.2 / p90 1,352.7 / p99 3,374.4 B/s。早期文档里并列的 97.9% 与 88.8% 是两套不同分母，已统一为这一个。</span>
     </p>
 
     <div class="two-col">
