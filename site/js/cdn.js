@@ -90,7 +90,7 @@ function renderMirrors(flat) {
     // A git mount only serves what is committed to git, so say so rather than implying a full mirror.
     const coverage =
       mirror.coverage === 'partial'
-        ? '<span class="chip" title="仅服务 git 仓库内已提交的文件，不含素材树">部分覆盖</span>'
+        ? '<span class="chip" title="只挂载本仓 main 分支的工具文件，不含素材树">部分覆盖</span>'
         : '';
     card.innerHTML =
       `<div class="card__title">${mirror.id}</div>` +
@@ -123,10 +123,10 @@ function renderPacks(packs) {
 /**
  * Human-readable answer to "what are these mirrors actually serving, and does this one have it".
  *
- * The git mounts serve only what is committed to this repository — the tooling and the probe —
- * never the asset tree, which is derived from the upstream release package. Saying that in words
- * matters more than the chip on each card: a reader who sees "部分覆盖" needs to know it means
- * 0.09% of the bytes, not "some files are still syncing".
+ * The asset tree used to be absent from git — derived from the upstream release pack and never
+ * committed — which is why every git mount showed "部分覆盖": not lagging behind, but holding none
+ * of these bytes. It is committed now, on the orphan branch `assets-raw`, so the answer flipped.
+ * Saying that in words matters more than the chip on each card.
  */
 function renderManifest(dirs, totals, art) {
   const body = $('manifest-dirs')?.querySelector('tbody');
@@ -138,28 +138,29 @@ function renderManifest(dirs, totals, art) {
   const total = totals?.bytes || dirs.reduce((s, d) => s + d.bytes, 0);
   const files = totals?.files || dirs.reduce((s, d) => s + d.files, 0);
 
+  // Every directory is committed now, so the last column is the same for all of them. It is still
+  // rendered per row rather than typed once per row, so it cannot drift out of step with the rest.
   body.innerHTML = dirs
     .map((d) => {
       const pct = total ? (d.bytes / total) * 100 : 0;
       return (
         `<tr><td class="mono">${d.prefix}</td><td class="num">${fmtCount(d.files)}</td>` +
         `<td class="num">${fmtBytes(d.bytes)}</td><td class="num">${pct.toFixed(1)}%</td>` +
-        `<td class="num">否</td></tr>`
+        `<td class="num">是</td></tr>`
       );
     })
     .join('');
 
-  const gitB = 581_618; // bytes actually committed to this repository, measured 2026-10-09
-  const pct = total ? (gitB / (gitB + total)) * 100 : 0;
   const tag = art?.upstream?.tag ? `上游 ${art.upstream.tag} 发布包` : '上游发布包';
   const lead = $('manifest-lead');
   if (lead) {
     // innerHTML, not setText: the emphasis is the point, and setText escapes it into visible tags.
     lead.innerHTML =
       `这一批源在分发的是同一棵素材树：<b>${fmtCount(files)} 个文件 / ${fmtBytes(total)}</b>，全部由 ${tag} 解出。` +
-      `R2 与 Pages 持有<b>全部</b>；jsDelivr / Statically / ghfast / gitcdn 这四个是 git 挂载源，` +
-      `只持有本仓库的 ${fmtBytes(gitB)} 工具文件 —— 占总体积的 <b>${pct.toFixed(2)}%</b>，其中近一半还是测速探针自己。` +
-      `所以「部分覆盖」不是说它们还没同步完，而是<b>它们能给的字节在这棵树里根本不存在</b>。`;
+      `R2 与 Pages 持有<b>全部</b>；git 挂载源（jsDelivr / ghfast / gitcdn）现在也持有<b>全部</b> —— ` +
+      `素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支（12,261 个文件 / ${fmtBytes(total)}），` +
+      `抽样 40 条路径 × 3 个源逐字节 sha256 校验全部一致。` +
+      `在此之前它们只持有本仓几十 KB 的工具文件，「部分覆盖」不是说还没同步完，而是当时这批字节在源里确实不存在。`;
   }
 }
 

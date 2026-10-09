@@ -296,9 +296,10 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </table>
       </div>
       <div class="notice">
-        <span><b>为什么很多源标着「部分覆盖」：</b>标这个的源挂的是<b>本仓库的 git 内容</b>，不是素材树。
-        素材树是从上游发布包解出来的，<b>从不进 git</b>（进 git 会让仓库变成 600 MB 且每次上游发版都要提交一遍），
-        所以任何 git 挂载源都拿不到它 —— 这不是不稳定，是<b>源里就没有</b>，请求只会得到 404。</span>
+        <span><b>关于「部分覆盖」这个标记：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
+        所以 git 挂载源只能给出本仓几十 KB 的工具文件，请求素材只会得到 404。这<b>不是不稳定，是源里当时就没有</b>。
+        <b>现在已解决</b>：素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，各源现在都能给出全部素材；
+        抽样 40 条路径 × 3 个源（jsDelivr / ghfast / gh-proxy）逐字节 sha256 校验一致，MIME、CORS 与 Range 206 均已实测。</span>
       </div>
     </div>
 

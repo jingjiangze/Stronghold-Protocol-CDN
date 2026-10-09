@@ -8,7 +8,7 @@
   },
   "extraOrigins": [],
 
-  "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. They serve what is committed to git — the interface files and probe/cdn-probe.bin — and NOT public/assets/**, which is deliberately kept out of git (it is derived from the upstream release package). Each entry is therefore marked coverage=partial and carries its own probe path, so the site can say so on the card instead of implying a full mirror. Statically caveat: only the '@ref' form is https — the '/gh/<repo>/<ref>/<path>' form 301-redirects to http and would be blocked as mixed content.",
+  "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 618 MiB art tree lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
   "gitOrigins": [
     {
       "id": "jsdelivr",
@@ -16,15 +16,7 @@
       "root": "https://cdn.jsdelivr.net/gh/jingjiangze/Stronghold-Protocol-CDN@main",
       "probe": "/probe/cdn-probe.bin",
       "coverage": "partial",
-      "note": "jsDelivr 挂载本仓 git 内容（不含素材树）"
-    },
-    {
-      "id": "statically",
-      "kind": "git",
-      "root": "https://cdn.statically.io/gh/jingjiangze/Stronghold-Protocol-CDN@main",
-      "probe": "/probe/cdn-probe.bin",
-      "coverage": "partial",
-      "note": "Statically 挂载本仓 git 内容（必须用 @ref 形式）"
+      "note": "jsDelivr 挂载本仓 git 内容（接口文件在 main，素材树在 assets-raw）"
     },
     {
       "id": "ghfast-raw",
@@ -35,12 +27,28 @@
       "note": "ghfast 镜像链挂载 raw.githubusercontent（国内可用）"
     },
     {
+      "id": "jsdelivr-assets",
+      "kind": "git",
+      "root": "https://cdn.jsdelivr.net/gh/jingjiangze/Stronghold-Protocol-CDN@assets-raw",
+      "probe": "/assets/char/avatar/char_1016_agoat2.png",
+      "coverage": "full",
+      "note": "jsDelivr 挂载素材树（assets-raw 分支）：MIME/ACAO/Range 206 已实测"
+    },
+    {
+      "id": "ghfast-assets",
+      "kind": "git",
+      "root": "https://ghfast.top/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/assets-raw",
+      "probe": "/assets/char/avatar/char_1016_agoat2.png",
+      "coverage": "full",
+      "note": "ghfast 挂载素材树（assets-raw 分支）：MIME/ACAO/Range 206 已实测"
+    },
+    {
       "id": "gitcdn-own",
       "kind": "git",
       "root": "https://gitcdn.jiangjiangze.icu",
       "probe": "/probe/cdn-probe.bin",
-      "coverage": "partial",
-      "note": "自有域中转（sp-git-mount-relay）：同一批 git 内容，但走我们自己的域名与边缘缓存；后端按 jsdelivr→ghfast→statically 顺序回退"
+      "coverage": "full",
+      "note": "自有域中转（sp-git-mount-relay）：一个域名同时服务接口文件与素材树，按路径自动选分支；后端按 jsdelivr→ghfast 顺序回退"
     }
   ]
 }

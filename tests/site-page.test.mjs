@@ -37,9 +37,9 @@ test('every anchor in the navigation points at a section that exists', () => {
   }
 });
 
-// The manifest block exists to answer "does this git mount have the assets". If the column ever
-// reads "是" for a member of the asset tree, the page is telling readers the opposite of the
-// truth — the asset tree is not in git, so every git mount 404s on it.
+// The manifest block exists to answer "does this git mount have the assets". It must read "是"
+// now that the tree is committed, and the explanation has to say why it used to read "否" —
+// otherwise the page still tells readers the opposite of the truth about the same sources.
 test('the manifest block explains partial coverage instead of just labelling it', () => {
   const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
 
@@ -50,12 +50,11 @@ test('the manifest block explains partial coverage instead of just labelling it'
   // The git-mount column must be generated, not typed per row: a hand-written row would survive
   // a future directory being added, and then quietly say the wrong thing about it.
   const render = script.slice(script.indexOf('function renderManifest'));
-  const table = render.slice(0, render.indexOf('const gitB'));
-  assert.match(table, /<td class="num">否<\/td>/, 'the git-mount column must render 否 for every row');
+  const table = render.slice(0, render.indexOf('const tag ='));
+  assert.match(table, /<td class="num">是<\/td>/, 'the git-mount column must render 是 for every row');
 
-  // The explanation must quantify the gap, not just assert it, and must not hide it behind
-  // setText (which would render the <b> tags as literal text).
+  // The explanation must not hide behind setText (which renders <b> as literal text), and must
+  // name the branch the assets now live on, since that is the whole answer.
   assert.match(render, /innerHTML/, 'the lead uses innerHTML so its emphasis actually renders');
-  assert.match(render, /pct\.toFixed\(2\)/, 'the lead states what share of the bytes a git mount holds');
-  assert.match(render, /不存在/, "the lead says the bytes are absent, not merely 'not yet synced'");
+  assert.match(render, /assets-raw/, 'the lead names the branch that now carries the asset tree');
 });

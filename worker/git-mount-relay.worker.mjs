@@ -10,20 +10,40 @@
 //
 // What it will NOT do: it is not an open proxy. The upstream host is chosen from a fixed table by
 // name, never from the request, and the path is validated. Only files committed to THIS repo are
-// reachable -- there is no way to point it at another repo, and the asset tree is not in git.
+// reachable -- there is no way to point it at another repo.
 
 const REPO = 'jingjiangze/Stronghold-Protocol-CDN';
-const REF = 'main';
+
+// The tree lives on two branches, because the two halves have opposite versioning needs:
+//   main        -- the interface (site/, worker/, data/, probe/). Small, edited in place, history
+//                  worth keeping.
+//   assets-raw  -- the 618 MiB art tree, an orphan branch with a single parentless line of
+//                  commits. Binary art gets no delta compression, so every upstream release
+//                  replaces the whole tree wholesale; keeping it out of main keeps interface
+//                  clones small and keeps that churn off the branch the site deploys from.
+// A request names no branch: which one to read is chosen here, from the path.
+const REF_MAIN = 'main';
+const REF_ASSETS = 'assets-raw';
 
 // Ordered; the first backend that answers wins. `prefix` is how each names a repo file.
+//
+// Statically was removed after measurement: it truncated a 262,144-byte probe to 16,384 / 32,768 /
+// 0 bytes across three attempts and 403'd five times out of five on a real 854 KB asset. A backend
+// that silently returns partial bytes is worse than an absent one, because Range and sha256 checks
+// both pass on the first chunk and fail later.
 const BACKENDS = [
-  { id: 'jsdelivr', prefix: 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + REF },
-  { id: 'ghfast-raw', prefix: 'https://ghfast.top/https://raw.githubusercontent.com/' + REPO + '/' + REF },
-  { id: 'statically', prefix: 'https://cdn.statically.io/gh/' + REPO + '@' + REF },
+  { id: 'jsdelivr', prefix: 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + REF_MAIN },
+  { id: 'ghfast-raw', prefix: 'https://ghfast.top/https://raw.githubusercontent.com/' + REPO + '/' + REF_MAIN },
+];
+
+// Same two backends pointed at the asset branch. Built separately because the ref is part of the
+// URL for both forms: jsDelivr wants '@ref' after the repo, ghfast wants '/ref' in the raw path.
+const ASSET_BACKENDS = [
+  { id: 'jsdelivr-assets', prefix: 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + REF_ASSETS },
+  { id: 'ghfast-assets', prefix: 'https://ghfast.top/https://raw.githubusercontent.com/' + REPO + '/' + REF_ASSETS },
 ];
 
 const MAX_PATH = 300;
-const MAX_BYTES = 32 * 1024 * 1024;
 const CACHE_TTL = 3600;
 const NEGATIVE_TTL = 60;
 
@@ -100,15 +120,25 @@ export function hasTraversal(rawUrl) {
   return path.includes('..') || decoded.includes('..') || /%2e/i.test(path);
 }
 
-// The 533 MB asset tree is deliberately NOT in git (it derives from the upstream release pack),
-// so every git-mount backend 404s on it -- measured on six real files across jsDelivr and ghfast.
-// Say so with a response instead of letting each request burn a backend round trip.
+// The asset tree used to be absent from git, and these prefixes were refused with a 404 rather
+// than forwarded to a backend that would 404 anyway. It is committed now (branch `assets-raw`),
+// so the prefixes do the opposite job: they select which branch to read.
 const ASSET_TREE = ['/assets/', '/fonts/'];
 
 export function isAssetTree(raw) {
   const p = String(raw || '');
   return ASSET_TREE.some((prefix) => p === prefix.slice(0, -1) || p.startsWith(prefix));
 }
+
+/**
+ * Which backends may answer this path. Exported so the branch choice is testable without a
+ * request: the caller never names a branch, so the mapping has to be pinned down somewhere.
+ */
+export function backendFor(raw) {
+  return isAssetTree(raw) ? ASSET_BACKENDS : BACKENDS;
+}
+
+export const MAX_BYTES = 32 * 1024 * 1024;
 
 const cors = (extra = {}) => ({
   'access-control-allow-origin': '*',
@@ -139,8 +169,9 @@ export default {
 
     if (url.pathname === '/' || url.pathname === '') {
       const body = JSON.stringify({
-        ok: true, repo: REPO, ref: REF,
-        backends: BACKENDS.map((b) => b.id),
+        ok: true, repo: REPO,
+        branches: { interface: REF_MAIN, assets: REF_ASSETS },
+        backends: [...BACKENDS, ...ASSET_BACKENDS].map((b) => b.id),
         usage: '/<path-in-repo> | /dl/<tag>/<pack>.zip',
       });
       return new Response(body, { status: 200, headers: cors({ 'content-type': 'application/json; charset=utf-8' }) });
@@ -168,18 +199,16 @@ export default {
     const path = safePath(raw);
     if (!path) return new Response('bad path', { status: 400, headers: cors() });
 
-    if (isAssetTree(raw)) {
-      return new Response(
-        JSON.stringify({ error: 'asset-tree-not-mounted', detail: 'the 533 MB asset tree is not in git; use the R2/Pages origin' }),
-        { status: 404, headers: cors({ 'content-type': 'application/json; charset=utf-8', 'x-git-mount-backend': 'none' }) },
-      );
-    }
+    // Asset paths come from the orphan branch, everything else from main. Callers never name a
+    // branch: the path decides, and a path outside /assets/** can never reach the art branch.
+    const asset = isAssetTree(raw);
+    const backends = asset ? ASSET_BACKENDS : BACKENDS;
 
     const range = request.headers.get('range');
     const method = request.method;
     const failures = [];
 
-    for (const backend of BACKENDS) {
+    for (const backend of backends) {
       try {
         const { res, url: backendUrl } = await fetchBackend(backend, path, { range, method });
         if (!res.ok) {
