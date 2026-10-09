@@ -37,6 +37,7 @@ import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins, readGitOrigins } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
+import { readHosted, splitForPrune } from './hosted.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -518,9 +519,14 @@ async function main() {
   }
 
   if (opts.prune && diff.remove.length) {
-    log(`pruning ${diff.remove.length} objects upstream no longer lists …`);
-    for (const key of diff.remove) await deleteObject(config, key);
-    report.pruned = diff.remove.length;
+    // Objects we host deliberately -- mod art, which upstream will never list -- must survive a
+    // prune. Without this, a routine cleanup would delete someone else's content.
+    const { keys: hostedKeys } = readHosted(ROOT);
+    const { prune, spared } = splitForPrune(diff.remove, hostedKeys);
+    log(`pruning ${prune.length} objects upstream no longer lists …${spared.length ? ` (${spared.length} kept: hosted on purpose)` : ''}`);
+    for (const key of prune) await deleteObject(config, key);
+    report.pruned = prune.length;
+    if (spared.length) report.pruneSpared = spared.length;
   }
 
   // Extra sources: additive, and their manifest references join the acceptance list so "is this
