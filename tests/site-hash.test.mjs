@@ -56,7 +56,44 @@ test('the hash is stable for unchanged content and moves when it changes', () =>
   assert.notEqual(nameOf(changed), before);
 });
 
-test('re-running over an already-hashed page is a no-op', () => {
+test('rewrites every page, not just index.html', () => {
+  const dir = fixture();
+  // A second page with its own link to the same stylesheet: this is the case that broke
+  // /bandwidth, which kept href="./css/cdn.css" and was served the SPA fallback as CSS.
+  fs.writeFileSync(path.join(dir, 'guide.html'), '<link rel="stylesheet" href="./css/app.css" />');
+
+  hashReferences(dir, { log: () => {} });
+
+  const guide = fs.readFileSync(path.join(dir, 'guide.html'), 'utf8');
+  assert.match(guide, /\.\/css\/app\.[0-9a-f]{8}\.css/);
+  assert.doesNotMatch(guide, /href="\.\/css\/app\.css"/);
+
+  // the rewritten name must actually exist, or Pages falls back to HTML for it
+  for (const page of ['index.html', 'guide.html']) {
+    const html = fs.readFileSync(path.join(dir, page), 'utf8');
+    for (const match of html.matchAll(/\.\/(?:js|css)\/([A-Za-z0-9_.-]+)/g)) {
+      assert.ok(fs.existsSync(path.join(dir, match[0].slice(2))), `${page}: ${match[0]}`);
+    }
+    assert.equal(fs.readdirSync(path.join(dir, 'css')).length, 1, `${page}: unhashed copy left behind`);
+  }
+});
+
+test('two pages sharing one asset both get the hashed name', () => {
+  const dir = fixture();
+  fs.writeFileSync(path.join(dir, 'a.html'), '<link rel="stylesheet" href="./css/app.css" />');
+  fs.writeFileSync(path.join(dir, 'b.html'), '<link rel="stylesheet" href="./css/app.css" />');
+
+  hashReferences(dir, { log: () => {} });
+
+  const name = (p) => fs.readFileSync(path.join(dir, p), 'utf8').match(/\.\/css\/([A-Za-z0-9_.-]+\.css)/)[1];
+  assert.equal(name('a.html'), name('b.html'));
+  assert.match(name('a.html'), /^app\.[0-9a-f]{8}\.css$/);
+  // the shared rename must not leave either page pointing at a deleted file
+  assert.ok(fs.existsSync(path.join(dir, 'css', name('a.html'))));
+  assert.ok(fs.existsSync(path.join(dir, 'css', name('b.html'))));
+});
+
+test('leaves references to files that are not there alone', () => {
   const dir = fixture();
   hashReferences(dir, { log: () => {} });
   const after = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
