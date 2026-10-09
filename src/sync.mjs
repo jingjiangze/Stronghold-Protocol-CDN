@@ -275,7 +275,19 @@ async function main() {
       contentType: 'text/javascript',
       cacheControl: SHORT,
     });
-    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js`);
+    // The measured carrier table travels with the interface for the same reason: it is not derived
+    // from the asset tree, so correcting it must not require re-hashing 533 MB.
+    let net = false;
+    try {
+      await putObject(config, 'cdn/v1/network.json', Buffer.from(readNetworkTable(ROOT), 'utf8'), {
+        contentType: 'application/json',
+        cacheControl: SHORT,
+      });
+      net = true;
+    } catch (error) {
+      console.error(`[sync] ${NETWORK_TABLE} not published: ${error.message}`);
+    }
+    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js${net ? ' + network.json' : ''}`);
     return;
   }
 
