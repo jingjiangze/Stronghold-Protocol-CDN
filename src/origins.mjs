@@ -89,3 +89,27 @@ export function readGitOrigins(root) {
   }
   return out;
 }
+
+/**
+ * Origin ids that have been deliberately removed and must not come back.
+ *
+ * `carryForwardOrigins` restores any previously-published origin the current run does not produce.
+ * That is correct for an origin that is only published when a flag is passed (Pages needs --pages),
+ * but it also means deleting an entry from this file has no effect: the published list still names
+ * it, so it is restored on every run. Statically sat in the live list that way -- measured at 2958 ms
+ * and observed truncating payloads -- long after it was removed here.
+ *
+ * Naming a retired id is what makes a removal stick, and it is explicit rather than inferred from
+ * absence, because "absent because deleted" and "absent because this run failed to build it" look
+ * identical from the outside.
+ */
+export function readRetiredOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return new Set();
+  }
+  const list = Array.isArray(cfg?.retired) ? cfg.retired : [];
+  return new Set(list.filter((id) => typeof id === 'string' && id));
+}

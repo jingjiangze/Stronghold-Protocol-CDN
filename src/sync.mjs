@@ -35,7 +35,7 @@ import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins, readGitOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins, readRetiredOrigins } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
@@ -267,7 +267,7 @@ async function main() {
     origins.push(...extraOrigins);
     const gitOrigins = readGitOrigins(ROOT);
     origins.push(...gitOrigins);
-    const flatOrigins = carryForwardOrigins(origins, published.art.mirrors);
+    const flatOrigins = carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT));
     const mirrorsDoc = `${JSON.stringify(
       {
         schema: 1,
@@ -698,7 +698,7 @@ async function main() {
   // already carry forward (below); origins now do the same, keeping the structural ones (r2, pages)
   // from the published interface and merging this run's view into it.
   const publishedBefore = await readPublishedArt(opts.base);
-  const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors);
+  const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors, readRetiredOrigins(ROOT));
 
   let packs = [];
   if (opts.packs) {
@@ -947,12 +947,13 @@ async function publishCore(config, { opts, manifests, version, indexJson, indexF
  * git origin wins) while a structural origin missing from this run is restored from what is
  * already published.
  */
-export function carryForwardOrigins(current, published) {
+export function carryForwardOrigins(current, published, retired = new Set()) {
   if (!Array.isArray(published) || !published.length) return current;
   const byId = new Map(current.map((origin) => [origin.id, origin]));
   const out = [...current];
   for (const prior of published) {
     if (!prior?.id || byId.has(prior.id)) continue;
+    if (retired.has(String(prior.id))) continue; // deliberately removed: a removal must stick
     if (!prior?.root || typeof prior.root !== 'string') continue;
     out.push({
       id: String(prior.id),

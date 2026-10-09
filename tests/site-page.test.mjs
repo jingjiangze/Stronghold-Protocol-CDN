@@ -112,3 +112,16 @@ test('the page documents how an agent queries the tree', () => {
   assert.match(html, /HEAD &lt;基址&gt;\/assets\//, 'existence+size by HEAD should be documented');
   assert.match(html, /tree-&lt;令牌&gt;\.json/, 'the frozen tree copy should be listed');
 });
+
+// The downloads are offered on several hosts and the ranking moves between them, so the button must
+// follow the measurement rather than the order the URLs happen to be listed in.
+test('the fastest measured host is wired into the downloads', () => {
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /async function preferFastestDownload/, 'the auto-selection is missing');
+  assert.match(script, /preferFastestDownload\(snapshot, flat\)/, 'it must be called from main with the mirror list');
+  // It must choose among the hosts a variant actually uses, not probe every mirror: running the
+  // full nine-mirror test to pick between two URLs would spend megabytes per visitor.
+  const fn = script.slice(script.indexOf('async function preferFastestDownload'));
+  assert.match(fn.slice(0, 1200), /byHost\.get\(host\)/, 'candidates must come from the download URLs');
+  assert.match(fn.slice(0, 1200), /candidates\.size < 2/, 'with fewer than two candidates there is nothing to choose');
+});

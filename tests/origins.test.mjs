@@ -96,3 +96,31 @@ test('a carried origin without a base gets one derived rather than an undefined 
   const merged = carryForwardOrigins([], [{ id: 'pages', kind: 'pages', root: 'https://b.test/' }]);
   assert.equal(merged[0].base, 'https://b.test/assets/');
 });
+
+// Carry-forward exists so an origin that this run did not produce (Pages needs --pages) is not
+// dropped from the published list. The cost is that deleting an entry from origins.json has no
+// effect: the published list still names it, so it comes back every run. Statically lived on in the
+// live interface that way, measured at 2958 ms and truncating payloads, long after removal.
+test('a retired origin is not carried forward', () => {
+  const published = [
+    { id: 'pages', root: 'https://spages.test' },
+    { id: 'statically', root: 'https://cdn.statically.io/gh/x@main' },
+  ];
+  const current = [{ id: 'r2', root: 'https://weishucdn.test' }];
+  const merged = carryForwardOrigins(current, published, new Set(['statically']));
+  assert.deepEqual(merged.map((o) => o.id).sort(), ['pages', 'r2'], 'statically must stay gone');
+});
+
+test('without a retired set nothing changes, so the Pages case still works', () => {
+  const published = [{ id: 'pages', root: 'https://spages.test' }];
+  const merged = carryForwardOrigins([{ id: 'r2', root: 'https://weishucdn.test' }], published);
+  assert.deepEqual(merged.map((o) => o.id).sort(), ['pages', 'r2']);
+});
+
+// The shipped file must actually name it, or the removal above never takes effect.
+test('the shipped origins.json retires statically', () => {
+  const cfg = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '..', 'origins.json'), 'utf8'));
+  assert.ok(Array.isArray(cfg.retired), 'origins.json needs a retired array');
+  assert.ok(cfg.retired.includes('statically'), 'statically must be listed as retired');
+  assert.ok(!(cfg.gitOrigins || []).some((o) => o.id === 'statically'), 'and must not also be declared');
+});

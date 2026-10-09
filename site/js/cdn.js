@@ -393,6 +393,65 @@ function renderDownloads(snapshot) {
   for (const variant of DOWNLOADS) renderDownload(variant, snapshot?.[variant.key]);
 }
 
+/**
+ * Point each download at whichever of its own URLs measures fastest.
+ *
+ * The zips are offered on several hosts and the ranking is not stable — measured from mainland
+ * China the own origin and the ghfast mirror trade places — so leaving the button on whichever URL
+ * happens to be first gives some visitors the slower one. The speed test already measures every
+ * mirror, so the same measurement should decide the download.
+ *
+ * Only the hosts the downloads actually use are probed. Running the full nine-mirror test here
+ * would spend megabytes per visitor to choose between the two or three URLs a button has.
+ *
+ * Costs one 256 KiB fetch per candidate host, once per page load. It never blocks the page and
+ * silently leaves the button alone if nothing measured better.
+ */
+async function preferFastestDownload(snapshot, flat) {
+  const byHost = new Map();
+  for (const m of flat || []) {
+    try {
+      byHost.set(new URL(m.root).host, m);
+    } catch {
+      /* a malformed root is not a candidate */
+    }
+  }
+  for (const variant of DOWNLOADS) {
+    const asset = snapshot?.[variant.key];
+    const button = $(`${variant.id}-download`);
+    if (!asset?.urls?.length || !button) continue;
+
+    // One candidate per distinct host, so a variant listing the same host twice is probed once.
+    const candidates = new Map();
+    for (const url of asset.urls) {
+      try {
+        const host = new URL(url).host;
+        const mirror = byHost.get(host);
+        if (mirror && !candidates.has(host)) candidates.set(host, { url, mirror });
+      } catch {
+        /* skip a URL we cannot parse */
+      }
+    }
+    // Fewer than two measurable hosts means there is no choice to make.
+    if (candidates.size < 2) continue;
+
+    const measured = [];
+    for (const [host, { url, mirror }] of candidates) {
+      try {
+        measured.push({ host, url, ...(await measureMirror(mirror, 1)) });
+      } catch {
+        /* an unreachable candidate simply loses */
+      }
+    }
+    if (measured.length < 2) continue;
+    measured.sort((a, b) => b.kbps - a.kbps || a.latency - b.latency);
+    const win = measured[0];
+    button.href = win.url;
+    const meta = $(`${variant.id}-meta`);
+    if (meta) meta.textContent = `${meta.textContent} · 已按实测选 ${win.host}（${fmtSpeed(win.kbps)}）`;
+  }
+}
+
 /** Best effort: pick up a zip published after the last deploy. Never blocks the page. */
 async function refreshDownloads() {
   const repo = document.body.dataset.repo;
@@ -591,6 +650,8 @@ async function main() {
   wireProbe(flat);
   // Fire and forget: a blocked api.github.com must not delay or break the page.
   refreshDownloads().catch(() => {});
+  // Fire and forget: the fastest-host choice must never hold up the page.
+  preferFastestDownload(snapshot, flat).catch(() => {});
 }
 
 main().catch((error) => {

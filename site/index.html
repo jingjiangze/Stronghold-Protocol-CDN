@@ -401,6 +401,12 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <div><div class="eyebrow">REFERENCE · ENDPOINTS</div><h2>API 接入点</h2></div>
       <span class="section-status">基址 <span data-base>https://weishucdn.jiangjiangze.icu</span></span>
     </div>
+    <div class="notice">
+      <span><b>接口只有一个域名：<span data-base>https://weishucdn.jiangjiangze.icu</span></b>。
+      上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
+      <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
+      所以：<b>接口一律从这个域名取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。</span>
+    </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>路径</th><th>内容</th><th>缓存</th></tr></thead>
