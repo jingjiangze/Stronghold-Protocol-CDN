@@ -52,8 +52,12 @@ const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Pr
  * itself moved — that is how a run that should have published the speed-test probe reported
  * "nothing to do" and left it 404. Requiring the published schema to match the running code makes
  * every interface change cost exactly one re-publish, which is the point.
+ *
+ * 4: every pack's `urls` gained our own origin, and both download zips gained it too. Without a
+ * bump the packs already being present would satisfy the watermark and the change would never
+ * reach the published interface.
  */
-export const ART_SCHEMA = 3;
+export const ART_SCHEMA = 4;
 
 /** The manifests the client reads, and the ones the game server rewrites. */
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
