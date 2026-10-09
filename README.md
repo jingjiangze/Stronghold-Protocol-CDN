@@ -84,6 +84,30 @@ node --test tests/*.test.mjs      # 纯函数单测（不联网）
 
 CI 里由 [`.github/workflows/sync.yml`](.github/workflows/sync.yml) 调用，默认 dry-run。
 
+## 上传后台（人 + agent 都走这一条）
+
+入口 <https://downcdn.jiangjiangze.icu/admin>，口令即 Pages secret `ADMIN_UPLOAD_KEY`（不在仓库里）。
+能力面**只有新增**：没有覆盖入口、没有删除入口，也写不到 `cdn/` `data/` `apk/` `site/` 这些
+契约与其它产品线的键上。字节先进 `cdn/incoming/<id>/`，由
+`.github/workflows/promote-uploads.yml` 逐字节核对 sha256 后 `CopyObject` 到对外键，
+同时登记 `hosted.json`（进 git —— prune 才挡得住例行清理）、`cdn/v1/hosted-index.json`（补摘要）
+与 `cdn/v1/upload-log.json`（谁传的单一答案）。
+
+```bash
+node tools/agent-upload.mjs --file=art.png --to=assets/char/mod_x.png \
+     --source=demo-mod --what="说明" --dispatch --wait
+node tools/agent-upload.mjs --list      # 暂存与最近发布
+node tools/report-undeclared.mjs       # 桶里有、契约/hosted.json 都没有的对象（只读，先看清再动）
+```
+
+| 端点 | 用途 |
+|---|---|
+| `POST /api/cdn/upload/begin` | 声明 `{key,size,sha256,source}`，换 presigned PUT（直传桶，不受 100 MB 上限） |
+| `POST /api/cdn/upload/commit` | 声明传完了 → 写 claim，状态 queued |
+| `PUT  /api/cdn/upload/put` | 浏览器用的一条式（同源、≤64 MiB，元数据走查询串） |
+| `GET  /api/cdn/upload/status` | 暂存区与发布日志 |
+| `POST /api/cdn/upload/kick` | 催一次发布轮 |
+
 ## 凭据
 
 **只从环境变量读取**，源码、示例与测试里不出现任何凭据字面量：
@@ -98,6 +122,7 @@ CI 里由 [`.github/workflows/sync.yml`](.github/workflows/sync.yml) 调用，�
 
 ## 安全约定
 
-- **不做删除**，除非显式 `--prune`。
+- **不做删除**，除非显式 `--prune`；`--prune` 会先读 `hosted.json`，被点名的键一律放过并计数上报
+  （APK 的按需素材包就靠这一条活着：23 个键 / 464.8 MB，不在上游清单里）。
 - 上游 URL 只允许 `https://`，且拒绝环回/私有/保留地址。
 - 不把字节提交进仓库（素材体积以 GB 计，且版权归 Hypergryph / Yostar；见 `NOTICE` 说明）。

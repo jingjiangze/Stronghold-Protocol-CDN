@@ -269,16 +269,104 @@
       ]
     },
     {
-      "id": "admin-selftest",
-      "what": "后台端到端自检用的 1x1 PNG，不属于上游素材；不需要时可删",
+      "id": "apk-art-packs",
+      "what": "卫戍协议 APK 端的按需素材包（assets/packs/*.zip）。由签名清单 site/manifest.json 的 art.packs 引用，不属于上游素材树；删掉会让玩家端按需下载全部 404",
       "addedAt": "2026-10-09",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 70,
+      "files": 23,
+      "bytes": 487367688,
       "keys": [
         [
-          "assets/local/admin-selftest-20261010.png",
-          70
+          "assets/packs/audio.bgm-4.zip",
+          28202035
+        ],
+        [
+          "assets/packs/audio.sfx-4.zip",
+          11103788
+        ],
+        [
+          "assets/packs/audio.voice.1-4.zip",
+          67513582
+        ],
+        [
+          "assets/packs/audio.voice.2-4.zip",
+          1747817
+        ],
+        [
+          "assets/packs/audio.voice.3-4.zip",
+          67445662
+        ],
+        [
+          "assets/packs/audio.voice.4-4.zip",
+          22402351
+        ],
+        [
+          "assets/packs/char.all-4.zip",
+          16744482
+        ],
+        [
+          "assets/packs/core.chrome-4.zip",
+          7417311
+        ],
+        [
+          "assets/packs/core.enemyicon-4.zip",
+          2704568
+        ],
+        [
+          "assets/packs/core.guide-4.zip",
+          2735458
+        ],
+        [
+          "assets/packs/core.spine.enemy-4.zip",
+          34312678
+        ],
+        [
+          "assets/packs/core.spine.op.1-4.zip",
+          66407555
+        ],
+        [
+          "assets/packs/core.spine.op.2-4.zip",
+          66521359
+        ],
+        [
+          "assets/packs/core.spine.op.3-4.zip",
+          66237514
+        ],
+        [
+          "assets/packs/core.ui-4.zip",
+          4821354
+        ],
+        [
+          "assets/packs/local.emoticon-4.zip",
+          276816
+        ],
+        [
+          "assets/packs/local.guide-4.zip",
+          4181156
+        ],
+        [
+          "assets/packs/local.map-4.zip",
+          5697653
+        ],
+        [
+          "assets/packs/local.mesh-4.zip",
+          29367
+        ],
+        [
+          "assets/packs/local.module-4.zip",
+          133998
+        ],
+        [
+          "assets/packs/local.projectiles-4.zip",
+          292
+        ],
+        [
+          "assets/packs/local.spine-4.zip",
+          3736328
+        ],
+        [
+          "assets/packs/local.ui-4.zip",
+          6994564
         ]
       ]
     }
