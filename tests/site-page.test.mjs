@@ -110,7 +110,23 @@ test('the file tree is expandable, filterable, and fed by the compact tree file'
 test('the page documents how an agent queries the tree', () => {
   assert.match(html, /给 agent 的查询接口/, 'the agent query block is missing');
   assert.match(html, /HEAD &lt;基址&gt;\/assets\//, 'existence+size by HEAD should be documented');
-  assert.match(html, /tree-&lt;令牌&gt;\.json/, 'the frozen tree copy should be listed');
+});
+
+// The endpoint table used to be hand-copied into index.html, and it had already drifted (it called
+// /fonts/** immutable, and omitted /packs/**, /dl/** and api.json itself). It now renders from the
+// published contract, so the table cannot disagree with what the sync writes.
+test('the endpoint table is rendered from the contract, not hand-copied', () => {
+  assert.match(html, /id="api-rows"/, 'the endpoint table needs a host to render into');
+  assert.ok(
+    !/cdn\/v1\/tree-&lt;令牌&gt;\.json/.test(html),
+    'the hand-copied endpoint rows must be gone; listing them twice is how they drifted',
+  );
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /cdn\/v1\/api\.json/, 'the page must read the contract');
+  assert.match(script, /function renderApi/, 'the contract needs a renderer');
+  // The frozen tree copy is the row that drifted out of the old table, so the contract must list it.
+  const contract = fs.readFileSync(path.join(ROOT, 'src', 'api-contract.mjs'), 'utf8');
+  assert.match(contract, /\/cdn\/v1\/tree-<token>\.json/, 'the frozen tree copy must be in the contract');
 });
 
 // The downloads are offered on several hosts and the ranking moves between them, so the button must

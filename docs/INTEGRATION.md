@@ -49,8 +49,12 @@ const art = await (await fetch(`${CDN}/cdn/v1/art.json`)).json();
 
 | 内容 | 头 |
 |---|---|
-| 素材 / 字体 | `public, max-age=31536000, immutable` |
+| 素材 / 字体（带 `?v=<令牌>`） | `public, max-age=31536000, immutable` |
+| 素材 / 字体（裸路径，无令牌） | `public, max-age=3600` |
 | 清单与 `cdn/v1/*.json` | `public, max-age=300` |
+| 按令牌冻结的副本（`cdn/v1/*-<令牌>.json`、`packs/**`） | `public, max-age=31536000, immutable` |
+
+逐路径的准确值以 `<CDN>/cdn/v1/api.json` 的 `endpoints[].cache` 为准；上表是归类，不是清单。
 
 素材 URL 带 `?v=<上游 tag>`：上游改了同名文件时 tag 会变，URL 随之改变，所以不需要等 CDN 缓存过期，也不需要 purge。
 

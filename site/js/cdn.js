@@ -135,6 +135,34 @@ function renderPacks(packs) {
  * of these bytes. It is committed now, on the orphan branch `assets-raw`, so the answer flipped.
  * Saying that in words matters more than the chip on each card.
  */
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+/**
+ * The endpoint table, rendered from the published contract rather than hand-copied.
+ *
+ * The hand-copied table had already drifted: it listed /fonts/** as immutable when the real policy
+ * is "1 year with a token, 1 hour without", and it omitted /packs/**, /dl/** and api.json itself.
+ * Reading the contract means the table cannot disagree with what the sync publishes. Paths contain
+ * `<token>` and `**`, so they are escaped — innerHTML would eat `<token>` as a tag.
+ */
+function renderApi(doc) {
+  const body = $('api-rows');
+  if (!body) return;
+  if (!doc?.endpoints?.length) {
+    // Absolute, not relative: this page is served from the site origin, which answers /cdn/v1/*
+    // with its SPA fallback (an HTML 200), so a relative link would render a page instead of JSON.
+    body.innerHTML =
+      '<tr><td colspan="3" class="muted">接口清单取不到，直接看 ' +
+      `<a href="${CDN}/cdn/v1/api.json">${CDN}/cdn/v1/api.json</a>。</td></tr>`;
+    return;
+  }
+  body.innerHTML = doc.endpoints
+    .map((e) => `<tr><td class="mono">${esc(e.path)}</td><td>${esc(e.what)}</td><td class="mono">${esc(e.cache)}</td></tr>`)
+    .join('');
+  // The base is stamped into the contract, so every place that prints it agrees by construction.
+  for (const el of document.querySelectorAll('[data-base]')) el.textContent = doc.base;
+}
+
 function renderManifest(dirs, totals, art) {
   const body = $('manifest-dirs')?.querySelector('tbody');
   if (!body) return;
@@ -624,11 +652,13 @@ async function main() {
   // The snapshot is fetched either way: the interface gives the live numbers, but the directory
   // table comes from it (aggregating 1.3 MB of index on every visit is not worth it), and it is
   // the fallback when the interface is unreachable.
-  const [live, snap] = await Promise.all([
+  const [live, snap, contract] = await Promise.all([
     Promise.all([getJson(`${CDN}/cdn/v1/art.json`), getJson(`${CDN}/cdn/v1/mirrors.json`)]).catch(() => null),
     getJson(SNAPSHOT).catch(() => null),
+    getJson(`${CDN}/cdn/v1/api.json`).catch(() => null),
   ]);
   snapshot = snap;
+  renderApi(contract);
   if (live) {
     [art, mirrors] = live;
   } else {

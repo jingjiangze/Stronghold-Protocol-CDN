@@ -105,6 +105,8 @@ const objects = [
   ['/cdn/v1/index.json', 'application/json', 1000000],
   ['/cdn/v1/tree.json', 'application/json', 100000],
   ['/cdn/v1/pick.js', 'text/javascript', 2000],
+  // The contract itself is part of the interface, so it is swept like every other interface file.
+  ['/cdn/v1/api.json', 'application/json', 500],
   ['/cdn/v1/hosted-index.json', 'application/json', 100],
   ['/cdn/v1/upload-log.json', 'application/json', 100],
   ['/cdn/v1/probe.bin', 'application/octet-stream', 262144],

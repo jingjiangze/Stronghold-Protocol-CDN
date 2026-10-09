@@ -45,6 +45,10 @@ gh 取上游 latest release（或 --tag 指定）
 
 基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`
 
+**完整清单以 `<CDN>/cdn/v1/api.json` 为准**（字段 `{ schema, base, token, endpoints[] }`，
+由 `src/api-contract.mjs` 维护，`tests/api-contract.test.mjs` 保证它不漏掉 sync 实际发布的键）。
+下面只是几个常被问到的，别当权威——它以前就漏过 `/packs/**` 和 `/dl/**`：
+
 | 路径 | 内容 |
 |---|---|
 | `<CDN>/assets/**` | 素材本体（键 = 上游 `public/assets/**` 去掉 `public/`） |

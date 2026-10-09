@@ -410,22 +410,17 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="table-wrap">
       <table>
         <thead><tr><th>路径</th><th>内容</th><th>缓存</th></tr></thead>
-        <tbody>
-          <tr><td class="mono">/assets/**</td><td>素材本体，键 = 上游 <code class="inline">public/assets/**</code> 去掉 <code class="inline">public/</code></td><td class="mono">immutable</td></tr>
-          <tr><td class="mono">/fonts/**</td><td>字体</td><td class="mono">immutable</td></tr>
-          <tr><td class="mono">/data/assets.json</td><td>上游清单，已把 <code class="inline">/assets/…</code>、<code class="inline">/fonts/…</code> 改写成带令牌的绝对地址</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/art.json</td><td><b>契约</b>：上游版本、缓存令牌、镜像列表、包列表、校验结果</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/mirrors.json</td><td>聚合清单：全部来源与打包通道（含镜像前缀 URL）</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/index.json</td><td>全量键表 <code class="inline">{ size, sha256 }</code></td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/index-&lt;令牌&gt;.json</td><td>同上，按内容令牌冻结的副本</td><td class="mono">immutable</td></tr>
-          <tr><td class="mono">/cdn/v1/tree.json</td><td><b>目录树</b>：按目录分组的全部文件 + 体积（约 85 KiB gzip）。比 <code class="inline">index.json</code> 小 20 倍，因为不放 sha256</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/tree-&lt;令牌&gt;.json</td><td>同上，按内容令牌冻结的副本</td><td class="mono">immutable</td></tr>
-          <tr><td class="mono">/cdn/v1/network.json</td><td>内地三运营商到各源的实测时延（决策证据，不是运行时配置）</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/cdn/v1/pick.js</td><td>零依赖 ES 模块：<code class="inline">pickFastest()</code> 测速并返回最快镜像</td><td class="mono">300</td></tr>
-          <tr><td class="mono">/robots.txt</td><td><code class="inline">Disallow: /</code>（非商业同人，不索引）</td><td class="mono">—</td></tr>
-        </tbody>
+        <tbody id="api-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
+    <p class="section-note" style="margin:10px 0 0">
+      这张表由 <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
+      渲染，不再手抄。手抄版已经漂移过：<code class="inline">/fonts/**</code> 的缓存被写成
+      <code class="inline">immutable</code>，实际是「带令牌 1 年 / 裸路径 1 小时」；而且漏掉了
+      <code class="inline">/packs/**</code>、<code class="inline">/dl/**</code> 与
+      <code class="inline">api.json</code> 自己。机器可读的那份字段是
+      <code class="inline">{ schema, base, token, endpoints[] }</code>。
+    </p>
 
     <div class="mini" style="margin-top:16px">
       <h4>给 agent 的查询接口</h4>

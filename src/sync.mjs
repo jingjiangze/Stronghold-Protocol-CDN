@@ -39,6 +39,7 @@ import { readExtraOrigins, readGitOrigins, readRetiredOrigins } from './origins.
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
+import { buildApiDoc } from './api-contract.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -317,6 +318,11 @@ async function main() {
       await putObject(config, `cdn/v1/tree-${published.art.token}.json`, Buffer.from(built.json, 'utf8'), {
         contentType: 'application/json',
         cacheControl: IMMUTABLE,
+      });
+      // The contract is a description, not derived data, so it belongs on the fast path too.
+      await putObject(config, 'cdn/v1/api.json', Buffer.from(buildApiDoc({ base: opts.base, token: published.art.token }), 'utf8'), {
+        contentType: 'application/json',
+        cacheControl: SHORT,
       });
       if (built.overlap.length) {
         console.error(`[sync] ${built.overlap.length} hosted key(s) are also upstream's — remove them from hosted.json`);
@@ -914,6 +920,10 @@ async function publishCore(config, { opts, manifests, version, indexJson, indexF
     [`cdn/v1/index-${version}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
     ['cdn/v1/tree.json', Buffer.from(treeJson, 'utf8'), 'application/json', SHORT],
     [`cdn/v1/tree-${version}.json`, Buffer.from(treeJson, 'utf8'), 'application/json', IMMUTABLE],
+    // The interface describes itself: one machine-readable list of the endpoints, served from the
+    // same origin as the endpoints, so "what can I fetch" has a single answer instead of three
+    // prose copies that can drift.
+    ['cdn/v1/api.json', Buffer.from(buildApiDoc({ base: opts.base, token: version }), 'utf8'), 'application/json', SHORT],
     ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
     // The speed-test probe: a known 256 KiB that every origin serves, so a browser can measure
     // latency and throughput without Range (which the Pages origin's CORS preflight rejects).
