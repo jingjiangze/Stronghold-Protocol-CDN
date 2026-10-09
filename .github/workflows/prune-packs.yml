@@ -1,0 +1,63 @@
+name: prune-packs
+
+# 清掉旧tag的打包通道目录 packs/assets-<tag>/ —— 每上一个上游版本就多 ~450 MB，
+# 而 sync 的 --prune 只对上游素材清单比较，packs/ 下的目录名不在那张表里，所以只增不减。
+#
+# 判定与三道闸都在 src/prune-packs.mjs：只碰 packs/assets-*、现场读线上契约里仍被引用的键、
+# 最新一档不完整时一个都不删。本地干跑与 CI 跑同一份实现。
+#
+# 定时 = apply（这是 D1 认领的额度回收）；手动触发默认 dry-run，人要真删得显式选。
+
+on:
+  schedule:
+    - cron: '37 5 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry-run = 只打印；apply = 真删'
+        required: true
+        default: 'dry-run'
+        type: choice
+        options: ['dry-run', 'apply']
+      keep:
+        description: '保留最新的几个 tag 目录'
+        required: false
+        default: '1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prune-packs
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 会删字节的活儿，先过单测这一关。
+      - name: unit tests
+        run: node --test tests/prune-packs.test.mjs
+
+      - name: prune
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          scheduled=${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          mode="${{ inputs.mode }}"
+          if [ "$scheduled" = "true" ]; then mode="apply"; fi
+          args="--keep=${{ inputs.keep || 1 }}"
+          [ "$mode" = "apply" ] && args="$args --apply"
+          echo "node src/prune-packs.mjs $args"
+          node src/prune-packs.mjs $args
