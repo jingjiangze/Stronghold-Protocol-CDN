@@ -245,3 +245,33 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
   .block__title { font-size: 18px; }
   .block__who { margin-left: 0; width: 100%; }
 }
+
+/* ---- the browsable tree ------------------------------------------------------------------- */
+/* Rows are drawn on demand, so the styles stay flat: a 12k-file tree is only ever partly in the
+   DOM, and anything that assumed a full render (zebra striping by nth-child, for instance) would
+   stripe the wrong things. */
+.tree {
+  border: 1px solid var(--line-soft); border-radius: 10px; background: var(--surface);
+  padding: 8px 0; max-height: 620px; overflow: auto;
+}
+.tree__row {
+  display: flex; align-items: baseline; gap: 8px; padding: 3px 12px;
+  line-height: 1.7; cursor: default;
+}
+.tree__row--dir { cursor: pointer; }
+.tree__row--dir:hover { background: var(--surface-raised); }
+.tree__row:hover { background: var(--surface-raised); }
+.tree__caret { width: 10px; color: var(--dim); flex-shrink: 0; font-size: 10px; }
+.tree__name { color: var(--fg); text-decoration: none; word-break: break-all; }
+a.tree__name:hover { color: var(--accent); text-decoration: underline; }
+.tree__row--dir > .tree__name { color: var(--accent); }
+.tree__meta { margin-left: auto; color: var(--dim); font-size: 11px; white-space: nowrap; padding-left: 12px; }
+.tree__children { display: block; }
+/* The hosted badge sits next to the name, not at the row end, so it reads as part of the name. */
+.chip--mod { margin-left: 0; color: var(--accent); border-color: #618273; background: #a5eccd12; }
+.toolbar input[type="search"] {
+  flex: 1 1 260px; min-width: 200px; padding: 7px 10px; font: inherit; font-size: 12px;
+  color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 7px;
+}
+.toolbar input[type="search"]::placeholder { color: var(--dim); }
+.section-lead { font-size: 12px; color: var(--dim); line-height: 1.8; margin-bottom: 14px; }

@@ -81,3 +81,34 @@ test('the page offers both downloads with the choice spelled out', () => {
   assert.match(script, /function renderDownloads\(/, 'both must render through one function');
   assert.match(script, /renderDownloads\(snapshot\)/, 'renderDownloads must be called');
 });
+
+// The directory listing has to go down to individual files, and the page must fetch the compact
+// tree rather than the 1.6 MiB key table -- loading the key table to render a directory list is the
+// thing this section exists to avoid.
+test('the file tree is expandable, filterable, and fed by the compact tree file', () => {
+  assert.match(html, /id="tree"/, 'the tree host is missing');
+  assert.match(html, /id="tree-filter"/, 'the filter box is missing');
+  assert.match(html, /id="tree-collapse"/, 'the collapse control is missing');
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /cdn\/v1\/tree\.json/, 'the page must read the compact tree, not the key table');
+  // Scoped to the tree renderer only: cdn.js does reference index.json elsewhere (the speed test's
+  // fallback probe path), so a whole-file check fails for the wrong reason. Bounded at the next
+  // section banner so the slice cannot quietly swallow the rest of the file.
+  const start = script.indexOf('async function renderTree');
+  const rest = script.slice(start);
+  const end = rest.indexOf('\n// ---- ');
+  const treeFn = end > 0 ? rest.slice(0, end) : rest;
+  assert.ok(treeFn.length > 500, 'renderTree was not found in cdn.js');
+  assert.ok(!/cdn\/v1\/index\.json/.test(treeFn), 'the tree must not be fed by the 1.6 MiB key table');
+  // Children are built on expand: a 12k-file tree cannot be in the DOM at once.
+  assert.match(script, /function buildTreeModel/, 'the flat dirs map needs to become a tree');
+  assert.match(script, /let built = false/, 'child rows must be built lazily');
+});
+
+// The agent-facing query surface is documented where the rest of the API is, so it is discoverable
+// rather than folklore.
+test('the page documents how an agent queries the tree', () => {
+  assert.match(html, /给 agent 的查询接口/, 'the agent query block is missing');
+  assert.match(html, /HEAD &lt;基址&gt;\/assets\//, 'existence+size by HEAD should be documented');
+  assert.match(html, /tree-&lt;令牌&gt;\.json/, 'the frozen tree copy should be listed');
+});

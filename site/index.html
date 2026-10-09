@@ -381,11 +381,18 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <div><div class="eyebrow">REFERENCE · LAYOUT</div><h2>文件目录</h2></div>
       <span class="section-status" id="dir-note"></span>
     </div>
+    <p class="section-lead">
+      这个桶里实际托管的每一个文件，按目录展开。点目录名展开下一层，点文件名直接打开它。
+      带 <span class="chip chip--mod">托管</span> 的是本仓<b>刻意托管</b>的第三方 mod 素材
+      （上游清单里没有，见 <code class="inline">hosted.json</code>），其余是上游素材树。
+    </p>
+    <div class="toolbar">
+      <input id="tree-filter" type="search" placeholder="按路径筛选，例如 spine/op/char_1016 或 .skel" autocomplete="off" />
+      <button class="button button-secondary" id="tree-collapse" type="button">全部收起</button>
+      <span class="section-status" id="tree-status">读取中…</span>
+    </div>
     <div class="table-wrap">
-      <table id="dirs">
-        <thead><tr><th>前缀</th><th class="num">文件</th><th class="num">体积</th></tr></thead>
-        <tbody><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
-      </table>
+      <div id="tree" class="tree" role="tree" aria-label="托管文件目录"><p class="muted">加载中…</p></div>
     </div>
   </section>
 
@@ -405,12 +412,46 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <tr><td class="mono">/cdn/v1/mirrors.json</td><td>聚合清单：全部来源与打包通道（含镜像前缀 URL）</td><td class="mono">300</td></tr>
           <tr><td class="mono">/cdn/v1/index.json</td><td>全量键表 <code class="inline">{ size, sha256 }</code></td><td class="mono">300</td></tr>
           <tr><td class="mono">/cdn/v1/index-&lt;令牌&gt;.json</td><td>同上，按内容令牌冻结的副本</td><td class="mono">immutable</td></tr>
+          <tr><td class="mono">/cdn/v1/tree.json</td><td><b>目录树</b>：按目录分组的全部文件 + 体积（约 85 KiB gzip）。比 <code class="inline">index.json</code> 小 20 倍，因为不放 sha256</td><td class="mono">300</td></tr>
+          <tr><td class="mono">/cdn/v1/tree-&lt;令牌&gt;.json</td><td>同上，按内容令牌冻结的副本</td><td class="mono">immutable</td></tr>
+          <tr><td class="mono">/cdn/v1/network.json</td><td>内地三运营商到各源的实测时延（决策证据，不是运行时配置）</td><td class="mono">300</td></tr>
           <tr><td class="mono">/cdn/v1/pick.js</td><td>零依赖 ES 模块：<code class="inline">pickFastest()</code> 测速并返回最快镜像</td><td class="mono">300</td></tr>
           <tr><td class="mono">/robots.txt</td><td><code class="inline">Disallow: /</code>（非商业同人，不索引）</td><td class="mono">—</td></tr>
         </tbody>
       </table>
     </div>
-<pre class="code"><i>// 在你的页面里挑最快的镜像</i>
+
+    <div class="mini" style="margin-top:16px">
+      <h4>给 agent 的查询接口</h4>
+      <p class="section-note" style="margin:0 0 10px">
+        没有服务端查询，所以"接口"就是三个静态文件加一个 HEAD 请求。按你要问的问题选：
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>要问什么</th><th>怎么问</th><th>代价</th></tr></thead>
+          <tbody>
+            <tr><td>这个文件在不在、多大</td><td class="mono">HEAD &lt;基址&gt;/assets/…</td><td class="mono">1 个请求</td></tr>
+            <tr><td>这个文件有没有被改过</td><td class="mono">GET /cdn/v1/index.json → 比 sha256</td><td class="mono">1.6 MiB</td></tr>
+            <tr><td>某个目录里有什么</td><td class="mono">GET /cdn/v1/tree.json → <code class="inline">dirs["assets/spine/op/…"].files</code></td><td class="mono">85 KiB gzip</td></tr>
+            <tr><td>整棵树 / 按名字搜</td><td class="mono">同上，遍历 <code class="inline">dirs</code></td><td class="mono">85 KiB gzip</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-note" style="margin:10px 0 0">
+        <code class="inline">tree.json</code> 的形状：<code class="inline">dirs["&lt;目录&gt;"].files</code> 是
+        <code class="inline">[[文件名, 体积, 是否托管?], …]</code>；<code class="inline">mod=1</code>
+        表示该文件是本仓刻意托管的第三方 mod 素材，不是上游内容。所有源都带
+        <code class="inline">Access-Control-Allow-Origin: *</code>，可以直接在浏览器或 Node 里取。
+      </p>
+    </div>
+<pre class="code"><i># 问一个文件在不在、多大（最快，不用下任何索引）</i>
+curl -sI "<b>https://weishucdn.jiangjiangze.icu</b>/assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.skel" | grep -i content-length
+
+<i># 问某个目录里有什么</i>
+node -e 'fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/tree.json").then(r=>r.json()).then(j=>
+  console.log(j.dirs["assets/spine/op/char_1016_agoat2/front"].files))'
+
+<i>// 在你的页面里挑最快的镜像</i>
 import { pickFastest } from "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
 const list = await (await fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
 const { best, ranked } = await pickFastest(list.flat);

@@ -38,6 +38,7 @@ import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins, readGitOrigins } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
+import { readTree } from './tree-index.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
@@ -292,7 +293,30 @@ async function main() {
     } catch (error) {
       console.error(`[sync] ${NETWORK_TABLE} not published: ${error.message}`);
     }
-    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js${net ? ' + network.json' : ''}`);
+    // The tree is derived from the published index, which is one fetch away, so it belongs on this
+    // fast path too -- otherwise adding a directory to the page would cost a full ten-minute sync.
+    let tree = null;
+    try {
+      const res = await fetch(`${opts.base}/cdn/v1/index.json`, { signal: AbortSignal.timeout(30000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const idx = await res.json();
+      const built = readTree(ROOT, idx.files || idx);
+      await putObject(config, 'cdn/v1/tree.json', Buffer.from(built.json, 'utf8'), {
+        contentType: 'application/json',
+        cacheControl: SHORT,
+      });
+      await putObject(config, `cdn/v1/tree-${published.art.token}.json`, Buffer.from(built.json, 'utf8'), {
+        contentType: 'application/json',
+        cacheControl: IMMUTABLE,
+      });
+      if (built.overlap.length) {
+        console.error(`[sync] ${built.overlap.length} hosted key(s) are also upstream's — remove them from hosted.json`);
+      }
+      tree = built.doc.totals;
+    } catch (error) {
+      console.error(`[sync] tree not published: ${error.message}`);
+    }
+    log(`republished cdn/v1/mirrors.json (${published.art.packs?.length ?? 0} packs) + pick.js${net ? ' + network.json' : ''}${tree ? ` + tree (${tree.files} files)` : ''}`);
     return;
   }
 
@@ -614,7 +638,7 @@ async function main() {
     );
   }
 
-  await publishCore(config, { opts, manifests, version, indexJson });
+  await publishCore(config, { opts, manifests, version, indexJson, indexFiles: index.files });
 
   // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
   // invalidate it — the interface below simply reports one origin fewer.
@@ -841,7 +865,7 @@ async function reconcileUnreachableFromBucket(config, probe, { expected, base })
   if (recovered) log(`settled ${recovered} unreachable URL(s) against the bucket origin`);
 }
 
-async function publishCore(config, { opts, manifests, version, indexJson }) {
+async function publishCore(config, { opts, manifests, version, indexJson, indexFiles }) {
   let rewrittenCount = 0;
   // Documentation, not a dependency: if the measured table is malformed the sync still publishes
   // the assets, and the problem is reported rather than silently shipping an empty file.
@@ -851,6 +875,17 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
   } catch (error) {
     console.error(`[sync] ${NETWORK_TABLE} not published: ${error.message}`);
   }
+  // The browsable tree: every key the bucket serves, grouped by directory, with the deliberately
+  // hosted files merged in. Built from the same index the assets were published from, so it cannot
+  // describe a tree that does not exist. 85 KiB gzipped against index.json's 1.6 MiB, which is the
+  // difference between a page that can render a directory list and one that cannot.
+  const { json: treeJson, doc: treeDoc, overlap } = readTree(ROOT, indexFiles);
+  log(`tree: ${treeDoc.totals.files} files in ${treeDoc.totals.dirs} directories (${treeDoc.totals.hosted} hosted on purpose)`);
+  // A hosted entry that upstream also ships is stale: the file is upstream content now, so the entry
+  // describes nothing and should come out of hosted.json.
+  if (overlap.length) {
+    console.error(`[sync] ${overlap.length} hosted key(s) are also upstream's — remove them from hosted.json, e.g. ${overlap[0]}`);
+  }
   const objects = [
     ...manifests.map((entry) => {
       const rewritten = rewriteManifestText(entry.text, { base: opts.base, version });
@@ -859,6 +894,8 @@ async function publishCore(config, { opts, manifests, version, indexJson }) {
     }),
     ['cdn/v1/index.json', Buffer.from(indexJson, 'utf8'), 'application/json', SHORT],
     [`cdn/v1/index-${version}.json`, Buffer.from(indexJson, 'utf8'), 'application/json', IMMUTABLE],
+    ['cdn/v1/tree.json', Buffer.from(treeJson, 'utf8'), 'application/json', SHORT],
+    [`cdn/v1/tree-${version}.json`, Buffer.from(treeJson, 'utf8'), 'application/json', IMMUTABLE],
     ['robots.txt', Buffer.from('User-agent: *\nDisallow: /\n', 'utf8'), 'text/plain', SHORT],
     // The speed-test probe: a known 256 KiB that every origin serves, so a browser can measure
     // latency and throughput without Range (which the Pages origin's CORS preflight rejects).

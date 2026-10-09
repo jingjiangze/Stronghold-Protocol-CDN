@@ -171,22 +171,190 @@ function renderManifest(dirs, totals, art) {
   }
 }
 
-function renderDirs(dirs, totals) {
-  const body = $('dirs')?.querySelector('tbody');
-  if (!body) return;
-  if (!dirs?.length) {
-    body.innerHTML = '<tr><td colspan="3" class="muted">没有目录数据。</td></tr>';
+// ---- the browsable tree ------------------------------------------------------------------
+
+/**
+ * Turn the published flat map of directories into a nested model.
+ *
+ * The published file is grouped by directory (`dirs[path].files = [[name, size, mod?], …]`) because
+ * that is the cheapest shape to serve. Rendering wants a tree, so the paths are split into nodes
+ * once here; every later interaction works off this model and never re-fetches.
+ */
+function buildTreeModel(dirs) {
+  const root = { name: '', path: '', dirs: new Map(), files: [], bytes: 0 };
+  const nodeFor = (path) => {
+    if (!path) return root;
+    let node = root;
+    let acc = '';
+    for (const part of path.split('/')) {
+      acc = acc ? `${acc}/${part}` : part;
+      let child = node.dirs.get(part);
+      if (!child) {
+        child = { name: part, path: acc, dirs: new Map(), files: [], bytes: 0 };
+        node.dirs.set(part, child);
+      }
+      node = child;
+    }
+    return node;
+  };
+  for (const [dir, info] of Object.entries(dirs || {})) {
+    const node = nodeFor(dir);
+    for (const f of info.files || []) node.files.push({ name: f[0], size: f[1] || 0, mod: f[2] === 1 });
+    node.bytes += info.bytes || 0;
+  }
+  // Roll the totals up so a collapsed row can say how much is underneath it without walking it.
+  const rollUp = (node) => {
+    for (const child of node.dirs.values()) node.bytes += rollUp(child);
+    return node.bytes;
+  };
+  rollUp(root);
+  return root;
+}
+
+const countFiles = (node) => node.files.length + [...node.dirs.values()].reduce((s, c) => s + countFiles(c), 0);
+
+/** One row. Children are built on demand: 12k files must never all be in the DOM at once. */
+function treeRow(node, depth, isDir) {
+  const row = document.createElement('div');
+  row.className = 'tree__row' + (isDir ? ' tree__row--dir' : '');
+  row.style.paddingLeft = `${depth * 14 + 8}px`;
+  if (isDir) {
+    row.setAttribute('role', 'treeitem');
+    row.setAttribute('aria-expanded', 'false');
+    row.innerHTML =
+      `<span class="tree__caret">▸</span><span class="tree__name mono">${node.name}/</span>` +
+      `<span class="tree__meta">${fmtCount(countFiles(node))} 个 · ${fmtBytes(node.bytes)}</span>`;
+  } else {
+    row.setAttribute('role', 'treeitem');
+    // The href is the real asset URL, so a file name is not decoration: clicking it opens the file.
+    row.innerHTML =
+      `<span class="tree__caret"></span><a class="tree__name mono" href="${CDN}/${node.path}" target="_blank" rel="noopener">${node.name}</a>` +
+      (node.mod ? '<span class="chip chip--mod" title="本仓刻意托管的第三方 mod 素材，不在上游清单里">托管</span>' : '') +
+      `<span class="tree__meta">${fmtBytes(node.size)}</span>`;
+  }
+  return row;
+}
+
+/**
+ * Render the published tree, expandable, with a filter.
+ *
+ * Filtering switches to a flat list of matching paths: a tree of matches would be mostly empty
+ * directories, and the question being asked is "where is this file", not "what is this directory".
+ */
+async function renderTree(snapshotDirs, snapshotTotals) {
+  const host = $('tree');
+  if (!host) return;
+  const status = (t) => setText('tree-status', t);
+
+  let doc = null;
+  try {
+    doc = await getJson(`${CDN}/cdn/v1/tree.json`, 20000);
+  } catch {
+    /* fall through to the snapshot */
+  }
+  if (!doc?.dirs) {
+    // Degraded: the deploy snapshot only carries per-directory totals, so say so rather than
+    // showing a tree that silently stops at the directory level.
+    if (!snapshotDirs?.length) {
+      host.innerHTML = '<p class="muted">目录数据不可用。</p>';
+      status('');
+      return;
+    }
+    host.innerHTML =
+      '<p class="muted">暂时取不到完整文件树（cdn/v1/tree.json）。下面只到目录一级，来自部署快照。</p>' +
+      snapshotDirs
+        .map(
+          (d) =>
+            `<div class="tree__row tree__row--dir" style="padding-left:8px"><span class="tree__caret"></span>` +
+            `<span class="tree__name mono">${d.prefix}</span>` +
+            `<span class="tree__meta">${fmtCount(d.files)} 个 · ${fmtBytes(d.bytes)}</span></div>`,
+        )
+        .join('');
+    if (snapshotTotals) status(`共 ${fmtCount(snapshotTotals.files)} 个文件 / ${fmtBytes(snapshotTotals.bytes)}（目录级）`);
     return;
   }
-  body.innerHTML = dirs
-    .map(
-      (d) =>
-        `<tr><td class="mono">${d.prefix}</td><td class="num">${fmtCount(d.files)}</td>` +
-        `<td class="num">${fmtBytes(d.bytes)}</td></tr>`,
-    )
-    .join('');
-  if (totals) setText('dir-note', `共 ${fmtCount(totals.files)} 个文件 / ${fmtBytes(totals.bytes)}`);
+
+  const root = buildTreeModel(doc.dirs);
+  const t = doc.totals || {};
+  setText('dir-note', `共 ${fmtCount(t.files)} 个文件 / ${fmtBytes(t.bytes)}`);
+  status(`共 ${fmtCount(t.files)} 个文件 / ${fmtBytes(t.bytes)} · ${fmtCount(t.dirs)} 个目录` + (t.hosted ? ` · 其中 ${t.hosted} 个为刻意托管` : ''));
+
+  /** Draw one level of a node's children. */
+  const paint = (node, container, depth) => {
+    for (const child of [...node.dirs.values()].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const row = treeRow(child, depth, true);
+      const kids = document.createElement('div');
+      kids.className = 'tree__children';
+      kids.hidden = true;
+      let built = false;
+      const toggle = () => {
+        if (!built) {
+          paint(child, kids, depth + 1);
+          for (const f of child.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
+            const fr = treeRow({ ...f, path: `${child.path}/${f.name}` }, depth + 1, false);
+            kids.appendChild(fr);
+          }
+          built = true;
+        }
+        kids.hidden = !kids.hidden;
+        row.setAttribute('aria-expanded', String(!kids.hidden));
+        row.querySelector('.tree__caret').textContent = kids.hidden ? '▸' : '▾';
+      };
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('a')) return; // a file link inside a dir row is not a toggle
+        toggle();
+      });
+      row.tabIndex = 0;
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+      container.appendChild(row);
+      container.appendChild(kids);
+    }
+    // Files directly in this directory (the root has none, but a leaf directory does).
+    if (depth >= 0) {
+      for (const f of node.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
+        container.appendChild(treeRow({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth, false));
+      }
+    }
+  };
+
+  const draw = () => {
+    host.innerHTML = '';
+    paint(root, host, 0);
+  };
+  draw();
+
+  // Filter: flatten to matching file paths so the result is the answer, not a mostly-empty tree.
+  const filter = $('tree-filter');
+  if (filter) {
+    let timer = null;
+    filter.addEventListener('input', () => {
+      clearTimeout(timer);
+      // Debounced: the walk touches 12k files and a keystroke must not pay for all of them.
+      timer = setTimeout(() => {
+        const q = filter.value.trim().toLowerCase();
+        if (!q) { draw(); return; }
+        const hits = [];
+        const walk = (node) => {
+          for (const f of node.files) {
+            const p = node.path ? `${node.path}/${f.name}` : f.name;
+            if (p.toLowerCase().includes(q)) hits.push({ ...f, path: p });
+          }
+          for (const c of node.dirs.values()) walk(c);
+        };
+        walk(root);
+        hits.sort((a, b) => (a.path < b.path ? -1 : 1));
+        const shown = hits.slice(0, 400);
+        host.innerHTML = shown.map((f) => treeRow(f, 0, false).outerHTML).join('');
+        status(`${fmtCount(hits.length)} 个匹配${hits.length > shown.length ? `（显示前 ${shown.length}）` : ''}`);
+      }, 150);
+    });
+  }
+  const collapse = $('tree-collapse');
+  if (collapse) collapse.addEventListener('click', () => { if (filter) filter.value = ''; draw(); });
 }
+
 
 // ---- the two download links --------------------------------------------------------------
 
@@ -417,7 +585,8 @@ async function main() {
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
-  renderDirs(snapshot?.dirs || [], snapshot?.totals || null);
+  // Fire and forget: the tree is 85 KiB gzipped and must not hold up the rest of the page.
+  renderTree(snapshot?.dirs || [], snapshot?.totals || null).catch(() => {});
   renderDownloads(snapshot);
   wireProbe(flat);
   // Fire and forget: a blocked api.github.com must not delay or break the page.

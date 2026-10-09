@@ -13,24 +13,31 @@ import path from 'node:path';
 
 export const HOSTED_FILE = 'hosted.json';
 
-/** @returns {{keys:Set<string>, entries:Array}} */
+/** @returns {{keys:Set<string>, sizes:Map<string,number>, entries:Array}} */
 export function readHosted(root) {
   const file = path.join(root, HOSTED_FILE);
-  if (!fs.existsSync(file)) return { keys: new Set(), entries: [] };
+  if (!fs.existsSync(file)) return { keys: new Set(), sizes: new Map(), entries: [] };
   const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
   const entries = Array.isArray(doc.hosted) ? doc.hosted : [];
   const keys = new Set();
+  const sizes = new Map();
   for (const e of entries) {
     if (!e || typeof e.id !== 'string' || !e.id) throw new Error(`${HOSTED_FILE}: every entry needs an id`);
     // A reason is the point of the file; without one nobody can tell deliberate hosting from debris.
     if (typeof e.what !== 'string' || e.what.length < 10) throw new Error(`${HOSTED_FILE}: ${e.id} needs a description`);
     if (!Array.isArray(e.keys) || !e.keys.length) throw new Error(`${HOSTED_FILE}: ${e.id} lists no keys`);
-    for (const k of e.keys) {
-      if (typeof k !== 'string' || k.startsWith('/') || k.includes('..')) throw new Error(`${HOSTED_FILE}: ${e.id} has an invalid key: ${k}`);
-      keys.add(k);
+    for (const item of e.keys) {
+      // [key, size] pairs. The size is stored so the published tree can include hosted content
+      // without HEADing every key on every sync.
+      const key = Array.isArray(item) ? item[0] : item;
+      const size = Array.isArray(item) ? Number(item[1]) : null;
+      if (typeof key !== 'string' || key.startsWith('/') || key.includes('..')) throw new Error(`${HOSTED_FILE}: ${e.id} has an invalid key: ${key}`);
+      if (Array.isArray(item) && !(Number.isFinite(size) && size >= 0)) throw new Error(`${HOSTED_FILE}: ${e.id} has an invalid size for ${key}`);
+      keys.add(key);
+      if (size !== null) sizes.set(key, size);
     }
   }
-  return { keys, entries };
+  return { keys, sizes, entries };
 }
 
 /**
