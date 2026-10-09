@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex" />
+  <meta name="description" content="卫戍协议：盟约 · 素材 CDN 上传后台（只增不删）" />
+  <title>素材 CDN · 上传后台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu">
+
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>
+        素材 CDN <b>上传后台</b>
+        <small>ADMIN · UPLOAD ONLY</small>
+      </div>
+    </div>
+    <nav class="navigation">
+      <a href="./">返回文档</a>
+      <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/tree.json" target="_blank" rel="noopener">全量文件树</a>
+      <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json" target="_blank" rel="noopener">发布日志</a>
+    </nav>
+    <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">未进入</span></div>
+  </div>
+</div>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <h1>上传资源</h1>
+      <p class="hero-description">
+        这个后台<b>只能新增</b>：不覆盖、不删除、不改动上游素材与契约文件。
+        字节先进暂存区，发布机逐字节核对 sha256 之后才落到对外地址，并登记进
+        <code class="inline">hosted.json</code>（提交进 git，谁传的都能在历史里查到）。
+      </p>
+    </div>
+    <div class="quick-stats" id="quota">
+      <span>暂存 <strong id="q-staged">…</strong></span>
+      <span>待发 <strong id="q-pending">…</strong></span>
+      <span>已发 <strong id="q-published">…</strong></span>
+    </div>
+  </section>
+
+  <!-- 口令门 -->
+  <section class="block" id="gate">
+    <div class="block__head">
+      <span class="block__num">0</span>
+      <span class="block__title">口令</span>
+      <span class="block__who">只存在本次浏览标签页里，关掉就没了</span>
+    </div>
+    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px">
+      <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
+      <button class="button button-primary" type="submit" id="gate-go">进入</button>
+      <span class="section-note" id="gate-msg"></span>
+    </form>
+  </section>
+
+  <!-- 上传区 -->
+  <section class="block" id="upload" hidden>
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">选文件</span>
+      <span class="block__who">单个 ≤ 64 MiB（经代理域名的请求体上限是 100 MB）；更大的请用 agent 通道</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <tbody>
+          <tr>
+            <td>目标目录<br /><span class="section-note">只能落在 assets/ fonts/ packs/ 之下</span></td>
+            <td><input id="prefix" value="assets/" style="min-width:260px" /></td>
+          </tr>
+          <tr>
+            <td>来源标识<br /><span class="section-note">会成为 hosted.json 的分组 id</span></td>
+            <td><input id="source" placeholder="例如 mod-makoto-p3r" style="min-width:260px" /></td>
+          </tr>
+          <tr>
+            <td>这批是什么</td>
+            <td><input id="what" placeholder="一句话说明内容与出处" style="min-width:320px" /></td>
+          </tr>
+          <tr>
+            <td>文件</td>
+            <td>
+              <input type="file" id="files" multiple />
+              <label class="section-note" style="margin-left:12px"><input type="file" id="dir" webkitdirectory="" directory="" multiple /> 或整个目录</label>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="toolbar" style="margin-top:14px">
+      <button class="button button-primary" type="button" id="go">计算摘要并上传</button>
+      <button class="button button-secondary" type="button" id="kick">催一次发布</button>
+      <button class="button button-secondary" type="button" id="refresh">刷新状态</button>
+      <span class="section-note" id="line"></span>
+    </div>
+
+    <div class="table-wrap" style="margin-top:16px">
+      <table id="queue-table">
+        <thead><tr><th>文件</th><th>大小</th><th>sha256</th><th>状态</th><th>说明</th></tr></thead>
+        <tbody><tr><td colspan="5" class="muted">还没选文件</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 待办与日志 -->
+  <section class="block" id="todo" hidden>
+    <div class="block__head">
+      <span class="block__num">2</span>
+      <span class="block__title">暂存区与最近发布</span>
+      <span class="block__who">读的是桶里的事实，不是浏览器缓存</span>
+    </div>
+    <div class="table-wrap">
+      <table id="staging-table">
+        <thead><tr><th>目标键</th><th class="num">大小</th><th>状态</th><th>来源</th><th>提交时间</th></tr></thead>
+        <tbody><tr><td colspan="5" class="muted">读取中…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="table-wrap" style="margin-top:14px">
+      <table id="log-table">
+        <thead><tr><th>时间</th><th>键</th><th class="num">大小</th><th>来源</th></tr></thead>
+        <tbody><tr><td colspan="4" class="muted">读取中…</td></tr></tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:12px">
+      发布节奏：每 20 分钟一轮，或点「催一次发布」。上一轮距今超过 40 分钟时，工作流会自己补投一轮 ——
+      这个账户上 GitHub 的 cron 会被饿，只看某一格有没有创建 run 才知道它到底响没响。
+    </p>
+  </section>
+
+  <p class="section-note" style="margin:26px 0">
+    接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · status · kick</code>；
+    只接受同源调用，命令行请用仓库里的 <code class="inline">tools/agent-upload.mjs</code>。
+    经 CF 代理的域名单次请求体上限 100 MB，所以本页面先把字节直传桶的 S3 端点，再由发布机搬到对外键。
+  </p>
+</main>
+
+<script src="./js/admin.js" defer></script>
+</body>
+</html>

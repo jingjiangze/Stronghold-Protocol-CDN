@@ -169,7 +169,13 @@ export async function headObject(config, key) {
   const res = await request(config, 'HEAD', key);
   if (res.status === 404) return null;
   if (res.status >= 300) throw new Error(`HEAD ${key} → HTTP ${res.status}`);
-  return { size: Number(res.headers['content-length']) };
+  // meta 一起回：发布器要靠 x-amz-meta-sha256 判断「这个键上一次是不是已经带同一份摘要上过线」，
+  // 只看大小会把「重传同一版本」误判成冲突。
+  const meta = {};
+  for (const [name, value] of Object.entries(res.headers)) {
+    if (name.startsWith('x-amz-meta-')) meta[name.slice('x-amz-meta-'.length)] = value;
+  }
+  return { size: Number(res.headers['content-length']), etag: res.headers.etag || '', meta };
 }
 
 export const MIME = {
@@ -202,3 +208,71 @@ export function mimeFor(key) {
 export const IMMUTABLE = 'public, max-age=31536000, immutable';
 /** Interface files must be able to move within minutes. */
 export const SHORT = 'public, max-age=300';
+
+/**
+ * 流式取对象（只为算摘要用）。
+ *
+ * 发布机上不把 600 MB 的素材读进内存：字节从 R2 直接进哈希，落地的是 CopyObject。
+ * 调用方必须消费完或销毁流，否则连接会挂着。
+ */
+export function getObjectStream(config, key) {
+  const uri = `/${config.bucket}/${encodeKey(key)}`;
+  return new Promise((resolve, reject) => {
+    const req = https.request({ host: config.host, path: uri, method: 'GET', headers: sign(config, 'GET', uri, '', Buffer.alloc(0), {}), timeout: TIMEOUT_MS }, (res) => {
+      resolve({ res, statusCode: res.statusCode, headers: res.headers });
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.end();
+  });
+}
+
+/**
+ * 服务端复制（staging → 对外键）。
+ *
+ * 走 CopyObject 而不是「下载再上传」：600 MB 的素材不需要在发布机上过一遍内存，
+ * 而且复制后的对象与暂存对象是同一份字节 —— 摘要在复制前算，复制后不会变。
+ * metadata-directive 必须是 REPLACE，否则源对象上的 cache-control 会被原样带过去。
+ */
+export async function copyObject(config, sourceKey, destKey, { contentType, cacheControl, meta = {} } = {}) {
+  assertOwnedKey(destKey);
+  const res = await request(config, 'PUT', destKey, {
+    headers: {
+      'x-amz-copy-source': `${config.bucket}/${sourceKey}`,
+      'x-amz-metadata-directive': 'REPLACE',
+      ...(contentType ? { 'content-type': contentType } : {}),
+      ...(cacheControl ? { 'cache-control': cacheControl } : {}),
+      ...Object.fromEntries(Object.entries(meta).map(([k, v]) => [`x-amz-meta-${k}`, String(v)])),
+    },
+  });
+  if (res.status >= 300) {
+    throw new Error(`COPY ${sourceKey} → ${destKey}: HTTP ${res.status}: ${res.body.toString().slice(0, 200)}`);
+  }
+  return res.headers.etag || '';
+}
+
+/**
+ * 列一个前缀下的键。
+ *
+ * 后台的待办靠这个（每个上传一份 claim，列前缀是强一致的），所以分页要走到尽头：
+ * 只取第一页会把第 1001 个之后的上传静默丢掉，那是「我传了但没人发布」这类幽灵的来源。
+ */
+export async function listKeys(config, prefix, { maxPages = 60 } = {}) {
+  const rows = [];
+  let token = '';
+  for (let page = 0; page < maxPages; page++) {
+    const params = { 'list-type': '2', 'max-keys': '1000', prefix };
+    if (token) params['continuation-token'] = token;
+    const res = await request(config, 'GET', null, { query: canonicalQuery(params) });
+    if (res.status >= 300) throw new Error(`LIST ${prefix} → HTTP ${res.status}: ${res.body.toString().slice(0, 160)}`);
+    const xml = res.body.toString('utf8');
+    for (const m of xml.matchAll(/<Key>([^<]+)<\/Key>[\s\S]*?<Size>(\d+)<\/Size>/g)) {
+      rows.push({ key: m[1], size: Number(m[2]) });
+    }
+    const truncated = /<IsTruncated>true<\/IsTruncated>/.test(xml);
+    const next = (xml.match(/<NextContinuationToken>([^<]+)<\/NextContinuationToken>/) || [])[1];
+    if (!truncated || !next) return rows;
+    token = next;
+  }
+  throw new Error(`LIST ${prefix}: 超过 ${maxPages} 页仍未列完，拒绝给出半份清单`);
+}

@@ -1,0 +1,92 @@
+name: admin-bootstrap
+
+# 一次性配置：把后台需要的 4 个值写进 Pages 项目 stronghold-cdn-site 的 secrets，并部署带 Functions 的站点。
+#
+# 手动触发，不放 cron —— 它会改运行时配置。跑完就是「后台通道具备条件」的状态；
+# 之后每次改 functions/ 或 site/ 的正常上线仍然走 site.yml。
+#
+# 口令本身来自仓库 secret ADMIN_UPLOAD_KEY（不是变量：公开仓库的 variables 谁都能读）。
+# 这里从不打印值，也不把它写进任何进 git 的文件。
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'true = 配好 secrets 后顺便部署一次站点（带 Functions）'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 缺任何一项都直接失败并说明缺什么，而不是留下「半套配置 + 线上 500」这种更难查的状态。
+      - name: preflight
+        env:
+          ADMIN_UPLOAD_KEY: ${{ secrets.ADMIN_UPLOAD_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          missing=""
+          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!name:-}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "缺这些仓库 secret：$missing"
+            echo "在 Settings → Secrets and variables → Actions 里加好再跑（口令用 gh api 封密封，不要贴进公开位置）"
+            exit 1
+          fi
+          echo "七个入位齐了"
+
+      - name: put pages secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          ADMIN_UPLOAD_KEY: ${{ secrets.ADMIN_UPLOAD_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          PROJECT=stronghold-cdn-site
+          # 值从 stdin 进去，末尾不能带换行（wrangler 会把换行留在 secret 里，头一对就 401）。
+          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            printf '%s' "${!name}" | npx --yes wrangler@4 pages secret put "$name" --project-name "$PROJECT"
+          done
+          # put 的 stdout 不带值，但要确认名字真的进去了（曾经踩过「只输出升级提示就结束」的静默失败）。
+          names=$(npx --yes wrangler@4 pages secret list --project-name "$PROJECT")
+          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            echo "$names" | grep -q "\"$name\"" || { echo "secret $name 没落到项目里"; exit 1; }
+          done
+          echo "5 个 Pages secret 都在位"
+
+      - name: deploy site with functions
+        if: ${{ inputs.deploy }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 pages deploy site \
+            --project-name=stronghold-cdn-site \
+            --branch=main \
+            --commit-dirty=true

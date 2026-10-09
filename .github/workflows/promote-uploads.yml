@@ -1,0 +1,111 @@
+name: promote-uploads
+
+# 后台上传的发布轮：核对 sha256 → CopyObject 到对外键 → 登记 hosted.json → 刷新浏览面。
+#
+# 为什么不塞进 sync.yml：sync 每 6 小时一次、要解 428 MB 的上游包。一次人工上传不该等那个，
+# 也不该为了登记 3 个文件把整棵树重新哈希一遍。这里只做「claim → 上线」，通常 1–2 分钟。
+#
+# 节拍两层：*/20 的 cron + 末尾用自带 GITHUB_TOKEN 补投一轮。
+# 这个账户上 GitHub 的 cron 会被饿（只看某一格有没有创建 run 才知道它响没响），
+# 所以补投是主力、cron 是兜底。补出来的那轮如果距上一轮只有几分钟，它自己就不会再补 —— 天然反级联。
+
+on:
+  schedule:
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: 'true = 只报告，不写字节、不改 hosted.json'
+        type: boolean
+        default: false
+      max:
+        description: '单轮最多处理多少份上传'
+        type: number
+        default: 20
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: promote-uploads
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 契约层出问题就别碰桶了 —— 与 sync.yml 同一道闸，两边不能一边严一边松。
+      - name: unit tests
+        run: node --test tests/upload.test.mjs tests/hosted.test.mjs tests/tree-index.test.mjs
+
+      - name: promote
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          args="--max=${{ inputs.max || 20 }}"
+          if [ "${{ inputs.dry }}" = "true" ]; then args="$args --dry"; fi
+          echo "node src/promote-uploads.mjs $args"
+          node src/promote-uploads.mjs $args | tee /tmp/promote.log
+          grep -o 'PUBLISHED_COUNT=[0-9]*' /tmp/promote.log | tail -1 >> "$GITHUB_ENV"
+
+      # 登记必须进 git：prune 读的是仓库里那份 hosted.json，「谁传的」也要能在提交历史里查到。
+      # 桶里已经上线、git 没登记 = 这批字节下一次 prune 会被当镜像残渣删掉，所以这一步失败要让整轮红。
+      - name: commit hosted.json
+        if: env.PUBLISHED_COUNT != '' && env.PUBLISHED_COUNT != '0'
+        run: |
+          set -euo pipefail
+          git config user.name "stronghold-cdn-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- hosted.json; then
+            echo "hosted.json 没有变化，跳过提交"
+            exit 0
+          fi
+          git add hosted.json
+          git commit -m "hosted: 发布 ${PUBLISHED_COUNT} 个后台上传的文件（sha256 已逐字节核对）"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            echo "push 第 ${attempt} 次没成功，取一次远端再走"
+            git fetch origin main
+            git rebase origin/main || { echo "rebase 冲突：需要人工并 hosted.json，桶里的字节已上线，先别删"; exit 1; }
+          done
+          echo "::error::hosted.json 推不上去；字节已上线但 prune 保护未进 git，需要人工补提交"
+          exit 1
+
+      # 浏览面 tree.json 与派生接口要跟着新内容走；--interface-only 不重下上游包，几十秒。
+      - name: republish interface + tree
+        if: env.PUBLISHED_COUNT != '' && env.PUBLISHED_COUNT != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: node src/sync.mjs --write --interface-only
+
+      - name: keep the beat
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          prev=$(gh api "repos/${{ github.repository }}/actions/workflows/promote-uploads.yml/runs?per_page=2" \
+            --jq '.workflow_runs[1].created_at // ""' 2>/dev/null || true)
+          if [ -z "$prev" ]; then echo "只跑过一轮，不补投"; exit 0; fi
+          age_min=$(( ( $(date +%s) - $(date -d "$prev" +%s) ) / 60 ))
+          echo "上一轮距今约 ${age_min} 分钟"
+          if [ "$age_min" -ge 40 ]; then
+            gh api -X POST "repos/${{ github.repository }}/actions/workflows/promote-uploads.yml/dispatches" \
+              -f ref=main || echo "补投失败（交给下一个 cron 格）"
+          else
+            echo "间隔还小，交给 cron"
+          fi

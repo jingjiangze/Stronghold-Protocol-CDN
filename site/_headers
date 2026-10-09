@@ -67,3 +67,13 @@
 
 /data/*
   X-Robots-Tag: noindex
+
+# 后台入口。Pages 会把 /admin.html 308 到 /admin，而 /*.html 这条规则匹配不到干净地址
+# （/bandwidth 已经踩过一次），所以两个形状都要点名。缓存短：改了文案刷新就能看到。
+/admin
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: noindex
+
+/admin.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: noindex
