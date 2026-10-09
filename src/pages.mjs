@@ -10,7 +10,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 import { rewriteManifestText } from './rewrite-manifest.mjs';
-import { ZIP_ROOT } from './names.mjs';
+import { ZIP_ROOT, ZIP_DOCS_DIR } from './names.mjs';
 import { makeProbeBuffer, PROBE_KEY } from './probe-file.mjs';
 
 export const PAGES_PROJECT = process.env.SP_PAGES_PROJECT || 'stronghold-assets-cdn';
@@ -23,6 +23,11 @@ export function pagesBase(subdomain = PAGES_PROJECT) {
  * Pages answers with its own edge cache, so the same headers the bucket objects carry have to be
  * restated here: immutable art, short-lived interface files, CORS for crossOrigin images, and no
  * search-engine indexing (same posture as the bucket).
+ *
+ * `/docs/*` gets an hour, not `immutable`: the art URLs carry a `?v=` token that makes a year
+ * correct, and the docs have no such token when read as `/docs/PLAYING.md`. On R2 that case is
+ * handled by a rule that keys off the query string; a Pages `_headers` rule cannot, so the docs
+ * take the unversioned answer — the same one R2 gives a bare path.
  */
 const HEADERS = `/*
   Access-Control-Allow-Origin: *
@@ -36,6 +41,9 @@ const HEADERS = `/*
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+/docs/*
+  Cache-Control: public, max-age=3600
+
 /packs/*
   Cache-Control: public, max-age=31536000, immutable
 
@@ -47,8 +55,8 @@ const HEADERS = `/*
 `;
 
 /**
- * Assemble the deploy directory: the art tree, the fonts, every manifest rewritten for this
- * origin, the index and the robots file. Returns the directory and the file count.
+ * Assemble the deploy directory: the art tree, the fonts, the official docs, every manifest
+ * rewritten for this origin, the index and the robots file. Returns the directory and the file count.
  */
 export async function preparePagesDist({ stage, out, manifests, base, tag, indexJson }) {
   // The extracted tree sits under the package's own top folder (ZIP_ROOT), not directly in stage.
@@ -69,6 +77,17 @@ export async function preparePagesDist({ stage, out, manifests, base, tag, index
     if (fs.existsSync(to)) await fsp.rm(to, { recursive: true, force: true });
     await fsp.cp(from, to, { recursive: true });
     files += countFiles(to);
+  }
+
+  // The docs come from the package root, not from public/. Pages is the second FULL origin (the
+  // site says so, and the mirror table is read that way), so leaving them off here would make that
+  // claim false for one of the two origins.
+  const docsFrom = path.join(stage, ZIP_DOCS_DIR);
+  if (fs.existsSync(docsFrom)) {
+    const docsTo = path.join(out, 'docs');
+    if (fs.existsSync(docsTo)) await fsp.rm(docsTo, { recursive: true, force: true });
+    await fsp.cp(docsFrom, docsTo, { recursive: true });
+    files += countFiles(docsTo);
   }
 
   const dataDir = path.join(out, 'data');

@@ -8,6 +8,8 @@
 // meaningless "docs" group.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import {
@@ -16,11 +18,13 @@ import {
   ZIP_ASSETS_DIR,
   ZIP_DOCS_DIR,
   ZIP_FONTS_DIR,
+  ZIP_ROOT,
   zipIncludePatterns,
 } from '../src/names.mjs';
 import { assertOwnedKey, mimeFor } from '../src/r2.mjs';
 import { groupOf, planPacks } from '../src/packs.mjs';
 import { localPathFor } from '../src/sync.mjs';
+import { preparePagesDist } from '../src/pages.mjs';
 
 test('the selective extraction pulls the docs out of the package', () => {
   const patterns = zipIncludePatterns();
@@ -77,6 +81,44 @@ test('every key maps to a path the extraction actually creates', () => {
   }
   // An unknown prefix must fail loudly rather than resolve somewhere arbitrary.
   assert.throws(() => localPathFor(stage, 'server/index.js'), /no local source/);
+});
+
+// Pages is described to users as the second FULL origin, so the docs have to reach it too. This
+// builds a miniature package stage and checks the deploy directory really carries them.
+test('the Pages deploy directory carries the docs', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-pages-'));
+  const stage = path.join(root, 'stage');
+  const out = path.join(root, 'out');
+  fs.mkdirSync(path.join(stage, ZIP_ROOT, 'public', 'assets'), { recursive: true });
+  fs.mkdirSync(path.join(stage, ZIP_ROOT, 'public', 'fonts'), { recursive: true });
+  fs.mkdirSync(path.join(stage, ZIP_DOCS_DIR, 'research'), { recursive: true });
+  fs.writeFileSync(path.join(stage, ZIP_ROOT, 'public', 'assets', 'a.png'), 'x');
+  fs.writeFileSync(path.join(stage, ZIP_DOCS_DIR, 'PLAYING.md'), '# play');
+  fs.writeFileSync(path.join(stage, ZIP_DOCS_DIR, 'research', '03-operators.json'), '{}');
+
+  const result = await preparePagesDist({
+    stage,
+    out,
+    manifests: [],
+    base: 'https://example.test',
+    tag: 'v0.0.0',
+    indexJson: '{"files":{}}',
+  });
+
+  assert.ok(fs.existsSync(path.join(out, 'docs', 'PLAYING.md')), 'the docs must be deployed');
+  assert.ok(fs.existsSync(path.join(out, 'docs', 'research', '03-operators.json')));
+  // The reported count is what the run logs as "deployed", so it must equal what is actually there
+  // — an undercount would hide the docs from the number a human reads. `_headers` is written
+  // outside the asset copies but is counted by the run, so it is counted here too.
+  const walk = (dir) =>
+    fs.readdirSync(dir, { withFileTypes: true }).reduce((n, e) => {
+      if (e.isDirectory()) return n + walk(path.join(dir, e.name));
+      return n + 1;
+    }, 0);
+  assert.equal(result.files, walk(out), 'the reported file count must match the directory');
+  const headers = fs.readFileSync(path.join(out, '_headers'), 'utf8');
+  assert.match(headers, /\/docs\/\*\n  Cache-Control: public, max-age=3600/, 'docs need a cache rule');
+  fs.rmSync(root, { recursive: true, force: true });
 });
 
 test('the pack channel stays art-only', () => {
