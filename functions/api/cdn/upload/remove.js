@@ -68,13 +68,19 @@ export async function onRequestPost(context) {
   });
   if (!put.ok) return deny(`写撤销请求失败：HTTP ${put.status}`, 502);
 
+  // 撤销也走触发式：点了下线却还要等定时轮，看起来就跟"没反应"一样（这就是 2026-10-10 那个反馈）。
+  const trigger = await triggerPublish(env);
+
   return json(
     {
       ok: true,
       id,
       key: k.key,
       state: 'requested',
-      message: '撤销请求已入队。发布轮会核对「不在上游素材清单、且没有任何线上契约引用」之后才真删，并同步摘掉 hosted.json 的登记。',
+      dispatched: trigger.dispatched,
+      message: trigger.dispatched
+        ? '撤销请求已入队并已叫起发布轮：核对「不在上游素材清单、且没有任何线上清单引用」后真删，并同步摘掉 hosted.json 的登记。'
+        : `撤销请求已入队，但叫不动发布轮（${trigger.reason}）—— 下一次定时兜底会处理；也可以在后台点「催一次发布」。`,
     },
     202,
   );

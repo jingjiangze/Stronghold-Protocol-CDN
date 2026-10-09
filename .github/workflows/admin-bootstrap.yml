@@ -1,6 +1,7 @@
 name: admin-bootstrap
 
-# 一次性配置：把后台需要的 4 个值写进 Pages 项目 stronghold-cdn-site 的 secrets，并部署带 Functions 的站点。
+# 一次性配置：把后台需要的值写进 Pages 项目 stronghold-cdn-site 的 secrets（含触发式发布要用的
+# GH_DISPATCH_TOKEN / GH_REPO），并部署带 Functions 的站点。
 #
 # 手动触发，不放 cron —— 它会改运行时配置。跑完就是「后台通道具备条件」的状态；
 # 之后每次改 functions/ 或 site/ 的正常上线仍然走 site.yml。
@@ -42,6 +43,7 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
@@ -55,7 +57,11 @@ jobs:
             echo "在 Settings → Secrets and variables → Actions 里加好再跑（口令用 gh api 封密封，不要贴进公开位置）"
             exit 1
           fi
-          echo "七个入位齐了"
+          if [ -z "${GH_DISPATCH_TOKEN:-}" ]; then
+            echo "⚠ 没有 GH_DISPATCH_TOKEN：上传/撤销仍会入队，但发布只能等定时兜底（不是触发式）"
+          else
+            echo "八个入位齐了（含触发式发布要用的 dispatch 口令）"
+          fi
 
       - name: put pages secrets
         env:
@@ -66,20 +72,29 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_DISPATCH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
+          GH_REPO: jingjiangze/Stronghold-Protocol-CDN
         run: |
           set -euo pipefail
           PROJECT=stronghold-cdn-site
           # 值从 stdin 进去，末尾不能带换行（wrangler 会把换行留在 secret 里，头一对就 401）。
-          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET GH_REPO; do
             printf '%s' "${!name}" | npx --yes wrangler@4 pages secret put "$name" --project-name "$PROJECT"
+          done
+          # 触发式发布的两把钥匙：缺 dispatch 口令时不报错，只是退回"等定时兜底"
+          if [ -n "${GH_DISPATCH_TOKEN:-}" ]; then
+            printf '%s' "$GH_DISPATCH_TOKEN" | npx --yes wrangler@4 pages secret put GH_DISPATCH_TOKEN --project-name "$PROJECT"
+          fi
           done
           # put 的 stdout 不带值，但要确认名字真的进去了（曾经踩过「只输出升级提示就结束」的静默失败）。
           # 注意：secret list 的输出形状不是带引号的 JSON 数组，按名字本身匹配，别按引号匹配。
           names=$(npx --yes wrangler@4 pages secret list --project-name "$PROJECT")
-          for name in ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+          want="ADMIN_UPLOAD_KEY R2_ENDPOINT R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET GH_REPO"
+          [ -n "${GH_DISPATCH_TOKEN:-}" ] && want="$want GH_DISPATCH_TOKEN"
+          for name in $want; do
             echo "$names" | grep -q "$name" || { echo "secret $name 没落到项目里"; exit 1; }
           done
-          echo "5 个 Pages secret 都在位"
+          echo "Pages secret 都在位：$want"
 
       - name: deploy site with functions
         if: ${{ inputs.deploy }}

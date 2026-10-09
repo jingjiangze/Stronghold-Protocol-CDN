@@ -10,6 +10,8 @@
 
   const KEY_STORE = 'sp.cdnAdminKey';
   const MAX_BYTES = 64 * 1024 * 1024;
+  // 最后一次读到的 status 载荷。点「下线」后要就地改一行，不能等下一次刷新才给反馈。
+  let lastDoc = null;
   const $ = (id) => document.getElementById(id);
   const key = () => sessionStorage.getItem(KEY_STORE) || '';
 
@@ -31,10 +33,14 @@
   const setNav = (text) => { $('nav-status').textContent = text; };
 
   async function api(path, options = {}) {
-    const res = await fetch(path, {
-      ...options,
-      headers: { 'x-admin-key': key(), ...(options.headers || {}) },
-    });
+    const init = { ...options, headers: { 'x-admin-key': key(), ...(options.headers || {}) } };
+    // 对象要自己序列化：fetch 不会替你 JSON.stringify，传对象会被转成字符串 "[object Object]"，
+    // 后端只能回 400「请求体不是合法 JSON」—— 表现就是"点了下线没反应"（2026-10-10 实测）。
+    if (init.body && typeof init.body !== 'string' && !(init.body instanceof Blob) && !(init.body instanceof ArrayBuffer)) {
+      init.body = JSON.stringify(init.body);
+      init.headers['content-type'] = 'application/json';
+    }
+    const res = await fetch(path, init);
     let doc = null;
     try { doc = await res.json(); } catch { /* 非 JSON 一律按失败处理 */ }
     return { status: res.status, doc };
@@ -119,21 +125,33 @@
   async function purgeStaging(item) {
     if (!window.confirm(`清掉暂存区这一组？\n${item.stagingKey || item.id}\n\n这些字节还没上线，删掉不影响任何对外地址。`)) return;
     const { status, doc } = await api(`/api/cdn/upload/staging?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
-    if (doc && doc.ok) line(`已清掉 ${doc.deleted} 个暂存对象，回收 ${(doc.freed / 1024).toFixed(1)} KiB`);
-    else line(`清理失败：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
-    await refresh();
+    if (doc && doc.ok) {
+      line(`已清掉 ${doc.deleted} 个暂存对象，回收 ${fmt(doc.freed)}`);
+      await refresh();
+    } else {
+      // 失败就别再刷一遍把提示盖掉 —— 那正是"点了没反应"的来源。
+      line(`清理失败：${(doc && doc.error) || `HTTP ${status}（响应不是 JSON）`}`, 'err');
+    }
   }
 
   async function removePublished(entry) {
     if (!entry.key) return;
     if (!window.confirm(`提交下线这个文件？\n${entry.key}\n\n发布轮会先核对「不在上游素材清单、且没有任何线上清单引用」才真删；被引用的会拒绝并写明原因。`)) return;
     const { status, doc } = await api('/api/cdn/upload/remove', { method: 'POST', body: { key: entry.key, reason: '后台手动下线' } });
-    if (status === 202 || (doc && doc.ok)) line('撤销请求已入队，等发布轮处理（约 20 分钟内）');
-    else line(`撤销被拒：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
-    await refresh();
+    if (status === 202 || (doc && doc.ok)) {
+      // 就地先标一行，让点击立刻有反馈；真实状态下一次刷新覆盖。
+      entry.pendingRemoval = true;
+      if (lastDoc) renderStatus(lastDoc);
+      line(doc && doc.dispatched === false
+        ? '撤销已入队，但叫不动发布轮（后台没配 GH_DISPATCH_TOKEN）—— 等下一次定时兜底'
+        : '撤销已入队并已叫起发布轮，约 1–2 分钟后这个键就该 404');
+    } else {
+      line(`撤销被拒：${(doc && doc.error) || `HTTP ${status}（响应不是 JSON）`}`, 'err');
+    }
   }
 
   function renderStatus(doc) {
+    lastDoc = doc;
     const staged = (doc.staging || []);
     $('q-staged').textContent = String(staged.length);
     $('q-pending').textContent = String(doc.pending || 0);
@@ -183,7 +201,7 @@
       if (entry.removedAt) {
         const td = tr.insertCell();
         td.textContent = `已下线 ${entry.removedAt.slice(0, 10)}`;
-      } else if (pendingRemoval.has(entry.key)) {
+      } else if (pendingRemoval.has(entry.key) || entry.pendingRemoval) {
         const td = tr.insertCell();
         td.textContent = '撤销排队中';
       } else {

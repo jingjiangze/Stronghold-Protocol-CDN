@@ -6,7 +6,7 @@
 // 这里能核对的只有「大小对不对」和（小文件）边缘直接算一次 sha256；大文件的摘要由 Actions
 // 逐字节算 —— 边缘 10 ms CPU 与 128 MB 内存撑不起 600 MB 的哈希，别在这儿假充。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
-import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
+import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone, triggerPublish } from './_http.js';
 import { claimKeyFor, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const EDGE_HASH_LIMIT = 4 * 1024 * 1024;
@@ -92,26 +92,8 @@ export async function onRequestPost(context) {
   });
   if (!put.ok) return deny(`写 claim 失败：HTTP ${put.status}`, 502);
 
-  // 顺手催一次发布（有口令就催，没有就等定时轮）。催不动不算失败：队列对象已经落了。
-  let dispatched = false;
-  if (env.GH_DISPATCH_TOKEN && env.GH_REPO) {
-    try {
-      const [owner, repo] = String(env.GH_REPO).split('/');
-      const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/promote-uploads.yml/dispatches`, {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
-          'content-type': 'application/json',
-          'user-agent': 'stronghold-cdn-admin',
-          'x-github-api-version': '2022-11-28',
-        },
-        body: JSON.stringify({ ref: 'main' }),
-      });
-      dispatched = r.status === 204;
-    } catch {
-      dispatched = false;
-    }
-  }
+  // 触发式发布：收下就立刻叫一轮发布，不让人等定时。催不动也照实说（定时轮是兜底）。
+  const trigger = await triggerPublish(env);
 
   return json({
     ok: true,
@@ -119,10 +101,10 @@ export async function onRequestPost(context) {
     key: finalKey,
     state: claim.state,
     size: staged.size,
-    dispatched,
-    message: dispatched
+    dispatched: trigger.dispatched,
+    message: trigger.dispatched
       ? '已收下，正在发布（Actions 会逐字节核对后落到对外键，并写进 hosted.json）'
-      : '已收下，等下一轮发布定时任务（≤20 分钟）；要马上发就在后台点「催一次」或跑 workflow_dispatch',
+      : `已收下，但这次叫不动发布轮（${trigger.reason}）—— 等定时兜底；要马上发可在后台点「催一次发布」`,
   }, 202);
 }
 

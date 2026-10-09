@@ -1,7 +1,6 @@
-// POST /api/cdn/upload/kick —— 让人类界面和 agent 都能催一次发布，而不是等定时轮。
-// 这里只做一件事：用 Pages secret 里的口令去 dispatch 那个 workflow。搬字节与核对摘要在 Actions 里。
-// 没配 GH_DISPATCH_TOKEN 就明确说「催不动」，让调用方知道自己在等定时任务，而不是以为已经上线了。
-import { checkAuth, deny, json, sameOriginOrNone } from './_http.js';
+// POST /api/cdn/upload/kick —— 手动催一次发布轮（页面上的「催一次发布」，agent 的 --kick）。
+// 触发逻辑与 commit/put/remove 用的是同一个 helper：一处配错，四处都要能看出来，而不是只有这里能发。
+import { checkAuth, deny, json, sameOriginOrNone, triggerPublish } from './_http.js';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -10,28 +9,13 @@ export async function onRequestPost(context) {
   const authProblem = checkAuth(request, env);
   if (authProblem) return deny(authProblem, 401);
 
-  if (!env.GH_DISPATCH_TOKEN || !env.GH_REPO) {
-    return json({ ok: false, dispatched: false, error: '后台没配 GH_DISPATCH_TOKEN / GH_REPO，只能等发布定时轮（每 20 分钟）' }, 202);
+  const out = await triggerPublish(env);
+  if (out.dispatched) {
+    return json({ ok: true, dispatched: true, message: '已叫起一次发布，约 1–2 分钟后再看状态' });
   }
-
-  const [owner, repo] = String(env.GH_REPO).split('/');
-  if (!owner || !repo) return deny('GH_REPO 形状不对（要 owner/repo）', 500);
-
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/promote-uploads.yml/dispatches`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
-      'content-type': 'application/json',
-      'user-agent': 'stronghold-cdn-admin',
-      'x-github-api-version': '2022-11-28',
-    },
-    body: JSON.stringify({ ref: 'main' }),
-  });
-
-  if (res.status === 204) return json({ ok: true, dispatched: true, message: '已叫起一次发布，约 1–2 分钟后再看状态' });
-  if (res.status === 401 || res.status === 403) return deny(`GitHub 拒绝了这个口令（HTTP ${res.status}）：需要对本仓有 actions:write`, 502);
-  const text = (await res.text()).slice(0, 200);
-  return deny(`dispatch 失败：HTTP ${res.status} ${text}`, 502);
+  if (!out.status) return deny(`叫不动发布轮：${out.reason}（需要 Pages secret GH_DISPATCH_TOKEN 与 GH_REPO）`, 202, { dispatched: false });
+  if (out.status === 401 || out.status === 403) return deny(`GitHub 拒绝了这个口令（${out.reason}）：需要对本仓有 actions:write`, 502, { dispatched: false });
+  return deny(`dispatch 失败：${out.reason}`, 502, { dispatched: false });
 }
 
 export function onRequestOptions() {

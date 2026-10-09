@@ -235,19 +235,23 @@ async function dropStaging(config, key, { dry }) {
 
 export async function promote({ dry = false, max = 20 } = {}) {
   const config = r2Config(process.env);
-  const report = { dry, scanned: 0, published: [], rejected: [], already: [], skippedNoClaim: 0, errors: [] };
+  const report = { dry, scanned: 0, published: [], rejected: [], already: [], skippedNoClaim: 0, pendingLeft: 0, errors: [] };
 
   const rows = await listKeys(config, STAGING_PREFIX);
   report.scanned = rows.length;
   const groups = claimsFromListing(rows);
 
-  for (const g of groups) {
+  for (let i = 0; i < groups.length; i++) {
+    const g = groups[i];
     if (!g.claim) {
       report.skippedNoClaim++;
       continue;
     }
     if (report.published.length + report.rejected.length + report.already.length >= max) {
-      log(`到单轮上限 ${max}，剩下的下一轮再处理`);
+      // 还剩多少要发的必须报出来：触发式发布靠这个数字决定"做完这一轮马上再来一轮"，
+      // 而不是回头等定时。
+      report.pendingLeft = groups.slice(i).filter((x) => x.claim).length;
+      log(`到单轮上限 ${max}，还剩 ${report.pendingLeft} 份等下一轮`);
       break;
     }
     const payloadSize = g.payload?.size ?? null;
@@ -433,6 +437,7 @@ export async function main(argv = process.argv.slice(2)) {
   // 供工作流判断「要不要接着提交 hosted.json / 刷 tree.json / 部署站点」
   console.log(`PUBLISHED_COUNT=${report.published.length}`);
   console.log(`REMOVED_COUNT=${removals.removed.length}`);
+  console.log(`PENDING_LEFT=${report.pendingLeft}`);
   return report;
 }
 

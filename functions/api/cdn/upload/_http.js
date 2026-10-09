@@ -41,6 +41,42 @@ export async function readBody(request, limitBytes = 64 * 1024) {
   }
 }
 
+/**
+ * 触发一次发布轮（触发式发布，不是等定时）。
+ *
+ * 为什么放在这里而不是各端点自己写一遍：提交上传、提交撤销、手动催发布是同一条意图
+ * ——「有东西要发布了，现在跑一轮」。任何一处漏掉触发，用户看到的就是"点了没反应，等半小时"。
+ * 定时轮仍在，但只是兜底（GitHub 的 cron 在这个账户上会被饿，只看某一格有没有创建 run）。
+ *
+ * 需要两个 Pages secret：GH_DISPATCH_TOKEN（对本仓有 actions:write）与 GH_REPO=owner/repo。
+ * 没配就老实返回 dispatched:false —— 让调用方明说"这次只能等定时"，而不是假装已经叫起了。
+ */
+export async function triggerPublish(env) {
+  if (!env.GH_DISPATCH_TOKEN || !env.GH_REPO) {
+    return { dispatched: false, reason: '未配置 GH_DISPATCH_TOKEN / GH_REPO' };
+  }
+  const [owner, repo] = String(env.GH_REPO).split('/');
+  if (!owner || !repo) return { dispatched: false, reason: 'GH_REPO 形状不对（要 owner/repo）' };
+  try {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/actions/workflows/promote-uploads.yml/dispatches`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${env.GH_DISPATCH_TOKEN}`,
+        'content-type': 'application/json',
+        'user-agent': 'stronghold-cdn-admin',
+        'accept': 'application/vnd.github+json',
+        'x-github-api-version': '2022-11-28',
+      },
+      body: JSON.stringify({ ref: 'main' }),
+    });
+    if (res.status === 204) return { dispatched: true };
+    const text = (await res.text()).slice(0, 160);
+    return { dispatched: false, status: res.status, reason: `HTTP ${res.status} ${text}` };
+  } catch (error) {
+    return { dispatched: false, reason: String(error && error.message) };
+  }
+}
+
 /** 调用方标识：只留哈希，不落明文 IP —— 后台的审计要能回答「谁投的」，但不该变成访问日志。 */
 export function actorHash(request) {
   const ip = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '';

@@ -5,13 +5,14 @@ name: promote-uploads
 # 为什么不塞进 sync.yml：sync 每 6 小时一次、要解 428 MB 的上游包。一次人工上传不该等那个，
 # 也不该为了登记 3 个文件把整棵树重新哈希一遍。这里只做「claim → 上线」，通常 1–2 分钟。
 #
-# 节拍两层：*/20 的 cron + 末尾用自带 GITHUB_TOKEN 补投一轮。
-# 这个账户上 GitHub 的 cron 会被饿（只看某一格有没有创建 run 才知道它响没响），
-# 所以补投是主力、cron 是兜底。补出来的那轮如果距上一轮只有几分钟，它自己就不会再补 —— 天然反级联。
+# 节拍是**触发式**：commit / put / remove / kick 四个端点都会当场 dispatch 这一轮
+# （Pages secret GH_DISPATCH_TOKEN + GH_REPO）。定时那两条只是兜底 —— 万一触发失败、
+# 或者有人绕过接口直接往暂存区放了东西，最迟半小时也会被处理。
+# 一轮里到上限（默认 20 份）就立刻自己补投一轮，把积压连续排干，不让人等定时。
 
 on:
   schedule:
-    - cron: '7,27,47 * * * *'
+    - cron: '9,39 * * * *'
   workflow_dispatch:
     inputs:
       dry:
@@ -60,8 +61,10 @@ jobs:
           node src/promote-uploads.mjs $args | tee /tmp/promote.log
           pub=$(grep -o 'PUBLISHED_COUNT=[0-9]*' /tmp/promote.log | tail -1 | cut -d= -f2 || echo 0)
           rem=$(grep -o 'REMOVED_COUNT=[0-9]*' /tmp/promote.log | tail -1 | cut -d= -f2 || echo 0)
+          pend=$(grep -o 'PENDING_LEFT=[0-9]*' /tmp/promote.log | tail -1 | cut -d= -f2 || echo 0)
           echo "PUBLISHED_COUNT=${pub:-0}" >> "$GITHUB_ENV"
           echo "REMOVED_COUNT=${rem:-0}" >> "$GITHUB_ENV"
+          echo "PENDING_LEFT=${pend:-0}" >> "$GITHUB_ENV"
           # 上线或下线任一发生，hosted.json 与浏览面都要跟着走
           echo "CHANGED=$(( ${pub:-0} + ${rem:-0} ))" >> "$GITHUB_ENV"
 
@@ -99,19 +102,19 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: node src/sync.mjs --write --interface-only
 
-      - name: keep the beat
+      # 触发式排干：本轮没做完（到 --max 上限）就立刻再来一轮，不让人等定时。
+      # 只在"确实还有货"时补投，所以不会出现自链空转把免费分钟烧光。
+      - name: drain the backlog
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          prev=$(gh api "repos/${{ github.repository }}/actions/workflows/promote-uploads.yml/runs?per_page=2" \
-            --jq '.workflow_runs[1].created_at // ""' 2>/dev/null || true)
-          if [ -z "$prev" ]; then echo "只跑过一轮，不补投"; exit 0; fi
-          age_min=$(( ( $(date +%s) - $(date -d "$prev" +%s) ) / 60 ))
-          echo "上一轮距今约 ${age_min} 分钟"
-          if [ "$age_min" -ge 40 ]; then
-            gh api -X POST "repos/${{ github.repository }}/actions/workflows/promote-uploads.yml/dispatches" \
-              -f ref=main || echo "补投失败（交给下一个 cron 格）"
+          left="${PENDING_LEFT:-0}"
+          echo "剩余待发：${left}"
+          if [ "$left" -gt 0 ]; then
+            gh api -X POST "repos/${{ github.repository }}/actions/workflows/promote-uploads.yml/dispatches" -f ref=main \
+              && echo "已补投一轮继续排干" \
+              || echo "补投失败（交给下一次定时兜底）"
           else
-            echo "间隔还小，交给 cron"
+            echo "没有积压，等下一次触发"
           fi

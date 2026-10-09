@@ -56,7 +56,7 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 ## 上线节奏与核对
 
-`commit` 之后并不立刻对外可见：`.github/workflows/promote-uploads.yml` 每 20 分钟一轮（也可催），它做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
+**发布是触发式的**：`commit` / `put` / `remove` / `kick` 任一发生，都会当场叫起 `.github/workflows/promote-uploads.yml`（靠 Pages secret `GH_DISPATCH_TOKEN` + `GH_REPO`；没配就退回定时兜底，定时是每半小时的保险，不是主路径）。一轮做完若还有积压会立刻自补一轮排干。它做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
 
 所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
 

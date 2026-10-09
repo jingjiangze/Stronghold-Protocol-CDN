@@ -5,7 +5,7 @@
 // 代价是吃经代理域名的 100 MB 请求体上限，所以这里把上限压到 64 MiB —— 更大的文件请用 agent 通道。
 // 摘要不在边缘算（免费档每次调用 10 ms CPU，算不动几十 MB），状态留 queued，由发布机逐字节核对。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
-import { actorHash, checkAuth, deny, json, sameOriginOrNone } from './_http.js';
+import { actorHash, checkAuth, deny, json, sameOriginOrNone, triggerPublish } from './_http.js';
 import { claimKeyFor, cleanNote, cleanSource, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const MAX_BODY = 64 * 1024 * 1024;
@@ -89,7 +89,19 @@ export async function onRequestPut(context) {
   });
   if (!claimRes.ok) return deny(`写领取单失败：HTTP ${claimRes.status}`, 502);
 
-  return json({ ok: true, id, key: k.key, size: claim.size, state, message: '已收下并核对过摘要，等发布轮落到对外键（≤20 分钟，或点「催一次发布」）' }, 202);
+  // 浏览器这条一次到位，所以更要当场叫发布轮 —— 否则用户看见的是"传完了，然后等 20 分钟"。
+  const trigger = await triggerPublish(env);
+  return json({
+    ok: true,
+    id,
+    key: k.key,
+    size: claim.size,
+    state,
+    dispatched: trigger.dispatched,
+    message: trigger.dispatched
+      ? '已收下并核对过摘要，正在落到对外键'
+      : `已收下并核对过摘要，但叫不动发布轮（${trigger.reason}）—— 等定时兜底，或点「催一次发布」`,
+  }, 202);
 }
 
 export function onRequestOptions() {
