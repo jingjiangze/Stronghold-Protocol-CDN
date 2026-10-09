@@ -10,6 +10,8 @@ on:
   push:
     paths:
       - 'site/**'
+      - 'functions/**'
+      - 'src/upload.mjs'
       - 'src/site-data.mjs'
       - 'src/packs.mjs'
       - '.github/workflows/site.yml'

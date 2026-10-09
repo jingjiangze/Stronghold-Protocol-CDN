@@ -156,7 +156,7 @@ export async function presignPut(cfg, key, { expiresSec = 900 } = {}) {
   };
   const query = Object.keys(params)
     .sort()
-    .map((k) => `${k}=${params[k]}`)
+    .map((k) => `${qencode(k)}=${qencode(params[k])}`)
     .join('&');
   const canonicalUri = `/${encodeKeyPath(key)}`;
   const canonicalRequest = ['PUT', canonicalUri, query, `host:${cfg.host}\n`, 'host', 'UNSIGNED-PAYLOAD'].join('\n');
