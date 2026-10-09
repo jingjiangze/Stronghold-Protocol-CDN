@@ -285,6 +285,80 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
   </section>
 
+  <!-- ===================== 对局流 ===================== -->
+  <section class="section" id="battle">
+    <div class="section-heading">
+      <div><div class="eyebrow">IN-GAME · THE OTHER AXIS</div><h2>对局流：战斗快照的两档与自适应</h2></div>
+      <span class="section-status">素材之外，唯一还在长的那块</span>
+    </div>
+
+    <p class="section-note">
+      素材搬走、代码压好之后，剩下的上行几乎只剩一件事：服务端跑的战斗场给观战者推的
+      <code class="inline">b.snap</code>。线上 nginx 日志 56,404 条里，<b>前 10% 的连接占了 ws 总上行的 88.8%</b>
+      （600.1 / 675.7 MiB），而且全是 45 分钟 ~ 3 小时的超长连接。
+    </p>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>措施 7 · 战斗快照 20 Hz → 10 Hz</h4>
+        <p class="download__meta">收益：<b>该流上行精确减半</b>（实测 49.8% ~ 50.0%）</p>
+        <ul>
+          <li>每 <code class="inline">SNAPSHOT_EVERY</code> tick 发一帧；战斗是 2 倍速（每真实秒 60 tick），
+          所以 <code class="inline">3</code> 是 20 帧/秒、<code class="inline">6</code> 是 10 帧/秒。</li>
+          <li>单帧 gzip 后字节几乎不变（99.6% ~ 100.1%）—— <b>帧变稀但每帧没有变重</b>，
+          不是「少发几次、每次更重」。</li>
+          <li>只动服务端跑的那条流式路径；大厅与 <code class="inline">clientCombat</code> 默认路径不受影响。</li>
+        </ul>
+      </div>
+
+      <div class="mini">
+        <h4>措施 8 · 抖动链路自动退回 20 Hz（两套配置并存）</h4>
+        <p class="download__meta">收益：<b>抖动链路的画质</b>；安静链路仍是 10 Hz，带宽收益保留</p>
+        <ul>
+          <li>客户端插值缓冲落后最新快照 <code class="inline">delay = 100 ms</code>，而 10 Hz 间隔
+          <b>正好也是 100 ms → 余量为零</b>；20 Hz 间隔 50 ms，同一段缓冲容得下两帧。</li>
+          <li>服务端对自己<b>正在推流</b>的 socket 做 ws ping/pong —— 浏览器按 RFC 6455 自动回 pong，
+          <b>不用改客户端、不用改协议</b>，老版本客户端一样有效；空闲连接不探，不花上行。</li>
+          <li>速率<b>按连接</b>：一个人抖，只把他那一场提到 20 Hz，同场其他人不受影响。</li>
+          <li>两个刹车：socket 已在排队（<code class="inline">bufferedAmount</code> ≥ 32 KB）<b>一律不升级</b>
+          （加帧只会加深积压）；换档要过 5 s 驻留，两档不会来回跳。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin-top:26px">为什么判据是「抖动」而不是「位移」</h3>
+    <p class="section-note" style="margin-bottom:10px">
+      拿四类真实战斗量相邻快照的单位位移，p99 只有 <b>0.15 ~ 0.44 格</b>，远低于客户端 2.5 格的瞬移阈值；
+      唯一超标的 4.472 格是技能瞬移，<b>20 Hz 下数值完全相同</b>。也就是说降帧不会让任何东西「跳」。
+      真正会坏的是插值余量 —— 用<b>真实的 <code class="inline">interp.js</code></b>
+      （<code class="inline">delay=0.1</code>、<code class="inline">maxExtrapolate=0.12</code>、<code class="inline">rate=2</code>，
+      正是流式战斗的实参）喂抖动到达时刻，驱动 60 fps 渲染实测：
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>链路抖动</th><th class="num">10 Hz 外推帧</th><th class="num">20 Hz 外推帧</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">≤ 20 ms</td><td class="num">0.0%</td><td class="num">0.0%</td><td>两者等价 —— 安静链路上 10 Hz 完全不亏</td></tr>
+          <tr><td class="mono">30 ms</td><td class="num">0.1%</td><td class="num">0.0%</td><td>临界</td></tr>
+          <tr><td class="mono"><b>50 ms</b></td><td class="num"><b>1.5%</b></td><td class="num">0.2%</td><td>升级阈值取这里（正好是 10 Hz 间隔的一半）</td></tr>
+          <tr><td class="mono"><b>75 ms</b></td><td class="num"><b>4.2%</b></td><td class="num">0.6%</td><td>明显卡顿</td></tr>
+          <tr><td class="mono">150 ms</td><td class="num">11.2%</td><td class="num">3.6%</td><td>——</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice">
+      <span><b>「外推」= 画面靠猜。</b>渲染时钟跑过最新快照后只能沿最后的速度外推，超过
+      <code class="inline">maxExtrapolate</code>（120 ms）就冻结。
+      <code class="inline">SP_SNAP_RATE=auto</code>（默认）按链路自判；<code class="inline">slow</code> /
+      <code class="inline">fast</code> 可以把两套配置任选一套钉死；<code class="inline">SP_SNAP_JITTER_MS</code> 调阈值。</span>
+    </div>
+    <p class="section-note" style="margin-top:14px">
+      诚实的边界：判据用的是<b>往返</b>抖动，而客户端关心的是<b>下行单向</b>抖动，两者相关但不完全等价；
+      阈值 50 ms 由上面的表推出，因此做成了可调项，并在换档时打一行日志
+      （<code class="inline">[snap] &lt;房号&gt; &lt;玩家&gt; → 20 Hz (jitter NN ms)</code>），运维可直接从线上日志看分布再调。
+    </p>
+  </section>
+
   <!-- ===================== 验收 ===================== -->
   <section class="section" id="verify">
     <div class="section-heading">

@@ -1,8 +1,8 @@
 # 上行带宽最大化压缩
 
 > 目标：在小上行带宽（以 **10 Mbps** 为算例）的家用盒子上一台服务器能带更多人。
-> 全部数字来自工作树实测（`master-play`：158 个静态文件 / 7,969 个素材）与线上探测，不是估算值。
-> 日期：2026-10-09 · 同步发布在 <https://downcdn.jiangjiangze.icu/bandwidth.html>
+> 全部数字来自本机工作树实测（`C:\Users\16891\android-build\master-play`）与线上探测，不是估算值。
+> 日期：2026-10-09
 
 ---
 
@@ -136,7 +136,10 @@ zlibDeflateOptions: { level: 6, memLevel: 5 },
 | 场景 | 人均上行 | 人均速率 | 10 Mbps 最大容纳 | 说明 |
 |---|---|---|---|---|
 | **A. 大厅 / 待机** | ≈40 B/s | ≈320 bps | **31,250 人** | `lobby.list` gz 161 B / 5 s + 心跳 + 偶发聊天 |
-| **B. 对局中（默认 `clientCombat`）** | ≈60 B/s | ≈480 bps | **20,833 人** | 服务端几乎不发 `b.snap` |
+> ⚠️ **2026-10-09 用线上日志复核后修正**：上表 B 行（60 B/s）是**建模值**，线上实测是**双峰分布**——
+> p50 = 16 B/s（与建模一致），但 **p90 = 1,387 B/s、p99 = 3,374 B/s**，且**前 10% 的 ws 连接吃掉 97.9% 的总上行**。
+> 所以「2 万人」只对中位数成立；**按 p90 算，10 Mbps 实际容纳约 900 人**。
+> 详见 §八。
 | C. 对局中（服务端模拟，**未压**） | 31,744 B/s | 254 kbps | **39 人** | `SP_COMBAT=server` / AI 接管 |
 | D. 对局中（服务端模拟，**deflate w9**） | 7,782 B/s | 62 kbps | **160 人** | 同上，开启压缩 |
 
@@ -149,8 +152,20 @@ zlibDeflateOptions: { level: 6, memLevel: 5 },
 > 优化前，10 Mbps 上行的实际容量是 **1~2 个新玩家排队进场**（素材占死）；
 > 优化后，稳态容量由 CPU 决定（万级），首载吞吐 **0.81 人/s** 且复访为 **0**。
 
+---
 
-## 五、验收命令
+## 五、已评估但否决的方案
+
+| 方案 | 实测结论 | 为何不采用 |
+|---|---|---|
+| **brotli 静态压缩** | 再省 295 KiB（1.475 → 1.187 MiB，−19.5%），但压缩耗时 **92,138 ms vs 2,083 ms = 44.2×** | 一次性收益 20%，代价是构建慢 44 倍 + 全站缓存策略改动。**用户已决定保持 gzip l6** |
+| **上下文接管（context takeover）** | 实测 4.1% vs 24.6% —— 收益显著 | 内存上界不可控（每连接保留 LZ77 历史）。**内存测量三次结果互相矛盾，本轮不下结论**，要定需重测 |
+| **把 5 MB 代码挂 git 镜像源**（jsDelivr / Statically / ghfast） | `public/vendor/` 在 `.gitignore` 第 6 行，`git ls-files public/vendor/` = **0** —— 54% 的载荷根本不在 git 里；且所有 raw 类镜像返回 `text/plain` + `nosniff`，ES module 直接被浏览器拒绝 | 一票否决：源不存在 + MIME 致命 |
+| **走 CF 隧道承载静态资源** | 隧道只中继连接，**字节仍从盒子网卡出去**，上行瓶颈原地不动 | 不解决目标问题 |
+
+---
+
+## 六、验收命令
 
 ```bash
 # 1. 素材确已离场（应全部指向 CDN，无 /assets/ 相对路径）
@@ -167,16 +182,191 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$(curl -s https://weishu.
 
 ---
 
-## 六、改动清单
+## 七、2026-10-09 线上复核：稳态是双峰，不是单值
+
+数据源：盒子 `D:\stronghold\nginx\logs\stronghold.access.log`，56,404 条请求，跨 4.74 天
+（`bytes=$body_bytes_sent` 是 **gzip 之后**的字节，可当上行直接读）。
+
+### 7.1 ws 速率分位（`rt>5s` 的连接，n=1420）
+
+| 分位 | B/s | 10 Mbps 容纳 |
+|---|---|---|
+| **p50** | **16** | 80,341 人 |
+| p75 | 105 | 12,694 人 |
+| **p90** | **1,387** | **901 人** |
+| p99 | 3,374 | 370 人 |
+
+**前 10% 的连接占总上行 97.9%。**
+
+### 7.1.1 根因已查明：服务端跑的战斗场以 20 Hz 推 `b.snap`
+
+`server/match/fields.js`：`INTERVAL_MS = 1000/30`、`GAME_SPEED = 2`
+→ **每真实秒 60 tick**（不是 30），`SNAPSHOT_EVERY = 3` 时 `_emit` 频率 = **60 / 3 = 20 帧/秒**，
+`b.ev` 与 `b.snap` 同频。（源码注释原即写着 "20 Hz at 2× real time"，早期按 30 tick/s 推算的 10 Hz 是错的。）
+
+四类真实战斗的实测字节（单帧 gzip l6，取自 `public/dev/perf`）：
+
+| kind | 单位数 | 单帧 gz | 20 Hz | 10 Hz |
+|---|---|---|---|---|
+| normal | ~8 | 303 B | 6,052 B/s | 3,013 B/s |
+| unite | ~16 | 450 B | 9,006 B/s | 4,505 B/s |
+| boss | ~12 | 403 B | 8,053 B/s | 4,020 B/s |
+| hidden | ~12 | 404 B | 8,084 B/s | 4,034 B/s |
+
+**实测 p90 区间 1,387 ~ 3,300 B/s，完整落在 20 Hz 列的同量级。**
+高流量连接占 ws 总上行 **88.8%（600.1 / 675.7 MiB）**，全是 45 分钟 ~ 3 小时的超长连接。
+
+**为什么默认 `clientCombat` 没保护住**：它只让**普通战斗场**不流式。
+但 ① 玩家离开 → `server takeover`（线上 96 次，两个玩家反复触发）；
+② Final Assault / 联防阶段设计上就要服务端参与。这两类场有 watcher 就发快照。
+
+| 优先级 | 做法 | 预期 | 状态 |
+|---|---|---|---|
+| **P0** | `SNAPSHOT_EVERY` 3 → 6（20 Hz → 10 Hz） | 流式上行**减半** | ✅ 已落地 |
+| **P0** | 开 `SP_WS_COMPRESSION=on`（**线上默认 off**） | 约 4× | ✅ 已落地（3001 槽已生效） |
+| **P0** | 抖动链路逐连接退回 20 Hz（两套配置并存，服务端自判） | 抖动链路的画质 | ✅ 已落地，见 §7.1.2 |
+| P1 | `unitePhase.js:27` 补 `emit: false`（照抄 bossRounds 写法） | 联防不再流式 | 待做 |
+| P1 | takeover 后无 watcher 则停推 | 消除「人走了还在推」 | 待做 |
+| P2 | 快照只发变化单位（delta） | 只传动过/变过的单位 | 待做 |
+
+**P0 已实测验证**（2026-10-09，`public/dev/perf` 四类 spec 跑真实 `Battle`）：
+
+- 降帧**精确减半**上行：实测 49.8% ~ 50.0%，因为单帧 gzip 后字节几乎不变（99.6% ~ 100.1%）——
+  **帧变稀但每帧没有变大**，不是「少发几次但每次更重」。
+- 客户端插值**不退化**：10 Hz 下相邻快照的最大单位位移，normal 0.841 / unite 0.446 / boss 0.576 格，
+  远低于 `render/interp.js` 的 2.5 格瞬移阈值；hidden 那一例 4.472 格跳变**在 20 Hz 时同样存在**
+  （两种帧率数值完全相同），属于该技能自身的位移，与降帧无关。
+- `SP_WS_COMPRESSION=on` 端到端握手确认：
+  `permessage-deflate; server_no_context_takeover; client_no_context_takeover; server_max_window_bits=9`（有界，非默认 15 窗口）。
+
+### 7.1.2 10 Hz 什么时候真的会难看：是链路抖动，不是位移
+
+先把一个反直觉的结论摆前面：**降帧不会让单位「跳」**。同一批 spec 上量相邻快照的单位位移，
+normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.js` 的 2.5 格瞬移阈值；
+唯一超标的 4.472 格是**技能瞬移**，20 Hz 下数值完全相同。所以"10 Hz 明显有问题"这件事，
+在位移维度上根本不成立。
+
+真正的机制在客户端的插值缓冲上：`interp.js` 让渲染时钟落后最新快照 `delay` = **100 ms**，
+而 10 Hz 的帧间隔**正好也是 100 ms** —— **余量为零**。任何到达抖动都会让渲染时钟跑过最新快照、
+只能靠外推（画面靠猜），超过 `maxExtrapolate`（120 ms）就直接冻结。20 Hz 把间隔减半，
+同一段缓冲就容得下两帧，抖动被吸收。
+
+拿**真实的 `interp.js`**（`delay=0.1`、`maxExtrapolate=0.12`、`rate=2`，正是流式战斗的实参）
+喂带抖动的到达时刻，驱动 60 fps 渲染，统计"渲染时钟已跑过最新快照"的帧占比：
+
+| 链路抖动 | 10 Hz 外推帧 | 20 Hz 外推帧 |
+|---|---|---|
+| ≤ 20 ms | 0.0% | 0.0% |
+| 30 ms | 0.1% | 0.0% |
+| 50 ms | **1.5%** | 0.2% |
+| 75 ms | **4.2%** | 0.6% |
+| 150 ms | 11.2% | 3.6% |
+
+**所以判据是链路抖动**（阈值取 50 ms，正好是 10 Hz 间隔的一半 —— 缓冲装不下这么多）。
+
+**实现**（`SP_SNAP_RATE=auto`，默认）：
+
+- `server/net.js`：对**正在被推流**的 socket 做 ws ping/pong 探测（2 s 一次），
+  样本进每 socket 的 RTT 环。浏览器按 RFC 6455 自动回 pong —— **不用改客户端、不用改协议**，
+  老版本客户端一样有效。空闲连接不探，所以不花上行。心跳那个无载荷 ping 不计入样本。
+- `server/match/snapRate.js`：判据 = RTT 的**相邻差均值**（mean |ΔRTT|），
+  实测本机到线上约 56 ms。滞后：≥50 ms 升、≤20 ms 降、中间保持；换档要过 5 s 驻留。
+- `server/match/match/snapRate.js` + `server/match/fields.js`：**速率按连接，不按场** ——
+  某个 watcher 抖动就把**它那一场**提到 20 Hz，安静的连接仍拿 10 Hz。
+  一个抖动的人不该让同场其他人也翻倍。
+- **两个刹车**：socket 已在排队（`bufferedAmount` ≥ 32 KB）**一律不升级** ——
+  加帧只会加深积压；`SP_SNAP_RATE=slow|fast` 可把两套配置任选一套钉死。
+- **跳帧不丢事件**：`drainEvents()` 是破坏性的，被跳过那帧的事件按 watcher 暂存、
+  随它下一帧一起送达（实测：慢速 watcher 最终收到快速 watcher 收到的每一个事件）。
+
+代价与边界（诚实说明）：每 2 s 一个 ws ping，约几十字节，只对正在推流的连接发；
+判定用的是**往返**抖动，而客户端关心的是**单向**（服务端→客户端）抖动，两者相关但不完全等价；
+阈值 50 ms 来自上面那张表，`SP_SNAP_JITTER_MS` 可调。升级只在确有抖动时发生，
+安静链路仍是 10 Hz，所以带宽收益基本保留。
+
+> 明细见 `C:\DDDD\Agent Work\tunnel-optimize\p90根因.md`。
+> 线上部署状态：改动已落盘到两个槽脚本 `update/sp_slot_300{1,2}.cmd`，下一次槽重启即生效。
+> ⚠️ 另有两处**与此改动无关**的线上隐患见 §7.6。
+
+### 7.2 逐小时实际上行
+
+| 时刻 | 请求数 | 上行 | 均速 |
+|---|---|---|---|
+| 05:40 | 6 | 0.015 MiB | 4 B/s |
+| 06:40 | 133 | 0.926 MiB | 270 B/s |
+| 07:40 | 18 | 0.025 MiB | 7 B/s |
+| 08:40 | 1635 | 10.166 MiB | 2,961 B/s |
+| 09:40 | 144 | **20.444 MiB** | **5,955 B/s** |
+| 10:40 | 1020 | 6.919 MiB | 2,015 B/s |
+
+09:40 那一小时 144 个请求发了 20.4 MiB —— **是少数大响应，不是高频小请求**。
+
+### 7.3 当前最大的可修泄漏：`/data/*.json` 一律 `no-cache`
+
+| 资源 | 原始 | gzip l6 | 线上 |
+|---|---|---|---|
+| `chess.json` | 1.63 MiB | **0.147 MiB（9%）** | 150 KiB，`no-cache`/DYNAMIC，**每次回源** |
+| `backups.json` | 1.80 MiB | 0.136 MiB | 同上 |
+| `assets.json` | 1.06 MiB | 0.091 MiB | 同上 |
+
+三者每次合计重发约 **0.37 MiB**（已压）。`files.js:190/193` 对 `.html`/`.json` 一律返回 `no-cache`。
+→ 用 `?v=` 或强 ETag 校验即可消掉，是**当前性价比最高的单点**。属代码改动，待主仓冲突解决后做。
+
+### 7.4 BGM 已完全离场（好消息）
+
+日志里 `/media/bgm/*` 累计占比很大（单条 255 MiB），但那是 **R2 上传之前的历史**。
+现在实测 `X-Asset-Source: r2` + `X-Served-By: stronghold-assets-worker`，
+最近 1 小时 `/media/` 上行 **0.00 MiB**。
+
+### 7.5 那 5 MB 实际只剩 2.51 MiB 在隧道上
+
+`vendor/`（2.82 MiB，占 54%）已被 Worker 路由接管走 R2，实测 `X-Asset-Source: edge` + `HIT`。
+真正在隧道上的只有 `js`(1.89) + `css`(0.33) + `i18n`(0.29) = **2.51 MiB**（gzip 后约 0.85 MiB）。
+
+---
+
+### 7.6 顺带发现的两个线上隐患（与本轮改动无关，待修）
+
+1. **nginx `reload` 已失效**：`error.log` 里每次 reload 都是
+   `OpenEvent("Global\ngx_reload_11512") failed (5: Access is denied)` —— 主进程 11512 起于 2026-10-04，
+   跨会话后 SSH 侧无权发信号。**后果：磁盘上的 `sp_current.conf` 改动加载不进去**，
+   nginx 会一直转发给它启动时读到的那个上游。改 conf 前必须先确认 nginx 进程真的重载了。
+2. **nginx 静态 root/alias 指向不存在的目录**：`root D:/stronghold/Stronghold-Protocol/public` 与
+   `/media/` 的 `alias` 都指向旧目录（实际是 `Stronghold-Protocol-cdn`），两条 `try_files`
+   必然落到 `@sp`。目前无功能影响（素材走 weishucdn CDN），但属于悬错配置。
+
+---
+
+## 八、改动清单
 
 | 文件 | 改动 | 状态 |
 |---|---|---|
+| `server/match/snapRate.js` | **新增**：自适应快照率策略（纯逻辑，可单测） | ✅ 已加 |
+| `server/match/match/snapRate.js` | **新增**：接到每场（哪个 watcher 快、这场该按什么间隔发） | ✅ 已加 |
+| `server/match/Match.js` | 装配策略；`opts.snapRate` / `SP_SNAP_RATE`、`opts.linkOf`、`SP_SNAP_JITTER_MS` | ✅ 已改 |
+| `server/match/fields.js` | `_emit` 按 watcher 的档位投递；跳帧的事件按 watcher 暂存 | ✅ 已改 |
+| `server/net.js` | 被推流 socket 的 ws ping/pong 链路探测（`linkProbeMs` 默认 2 s）+ `linkQualityOf()` | ✅ 已改 |
+| `server/lobby.js` | 把 `linkOf(playerId)` 注入 Match（session.ws → 链路样本） | ✅ 已改 |
+| `server/http/config.js` | `NET_OPTION_KEYS` 加 `linkProbeMs`/`linkWarmMs` | ✅ 已改 |
+| `test/match/snap-rate.test.js` | **新增** 19 项（策略表 + 接线实测：抖动 20 Hz / 安静 10 Hz / 慢速 watcher 不丢事件） | ✅ 19/19 pass |
+| `server/sim/constants.js` | `SNAPSHOT_EVERY` 3 → 6（20 Hz → 10 Hz）+ 新增 `SNAPSHOT_EVERY_FAST` | ✅ 已改，已验证上行减半 |
+| `test/match/combat.test.js` | 帧率断言改为从 `TICK`/`GAME_SPEED`/`SNAPSHOT_EVERY` 派生 | ✅ 7/7 pass |
+| `update/sp_slot_3001.cmd`（盒） | 加 `set SP_WS_COMPRESSION=on` | ✅ 已落盘，已重启生效 |
+| `update/sp_slot_3002.cmd`（盒） | 同上 | ✅ 已落盘，待该槽下次重启 |
 | `server/wsCompression.js` | `serverMaxWindowBits` 12 → 9 | ✅ 已改，5/5 测试通过 |
 | `test/ws-compression.test.js` | 同步断言为 9 | ✅ 5/5 pass |
 | `server/http/static.js` | 新增 `versionIndexHtml()` + `serveVersionedIndex()`，接线 `index.html` | ✅ 已改 |
 | `test/index-version.test.js` | 新增 4 项（25/25 覆盖、幂等、线上 buildTag 一致、immutable 分支） | ✅ 4/4 pass |
 | `server/http/files.js` | 仅注释：说明 `js`/`css` 为什么不进 `LONG_CACHE_DIRS` | ✅ 已改 |
-| `CHANGELOG.md` | 「未发布 → 静态资源」小节 | ✅ 已改 |
+| `CHANGELOG.md` | 「未发布 → 带宽」两条 | ✅ 已改 |
 | `SP_ASSET_CDN` 部署 | **无需改动**，线上已生效 | ✅ 已核验 |
 
-> ⚠️ 上述 3 个代码文件**尚未提交**：仓库当时处于合并冲突中（7 个 `UU` 冲突，均非本轮文件），等待冲突解决后再一并提交。
+**验证口径**：`SNAPSHOT_EVERY` 改动拿 `public/dev/perf` 四类真实 spec 跑 `Battle`，
+逐帧比较「每 3 tick 采样」与「每 6 tick 采样」—— 上行 49.8%~50.0%，单位位移最大 0.841 格（阈值 2.5）。
+`SP_WS_COMPRESSION=on` 拿真实进程做 ws 握手，确认协商出有界 `permessage-deflate`。
+自适应快照率拿**真实 `interp.js`** 喂抖动到达时刻定阈值（§7.1.2 的表），
+再用 `test/match/snap-rate.test.js` 在真实 match 上实测「抖动连接 20 Hz、安静连接 10 Hz、慢速 watcher 事件不丢」。
+
+**回归基线**：全量测试 5849 项中 8 项失败，全部是「缺美术素材」相关
+（`assets.json` / Spine / atlas / 语言包的本地文件缺失）与 1 项 perf 抖动；
+**用 `git stash` 对照跑同一批文件，基线同样失败**，与本轮改动无关（盒子上跑的本来就是无素材版）。
