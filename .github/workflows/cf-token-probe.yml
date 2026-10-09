@@ -79,6 +79,31 @@ jobs:
           else
             echo "本账户下看不到 jiangjiangze.icu 这个区 —— D2 需要先解决区归属，而不是权限"
           fi
-          ask "R2 桶可读" "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets"
-          ask "R2 自定义域名可读（D2 的必经端点）" "/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/stronghold-assets/custom_domains"
-          ask "Pages 项目可读（现状确认）" "/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"
+      # 写权限怎么在「不动线上」的前提下试出来：POST 一个故意缺必填字段的载荷。
+      # 参数校验类错误码（1006/9206/100001 这种）说明请求进到了业务层 —— 令牌有写权限；
+      # 9103/1003/10000 这类认证鉴权错误才说明没权限。无效载荷不会落任何记录。
+      - name: 写权限的无副作用探测
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          ZID=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/zones?name=jiangjiangze.icu" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" | node -pe 'try{const j=JSON.parse(require("fs").readFileSync(0,"utf8"));(j.result||[])[0]?.id||""}catch(e){""}')
+          if [ -z "$ZID" ]; then echo "拿不到区 id，跳过写探测"; exit 0; fi
+          probe() { # 说明 方法 URL
+            local out
+            out=$(curl -sS -m 30 -X "$3" "$4" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" -d "$5" || true)
+            echo "$out" | node -e '
+              let raw="";process.stdin.on("data",d=>raw+=d).on("end",()=>{
+                const label=process.argv[1];let j=null;
+                try{j=JSON.parse(raw)}catch{console.log(label,"→ 非 JSON");return}
+                const errs=(j.errors||[]).map(e=>`${e.code}:${String(e.message).slice(0,70)}`).join(" | ")||"(无错误)";
+                console.log(`${label} → success=${j.success} ${errs}`);
+              });' "$2"
+          }
+          probe "DNS 写（故意缺 type/name）" "DNS POST 探测" POST "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records" '{"content":"192.0.2.1"}'
+          probe "R2 自定义域名写（故意空载荷）" "域名 POST 探测" PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/stronghold-assets/custom-domains" '{}'
+          echo "（下面这条若可读，会直接列出令牌所属策略名，不含任何密钥）"
+          probe "账户 API 令牌列表可读" "令牌列表" GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/apitokens" ''
