@@ -6,7 +6,14 @@
     "root": "https://d111111abcdef8.cloudfront.net",
     "note": "AWS CloudFront in front of the R2 bucket"
   },
-  "extraOrigins": [],
+  "extraOrigins": [
+    {
+      "id": "r2-alt",
+      "kind": "r2",
+      "root": "https://weishucdn2.jiangjiangze.icu",
+      "note": "同一个桶 stronghold-assets 的第二个自定义域名：零额外存储、不占额度，只多一个入口。行为与 weishucdn 逐头核对一致（200/206、ACAO *、expose Content-Length/Content-Range/ETag、immutable），因为 zone 那条 CORS 改写规则的表达式已同时覆盖两个 host。"
+    }
+  ],
 
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 618 MiB art tree lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
   "gitOrigins": [
