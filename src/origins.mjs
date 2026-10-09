@@ -44,13 +44,18 @@ export function readExtraOrigins(root) {
 
 /**
  * Origins that mount files out of a **git repository** through a public mirror chain
- * (jsDelivr / Statically / ghfast→raw).
+ * (jsDelivr / ghfast→raw).
  *
  * These are a different animal from the flat origins and must not be presented as equivalent:
- * a git mount can only serve files that are **committed to git**, and our 533 MB asset tree
- * deliberately is not (it is derived from the upstream release package). So a git origin is
- * partial by construction — it carries the interface files and the probe, not `assets/**`.
- * `coverage` exists so the UI can say that out loud instead of implying a full mirror.
+ * a git mount can only serve files that are **committed to git**. The asset tree used to be
+ * outside git — derived from the upstream release package — which made every git origin partial
+ * by construction: it carried the interface files and the probe, not `assets/**`.
+ *
+ * That changed on 2026-10-09: the asset tree is now committed on the orphan branch `assets-raw`
+ * (12,261 files / 618.4 MiB, sampled 40 paths × 3 sources byte-identical). Git origins can
+ * therefore be full. `coverage` still exists so the UI can say which is which out loud instead of
+ * implying a full mirror — an entry rooted at `@main` really is still partial, because the art
+ * lives on the other branch.
  */
 export const GIT_PROBE_PATH = '/probe/cdn-probe.bin';
 
