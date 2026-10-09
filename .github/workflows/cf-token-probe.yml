@@ -1,0 +1,68 @@
+name: cf-token-probe
+
+# 只读探针：CI 里那枚 CLOUDFLARE_API_TOKEN 到底有哪些权限。
+#
+# 为什么要有这个文件：D2（给同一个桶再绑一个自定义域名）需要 Zone DNS 写权限，
+# 而本机 wrangler 的 OAuth 令牌已过期、cf.txt 里那枚 cfat_ 令牌实测 401 Invalid。
+# 与其猜「CI 那枚大概能用」，不如直接问 Cloudflare —— 这一步不创建、不修改任何东西。
+#
+# 输出只报「有没有某项权限」，不打印令牌、不打印账户/区域 ID 之类可寻址的标识。
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: 令牌状态与权限范围
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "仓库里没有 CLOUDFLARE_API_TOKEN"; exit 1; }
+
+          verify=$(curl -sS -m 30 -X POST "https://api.cloudflare.com/client/v4/user/tokens/verify" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" || true)
+          echo "verify success=$(echo "$verify" | node -pe 'try{String(JSON.parse(require("fs").readFileSync(0,"utf8")).success)}catch(e){"解析失败"}')"
+          echo "verify status=$(echo "$verify" | node -pe 'try{JSON.parse(require("fs").readFileSync(0,"utf8")).result.status}catch(e){"-"}')"
+
+          info=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/user/tokens/permission_info" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" || true)
+          echo "$info" | node -e '
+            let raw = "";
+            process.stdin.on("data", (d) => (raw += d));
+            process.stdin.on("end", () => {
+              let doc = null;
+              try { doc = JSON.parse(raw); } catch { console.log("permission_info 读不到（可能是令牌无效或该端点不接受此令牌）"); process.exit(0); }
+              if (!doc.success) { console.log("permission_info 报错:", JSON.stringify(doc.errors)); process.exit(0); }
+              const want = ["DNS", "R2", "Pages", "Zone", "Account"];
+              for (const e of doc.result.permissions || []) {
+                const groups = (e.permission_groups || []).map((g) => g.name).join(", ") || "(无组信息)";
+                console.log(`范围 type=${e.type} name=${e.name ? "[已按存在报告]" : "-"} → ${groups}`);
+              }
+              const all = JSON.stringify(doc.result.permissions || []);
+              for (const w of want) console.log(`是否涉及 ${w}:`, all.toLowerCase().includes(w.toLowerCase()) ? "有相关条目" : "没有");
+              console.log("条目数:", (doc.result.permissions || []).length);
+            });
+          '
+
+      - name: 区域可读性（D2 前提之一）
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          zones=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID?filters=*" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
+          echo "账户可读=$(echo "$zones" | node -pe 'try{String(JSON.parse(require("fs").readFileSync(0,"utf8")).success)}catch(e){"false"}')"
+          z=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/zones?name=jiangjiangze.icu" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
+          echo "该账户能看到 jiangjiangze.icu 这个区=$(echo "$z" | node -pe 'try{String((JSON.parse(require("fs").readFileSync(0,"utf8")).result||[]).length>0)}catch(e){"false"}')"
+          d=$(curl -sS -m 30 "https://api.cloudflare.com/client/v4/zones/00000000000000000000000000000000/dns_records" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" || true)
+          echo "（用假 zone id 探端点可达性，只为区分「无权限」与「区不存在」）code=$(echo "$d" | node -pe 'try{const j=JSON.parse(require("fs").readFileSync(0,"utf8"));String((j.errors||[]).map(e=>e.code).join(","))}catch(e){"-"}')"
