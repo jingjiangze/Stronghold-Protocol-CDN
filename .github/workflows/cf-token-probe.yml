@@ -104,6 +104,8 @@ jobs:
               });' "$2"
           }
           probe "DNS 写（故意缺 type/name）" "DNS POST 探测" POST "https://api.cloudflare.com/client/v4/zones/$ZID/dns_records" '{"content":"192.0.2.1"}'
-          probe "R2 自定义域名写（故意空载荷）" "域名 POST 探测" PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/stronghold-assets/custom-domains" '{}'
-          echo "（下面这条若可读，会直接列出令牌所属策略名，不含任何密钥）"
-          probe "账户 API 令牌列表可读" "令牌列表" GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/apitokens" ''
+          # 上一轮我用 PUT 打这个端点得到 10015「No route matches this url」——那是方法错了，不是没权限。
+          # 文档里创建桶的自定义域名是 POST；空载荷会被校验拒掉，不会真的挂上任何域名。
+          probe "R2 自定义域名写（POST 空载荷）" "域名 POST 探测" POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/stronghold-assets/custom-domains" '{}'
+          probe "R2 桶列表（路径复核）" "桶列表" GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets" ''
+          probe "账户令牌列表（正确下划线路径）" "令牌列表" GET "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/api_tokens" ''
