@@ -179,6 +179,24 @@ update(t) {
       平均值会把 3:2 律动藏起来 —— 144 Hz 屏上平均仍然是 60。
       合格 = 帧间隔只有<b>一个</b>取值（等于显示器间隔），或退档时恰好是它的整数分之一。</span>
     </div>
+
+    <h3 style="margin-top:26px">已执行（2026-10-09）</h3>
+    <div class="table-wrap" style="margin-top:10px">
+      <table>
+        <thead><tr><th>项</th><th>落地</th></tr></thead>
+        <tbody>
+          <tr><td>perf 页</td><td>实时显示「显示器间隔 ≈ N Hz · 上限 M」；测完给出按「占用几个刷新」分桶的分布 + 均匀/不匀判定</td></tr>
+          <tr><td><b>A</b></td><td>上限表达成「每 k 个刷新画一帧」：<code class="inline">maxFPS = 刷新率 / k</code>，k 取满足 ≤ <b>120</b> 的最小值。120 Hz 屏得 120、<b>144 Hz 屏得 72</b>（而非会抖的 120）、240 Hz 屏得 120</td></tr>
+          <tr><td><b>B</b></td><td>负载阈值 <code class="inline">19.5 / 17.6 ms</code> → <code class="inline">帧预算 × 1.2 / × 1.05</code>（比值不变，基准跟着上限走）</td></tr>
+          <tr><td><b>C</b></td><td><b>待定</b> —— 安卓申请高刷属于另一条产品线（<code class="inline">re-apk</code>），且耗电有代价</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:12px">
+      显示器间隔由渲染器<b>自己的 rAF 探针</b>测量（Pixi 的 ticker 看不到它 —— 被上限丢掉的帧它根本不回调），
+      启动测一次、之后每 30 s 与标签页回到前台时重测（手机为省电会改刷新率）。
+      纯逻辑在 <code class="inline">public/js/render/frameRate.js</code>，12 项单测。
+    </p>
   </section>
 
   <!-- ===================== 边界 ===================== -->
