@@ -564,6 +564,14 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
 
     <div class="notice" style="margin-top:16px">
+      <span><b>WS 链路这块单独拆成了两份文档：</b>
+      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
+      （白名单 + 窗口 12、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
+      <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是待执行的三步
+      （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。</span>
+    </div>
+
+    <div class="notice" style="margin-top:16px">
       <span><b>还没做（按顺序）：</b>
       ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
       ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（合计 2.05×）；
