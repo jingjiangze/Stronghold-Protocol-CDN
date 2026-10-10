@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 import {
   AGENT_DOC_MARKER,
@@ -119,5 +120,61 @@ test('the built index enumerates the docs directory and skips dotfiles', async (
   // Not a git checkout, so the date is unknown -- and saying "unknown" beats inventing an mtime.
   assert.ok(index.docs.every((d) => d.updatedAt === '' && d.datedBy === 'none'));
   assert.match(index._how, /git/);
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+// A shallow clone is the real-world failure: it holds one commit, so `git log -1` answers the same
+// date for every file and "newest" quietly becomes a path tie-break. The index has to say so —
+// otherwise the page tells a reader it picked the newest document when it did not.
+test('when dates cannot discriminate, the index says so', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-docs-nogit-'));
+  const site = path.join(root, 'site');
+  fs.mkdirSync(path.join(site, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(site, 'docs', 'a.md'), '# a\n');
+  fs.writeFileSync(path.join(site, 'docs', 'b.md'), `# b\n\n${AGENT_DOC_MARKER}\n`);
+
+  const index = await buildDocsIndex({ siteDir: site, repoRoot: root, log: () => {} });
+  assert.equal(index.dating, 'degenerate');
+  assert.match(index._dating_note, /浅克隆/);
+  assert.match(index.agentDocWhy, /日期相同/);
+  // It still answers, and still picks the marker-carrying document.
+  assert.equal(index.agentDoc, 'docs/b.md');
+  fs.rmSync(root, { recursive: true, force: true });
+});
+
+test('with real history the dates discriminate and the newer document wins', async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-docs-git-'));
+  const site = path.join(root, 'site');
+  fs.mkdirSync(path.join(site, 'docs'), { recursive: true });
+  const git = (...a) => {
+    const res = spawnSync('git', ['-C', root, '-c', 'user.email=t@example.test', '-c', 'user.name=t', ...a], {
+      encoding: 'utf8',
+      env: process.env,
+    });
+    if (res.status !== 0) throw new Error(`git ${a.join(' ')} failed: ${res.stderr}`);
+  };
+  const commitAt = (iso) => {
+    const res = spawnSync('git', ['-C', root, '-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'c'], {
+      encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: iso, GIT_COMMITTER_DATE: iso },
+    });
+    if (res.status !== 0) throw new Error(`commit failed: ${res.stderr}`);
+  };
+
+  git('init', '-q');
+  fs.writeFileSync(path.join(site, 'docs', 'a-old.md'), `# old\n\n${AGENT_DOC_MARKER}\n`);
+  git('add', '-A');
+  commitAt('2026-01-01T00:00:00+08:00');
+  fs.writeFileSync(path.join(site, 'docs', 'b-new.md'), `# new\n\n${AGENT_DOC_MARKER}\n`);
+  git('add', '-A');
+  commitAt('2026-06-01T00:00:00+08:00');
+
+  const index = await buildDocsIndex({ siteDir: site, repoRoot: root, log: () => {} });
+  assert.equal(index.dating, 'ok');
+  assert.equal(index.docs[0].path, 'docs/b-new.md', 'sorted newest first');
+  assert.equal(index.docs[0].datedBy, 'git');
+  assert.notEqual(index.docs[0].updatedAt, index.docs[1].updatedAt);
+  // Both carry the marker, so this one is decided by TIME — the thing the whole module is for.
+  assert.equal(index.agentDoc, 'docs/b-new.md');
   fs.rmSync(root, { recursive: true, force: true });
 });

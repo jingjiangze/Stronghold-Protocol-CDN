@@ -31,6 +31,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The docs index dates each document with `git log -1`, and the admin page picks the
+          # NEWEST one. A shallow clone (the default, depth=1) holds a single commit, so every
+          # document reports the same date and "newest" silently degrades into "first after a
+          # path tie-break" — observed on the live index on 2026-10-10, before this was set.
+          # Full history here is small; it is what makes the choice mean anything.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

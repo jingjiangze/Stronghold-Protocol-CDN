@@ -74,6 +74,16 @@ export async function buildDocsIndex({ siteDir, repoRoot, log = () => {} }) {
   const sorted = sortDocs(docs);
   const picked = pickAgentDoc(sorted);
   log(`docs index: ${sorted.length} file(s); integration doc = ${picked.path || '(none)'}`);
+
+  // If every document reports the same commit time, "newest" was decided by the path tie-break, not
+  // by time — the signature of a shallow clone (a CI checkout with depth=1 holds one commit, so
+  // `git log -1` answers the same thing for every file). Saying so is the point: a reader who is
+  // told "newest" will otherwise trust a choice that was never about time. site.yml sets
+  // fetch-depth: 0 to avoid this; the note stays so a regression is visible instead of silent.
+  const dates = new Set(sorted.map((d) => d.updatedAt).filter(Boolean));
+  const degenerate = sorted.length > 1 && dates.size <= 1;
+  if (degenerate) log(`docs index: every document reports the same date (${[...dates][0] || 'none'}) — dates are not discriminating`);
+
   return {
     schema: 1,
     _how:
@@ -81,8 +91,12 @@ export async function buildDocsIndex({ siteDir, repoRoot, log = () => {} }) {
       'updatedAt 来自 git 的提交时间，不是文件系统 mtime —— 后者在一次全新 checkout 之后会让所有文件看起来一样新。' +
       `agentDoc 是所有文档里提到 ${AGENT_DOC_MARKER} 的最新一份：既保证是最新的，也不会因为某篇无关文档写得晚而把它当成接入说明。`,
     generatedAt: new Date().toISOString(),
+    dating: degenerate ? 'degenerate' : 'ok',
+    _dating_note: degenerate
+      ? '所有文档的 updatedAt 相同，说明这次取到的是浅克隆（只有一条提交），「最新」实际由路径排序决定、与时间无关。site.yml 已设 fetch-depth: 0；这条字段在是为了让回归看得见。'
+      : '每条文档的 updatedAt 来自它最后一次被提交的时间，可以据此判断新旧。',
     docs: sorted,
     agentDoc: picked.path,
-    agentDocWhy: picked.why,
+    agentDocWhy: degenerate ? `${picked.why}（注意：本次所有文档日期相同，选的其实是路径序第一份）` : picked.why,
   };
 }
