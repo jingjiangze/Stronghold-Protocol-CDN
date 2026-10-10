@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 173,
-      "bytes": 19722040,
+      "files": 193,
+      "bytes": 23747764,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -3487,6 +3487,86 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_294_ayer/char_294_ayer_boc_3/front/char_294_ayer_boc_3.png",
           135900
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_311_mudrok/char_311_mudrok_summer_6/front/char_311_mudrok_summer_6.skel",
+          1166618
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_322_lmlee/back/char_322_lmlee.atlas",
+          5880
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_332_archet/char_332_archet_sale_14/back/char_332_archet_sale_14.atlas",
+          14733
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_332_archet/char_332_archet_sale_14/back/char_332_archet_sale_14.skel",
+          446416
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_332_archet/char_332_archet_sale_14/front/char_332_archet_sale_14.atlas",
+          14733
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_332_archet/char_332_archet_sale_14/front/char_332_archet_sale_14.png",
+          334242
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_337_utage/char_337_utage_epoque_15/back/char_337_utage_epoque_15.atlas",
+          6111
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_337_utage/char_337_utage_epoque_15/back/char_337_utage_epoque_15.skel",
+          188213
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_337_utage/char_337_utage_summer_4/back/char_337_utage_summer_4.skel",
+          124415
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_341_sntlla/char_341_sntlla_summer_15/back/char_341_sntlla_summer_15.skel",
+          136807
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_341_sntlla/char_341_sntlla_summer_15/front/char_341_sntlla_summer_15.skel",
+          208547
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_344_beewax/char_344_beewax_epoque_9/back/char_344_beewax_epoque_9.skel",
+          51134
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_344_beewax/char_344_beewax_summer_11/front/char_344_beewax_summer_11.png",
+          144514
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_350_surtr/char_350_surtr_ambienceSynesthesia_6/back/char_350_surtr_ambienceSynesthesia_6.png",
+          323163
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_350_surtr/char_350_surtr_it_1/back/char_350_surtr_it_1.png",
+          134607
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_350_surtr/char_350_surtr_it_1/front/char_350_surtr_it_1.atlas",
+          10323
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_350_surtr/char_350_surtr_summer_9/back/char_350_surtr_summer_9.skel",
+          243110
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_epoque_22/back/char_358_lisa_epoque_22.skel",
+          336174
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_epoque_22/front/char_358_lisa_epoque_22.atlas",
+          14324
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_lxh_1/front/char_358_lisa_lxh_1.png",
+          121660
         ]
       ]
     }
