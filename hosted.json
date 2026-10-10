@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 33,
-      "bytes": 1868841,
+      "files": 53,
+      "bytes": 3074801,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -2927,6 +2927,86 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_2013_cerber_summer_4.png",
           56739
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_206_gnosis_boc_4.png",
+          55247
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_245_cello_sale_12.png",
+          60382
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_250_phatom_ghost_1.png",
+          49077
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_253_greyy_epoque_8.png",
+          59114
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_258_podego_epoque_9.png",
+          50160
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_263_skadi_marthe_5.png",
+          61567
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_263_skadi_summer_3.png",
+          57881
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_264_f12yin_marthe_13.png",
+          60186
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_291_aglina_boc_1.png",
+          67977
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_322_lmlee_sanrio_1.png",
+          67761
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_332_archet_sale_14.png",
+          54990
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_340_shwaz_striker_1.png",
+          66050
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_350_surtr_ambienceSynesthesia_6.png",
+          52683
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_358_lisa_lxh_1.png",
+          63099
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_362_saga_sale_9.png",
+          48306
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4042_lumen_sanrio_2.png",
+          65564
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4051_akkord_summer_23.png",
+          60620
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4064_mlynar_iteration_3.png",
+          74784
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4080_lin_littlePony_1.png",
+          61532
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4087_ines_boc_8.png",
+          68980
         ]
       ]
     }
