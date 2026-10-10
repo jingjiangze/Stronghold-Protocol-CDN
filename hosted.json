@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 168,
-      "bytes": 16703119,
+      "files": 188,
+      "bytes": 17859182,
       "keys": [
         [
           "assets/audio/sfx/player/p_imp/p_imp_mjckyrdglsnt.mp3",
@@ -399,8 +399,16 @@
           7332
         ],
         [
+          "assets/audio/voice/cn/char_456_ash/cn_027.mp3",
+          5242
+        ],
+        [
           "assets/audio/voice/jp/char_4123_ela/cn_023.mp3",
           8795
+        ],
+        [
+          "assets/audio/voice/jp/char_4123_ela/cn_024.mp3",
+          5451
         ],
         [
           "assets/audio/voice/jp/char_4123_ela/cn_026.mp3",
@@ -441,6 +449,10 @@
         [
           "assets/bond/rainbowShip.png",
           5283
+        ],
+        [
+          "assets/char/avatar/char_002_amiya.png",
+          56957
         ],
         [
           "assets/char/avatar/char_1001_amiya2_2.png",
@@ -513,6 +525,14 @@
         [
           "assets/char/portrait/char_1024_hbisc2_1.png",
           105742
+        ],
+        [
+          "assets/char/portrait/char_1036_fang2_1.png",
+          109925
+        ],
+        [
+          "assets/char/portrait/char_120_hibisc_1.png",
+          115425
         ],
         [
           "assets/char/portrait/char_121_lava_1.png",
@@ -711,6 +731,54 @@
           21645
         ],
         [
+          "assets/relics/relic_001.png",
+          37157
+        ],
+        [
+          "assets/relics/relic_002.png",
+          31425
+        ],
+        [
+          "assets/relics/relic_003.png",
+          37711
+        ],
+        [
+          "assets/relics/relic_025.png",
+          28521
+        ],
+        [
+          "assets/relics/relic_040.png",
+          26570
+        ],
+        [
+          "assets/relics/relic_044.png",
+          15438
+        ],
+        [
+          "assets/relics/relic_045.png",
+          33781
+        ],
+        [
+          "assets/relics/relic_053.png",
+          37753
+        ],
+        [
+          "assets/relics/relic_070.png",
+          39884
+        ],
+        [
+          "assets/relics/relic_080.png",
+          29755
+        ],
+        [
+          "assets/relics/relic_150.png",
+          34517
+        ],
+        [
+          "assets/skill/skchr_amiya2_1.png",
+          20065
+        ],
+        [
           "assets/skill/skchr_blitz_2.png",
           18870
         ],
@@ -775,6 +843,10 @@
           142718
         ],
         [
+          "assets/spine/op/char_1024_hbisc2/front/char_1024_hbisc2.skel",
+          144741
+        ],
+        [
           "assets/spine/op/char_1027_greyy2/back/char_1027_greyy2.atlas",
           7774
         ],
@@ -785,6 +857,10 @@
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.skel",
           270933
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/front/char_1027_greyy2.skel",
+          285883
         ],
         [
           "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/back/char_1036_fang2_snow_8.atlas",
@@ -809,6 +885,10 @@
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.png",
           65285
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/front/char_120_hibisc_nian_1.skel",
+          59862
         ],
         [
           "assets/spine/op/char_120_hibisc/front/char_120_hibisc.png",
