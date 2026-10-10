@@ -375,12 +375,16 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 208,
-      "bytes": 19374652,
+      "files": 228,
+      "bytes": 20146267,
       "keys": [
         [
           "assets/audio/sfx/player/p_imp/p_imp_mjckyrdglsnt.mp3",
           5805
+        ],
+        [
+          "assets/audio/sfx/player/p_imp/p_imp_mjckyrdnt.mp3",
+          8685
         ],
         [
           "assets/audio/sfx/player/p_imp/p_imp_mjckyrdnt_r.mp3",
@@ -447,8 +451,28 @@
           8795
         ],
         [
+          "assets/audio/voice/jp/char_456_ash/cn_023.mp3",
+          5033
+        ],
+        [
+          "assets/audio/voice/jp/char_456_ash/cn_024.mp3",
+          5869
+        ],
+        [
+          "assets/audio/voice/jp/char_456_ash/cn_025.mp3",
+          10258
+        ],
+        [
+          "assets/audio/voice/jp/char_456_ash/cn_030.mp3",
+          9840
+        ],
+        [
           "assets/band/icon_ela.png",
           52787
+        ],
+        [
+          "assets/band/icon_nasti.png",
+          54179
         ],
         [
           "assets/bond/demonShip.png",
@@ -521,6 +545,10 @@
         [
           "assets/char/avatar/char_4224_turdus_2.png",
           69853
+        ],
+        [
+          "assets/char/avatar/char_459_tachak_2.png",
+          55248
         ],
         [
           "assets/char/portrait/char_1022_flwr2_1.png",
@@ -609,6 +637,10 @@
         [
           "assets/char/skin_avatar/char_123_fang_winter_1.png",
           55355
+        ],
+        [
+          "assets/char/skin_avatar/char_4125_rdoc_rainbow6_2.png",
+          51510
         ],
         [
           "assets/item/rogue_5_relic_return_29.png",
@@ -727,6 +759,10 @@
           32794
         ],
         [
+          "assets/local/operators/token_10054_phatm2_encdool/front/token_10054_phatm2_encdool.png",
+          24479
+        ],
+        [
           "assets/local/operators/token_10060_nasti_nstchr/front/token_10060_nasti_nstchr.png",
           25500
         ],
@@ -763,6 +799,10 @@
           37711
         ],
         [
+          "assets/relics/relic_006.png",
+          46959
+        ],
+        [
           "assets/relics/relic_010.png",
           35046
         ],
@@ -773,6 +813,10 @@
         [
           "assets/relics/relic_040.png",
           26570
+        ],
+        [
+          "assets/relics/relic_042.png",
+          35254
         ],
         [
           "assets/relics/relic_044.png",
@@ -807,6 +851,10 @@
           18611
         ],
         [
+          "assets/relics/relic_148.png",
+          37861
+        ],
+        [
           "assets/relics/relic_150.png",
           34517
         ],
@@ -823,8 +871,16 @@
           18870
         ],
         [
+          "assets/skill/skchr_fang2_2.png",
+          17070
+        ],
+        [
           "assets/skill/skchr_greyy2_1.png",
           10029
+        ],
+        [
+          "assets/skill/skchr_greyy2_2.png",
+          21282
         ],
         [
           "assets/skill/skchr_hbisc2_2.png",
@@ -875,6 +931,10 @@
           99691
         ],
         [
+          "assets/spine/op/char_002_amiya/front/char_002_amiya.png",
+          84155
+        ],
+        [
           "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.png",
           70412
         ],
@@ -887,12 +947,20 @@
           73407
         ],
         [
+          "assets/spine/op/char_1011_lava2/char_1011_lava2_nian_6/front/char_1011_lava2_nian_6.atlas",
+          6147
+        ],
+        [
           "assets/spine/op/char_1011_lava2/char_1011_lava2_whirlwind_9/back/char_1011_lava2_whirlwind_9.skel",
           179827
         ],
         [
           "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.png",
           64922
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.skel",
+          110020
         ],
         [
           "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/back/char_1024_hbisc2_unveiling_2.atlas",
@@ -953,6 +1021,10 @@
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/front/char_120_hibisc_nian_1.skel",
           59862
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/front/char_120_hibisc.atlas",
+          4025
         ],
         [
           "assets/spine/op/char_120_hibisc/front/char_120_hibisc.png",
@@ -1079,6 +1151,10 @@
           284444
         ],
         [
+          "assets/spine/op/char_4124_iana/back/char_4124_iana.png",
+          174854
+        ],
+        [
           "assets/spine/op/char_4124_iana/back/char_4124_iana.skel",
           120817
         ],
@@ -1121,6 +1197,10 @@
         [
           "assets/spine/op/char_4126_fuze/back/char_4126_fuze.png",
           408855
+        ],
+        [
+          "assets/spine/op/char_4126_fuze/front/char_4126_fuze.atlas",
+          8887
         ],
         [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.atlas",
