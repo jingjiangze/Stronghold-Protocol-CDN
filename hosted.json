@@ -8443,8 +8443,8 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 21,
-      "bytes": 17912868,
+      "files": 27,
+      "bytes": 26605251,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
@@ -8529,6 +8529,30 @@
         [
           "assets/docs/mockups/mod-5-settings-packs.png",
           234007
+        ],
+        [
+          "assets/docs/mockups/mod-6-room-packs.png",
+          2357102
+        ],
+        [
+          "assets/docs/mockups/mod-7-lobby-packs-open.png",
+          2165439
+        ],
+        [
+          "assets/docs/mockups/mod-8-lobby-packs-phone-open.png",
+          437337
+        ],
+        [
+          "assets/docs/mockups/mod-overview.png",
+          2590214
+        ],
+        [
+          "assets/docs/mockups/mod-ui-alliances-phone.png",
+          200598
+        ],
+        [
+          "assets/docs/mockups/mod-ui-alliances-web.png",
+          941693
         ]
       ]
     }
