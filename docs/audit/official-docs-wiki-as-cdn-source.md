@@ -73,8 +73,14 @@
 
 ## 5. 本次执行范围
 
-- **只做 P3**（用户点名的「修改网页描述」）：`site/index.html` 的 docs 段 + `src/api-contract.mjs` 的 `/docs/**` 条目，写明令牌规则与「唯一的源是 R2/Pages」。
-- **P1/P2 未做**（`PENDING`）：P2 应与本仓 PR #1 的能力字段一起落地（`docsEligible` 并入 `capabilitiesOf()`）；P1 是新增发布产物，需按仓库发布流程加测试与门禁。
+- **P3 已做**（用户点名的「修改网页描述」）：`site/index.html` 的 docs 段 + `src/api-contract.mjs` 的 `/docs/**` 条目，写明令牌规则与「唯一的源是 R2/Pages」。已上线（站点工作流 `38047265086`）。
+- **P1/P2 已落地**（commit `1489429`，在 PR #1 `feat/free-mirror-selection` 分支上）：
+  - **P2 `docsEligible`**：并入 `src/origins.mjs` 的 `capabilitiesOf()`，由 `kind` 推导（只有持发布树的 r2/r2-alt/pages 为 true），随清单发布；`tests/origins.test.mjs` +2。
+  - **P1 `cdn/v1/docs.json`**：新增 `src/docs-source.mjs`（发布索引的 `docs/` 过滤视图：`path/size/sha256` + 发布 token + upstream tag + 取最新说明），由 `publishArt` 发布；`tests/docs-source.test.mjs` +6。
+  - 契约：`src/api-contract.mjs` 增 `/cdn/v1/docs.json` 条目。
+  - **注意**：这是发布侧改动，需下一次 `sync` 运行才在线上出现（当前线上还没有 `docs.json` 与 `docsEligible`）。
+- 全部测试：203 pass / 0 fail。
+
 
 ## 6. 未决 / 待核
 
