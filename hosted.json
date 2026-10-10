@@ -8443,12 +8443,36 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 394950,
+      "files": 7,
+      "bytes": 7225468,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
           394950
+        ],
+        [
+          "assets/docs/mockups/endless-1-home-solo.png",
+          1772498
+        ],
+        [
+          "assets/docs/mockups/endless-2-home-phone.png",
+          1163107
+        ],
+        [
+          "assets/docs/mockups/endless-3-ingame-ui.png",
+          425206
+        ],
+        [
+          "assets/docs/mockups/endless-4-dual-vs-server.png",
+          87454
+        ],
+        [
+          "assets/docs/mockups/endless-overview.png",
+          2617200
+        ],
+        [
+          "assets/docs/mockups/fusion-1-loadout.png",
+          765053
         ]
       ]
     }
