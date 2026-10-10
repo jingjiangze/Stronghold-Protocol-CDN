@@ -1,0 +1,986 @@
+{
+  "generatedAt": "2026-10-10T10:42:38.684Z",
+  "indexToken": "v0.2.2",
+  "indexFiles": 12261,
+  "sampledPaths": [
+    "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+    "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+    "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+    "assets/char/avatar/char_003_kalts.png",
+    "fonts/bender-light.woff2",
+    "assets/local/map/autochess/TX_autochessi_D.png"
+  ],
+  "notes": [
+    "r2 与 r2-alt 是同一个 R2 桶的第二个自定义域名：不同入口，但不是独立数据副本，共享 faultDomain=r2-bucket，选源时不得当两个独立故障域。",
+    "gitcdn-own 是 Worker 中继（proxy），字节正确但素材流量会过 Worker；按免费额度约束不得作为默认直连候选。",
+    "判据是解压后字节的 sha256 + 长度，不是 HEAD 的 content-length：jsDelivr/ghfast 对文本类素材压缩，HEAD 给的是压缩后长度。"
+  ],
+  "mirrors": [
+    {
+      "id": "r2",
+      "kind": "r2",
+      "root": "https://weishucdn.jiangjiangze.icu",
+      "coverage": "full",
+      "probe": null,
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 139125,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/139125",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "text/plain",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": "br",
+          "wireLength": null,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/8390",
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "size": 60639,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "size": 56617,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "font/woff2",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "size": 20276,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "size": 3289397,
+          "sizeOk": true,
+          "sha256Match": true
+        }
+      ],
+      "verdict": "eligible",
+      "reasons": []
+    },
+    {
+      "id": "r2-alt",
+      "kind": "r2",
+      "root": "https://weishucdn2.jiangjiangze.icu",
+      "coverage": "full",
+      "probe": null,
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 139125,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/139125",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "text/plain",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": "br",
+          "wireLength": null,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/8390",
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "size": 60639,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "size": 56617,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "font/woff2",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "size": 20276,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "size": 3289397,
+          "sizeOk": true,
+          "sha256Match": true
+        }
+      ],
+      "verdict": "eligible",
+      "reasons": []
+    },
+    {
+      "id": "jsdelivr",
+      "kind": "git",
+      "root": "https://cdn.jsdelivr.net/gh/jingjiangze/Stronghold-Protocol-CDN@main",
+      "coverage": "partial",
+      "probe": "/probe/cdn-probe.bin",
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 107,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 130,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 107,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 131,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 105,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 128,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 99,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 111,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 93,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 98,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "no-cache, no-store, must-revalidate",
+          "contentEncoding": "br",
+          "wireLength": 101,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 120,
+          "sizeOk": false,
+          "sha256Match": false
+        }
+      ],
+      "verdict": "ineligible",
+      "reasons": [
+        "coverage=partial：不含素材树",
+        "没有任何代表性素材路径返回 200",
+        "6 条尺寸不符",
+        "6 条 sha256 不符"
+      ]
+    },
+    {
+      "id": "ghfast-raw",
+      "kind": "git",
+      "root": "https://ghfast.top/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main",
+      "coverage": "partial",
+      "probe": "/probe/cdn-probe.bin",
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 404,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": null,
+          "contentEncoding": null,
+          "wireLength": 14,
+          "rangeStatus": 404,
+          "contentRange": null,
+          "size": 14,
+          "sizeOk": false,
+          "sha256Match": false
+        }
+      ],
+      "verdict": "ineligible",
+      "reasons": [
+        "coverage=partial：不含素材树",
+        "没有任何代表性素材路径返回 200",
+        "6 条尺寸不符",
+        "6 条 sha256 不符"
+      ]
+    },
+    {
+      "id": "jsdelivr-assets",
+      "kind": "git",
+      "root": "https://cdn.jsdelivr.net/gh/jingjiangze/Stronghold-Protocol-CDN@assets-raw",
+      "coverage": "full",
+      "probe": "/assets/char/avatar/char_1016_agoat2.png",
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": "br",
+          "wireLength": 29698,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/29698",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": "br",
+          "wireLength": 1499,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/1499",
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "size": 60639,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "size": 56617,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "font/woff2",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "size": 20276,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=604800, s-maxage=43200",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "size": 3289397,
+          "sizeOk": true,
+          "sha256Match": true
+        }
+      ],
+      "verdict": "eligible",
+      "reasons": []
+    },
+    {
+      "id": "ghfast-assets",
+      "kind": "git",
+      "root": "https://ghfast.top/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/assets-raw",
+      "coverage": "full",
+      "probe": "/assets/char/avatar/char_1016_agoat2.png",
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "max-age=300",
+          "contentEncoding": null,
+          "wireLength": 139125,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/139125",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "text/plain; charset=utf-8",
+          "cacheControl": "max-age=300",
+          "contentEncoding": "gzip",
+          "wireLength": 1542,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/8390",
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "max-age=300",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "size": 60639,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "max-age=300",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "size": 56617,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "max-age=300",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "size": 20276,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "max-age=300",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "size": 3289397,
+          "sizeOk": true,
+          "sha256Match": true
+        }
+      ],
+      "verdict": "eligible",
+      "reasons": []
+    },
+    {
+      "id": "gitcdn-own",
+      "kind": "git",
+      "root": "https://gitcdn.jiangjiangze.icu",
+      "coverage": "full",
+      "probe": "/probe/cdn-probe.bin",
+      "proxied": true,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": null,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/29698",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": null,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/1499",
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "size": 60639,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "size": 56617,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "font/woff2",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "size": 20276,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=3600",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "sha256Error": "The operation was aborted due to timeout"
+        }
+      ],
+      "verdict": "relay",
+      "reasons": [
+        "Worker 中继：可用但不得作为默认直连候选"
+      ]
+    },
+    {
+      "id": "pages",
+      "kind": "pages",
+      "root": "https://spages.jiangjiangze.icu",
+      "coverage": "full",
+      "probe": null,
+      "proxied": false,
+      "checks": [
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.skel",
+          "expected": {
+            "size": 139125,
+            "sha256": "cf7d424394eb283ecfc78c199f6576e6f983374e8d45a40bebee31d3503a6d2a"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": null,
+          "rangeError": "fetch failed",
+          "size": 139125,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/front/char_003_kalts.atlas",
+          "expected": {
+            "size": 8390,
+            "sha256": "7a7573283e8383300462e5a822ecfb041312e71b86513a0841cd8fd246324366"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "application/octet-stream",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": null,
+          "rangeStatus": 200,
+          "contentRange": null,
+          "size": 8390,
+          "sizeOk": true,
+          "sha256Match": true
+        },
+        {
+          "path": "assets/spine/op/char_003_kalts/back/char_003_kalts.png",
+          "expected": {
+            "size": 60639,
+            "sha256": "dc63d230869a1ad2b7d43b6c700b643f4558559e922084d1bbe82588a96fd700"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 60639,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/60639",
+          "sha256Error": "The operation was aborted due to timeout"
+        },
+        {
+          "path": "assets/char/avatar/char_003_kalts.png",
+          "expected": {
+            "size": 56617,
+            "sha256": "398f32e2ff78d9e6fcee8cb9b49979aca2457f47f8d7ce5e15c589ff317c17c0"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 56617,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/56617",
+          "sha256Error": "The operation was aborted due to timeout"
+        },
+        {
+          "path": "fonts/bender-light.woff2",
+          "expected": {
+            "size": 20276,
+            "sha256": "1a9c29195eecc9d8edc01e0f94c73ac2caa278db439b51155916cd231921f799"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "font/woff2",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 20276,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/20276",
+          "sha256Error": "The operation was aborted due to timeout"
+        },
+        {
+          "path": "assets/local/map/autochess/TX_autochessi_D.png",
+          "expected": {
+            "size": 3289397,
+            "sha256": "843c421961b16413e0d900e3f603ee86224cac594dafe0930df7c062195168c1"
+          },
+          "headStatus": 200,
+          "cors": "*",
+          "contentType": "image/png",
+          "cacheControl": "public, max-age=31536000, immutable",
+          "contentEncoding": null,
+          "wireLength": 3289397,
+          "rangeStatus": 206,
+          "contentRange": "bytes 0-1023/3289397",
+          "sha256Error": "The operation was aborted due to timeout"
+        }
+      ],
+      "verdict": "eligible",
+      "reasons": []
+    }
+  ],
+  "summary": {
+    "eligible": 5,
+    "ineligible": 2,
+    "relay": 1
+  }
+}
