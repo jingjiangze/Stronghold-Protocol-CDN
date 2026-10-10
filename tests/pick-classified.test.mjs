@@ -116,3 +116,29 @@ test('with no sample paths a class is absent rather than guessed', async () => {
   assert.equal(res.large, null);
   assert.ok(res.small);
 });
+
+// Field report 2026-10-10: sequential probing of sources that HANG rather than refuse took over 200
+// seconds, so the pick never finished. One wall-clock budget, and a source that cannot answer inside
+// it is dropped — that is a source we do not want anyway.
+test('a hanging source costs the budget, not the wall clock', async () => {
+  const hang = (init) => new Promise((_, reject) => {
+    const t = setTimeout(() => reject(new Error('never answers')), 30000);
+    if (init?.signal) init.signal.addEventListener('abort', () => { clearTimeout(t); reject(new Error('aborted')); });
+  });
+  const t0 = Date.now();
+  const res = await pickClassified(
+    [{ id: 'hangs', root: 'https://hang.test' }, { id: 'hangs-2', root: 'https://hang2.test' }, { id: 'ok', root: 'https://ok.test' }],
+    {
+      smallPaths: ['assets/a.skel'],
+      originRoot: 'https://origin.test',
+      timeoutMs: 5000,
+      deadlineMs: 800,
+      fetchImpl: async (u, init) => (u.includes('ok.test') ? body(100) : hang(init)),
+    },
+  );
+  const took = Date.now() - t0;
+  assert.ok(took < 4000, `the whole decision must finish inside the budget (took ${took} ms)`);
+  assert.ok(res.small, 'a class is still returned even though the origin and two mirrors hung');
+  assert.equal(res.small.winner, true, 'the one source that answered takes the class');
+  assert.equal(res.small.id, 'ok');
+});

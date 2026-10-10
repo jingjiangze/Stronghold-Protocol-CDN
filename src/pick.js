@@ -360,7 +360,7 @@ async function measurePaths(root, paths, { timeoutMs = 6000, fetchImpl = fetch, 
  */
 export async function pickClassified(mirrors, {
   smallPaths = [], largePaths = [], originRoot = '', margin = 0.2,
-  timeoutMs = 6000, fetchImpl = fetch, requireAssets = true, allowRelay = false,
+  timeoutMs = 6000, deadlineMs = 12000, fetchImpl = fetch, requireAssets = true, allowRelay = false,
 } = {}) {
   const origin = String(originRoot || '').replace(/\/+$/, '');
   const candidates = eligibleMirrors(mirrors, { requireAssets, allowRelay })
@@ -372,17 +372,35 @@ export async function pickClassified(mirrors, {
     { key: 'large', paths: largePaths, latencyClass: false },
   ];
   const out = {};
+  const startedAt = Date.now();
+  // ONE wall-clock budget for the whole decision, not just a per-request timeout. Measured in the
+  // field (2026-10-10, a box with broken IPv6): sequential probing of five sources — some of which
+  // simply hang rather than refuse — took over 200 seconds, so the pick never finished and the player
+  // waited on it. A source that cannot answer inside the budget is a source we do not want anyway.
+  const budgetLeft = () => deadlineMs - (Date.now() - startedAt);
 
   for (const cls of classes) {
     if (!cls.paths.length) { out[cls.key] = null; continue; }
-    const originMeasured = origin
-      ? { id: 'origin', root: origin, ...(await measurePaths(origin, cls.paths, { timeoutMs, fetchImpl, latencyClass: cls.latencyClass })) }
-      : null;
-    const measured = [];
-    for (const c of candidates) {
-      const m = await measurePaths(c.root, cls.paths, { timeoutMs, fetchImpl, latencyClass: cls.latencyClass });
-      if (m) measured.push({ ...c, ...m });
-    }
+    const bounded = () => Math.max(500, Math.min(timeoutMs, budgetLeft()));
+
+    // The origin is measured CONCURRENTLY with the mirrors, never serialised in front of them.
+    // Serial origin-first meant a hanging origin (the field case: broken IPv6, connects that time out
+    // rather than refuse) burned the whole budget and not a single mirror was even attempted — the
+    // pick then "chose" the origin that had just hung. One bounded round covers everyone.
+    const originPromise = origin
+      ? measurePaths(origin, cls.paths, { timeoutMs: bounded(), fetchImpl, latencyClass: cls.latencyClass })
+          .then((m) => (m ? { id: 'origin', root: origin, ...m } : null))
+      : Promise.resolve(null);
+    const results = await Promise.all([
+      ...candidates.map(async (c) => {
+        if (budgetLeft() <= 0) return null;
+        const m = await measurePaths(c.root, cls.paths, { timeoutMs: bounded(), fetchImpl, latencyClass: cls.latencyClass });
+        return m ? { ...c, ...m } : null;
+      }),
+      originPromise,
+    ]);
+    const originMeasured = results.length ? results[results.length - 1] : null;
+    const measured = results.slice(0, -1).filter(Boolean);
     const ranked = cls.latencyClass ? rankByLatency(measured) : [...measured].sort((a, b) => a.ms - b.ms);
     const best = ranked[0] || null;
     const score = (x) => (cls.latencyClass ? (x?.medianTtfb ?? x?.ttfbMs ?? null) : (x?.ms ?? null));
