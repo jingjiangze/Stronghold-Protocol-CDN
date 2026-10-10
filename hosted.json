@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 233,
-      "bytes": 31100283,
+      "files": 253,
+      "bytes": 35209727,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -3727,6 +3727,86 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4146_nymph/char_4146_nymph_epoque_42/front/char_4146_nymph_epoque_42.atlas",
           17234
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4151_tinman/char_4151_tinman_sale_11/front/char_4151_tinman_sale_11.atlas",
+          10414
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4151_tinman/char_4151_tinman_sale_11/front/char_4151_tinman_sale_11.skel",
+          187944
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4163_rosesa/char_4163_rosesa_game_7/front/char_4163_rosesa_game_7.png",
+          177686
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4163_rosesa/char_4163_rosesa_game_7/front/char_4163_rosesa_game_7.skel",
+          255251
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4191_tippi/char_4191_tippi_epoque_57/back/char_4191_tippi_epoque_57.png",
+          191933
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4191_tippi/char_4191_tippi_epoque_57/front/char_4191_tippi_epoque_57.atlas",
+          13777
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4193_lemuen/char_4193_lemuen_ambienceSynesthesia_7/front/char_4193_lemuen_ambienceSynesthesia_7.atlas",
+          18844
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4193_lemuen/char_4193_lemuen_ambienceSynesthesia_7/front/char_4193_lemuen_ambienceSynesthesia_7.skel",
+          872058
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/back/char_4194_rmixer_boc_12.skel",
+          268793
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/front/char_4194_rmixer_boc_12.png",
+          360856
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/front/char_4194_rmixer_boc_12.skel",
+          459170
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4226_veen/back/char_4226_veen.atlas",
+          20368
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4230_mcnist/back/char_4230_mcnist.atlas",
+          6902
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_423_blemsh/char_423_blemsh_littlePony_1/front/char_423_blemsh_littlePony_1.atlas",
+          11725
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_423_blemsh/char_423_blemsh_witch_2/front/char_423_blemsh_witch_2.skel",
+          257552
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_426_billro/char_426_billro_snow_3/front/char_426_billro_snow_3.atlas",
+          8152
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_426_billro/char_426_billro_snow_3/front/char_426_billro_snow_3.png",
+          103000
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_426_billro/char_426_billro_snow_3/front/char_426_billro_snow_3.skel",
+          267865
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_426_billro/char_426_billro_summer_8/front/char_426_billro_summer_8.atlas",
+          8260
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_427_vigil/char_427_vigil_epoque_27/front/char_427_vigil_epoque_27.skel",
+          608894
         ]
       ]
     }
