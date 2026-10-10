@@ -170,6 +170,19 @@
         return;
       }
       const model = buildTree(rows);
+      // 文件行后面跟上「说明」：必须可见，不能只藏在 chip 的 tooltip 里。
+      // awaiting-commit 行的 note 就是「没提交的原因」，后台一眼要能看到，不用悬停。
+      const appendFile = (file, atDepth) => {
+        const row = treeRow(file, atDepth, false);
+        container.appendChild(row);
+        if (file.note) {
+          const noteEl = document.createElement('div');
+          noteEl.className = 'tree__note';
+          noteEl.textContent = file.note;
+          noteEl.style.paddingLeft = `${atDepth * 14 + 8}px`;
+          container.appendChild(noteEl);
+        }
+      };
       const paint = (node, container, depth) => {
         for (const child of [...node.dirs.values()].sort((a, b) => (a.name < b.name ? -1 : 1))) {
           const row = treeRow(child, depth, true);
@@ -194,7 +207,7 @@
           container.appendChild(kids);
         }
         for (const f of node.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
-          container.appendChild(treeRow({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth, false));
+          appendFile({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth);
         }
       };
       paint(model, host, 0);

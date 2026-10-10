@@ -272,6 +272,9 @@ a.tree__name:hover { color: var(--accent); text-decoration: underline; }
 .tree__row--dir > .tree__name { color: var(--accent); }
 .tree__meta { margin-left: auto; color: var(--dim); font-size: 11px; white-space: nowrap; padding-left: 12px; }
 .tree__children { display: block; }
+/* 文件行下方的「说明」：必须可见（不再只藏在 chip 的 tooltip 里）。缩进与所在层对齐。 */
+.tree__note { color: var(--dim); font-size: 11px; line-height: 1.5; padding: 1px 12px 3px; word-break: break-word; }
+.tree__row:hover ~ .tree__note, .tree__note:hover { color: var(--fg); }
 /* The hosted badge sits next to the name, not at the row end, so it reads as part of the name. */
 .chip--mod { margin-left: 0; color: var(--accent); border-color: #618273; background: #a5eccd12; }
 .toolbar input[type="search"] {
