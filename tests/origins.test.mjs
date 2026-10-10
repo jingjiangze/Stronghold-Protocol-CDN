@@ -124,3 +124,27 @@ test('the shipped origins.json retires statically', () => {
   assert.ok(cfg.retired.includes('statically'), 'statically must be listed as retired');
   assert.ok(!(cfg.gitOrigins || []).some((o) => o.id === 'statically'), 'and must not also be declared');
 });
+
+// OpenI is published but parked: bytes are correct and it is the fastest origin measured, but it
+// answers Access-Control-Allow-Origin with a hard-coded third-party domain instead of echoing the
+// requester, so a browser cannot use it for cross-origin assets. Parking it is `enabled:false` in
+// origins.json — and that only works if the reader carries the field through.
+test('a git origin marked disabled is published with enabled:false', () => {
+  const out = withOriginsJson(
+    {
+      gitOrigins: [
+        { id: 'openi', root: 'https://openi.pcl.ac.cn/j/r/raw/branch/assets-raw', coverage: 'full', enabled: false },
+      ],
+    },
+    readGitOrigins,
+  );
+  assert.equal(out[0].enabled, false);
+});
+
+test('a git origin without the field is not marked disabled', () => {
+  const out = withOriginsJson(
+    { gitOrigins: [{ id: 'x', root: 'https://cdn.jsdelivr.net/gh/o/r@main', coverage: 'full' }] },
+    readGitOrigins,
+  );
+  assert.equal('enabled' in out[0], false);
+});

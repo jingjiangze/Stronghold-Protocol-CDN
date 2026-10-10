@@ -55,6 +55,16 @@
       "probe": "/probe/cdn-probe.bin",
       "coverage": "full",
       "note": "自有域中转（sp-git-mount-relay）：一个域名同时服务接口文件与素材树，按路径自动选分支；后端按 jsdelivr→ghfast 顺序回退"
+    },
+    {
+      "id": "openi",
+      "kind": "git",
+      "root": "https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw",
+      "probe": "/assets/char/avatar/char_1016_agoat2.png",
+      "coverage": "full",
+      "enabled": false,
+      "assets-ref": "assets-raw",
+      "note": "OpenI（启智）raw 挂载：本仓素材树由 openi-mirror.yml 每天四次推送。实测 TTFB ~0.25s、字节逐字节一致（sha256 核对）、覆盖 full —— 但它把 Access-Control-Allow-Origin 写死成第三方域 experience.pro.iflyaicloud.com，不反射请求方，且二进制（png/skel）忽略 Range（文本才回 206）。因此默认 enabled:false：浏览器跨域取 WebGL 贴图会被 CORS 拒绝，只能用于直链下载/构建期取源，不能作玩家运行时源。若平台日后改 CORS 或改由自有域中转，改这一处即可。"
     }
   ],
   "_retired_comment": "Retired origin ids. carryForwardOrigins restores any previously-published origin the current run does not produce, which is what keeps the Pages origin alive on runs without --pages -- but it also resurrects an origin that was deliberately removed from this file. Naming it here is how a removal sticks.",

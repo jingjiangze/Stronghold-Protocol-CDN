@@ -1,0 +1,81 @@
+name: openi-mirror
+
+# Mirror the committed art tree to a second git host (OpenI), four times a day.
+#
+# Why: the art tree is served from Cloudflare R2, which routes mainland traffic across the Pacific
+# (measured 1.1–8.1 s TTFB from this machine). OpenI's raw endpoint answered the same bytes at
+# ~0.25 s. Same content, same paths — the mirror is a plain git push of the `assets-raw` commit, and
+# origins.json turns it into a runtime origin the client can pick.
+#
+# Cost control: the job compares the remote's commit sha with the local one and exits when they
+# match, so the 915 MiB pack is only uploaded on the four runs a day where the art actually changed
+# — normally zero.
+#
+# Credentials: a deploy token held in OPENI_TOKEN. It is written to a remote URL for the single
+# command that needs it and never persisted into the repo's config, because `git remote set-url`
+# would leave the token sitting in .git/config for later steps to leak.
+on:
+  schedule:
+    # Four times a day, offset from the existing sync (which runs at :17 past every 6th hour) so
+    # the two never contend: this one reads a commit the sync may be in the middle of publishing.
+    - cron: '47 0,6,12,18 * * *'
+  workflow_dispatch:
+    inputs:
+      write:
+        description: 'true = actually push (default: dry-run, prints what it would do)'
+        type: boolean
+        default: false
+      force:
+        description: 'true = push even if the remote already names this commit'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openi-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The art lives on an orphan branch, so it is not fetched by the default checkout. Needed by
+      # both the script (which reads the tree) and the push (which sends those objects).
+      - name: fetch the art branch
+        run: git fetch origin assets-raw:refs/heads/assets-raw
+
+      - name: unit tests
+        run: node --test tests/*.test.mjs
+
+      - name: mirror
+        env:
+          OPENI_TOKEN: ${{ secrets.OPENI_TOKEN }}
+        run: |
+          set -eu
+          # --branch=assets-raw is the default; stated here because the branch name is the thing
+          # someone will need to find and change, and a default hidden in the script is invisible.
+          args="--remote=openi --branch=assets-raw"
+          if [ "${{ inputs.write }}" = "true" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+            args="$args --write"
+          fi
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
+          echo "node src/openi-mirror.mjs $args"
+
+          # Auth without ever persisting the token: the helper runs a shell snippet that reads
+          # OPENI_TOKEN out of the environment, so .git/config keeps the snippet and not the secret.
+          # (`git remote set-url` with the token inline would leave it in .git/config for later
+          # steps — and for anyone who reads the runner's checkout — to find.)
+          git config --global credential.helper '!f() { echo "username=jingjiangze"; echo "password=${OPENI_TOKEN}"; }; f'
+          git remote add openi "https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol.git"
+          node src/openi-mirror.mjs $args

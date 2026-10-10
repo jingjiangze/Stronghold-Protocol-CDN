@@ -81,6 +81,11 @@ export function readGitOrigins(root) {
         base: `${root_}/`,
         probe: String(entry.probe || GIT_PROBE_PATH),
         coverage: String(entry.coverage || 'partial'),
+        // Carried through so an origin can be published but parked. The selector honours
+        // `enabled:false`; dropping the field here would silently turn a deliberately parked
+        // origin back into a candidate — which for a source with broken CORS means clients
+        // picking it and failing on every cross-origin asset.
+        ...(entry.enabled === false ? { enabled: false } : {}),
         ...(entry.note ? { note: String(entry.note) } : {}),
       });
     } catch {
