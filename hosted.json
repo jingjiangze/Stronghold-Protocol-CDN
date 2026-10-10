@@ -8443,8 +8443,8 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 7,
-      "bytes": 7225468,
+      "files": 14,
+      "bytes": 13854745,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
@@ -8473,6 +8473,34 @@
         [
           "assets/docs/mockups/fusion-1-loadout.png",
           765053
+        ],
+        [
+          "assets/docs/mockups/fusion-2-skin-dual.png",
+          476019
+        ],
+        [
+          "assets/docs/mockups/fusion-3-devices.png",
+          660458
+        ],
+        [
+          "assets/docs/mockups/fusion-4-matrix.png",
+          272944
+        ],
+        [
+          "assets/docs/mockups/fusion-dual-platform.png",
+          1979614
+        ],
+        [
+          "assets/docs/mockups/merged-ui-reference.png",
+          510130
+        ],
+        [
+          "assets/docs/mockups/mock-1-lobby-private-room.png",
+          2274734
+        ],
+        [
+          "assets/docs/mockups/mock-2-lobby-private-room-phone.png",
+          455378
         ]
       ]
     }
