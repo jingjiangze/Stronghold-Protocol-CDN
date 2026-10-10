@@ -71,8 +71,10 @@
   "retired": [
     "statically"
   ],
-  "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next.",
+  "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
   "disabled": [
+    "jsdelivr",
+    "jsdelivr-assets",
     "openi"
   ]
 }
