@@ -514,3 +514,50 @@ delta 之后每席位可望降到 **~130–170 B/s** → 10 Mbps 容纳 **~7,000
 
 **复现**：`node _bw-rate.mjs 45`（实时速率）、`node _cap.mjs 60`（未压 / 压缩后容量）。
 
+---
+
+## 十、把「整场不变的字段」请出热帧（2026-10-10，re-apk 线 / PR #157）
+
+§九 之后 `m.public` 仍是唯一的大头。它内部有一批**开局即定、之后不再变**的字段（`lastRound` / `modeId` /
+`difficulty` / `stageId` / `factions` / `disabledBonds` / `drawnDisabledBonds` / `bannedChess` / `bossId` /
+`hiddenBossId`），而 permessage-deflate 用的是 **`serverNoContextTakeover`（每帧独立压）** ——
+**帧里任何常量都要在每一帧付出它的压缩后大小**。这就是它们值得搬走的全部理由。
+
+### 10.1 实测
+
+| | 每帧 |
+|---|---|
+| 完整帧（基线） | **5,653 B**（带 `full: true`） |
+| 紧凑帧（热帧） | **4,799 B** |
+| **每帧省** | **15.1%** |
+
+五个 case 实测这些字段 distinct 全为 1（coop NORMAL/HARD/ABYSS、solo、协同共竞变体）。
+
+### 10.2 怎么搬：基线 + 合并（**重连是重中之重**）
+
+- 热帧变**紧凑帧**（`views.js publicView({full:false})`），常量只在**基线**（`full: true`）里走一次。
+- `start()`：在阶段推进之后、flush 之前，给每个**在线真人席位**发一份基线 —— 保证任何紧凑帧之前客户端手里已有常量。
+- `_resync()`：加入 / **重连** / 观战席中途加入本来就发完整视图，现在带 `full: true`。
+- 客户端 **`main.js` 从「整份替换」改为「合并」**：见 `full: true` 就**丢弃镜像**重来，否则合并 ——
+  紧凑帧再也擦不掉基线给的常量。
+- **结算屏重放**保留完整帧（`ctx.lastPublicFull`），否则重连后会被重放一帧没有 `difficulty` 的视图。
+
+### 10.3 兜底（照抄 10Hz↔20Hz 那套的六要素）
+
+| 快照率（§7.1.2）的要素 | 本文的对应物 |
+|---|---|
+| `SP_SNAP_RATE=auto/slow/fast` pin | 能力位（**每 socket**，`hello.pub`） |
+| 每连接决策 | 每 socket 的 `pubCap`，**每次 hello 重新求值** |
+| 守恒守卫（慢 tick ⊂ 快 tick） | **基线一定先到**：`start()` 与 `_resync()` 都发 |
+| 无链路源 → plain 10 Hz | **未声明能力 → 一律发完整帧**（老客户端 / 第三方 / 部署前打开的旧 JS） |
+
+**`hello.version` 仍强校验**（`server/net.js`），所以能力位是**新增的可选字段**，不是版本号。
+
+### 10.4 还没做（按顺序）
+
+1. **`players[].bonds` 按收件人定制**（只发"屏幕上"那 1~2 个球员，其余剥掉）：单独一项约再省 **24% wire**；
+   需要服务端按收件人出帧 + 点开非屏幕玩家时走一次 `g.bonds` 按需请求。
+2. **delta**（只发变化字段）：在裁剪之上再约 **1.24×**（合计 2.05×）。
+3. 上游 **PR #91** 的只读状态接口（给外部观察者，**不动**对局内广播）。
+
+

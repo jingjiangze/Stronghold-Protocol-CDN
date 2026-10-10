@@ -25,6 +25,7 @@
       <a href="#measures">落地措施</a>
       <a href="#capacity">10 Mbps 容量</a>
       <a href="#mpub">m.public / 2000 人</a>
+      <a href="#compact">常量请出热帧</a>
       <a href="#verify">验收</a>
     </nav>
   </div>
@@ -506,6 +507,68 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
         <b>结论：</b>服务端不能放弃对结果 / 伤害的权威（否则就是外挂），所以砍得掉的是<b>队友状态保真度</b>与<b>敌人预览</b>，砍不掉权威层。
         能落地的是「服务端发增量 / 事件、客户端维护本地镜像」—— 正是上面的 delta。
       </p>
+    </div>
+  </section>
+
+  <!-- ===================== 整场常量请出热帧 ===================== -->
+  <section class="section" id="compact">
+    <div class="section-heading">
+      <div><div class="eyebrow">ANALYSIS · CONSTANTS OUT OF THE HOT FRAME</div><h2>把「整场不变的字段」请出热帧</h2></div>
+      <span class="section-status">基线 + 客户端合并；重连与兜底都按快照率那套做</span>
+    </div>
+
+    <p class="section-note" style="margin-bottom:14px">
+      <code class="inline">m.public</code> 里有一批<b>开局即定、之后不再变</b>的字段
+      （<code class="inline">lastRound</code> / <code class="inline">modeId</code> / <code class="inline">difficulty</code> /
+      <code class="inline">stageId</code> / <code class="inline">factions</code> / <code class="inline">disabledBonds</code> /
+      <code class="inline">drawnDisabledBonds</code> / <code class="inline">bannedChess</code> /
+      <code class="inline">bossId</code> / <code class="inline">hiddenBossId</code>）。而 permessage-deflate 用的是
+      <b><code class="inline">serverNoContextTakeover</code>（每帧独立压）</b> ——
+      <b>帧里任何常量，都要在每一帧付出它的压缩后大小</b>。这就是它们值得搬走的全部理由。
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th class="num">每帧</th></tr></thead>
+        <tbody>
+          <tr><td>完整帧（基线，带 <code class="inline">full: true</code>）</td><td class="num">5,653 B</td></tr>
+          <tr><td><b>紧凑帧（热帧）</b></td><td class="num"><b>4,799 B</b></td></tr>
+          <tr><td><b>每帧省</b></td><td class="num"><b>15.1%</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two-col" style="margin-top:18px">
+      <div class="mini">
+        <h4>基线 + 合并（重连是重中之重）</h4>
+        <ul>
+          <li>热帧变紧凑帧，常量只在<b>基线</b>（<code class="inline">full: true</code>）里走一次；</li>
+          <li><code class="inline">start()</code> 在阶段推进之后、flush 之前给每个<b>在线真人席位</b>发一份基线；</li>
+          <li><code class="inline">_resync()</code>（加入 / <b>重连</b> / 观战席中途加入）本来就发完整视图；</li>
+          <li>客户端把 <code class="inline">m.public</code> 从<b>整份替换</b>改为<b>合并</b>：见基线就丢弃镜像重来，
+              否则合并 —— 紧凑帧再也擦不掉常量；</li>
+          <li><b>结算屏重放</b>保留完整帧，否则重连后会被重放一帧没有 <code class="inline">difficulty</code> 的视图。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>兜底（照抄 10Hz↔20Hz 那套）</h4>
+        <ul>
+          <li>能力位<b>每 socket</b>声明（<code class="inline">hello.pub</code>），<b>每次 hello 重新求值</b>；</li>
+          <li><b>未声明的一律发完整帧</b> —— 老客户端、第三方客户端、部署前打开还在跑旧 JS 的页面，
+              行为与今天完全一致；</li>
+          <li><code class="inline">hello.version</code> 仍<b>强校验</b>，所以能力位是<b>新增的可选字段</b>，不是版本号；</li>
+          <li>基线一定先到（<code class="inline">start()</code> 与 <code class="inline">_resync()</code> 都发），
+              对应快照率那条"慢 tick 必须是快 tick 的子集"的守恒。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="notice" style="margin-top:16px">
+      <span><b>还没做（按顺序）：</b>
+      ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
+      ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（合计 2.05×）；
+      ③ 上游 <b>PR #91</b> 的只读状态接口（给外部观察者，<b>不动</b>对局内广播）。<br />
+      落地：re-apk 线 <b>PR #157</b>（<code class="inline">perf/ws-public-compact</code>）。</span>
     </div>
   </section>
 
