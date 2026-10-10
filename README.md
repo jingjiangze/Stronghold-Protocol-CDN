@@ -41,6 +41,23 @@ gh 取上游 latest release（或 --tag 指定）
 
 **默认 `--dry-run`：只读、零写入、不需要任何凭据。** 真实上传需要 `--write`，并要求 R2 凭据在环境里。
 
+## 第二镜像：OpenI
+
+素材树还同步到 [OpenI](https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol)（`assets-raw` 分支），
+由 `.github/workflows/openi-mirror.yml` 每天四次推送。它就是 `assets-raw` 的一次幂等 git push：
+远端已是同一 commit 时直接退出，不传那 915 MiB。
+
+**它默认停用（`origins.json` 里 `enabled: false`），因为它的 CORS 不能用。**
+实测它把 `Access-Control-Allow-Origin` 写死成第三方域 `experience.pro.iflyaicloud.com`，
+不反射请求方 —— 浏览器跨域取不到，对本项目就是贴图被污染、棋盘白屏。
+字节是对的（40 条路径抽样 sha256 全一致）、也是测过最快的（TTFB ~0.25s，对比本桶 1.1–8.1s），
+但快不能替代跨域可用性，所以它目前只用于直链下载与构建期取源。
+
+要把它变成玩家运行时源，得先绕过 CORS：要么让 Worker 中转补 `ACAO: *`，要么等平台修。
+两条都没做之前，把 `origins.json` 里那一处 `enabled` 改 true，只会把客户端送到一个必失败的源上。
+
+细节见 [`docs/audit/openi-mirror.md`](docs/audit/openi-mirror.md)。
+
 ## 接口
 
 基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`

@@ -81,6 +81,11 @@ export function readGitOrigins(root) {
         base: `${root_}/`,
         probe: String(entry.probe || GIT_PROBE_PATH),
         coverage: String(entry.coverage || 'partial'),
+        // Carried through so an origin can be published but parked. The selector honours
+        // `enabled:false`; dropping the field here would silently turn a deliberately parked
+        // origin back into a candidate — which for a source with broken CORS means clients
+        // picking it and failing on every cross-origin asset.
+        ...(entry.enabled === false ? { enabled: false } : {}),
         ...(entry.note ? { note: String(entry.note) } : {}),
       });
     } catch {
@@ -111,5 +116,28 @@ export function readRetiredOrigins(root) {
     return new Set();
   }
   const list = Array.isArray(cfg?.retired) ? cfg.retired : [];
+  return new Set(list.filter((id) => typeof id === 'string' && id));
+}
+
+/**
+ * Origin ids that stay PUBLISHED but must not be selected.
+ *
+ * `retired` removes an origin from the interface entirely; `disabled` keeps it visible — so the
+ * site can still list it and say why — while marking `enabled:false`, which every selector honours.
+ * A source that is fast but unusable belongs here, not in `retired`: removing it from the manifest
+ * would also remove the evidence and the fallback.
+ *
+ * Entries may also carry `enabled:false` on the entry itself; both spellings are read, because the
+ * two branches of this repository publish through different code and a parked origin must stay
+ * parked under either.
+ */
+export function readDisabledOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return new Set();
+  }
+  const list = Array.isArray(cfg?.disabled) ? cfg.disabled : [];
   return new Set(list.filter((id) => typeof id === 'string' && id));
 }
