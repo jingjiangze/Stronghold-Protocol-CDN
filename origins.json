@@ -70,5 +70,9 @@
   "_retired_comment": "Retired origin ids. carryForwardOrigins restores any previously-published origin the current run does not produce, which is what keeps the Pages origin alive on runs without --pages -- but it also resurrects an origin that was deliberately removed from this file. Naming it here is how a removal sticks.",
   "retired": [
     "statically"
+  ],
+  "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next.",
+  "disabled": [
+    "openi"
   ]
 }

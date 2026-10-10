@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readGitOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
+import { readGitOrigins, readDisabledOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
 import { carryForwardOrigins } from '../src/sync.mjs';
 
 function withOriginsJson(doc, fn) {
@@ -147,4 +147,23 @@ test('a git origin without the field is not marked disabled', () => {
     readGitOrigins,
   );
   assert.equal('enabled' in out[0], false);
+});
+
+// `disabled` is the list form of parking an origin; it exists because the same repo publishes from
+// two branches whose code reads the flag differently. Listing the id must park the origin even when
+// the entry itself says nothing.
+test('an id in the disabled list is read as a set', () => {
+  const out = withOriginsJson({ disabled: ['openi', '', null] }, readDisabledOrigins);
+  assert.equal(out.has('openi'), true);
+  assert.equal(out.size, 1, 'blanks are dropped');
+});
+
+test('the shipped origins.json parks openi and keeps it listed', () => {
+  const origins = readGitOrigins(path.resolve(process.cwd(), '.'));
+  const openi = origins.find((o) => o.id === 'openi');
+  assert.ok(openi, 'openi must stay in gitOrigins so the site can show it and say why');
+  // Parked by the entry AND by the list: either publishing branch must honour it.
+  assert.equal(openi.enabled, false);
+  const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
+  assert.ok(disabled.includes('openi'));
 });

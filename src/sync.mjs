@@ -37,7 +37,7 @@ import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins, readGitOrigins, readRetiredOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
@@ -355,6 +355,12 @@ async function main() {
     origins.push(...extraOrigins);
     const gitOrigins = readGitOrigins(ROOT);
     origins.push(...gitOrigins);
+    // Parking an origin has to be applied here, before the list is published: `enabled:false` is
+    // what stops a selector from choosing it, and it is only meaningful if it survives into the
+    // interface. Anything carried forward from a previous run gets it too — an origin that was
+    // parked last run must not come back enabled just because this run did not rebuild it.
+    const disabledIds = readDisabledOrigins(ROOT);
+    for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
     const flatOrigins = carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT));
     const mirrorsDoc = `${JSON.stringify(
       {
@@ -775,6 +781,10 @@ async function main() {
   // already carry forward (below); origins now do the same, keeping the structural ones (r2, pages)
   // from the published interface and merging this run's view into it.
   const publishedBefore = await readPublishedArt(opts.base);
+  // Same parking pass as the mirrors.json path above; both publish an origin list, and a parked
+  // origin must be parked in both or a selector reading one of them would still pick it.
+  const disabledIds = readDisabledOrigins(ROOT);
+  for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
   const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors, readRetiredOrigins(ROOT));
 
   let packs = [];
