@@ -43,7 +43,7 @@
 
 → **不能把任何 git 源当默认**；也不能只用探针文件给它打分。
 
-## 3. 要执行的修复（本轮未实施，见 §5）
+## 3. 要执行的修复（客户端已实现 F1–F3，站点侧 `pick.js` / F4 待办，见 §5）
 
 ### F1 打分改为「按真实素材路径测 + 每请求延迟为主」
 - `src/pick.js`：`pickStaged()` 增加 `samplePaths`（由调用方从自己的清单里取若干小素材路径，
@@ -82,8 +82,35 @@
 所以在 F1/F2 落地前，最直接的止血是**把 `jsdelivr` 与 `jsdelivr-assets` 放进 `origins.json` 的
 `disabled`**（软开关：仍发布、仍可见，但选源器不会用），选源只会落在 r2/pages/ghfast 上。
 
-## 5. 本轮状态
+## 5. 本轮状态（2026-10-10 更新）
 
-- 已做：根因定位与量化（§1）、机理（§2）、修复设计（§3）。
-- **未做**：F1–F4 的代码改动与测试。原因：本会话上下文预算耗尽，未写完并验证的改动不提交。
-- 建议执行顺序：**F2+F3（小、直接止血）→ F1（打分）→ F4（服务器侧 + 报告发布）→ §4 的 disabled 收紧**。
+### 已做
+- 根因定位与量化（§1）、机理（§2）、修复设计（§3）。
+- **§4 止血已生效**：`origins.json` 把 `jsdelivr` / `jsdelivr-assets` 放进 `disabled`（软开关）——
+  commit **`424e8c0`**（分支 `feat/free-mirror-selection`）。`disabled` 已通过仓库自己的
+  `sync.yml`（`write=true interface_only=true`，run **`38056783234` = success**）重发 `mirrors.json` 生效。
+  本机代理对 `weishucdn` 持续 TLS 握手失败（curl 一次都没成功），"已生效"依据是工作流成功，非本机独立复核字节；
+  已缓存选源的设备最长 6h 后才会切走（`ArtSource` TTL）。
+- **F1 + F2 + F3 在 Java 客户端已实现并真机验收**：commit **`6e38598a`**（客户端仓 `feat/free-mirror-selection`，
+  Android re-apk）。按实现：
+  - `ArtSource.baseFor(path)` 按类分流（audio / local/map / 大媒体扩展名走吞吐胜出源，其余走延迟胜出源）。
+  - F1：在**真实素材路径**上测，`SMALL_PATHS`（spine atlas / 头像 png / 字体）取 **TTFB 中位数**，
+    `LARGE_PATHS`（3.2 MB 地图 png）取**总耗时**；不再用 256 KiB 热探针。
+  - F2：`MARGIN=20%`，原站也在同样真实路径上被测做同口径对照，胜出源须好出 20% 才接管，否则留原站。
+  - F3：任一真实文件失败即本次会话弃用该源（`Sample.failed`）。
+  - 验收：AVD `medium_phone` 装机，`smallBase`/`largeBase` 均为 `https://weishucdn.jiangjiangze.icu/assets/`、
+    `smallId`/`largeId` 空——两类都落在原站，不再选中 `jsdelivr-assets`（改前设备选中的正是最慢的它）。
+    「镜像快出一档被切走」分支在模拟器里没被真实触发（需某镜像确实快），只在单测/代码层验证过。
+
+### 未做（不掩饰）
+- **站点侧 `src/pick.js` 仍是旧探针逻辑**：F1/F2 只落在了 Java 客户端。站点页面与任何 JS 消费方仍按旧的
+  「32 KiB 探针 + 取最快」排序——`cdn/v1/pick.js` 是已上线的旧实现。把它也改成「真实路径 + 优于原站余量」是下一个待办。
+  （因为 `jsdelivr` 两条已被 `disabled`，站点侧即便用旧逻辑也不会再把设备指到最慢源。）
+- **F4 服务器侧选源 + 按类清单改写没有做**：按类分流目前只在我们 APK 内生效（走 `ArtCdn.cdnUrlFor` 单一钩子）；
+  网页端与上游原版客户端仍拿到单一基址。要做成全客户端生效，得改服务端清单改写（`static.js` 的
+  `ART_PATHS_IN_JSON` 扩展成按类映射到不同基址）——那是上游冲突面，需单独评估。
+- **`424e8c0` / `6e38598a` 尚未合入 `origin/main`**：当前在 `feat/free-mirror-selection` 分支；`disabled` 已通过
+  手动 `sync.yml` 重发 `mirrors.json` 生效，但分支本身待合并。
+
+### 修订后的执行顺序
+**§4 disabled（已做）→ 客户端 F1+F2+F3（已做，6e38598a）→ 站点 `pick.js` F1+F2（待做）→ F4 服务器侧 + 报告发布（待做）**。
