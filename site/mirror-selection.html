@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="description" content="多源自动选源：pick.js 让客户端按自身链路挑最快镜像，资格过滤 + fail-closed 白名单（非官方同人作品）" />
+  <title>多源自动选源 · 卫戍协议 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>素材 CDN<small>STRONGHOLD PROTOCOL</small></div>
+    </div>
+    <nav class="navigation">
+      <a href="./">CDN 首页</a>
+      <a href="#conclusion">结论</a>
+      <a href="#data">两份数据</a>
+      <a href="#probe">测速</a>
+      <a href="#eligibility">资格过滤</a>
+      <a href="#client">客户端</a>
+      <a href="#verify">验收</a>
+    </nav>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>多源自动选源</h1>
+      <p class="hero-description">
+        续《镜像站》。那一篇只说「有哪些源、各源分发什么」。<code class="inline">pick.js</code> 把「用哪个镜像」从
+        <b>写死的域名</b>变成<b>运行时决策</b>：部署机在一个网络、玩家在另一个网络，两边对「谁最快」没有共同答案。
+        本页记机制、资格过滤、客户端集成与验收。全部来自仓库源码与线上实测，不是估算（2026-10-10）。
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span>清单 <strong>只指主源</strong></span>
+      <span>换源 <strong>只改一次</strong></span>
+      <span>客户端 TTL <strong>6h</strong></span>
+    </div>
+  </section>
+
+  <!-- ===================== 结论 ===================== -->
+  <section class="block" id="conclusion">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">结论先行</span>
+      <span class="block__who">换源是运行时决策，不是写死域名（2026-10-10）</span>
+    </div>
+    <p class="block__lead">
+      素材清单（<code class="inline">data/assets.json</code> 等）里的 URL 指向<b>主源</b>；客户端 / 站点用
+      <code class="inline">pick.js</code> 给每个镜像<b>测速</b>，选最快的那个，再用 <code class="inline">rebaseManifest()</code>
+      把清单里的基址整体换掉——<b>换源只改一次清单，不动客户端代码</b>。
+    </p>
+    <div class="notice">
+      <span><b>资格过滤：</b>客户端逐条排除 <code class="inline">coverage:"partial"</code>（git 挂载源，源里没装全素材树）、
+      <code class="inline">assetEligible:false</code>、<code class="inline">proxied:true</code> 三类源；后两类当前线上没有源设，
+      是写死在客户端的防御性安全闸。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 两份数据 ===================== -->
+  <section class="section" id="data">
+    <div class="section-heading">
+      <div><div class="eyebrow">SERVER</div><h2>服务端给的两份数据</h2></div>
+      <span class="section-status">接口只在 weishucdn 一个域名</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>内容</th><th>缓存（线上实测）</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="mono">/cdn/v1/mirrors.json</td>
+            <td><code class="inline">flat[]</code>：id / kind / root / base / 可选 coverage / probe / note；另含 packs / upstream / token</td>
+            <td class="mono">public, max-age=300（CORS *）</td>
+          </tr>
+          <tr>
+            <td class="mono">/cdn/v1/pick.js</td>
+            <td>零依赖 ES 模块：<code class="inline">pickFastest()</code> 测速返回最快源；<code class="inline">rebaseManifest()</code> 换源</td>
+            <td class="mono">public, max-age=14400（4h，CORS *）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>不存在</b> <code class="inline">/cdn/v1/docs.json</code> 这种接口：docs 走的是 <code class="inline">docs/**</code> 静态树
+      （只在 R2 / Pages，git 挂载源 404），不是 <code class="inline">/cdn/v1/</code> 下的独立契约文件。接口清单本身就是
+      <code class="inline">/cdn/v1/api.json</code>。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 测速 ===================== -->
+  <section class="section" id="probe">
+    <div class="section-heading">
+      <div><div class="eyebrow">PROBE</div><h2>测速怎么做（pick.js）</h2></div>
+      <span class="section-status">按镜像自己的 probe 测，content-length 校验</span>
+    </div>
+    <div class="two-col">
+      <div class="mini">
+        <h4>pickFastest(mirrors, { path, attempts=2, timeoutMs=6000 })</h4>
+        <ul>
+          <li><b>每个镜像并发测</b>，各取 2 次、取最快一次（冷连接不作为判决）。</li>
+          <li><b>探针路径用镜像自己发布的 <code class="inline">probe</code></b>，不是调用方默认路径——因为 R2/Pages 源有
+            <code class="inline">/cdn/v1/</code> 树，而 git 挂载源对该路径 502、对 <code class="inline">/robots.txt</code> 404。
+            若不读 <code class="inline">mirror.probe</code>，所有 git 源都会被误判为坏源（这就是旧 bug）。</li>
+          <li><b>200 不够</b>：还比对 <code class="inline">content-length</code> 与实际收到的字节，短读 / 空体当作坏源。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>rebaseManifest(text, { from, to })</h4>
+        <p class="download__meta">把清单文本里主源基址整体替换成选中源的基址（一次字符串替换，不含逐文件改写）。</p>
+        <p>返回 <code class="inline">{ best, ranked }</code>，按时延排序；调用方取 <code class="inline">best.base</code> 即可拼素材 URL。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 资格过滤 ===================== -->
+  <section class="section" id="eligibility">
+    <div class="section-heading">
+      <div><div class="eyebrow">ELIGIBILITY</div><h2>资格过滤（哪些源不测）</h2></div>
+      <span class="section-status">客户端 ArtSource.java 第 209–211 行</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>排除条件</th><th>含义</th><th>当前线上是否真的有</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="mono">assetEligible == false</td>
+            <td>发布方显式声明「此源不适合给素材」</td>
+            <td><b>防御性</b>：当前没有任何源设这个值，默认当 <code class="inline">true</code></td>
+          </tr>
+          <tr>
+            <td class="mono">coverage == "partial"</td>
+            <td>源里没装全素材树，测了也是 404</td>
+            <td><b>真实存在</b>：git 挂载源（<code class="inline">@main</code> 分支）会带这个标记</td>
+          </tr>
+          <tr>
+            <td class="mono">proxied == true</td>
+            <td>每字节都过 Worker 中转，免费计划预算付不起</td>
+            <td><b>防御性</b>：当前没有任何源设这个值，默认 <code class="inline">false</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>当前线上真正被过滤掉的只有 <code class="inline">coverage:"partial"</code> 的 git 挂载源</b>，其它两条是写死在客户端的安全闸——
+      万一将来某源声明自己不胜任，客户端不会把它选上，不需要改客户端或发版。
+      素材树已于 2026-10-09 提交到本仓 <code class="inline">assets-raw</code> 孤儿分支，所以指向那个分支的 git 源可以是全量；
+      而 <code class="inline">root</code> 仍落在 <code class="inline">@main</code> 的那条仍是 <code class="inline">partial</code>。
+      客户端不看分支名，只看 <code class="inline">coverage</code> 字段。</span>
+    </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>fail-closed 白名单：</b>客户端挑源时只认白名单里的 host（<code class="inline">weishucdn</code> /
+      <code class="inline">weishucdn2</code> / <code class="inline">spages</code> / <code class="inline">gitcdn</code> /
+      <code class="inline">cdn.jsdelivr.net</code> / <code class="inline">ghfast.top</code> /
+      <code class="inline">dl.jiangjiangze.icu</code> / <code class="inline">jingjiangze.github.io</code>），列表在构建期写死、
+      <b>不读网络</b>——被篡改的 <code class="inline">mirrors.json</code> 无法把设备指到新主机。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 客户端 ===================== -->
+  <section class="section" id="client">
+    <div class="section-heading">
+      <div><div class="eyebrow">CLIENT</div><h2>客户端集成（Android re-apk）</h2></div>
+      <span class="section-status">ArtSource.java + ArtCdn.java（commit f135be4e）</span>
+    </div>
+    <div class="two-col">
+      <div class="mini">
+        <h4>挑源线程</h4>
+        <ul>
+          <li><code class="inline">ArtSource.refresh()</code>：单独线程拉 <code class="inline">mirrors.json</code> → 对每个候选发一个<b>封顶 32 KB</b>的小探针 → 选最快；结果写 <code class="inline">SharedPreferences</code>，<b>6 小时 TTL，跨启动缓存</b>。</li>
+          <li><b>不阻塞启动</b>：挑源线程跑着，页面先用编译期常量 <code class="inline">Line.ASSETS_CDN_PREFIX</code>，挑好了再切。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>取素材钩子</h4>
+        <ul>
+          <li><code class="inline">ArtCdn.cdnUrlFor(rel)</code>：<b>唯一的取素材钩子</b>，把 <code class="inline">/assets/&lt;rel&gt;</code> 映射到选中源的 <code class="inline">ASSET_PREFIX</code>。</li>
+          <li><code class="inline">MainActivity</code> 先查本地树 / APK，都没有才回退到该源<b>同域</b>取（跨域图会污染 canvas）。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>fail-safe by construction：</b>任何失败路径（无网络 / 列表解析失败 / 没人应答 / 答案不在白名单）都让
+      <code class="inline">base()</code> 留在编译期常量——挑成了就对，挑不成则<b>行为与此功能不存在时完全一致</b>。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 验收 ===================== -->
+  <section class="section" id="verify">
+    <div class="section-heading">
+      <div><div class="eyebrow">VERIFY</div><h2>验收</h2></div>
+      <span class="section-status">接口 / 站点测速 / 客户端三条线</span>
+    </div>
+    <pre class="code"><i># 1. 接口清单里有 pick.js 与 mirrors.json（应见这两个端点）</i>
+curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/(pick\.js|mirrors\.json)"'
+
+<i># 2. 站点的测速按钮真在数据上跑（打开 https://downcdn.jiangjiangze.icu/#mirrors 点「开始测速」）</i>
+<i>#    应看到每个源一条时延，最快的排在前面；git 挂载源若标 partial 不应被当坏源</i>
+
+<i># 3. 客户端：真机装 re-apk 后，首次联网挑源，之后 6 小时内不再测；</i>
+<i>#    离线 / 测速全失败则不挑（回落主源，功能透明）</i></pre>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div>
+        非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
+        本页数字来自仓库源码与线上实测，随代码变更可能漂移。
+      </div>
+      <div class="footer-links">
+        <a href="./">CDN 首页</a>
+        <a href="./#mirrors">↗ 镜像站</a>
+        <a href="./docs/mirror-selection.md">原始 Markdown</a>
+        <a href="./asset-cdn">↗ 素材 CDN 对账</a>
+        <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
+        <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
+        <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">上游仓库</a>
+      </div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

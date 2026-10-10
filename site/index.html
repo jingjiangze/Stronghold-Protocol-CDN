@@ -31,6 +31,7 @@
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="#asset-cdn">素材 CDN 对账</a>
+      <a href="#mirror-selection">多源自动选源</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -333,6 +334,25 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
     <div class="cards" id="mirror-cards"></div>
 
+    <div class="cards" style="margin-top:16px">
+      <a class="card" href="./mirror-selection">
+        <div class="card__title">多源自动选源（机制文档）</div>
+        <div class="card__meta"><span>pick.js 测速 / 资格过滤 / 客户端按设备挑源 / fail-closed 白名单</span></div>
+        <div class="card__stats">
+          <span>换源 <b>只改一次清单</b></span>
+          <span>客户端 TTL <b>6h</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/mirror-selection.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>资格过滤表</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+
     <div class="section-heading" style="margin:26px 0 14px">
       <div><div class="eyebrow">REFERENCE · PACKS</div><h3>打包通道</h3></div>
       <span class="section-status">同一批字节，少数几个下载</span>
@@ -431,6 +451,45 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
           <span>含 <b>逐对象 HEAD</b> 实测</span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+      <a class="card" href="./mirror-selection">
+        <div class="card__title">↗ 多源自动选源（机制文档）</div>
+        <div class="card__meta"><span>换源是运行时决策：pick.js 测速 + 资格过滤 + 客户端按设备挑源</span></div>
+        <div class="card__stats">
+          <span>清单 <b>只指主源</b></span>
+          <span>换源 <b>只改一次</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="mirror-selection">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · MULTI-SOURCE</div><h2>多源自动选源（CDN 优化）</h2></div>
+      <span class="section-status">客户端按自身链路挑最快镜像，换源只改一次清单</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      《镜像站》只说「有哪些源、各源分发什么」。这份记「用哪个镜像」怎么从写死域名变成<b>运行时决策</b>：
+      部署机在一个网络、玩家在另一个网络，两边对「谁最快」没有共同答案。<code class="inline">pick.js</code> 给每个镜像
+      测速、选最快的，再用 <code class="inline">rebaseManifest()</code> 把清单基址整体换掉——<b>换源只改一次清单，不动客户端代码</b>。
+      客户端（Android re-apk）每台设备自己挑，6 小时 TTL，fail-closed 白名单兜底。
+    </p>
+    <div class="cards">
+      <a class="card" href="./mirror-selection">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>两份数据 / 测速做法 / 资格过滤表 / 客户端集成 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>客户端 TTL <b>6h</b></span>
+          <span>换源 <b>只改一次</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/mirror-selection.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>资格过滤表</b></span>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>
@@ -556,9 +615,11 @@ console.log(best.id, best.base, best.ms + "ms");</pre>
       非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
       本站不提供游戏本体下载，只镜像上游仓库发布包里的静态资源。
     </div>
-    <div class="footer-links">
-      <a href="./mod">Mod 梳理（APK 端 / 服务器端）</a>
-      <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
+      <div class="footer-links">
+        <a href="./mod">Mod 梳理（APK 端 / 服务器端）</a>
+        <a href="./admin">素材上传后台（agent）</a>
+        <a href="./docs/agent-upload.md">agent 接入说明</a>
+        <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
       <a href="https://game.rainya.me/" target="_blank" rel="noopener">联机中转站</a>
       <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
       <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">上游仓库</a>
