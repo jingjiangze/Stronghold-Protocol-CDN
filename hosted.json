@@ -375,12 +375,16 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 188,
-      "bytes": 17859182,
+      "files": 208,
+      "bytes": 19374652,
       "keys": [
         [
           "assets/audio/sfx/player/p_imp/p_imp_mjckyrdglsnt.mp3",
           5805
+        ],
+        [
+          "assets/audio/sfx/player/p_imp/p_imp_mjckyrdnt_r.mp3",
+          9453
         ],
         [
           "assets/audio/sfx/player/p_skill/p_skill_mjckyrdslnt_s1.mp3",
@@ -445,6 +449,10 @@
         [
           "assets/band/icon_ela.png",
           52787
+        ],
+        [
+          "assets/bond/demonShip.png",
+          55725
         ],
         [
           "assets/bond/rainbowShip.png",
@@ -587,6 +595,10 @@
           96056
         ],
         [
+          "assets/char/skin_avatar/char_1027_greyy2_breaker_1.png",
+          58284
+        ],
+        [
           "assets/char/skin_avatar/char_120_hibisc_nian_1.png",
           52842
         ],
@@ -695,6 +707,10 @@
           32824
         ],
         [
+          "assets/local/operators/token_10027_ironmn_pile1/front/token_10027_ironmn_pile1.png",
+          36663
+        ],
+        [
           "assets/local/operators/token_10029_slent2_protrb/front/token_10029_slent2_protrb.png",
           24438
         ],
@@ -731,6 +747,10 @@
           21645
         ],
         [
+          "assets/local/skills/skchr_makoto_3.png",
+          32897
+        ],
+        [
           "assets/relics/relic_001.png",
           37157
         ],
@@ -741,6 +761,10 @@
         [
           "assets/relics/relic_003.png",
           37711
+        ],
+        [
+          "assets/relics/relic_010.png",
+          35046
         ],
         [
           "assets/relics/relic_025.png",
@@ -759,6 +783,10 @@
           33781
         ],
         [
+          "assets/relics/relic_052.png",
+          24416
+        ],
+        [
           "assets/relics/relic_053.png",
           37753
         ],
@@ -771,12 +799,24 @@
           29755
         ],
         [
+          "assets/relics/relic_104.png",
+          25675
+        ],
+        [
+          "assets/relics/relic_105.png",
+          18611
+        ],
+        [
           "assets/relics/relic_150.png",
           34517
         ],
         [
           "assets/skill/skchr_amiya2_1.png",
           20065
+        ],
+        [
+          "assets/skill/skchr_blitz_1.png",
+          20788
         ],
         [
           "assets/skill/skchr_blitz_2.png",
@@ -793,6 +833,14 @@
         [
           "assets/skill/skchr_oblvns_2.png",
           33324
+        ],
+        [
+          "assets/skill/skchr_otter_1.png",
+          11370
+        ],
+        [
+          "assets/skill/skchr_rfrost_1.png",
+          14321
         ],
         [
           "assets/spine/op/char_002_amiya/back/char_002_amiya.png",
@@ -815,8 +863,20 @@
           145151
         ],
         [
+          "assets/spine/op/char_002_amiya/char_002_amiya_test_1/front/char_002_amiya_test_1.skel",
+          250546
+        ],
+        [
           "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.atlas",
           5648
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.png",
+          99691
+        ],
+        [
+          "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.png",
+          70412
         ],
         [
           "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.skel",
@@ -877,6 +937,10 @@
         [
           "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/front/char_1036_fang2_snow_8.png",
           154495
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/front/char_1036_fang2.atlas",
+          7172
         ],
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.atlas",
@@ -1035,6 +1099,10 @@
           197811
         ],
         [
+          "assets/spine/op/char_4124_iana/front/char_4124_iana.png",
+          200554
+        ],
+        [
           "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/back/char_4125_rdoc_rainbow6_2.skel",
           194719
         ],
@@ -1043,8 +1111,16 @@
           9068
         ],
         [
+          "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/front/char_4125_rdoc_rainbow6_2.png",
+          130729
+        ],
+        [
           "assets/spine/op/char_4125_rdoc/front/char_4125_rdoc.atlas",
           8329
+        ],
+        [
+          "assets/spine/op/char_4126_fuze/back/char_4126_fuze.png",
+          408855
         ],
         [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.atlas",
@@ -1121,6 +1197,10 @@
         [
           "assets/spine/op/char_458_rfrost/front/char_458_rfrost.png",
           70605
+        ],
+        [
+          "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/back/char_459_tachak_rainbow6_1.atlas",
+          4262
         ],
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.atlas",
