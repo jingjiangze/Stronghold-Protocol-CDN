@@ -375,9 +375,13 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 388,
-      "bytes": 29440710,
+      "files": 408,
+      "bytes": 30331001,
       "keys": [
+        [
+          "assets/audio/sfx/player/p_atk/p_atk_mjckyrdslnt.mp3",
+          13485
+        ],
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdslnt_lp.mp3",
           79341
@@ -417,6 +421,10 @@
         [
           "assets/audio/voice/cn/char_4123_ela/cn_021.mp3",
           12974
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_023.mp3",
+          8795
         ],
         [
           "assets/audio/voice/cn/char_4123_ela/cn_024.mp3",
@@ -459,6 +467,10 @@
           7332
         ],
         [
+          "assets/audio/voice/cn/char_456_ash/cn_029.mp3",
+          16318
+        ],
+        [
           "assets/audio/voice/cn/char_456_ash/cn_031.mp3",
           21542
         ],
@@ -487,6 +499,10 @@
           5451
         ],
         [
+          "assets/audio/voice/jp/char_4123_ela/cn_025.mp3",
+          10258
+        ],
+        [
           "assets/audio/voice/jp/char_4123_ela/cn_026.mp3",
           11093
         ],
@@ -497,6 +513,10 @@
         [
           "assets/audio/voice/jp/char_4123_ela/cn_028.mp3",
           7332
+        ],
+        [
+          "assets/audio/voice/jp/char_4123_ela/cn_029.mp3",
+          19244
         ],
         [
           "assets/audio/voice/jp/char_4123_ela/cn_030.mp3",
@@ -525,6 +545,10 @@
         [
           "assets/audio/voice/jp/char_4182_oblvns/cn_023.mp3",
           9213
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_024.mp3",
+          12138
         ],
         [
           "assets/audio/voice/jp/char_4182_oblvns/cn_025.mp3",
@@ -611,12 +635,20 @@
           55725
         ],
         [
+          "assets/bond/evolveShip.png",
+          25034
+        ],
+        [
           "assets/bond/rainbowShip.png",
           5283
         ],
         [
           "assets/char/avatar/char_002_amiya.png",
           56957
+        ],
+        [
+          "assets/char/avatar/char_1001_amiya2.png",
+          64210
         ],
         [
           "assets/char/avatar/char_1001_amiya2_2.png",
@@ -801,6 +833,10 @@
         [
           "assets/char/portrait/char_4125_rdoc_2.png",
           113898
+        ],
+        [
+          "assets/char/portrait/char_4126_fuze_1.png",
+          111676
         ],
         [
           "assets/char/portrait/char_4126_fuze_2.png",
@@ -1043,8 +1079,16 @@
           20471
         ],
         [
+          "assets/local/skills/skchr_ela_1.png",
+          15917
+        ],
+        [
           "assets/local/skills/skchr_ela_2.png",
           21645
+        ],
+        [
+          "assets/local/skills/skchr_makoto_1.png",
+          32264
         ],
         [
           "assets/local/skills/skchr_makoto_2.png",
@@ -1283,6 +1327,10 @@
           61869
         ],
         [
+          "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/front/char_002_amiya_epoque_4.atlas",
+          7895
+        ],
+        [
           "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/front/char_002_amiya_epoque_4.png",
           117953
         ],
@@ -1401,6 +1449,10 @@
         [
           "assets/spine/op/char_1011_lava2/front/char_1011_lava2.atlas",
           5851
+        ],
+        [
+          "assets/spine/op/char_1011_lava2/front/char_1011_lava2.skel",
+          169555
         ],
         [
           "assets/spine/op/char_1022_flwr2/back/char_1022_flwr2.atlas",
@@ -1535,6 +1587,10 @@
           73391
         ],
         [
+          "assets/spine/op/char_120_hibisc/back/char_120_hibisc.atlas",
+          2479
+        ],
+        [
           "assets/spine/op/char_120_hibisc/back/char_120_hibisc.skel",
           29443
         ],
@@ -1545,6 +1601,10 @@
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.png",
           65285
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/front/char_120_hibisc_nian_1.png",
+          85346
         ],
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/front/char_120_hibisc_nian_1.skel",
@@ -1595,12 +1655,20 @@
           9166
         ],
         [
+          "assets/spine/op/char_123_fang/char_123_fang_winter_1/front/char_123_fang_winter_1.skel",
+          115478
+        ],
+        [
           "assets/spine/op/char_123_fang/front/char_123_fang.atlas",
           7882
         ],
         [
           "assets/spine/op/char_123_fang/front/char_123_fang.png",
           73954
+        ],
+        [
+          "assets/spine/op/char_123_fang/front/char_123_fang.skel",
+          116683
         ],
         [
           "assets/spine/op/char_124_kroos/back/char_124_kroos.atlas",
@@ -1633,6 +1701,10 @@
         [
           "assets/spine/op/char_124_kroos/char_124_kroos_witch_1/front/char_124_kroos_witch_1.png",
           79774
+        ],
+        [
+          "assets/spine/op/char_124_kroos/front/char_124_kroos.atlas",
+          3958
         ],
         [
           "assets/spine/op/char_124_kroos/front/char_124_kroos.png",
@@ -1847,6 +1919,10 @@
           79173
         ],
         [
+          "assets/spine/op/char_457_blitz/front/char_457_blitz.atlas",
+          6791
+        ],
+        [
           "assets/spine/op/char_457_blitz/front/char_457_blitz.png",
           101987
         ],
@@ -1917,6 +1993,10 @@
         [
           "assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.atlas",
           2317
+        ],
+        [
+          "assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.skel",
+          52767
         ],
         [
           "assets/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp_witch_4.atlas",
