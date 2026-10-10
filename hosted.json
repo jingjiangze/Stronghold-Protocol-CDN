@@ -8640,12 +8640,16 @@
     },
     {
       "id": "sp-update-023",
-      "what": "0.2.3 PWA app icon 192",
+      "what": "0.2.3 maskable icon 192",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 3437,
+      "files": 9,
+      "bytes": 1162650,
       "keys": [
+        [
+          "assets/docs/upstream-merge/merge-3way-comparison.png",
+          1153607
+        ],
         [
           "assets/icons/app-192.png",
           884
@@ -8653,6 +8657,30 @@
         [
           "assets/icons/app-512.png",
           2553
+        ],
+        [
+          "assets/icons/app-maskable-192.png",
+          1043
+        ],
+        [
+          "assets/icons/app-maskable-512.png",
+          2489
+        ],
+        [
+          "assets/icons/apple-touch-icon.png",
+          1021
+        ],
+        [
+          "assets/icons/favicon-16.png",
+          275
+        ],
+        [
+          "assets/icons/favicon-32.png",
+          356
+        ],
+        [
+          "assets/icons/favicon-48.png",
+          422
         ]
       ]
     }
