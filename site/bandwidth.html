@@ -210,20 +210,26 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
         <p>战斗逻辑在各端浏览器跑，服务端不广播快照。</p>
         <div class="table-wrap" style="margin-top:10px">
           <table>
-            <thead><tr><th></th><th class="num">单帧</th><th class="num">10 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
+            <thead><tr><th></th><th class="num">单帧</th><th class="num">15 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
             <tbody>
-              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">10.3 KiB/s</td><td class="num"><b>118 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
-              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">2.5 KiB/s</td><td class="num"><b>496 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
+              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">15.5 KiB/s</td><td class="num"><b>78 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
+              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">3.7 KiB/s</td><td class="num"><b>330 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
             </tbody>
           </table>
         </div>
+        <p class="section-note" style="margin-top:8px">
+          口径：每秒字节 = 单帧 × 帧率（15 Hz = 60 tick/s ÷ <code class="inline">SNAPSHOT_EVERY = 4</code>），
+          容纳 = ⌊1,250,000 ÷ 每秒字节⌋（未压 1,058 × 15 = 15,870 → 78 人；w9 252 × 15 = 3,780 → 330 人）。
+          20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）两格不变；相对旧 10 Hz 口径，默认档恰好 ×1.5（只作用于这一条流）。
+        </p>
         <p style="margin-top:10px">
           压完是 4 倍差距，但<b>只要 <code class="inline">clientCombat</code> 退成 off，这两种都比默认路径贵 100 倍以上</b>。
           这是本轮唯一有数量级意义的风险点。
         </p>
         <div class="notice">
-          <span><b>两档并存的说明：</b>快照率已从原来的固定 30 Hz 降到 <b>10 Hz（默认，<code class="inline">SNAPSHOT_EVERY = 6</code>）</b>，
-          并在链路抖动时**按连接**自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
+          <span><b>两档并存的说明：</b>快照率不再是从前的固定 30 Hz、也不再是上一轮的 10 Hz：默认 <b>15 Hz（<code class="inline">SNAPSHOT_EVERY = 4</code>，60 tick/s ÷ 4）</b>，
+          链路抖动时<b>按 watcher（每条连接）</b>自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
+          两档由每个 watcher 自己的流逝 tick 计数独立驱动，15 Hz 与 20 Hz 互不嵌套（4 与 3 不整除，也没有"慢 tick 必须是快 tick 的子集"这种要求）。
           所以"30 Hz"那一栏是历史口径：按它算出的 <b>39 / 160 人</b> 只能当特定压力场景的算例，
           <b>不是当前默认配置下的容量</b>。本表两档都列出，请按实际档位读。</span>
         </div>
@@ -279,11 +285,11 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
             <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）。压缩后 505 B/s → <b>2,475 人</b></td>
           </tr>
           <tr>
-            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">10,580 B/s</td><td class="num">85 kbps</td><td class="num"><b>118 人</b></td>
-            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>10 Hz</b></td>
+            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">15,870 B/s</td><td class="num">≈127 kbps</td><td class="num"><b>78 人</b></td>
+            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>15 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 4</code>）</td>
           </tr>
           <tr>
-            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">2,520 B/s</td><td class="num">20 kbps</td><td class="num"><b>496 人</b></td>
+            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">3,780 B/s</td><td class="num">≈30 kbps</td><td class="num"><b>330 人</b></td>
             <td>同上，开启压缩</td>
           </tr>
           <tr>
@@ -297,9 +303,13 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     <div class="notice">
       <span><b>怎么读这张表：</b>A / B 的数字大到没有意义 —— 现实中会先撞 CPU、每进程 fd 上限、<code class="inline">maxConnections</code>。
       也就是说<b>默认配置下上行根本不构成限制</b>，2 万人只用来说明余量有多大。<br />
-      <b>C → D 的 118 → 496 人</b>才是压缩的真实价值（约 4.2×），但它只在非默认路径上成立。<br />
-      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>10 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 6</code>），
-      抖动链路按连接自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
+      <b>C → D 的 78 → 330 人</b>才是压缩的真实价值（约 4.2×），但它只在非默认路径上成立。<br />
+      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>15 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 4</code>），
+      抖动链路按 watcher 自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
+      口径：人均 B/s = 单帧 × 帧率，容纳 = ⌊1,250,000 ÷ 人均 B/s⌋ —— 未压 1,058 × 15 = 15,870 → 78 人；
+      w9 252 × 15 = 3,780 → 330 人；20 Hz 两格（21,160 / 5,040 B/s → 59 / 248 人）未变。
+      基准档 10 → 15 Hz 只影响 <code class="inline">b.snap</code>，服务端跑战斗这两行较旧口径恰好 ×1.5（+50%）——
+      实测佐证（4 人 + 2 观战整场）：<code class="inline">b.snap</code> 14,377 帧 / 3,277.2 KiB（均 233 B），旧 10 Hz 时是它的 2/3。
       早期版本的 30 Hz 口径（31,744 B/s → 39 人 / 160 人）<b>只是历史压力算例，不是当前容量</b>。<br />
       另注：这只算 <code class="inline">b.snap</code> 一种消息 —— 同频的 <code class="inline">b.ev</code> 与
       <code class="inline">m.field</code> 也会占用上行，单帧 × 帧率不等于完整 ws 流量。</span>
@@ -328,7 +338,10 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
 
     <p class="section-note" style="margin-bottom:14px">
-      上一轮把 <code class="inline">b.snap</code> 压到 10 Hz —— 但<b>默认路径（<code class="inline">clientCombat=on</code>）根本不发 <code class="inline">b.snap</code></b>。
+      快照率本轮从 10 Hz 调成 <b>15 Hz 基准 / 20 Hz 动态</b> —— 但<b>默认路径（<code class="inline">clientCombat=on</code>）根本不发 <code class="inline">b.snap</code></b>，
+      调频只动这一条流，所以<b>本页的每席位 / 压缩后数字（505 B/s、2,475 人）不受本轮调频影响</b>。
+      复测为证（生产默认、拦截每一帧出站消息）：每席位每场共 600.0 KiB、稳态 4,651.4 B/s（未压）；
+      按类型拆分 <code class="inline">m.public</code> 147.44 KiB、<code class="inline">m.ticker</code> 2.54 KiB、<code class="inline">b.pool</code> 0.03 KiB —— 里面没有一帧 <code class="inline">b.snap</code>。
       真正占满上行的是另一条流：<b><code class="inline">m.public</code></b>（对局的公开状态广播）。
       用生产 <code class="inline">Match</code> 引擎跑真实 4 人对局、拦截每一帧出站消息：
     </p>
@@ -383,9 +396,9 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
 
     <div class="notice" style="margin-top:18px">
-      <span><b>观战 / AI 节流：</b>不是本场球员的观战者每 2 帧才收一次 <code class="inline">b.snap</code>，本场球员照收每一帧。
+      <span><b>观战 / AI 节流：</b>不是本场球员的 watcher <b>按自己的档位</b>每 2 帧才收一次 <code class="inline">b.snap</code>（即它自己的间隔翻倍），本场球员照收每一帧。
       覆盖两类 —— <b>纯观战者</b>（被淘汰队友、观战席）与 <b>没人打的场</b>（全 AI 场，watcher 全是非球员）。
-      <code class="inline">b.ev</code> 永不丢。它与「链路自适应速率」合成：非球员拿到的是该场当前发射速率的一半。</span>
+      <code class="inline">b.ev</code> 永不丢。于是纯观战 / 全 AI 场的 watcher 拿到：基准 <b>7.5 Hz</b> / 动态 <b>10 Hz</b>（旧口径是 5 / 10）。</span>
     </div>
 
     <h3 style="margin-top:26px">10 Mbps 到底能不能带 2000 人</h3>
@@ -485,14 +498,16 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
         </ul>
       </div>
       <div class="mini">
-        <h4>兜底（照抄 10Hz↔20Hz 那套）</h4>
+        <h4>兜底（照抄 15Hz↔20Hz 那套）</h4>
         <ul>
           <li>能力位<b>每 socket</b>声明（<code class="inline">hello.pub</code>），<b>每次 hello 重新求值</b>；</li>
           <li><b>未声明的一律发完整帧</b> —— 老客户端、第三方客户端、部署前打开还在跑旧 JS 的页面，
               行为与今天完全一致；</li>
           <li><code class="inline">hello.version</code> 仍<b>强校验</b>，所以能力位是<b>新增的可选字段</b>，不是版本号；</li>
-          <li>基线一定先到（<code class="inline">start()</code> 与 <code class="inline">_resync()</code> 都发），
-              对应快照率那条"慢 tick 必须是快 tick 的子集"的守恒。</li>
+          <li>基线一定先到（<code class="inline">start()</code> 与 <code class="inline">_resync()</code> 都发）——
+              这<b>不是</b>快照率的对照物：快照率已改为每个 watcher <b>自己的流逝 tick 计数</b>，15 Hz 与 20 Hz
+              <b>互不嵌套</b>（4 与 3 不整除），没有"慢 tick 必须是快 tick 的子集"这种要求。
+              基线先到是<b>合并式接收端自身</b>的需要：漏帧 / 重连 / 中途加入的客户端必须先拿到一份权威全量帧才能自愈。</li>
         </ul>
       </div>
     </div>

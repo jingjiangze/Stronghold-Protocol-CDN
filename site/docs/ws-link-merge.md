@@ -16,7 +16,7 @@
 |---|---|
 | `server/wsCompression.js` | **新文件**：有界 deflate 参数（窗口 12 / 阈值 512 B / 无上下文接管）+ 压缩白名单（含 `m.public`） |
 | `server/lobby.js` | **真 bug**：`m.public` 走广播路径，而压缩开关过去只在单播路径生效 → `broadcastRoom` 和两条重放路径补传 `compress` |
-| `server/match/fields.js` | 观战 / AI 快照节流：非本场球员每 2 帧收一次 `b.snap`，事件不丢 |
+| `server/match/fields.js` | 观战 / AI 快照节流：**非本场球员的 watcher 按自己的档位每 2 帧收一次** `b.snap`（即它自己的间隔翻倍 → 基准 7.5 Hz / 动态 10 Hz），`b.ev` 永不丢 |
 | `tools/box/sp_update_zip.ps1` | 盒子上自动更新器重写槽脚本时**保留** `SP_WS_COMPRESSION=on`（用自建蓝绿更新的才需要；手工起服可忽略） |
 | `tools/ws-link-gate.mjs` | **同步门禁**：`node tools/ws-link-gate.mjs` 十项自检，防止下次更新把这套层静默抹掉 |
 

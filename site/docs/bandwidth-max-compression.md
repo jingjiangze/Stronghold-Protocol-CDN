@@ -109,16 +109,18 @@ zlibDeflateOptions: { level: 6, memLevel: 5 },
 
 这是**天然的最大带宽优化**，不是我们做的，但必须守住：战斗逻辑在各端浏览器跑，服务端不广播快照。
 
-对比（`b.snap` 24 单位实测）。**快照率现在是两档并存**：默认 **10 Hz**（`SNAPSHOT_EVERY = 6`），
-链路抖动时**按连接**自适应升到 **20 Hz**（`SNAPSHOT_EVERY_FAST = 3`）。
-所以下表两档都列 —— 早期版本那个"固定 30 Hz"口径（31,744 B/s → 39 / 160 人）**只是历史压力算例，不是当前容量**：
+对比（`b.snap` 24 单位实测）。**快照率现在是两档并存**：默认 **15 Hz**（`SNAPSHOT_EVERY = 4`，60 tick/s ÷ 4），
+链路抖动时**按 watcher（每条连接）**自适应升到 **20 Hz**（`SNAPSHOT_EVERY_FAST = 3`）。
+两档由每个 watcher 自己的流逝 tick 计数独立驱动，**互不嵌套**（4 与 3 不整除）。所以下表两档都列 ——
+早期版本那个"固定 30 Hz"口径（31,744 B/s → 39 / 160 人）**只是历史压力算例，不是当前容量**：
 
-| | 单帧 | 10 Hz（默认） | 10 Mbps 容纳 | 20 Hz（抖动链路） | 10 Mbps 容纳 |
+| | 单帧 | 15 Hz（默认） | 10 Mbps 容纳 | 20 Hz（抖动链路） | 10 Mbps 容纳 |
 |---|---|---|---|---|---|
-| 未压 | 1,058 B | 10.3 KiB/s = 0.085 Mbps | **118 人** | 20.7 KiB/s = 0.169 Mbps | **59 人** |
-| deflate w9（本轮） | 252 B | 2.5 KiB/s = 0.020 Mbps | **496 人** | 4.9 KiB/s = 0.040 Mbps | **248 人** |
+| 未压 | 1,058 B | 15.5 KiB/s = 0.127 Mbps | **78 人** | 20.7 KiB/s = 0.169 Mbps | **59 人** |
+| deflate w9 | 252 B | 3.7 KiB/s = 0.030 Mbps | **330 人** | 4.9 KiB/s = 0.040 Mbps | **248 人** |
 
-压完是 **4.2 倍**，但**只要 `clientCombat` 退成 `off`，这两种都比默认路径贵 100 倍以上**。这是本轮唯一有数量级意义的风险点。
+口径：每秒字节 = 单帧 × 帧率，容纳 = ⌊1,250,000 ÷ 每秒字节⌋（1,058 × 15 = 15,870 → 78；252 × 15 = 3,780 → 330）。
+相对旧 10 Hz 口径默认档恰好 ×1.5（+50%），只作用于 `b.snap`。压完是 **4.2 倍**，但**只要 `clientCombat` 退成 `off`，这两种都比默认路径贵 100 倍以上**。这是本轮唯一有数量级意义的风险点。
 
 > 另注：这只算 `b.snap` 一种消息。同频的 `b.ev` 与 `m.field` 也占上行，**单帧 × 帧率 ≠ 完整 ws 流量**。
 
@@ -156,16 +158,18 @@ zlibDeflateOptions: { level: 6, memLevel: 5 },
 > 详见 §八。
 > <br />口径：分母是**全部 `/ws` 请求的上行字节**（682.8 MiB，其中长连接占 682.7 MiB），分位取自同一集合。
 > 早期版本并列的 97.9% 与 88.8% 是**两套不同分母**，已统一为上面这一个。
-| C. 对局中（服务端模拟，**未压**） | 10,580 B/s | 85 kbps | **118 人** | `SP_COMBAT=server` / AI 接管，默认 **10 Hz** |
-| D. 对局中（服务端模拟，**deflate w9**） | 2,520 B/s | 20 kbps | **496 人** | 同上，开启压缩 |
-| C′ / D′. 同上，链路抖动升到 **20 Hz** | 21,160 / 5,040 B/s | 169 / 40 kbps | **59 / 248 人** | 按连接自适应升档（仅抖动链路） |
+| C. 对局中（服务端模拟，**未压**） | 15,870 B/s | ≈127 kbps | **78 人** | `SP_COMBAT=server` / AI 接管，默认 **15 Hz**（`SNAPSHOT_EVERY = 4`） |
+| D. 对局中（服务端模拟，**deflate w9**） | 3,780 B/s | ≈30 kbps | **330 人** | 同上，开启压缩 |
+| C′ / D′. 同上，链路抖动升到 **20 Hz** | 21,160 / 5,040 B/s | 169 / 40 kbps | **59 / 248 人** | 按 watcher 自适应升档（仅抖动链路；20 Hz 两格与单帧值均未变） |
 
 **读法**：A / B 的数字是「上行先被打满的人数」。A 行（大厅 ~40 B/s）大到没有意义 —— 现实中会先撞 CPU、每进程 fd 上限、`maxConnections`。
 但 **B 行（对局中）的稳态容量由 `m.public` 决定，不是 CPU**：实测人均 2,048 B/s，10 Mbps 只够 ~610 人（见 §九，开压缩后 ~2,475 人）。
 上表的 2 万人（A 行）只用来说明大厅态余量有多大，**不等于对局态容量**。
 
-**C → D 的 118 → 496 人是措施 4（战斗帧压缩）的真实价值（约 4.2×）**，但它只在非默认路径（服务端跑战斗 / AI 接管）上成立。
-C/D 两行按**当前**快照率算：默认 **10 Hz**（`SNAPSHOT_EVERY = 6`），抖动链路按连接升到 **20 Hz**（`SNAPSHOT_EVERY_FAST = 3`）。
+**C → D 的 78 → 330 人是措施 4（战斗帧压缩）的真实价值（约 4.2×）**，但它只在非默认路径（服务端跑战斗 / AI 接管）上成立。
+C/D 两行按**当前**快照率算：默认 **15 Hz**（`SNAPSHOT_EVERY = 4`），抖动链路按 watcher 升到 **20 Hz**（`SNAPSHOT_EVERY_FAST = 3`）。
+口径：人均 B/s = 单帧 × 帧率，容纳 = ⌊1,250,000 ÷ 人均 B/s⌋（未压 1,058 × 15 = 15,870 → 78 人；w9 252 × 15 = 3,780 → 330 人）。
+基准档 10 → 15 Hz 只影响 `b.snap`，服务端跑战斗这两行较旧口径恰好 ×1.5（+50%）。
 早期版本的 30 Hz 口径（31,744 B/s → 39 / 160 人）**只是历史压力算例，不是当前容量**。
 且这只算 `b.snap` 一种消息 —— 同频的 `b.ev`、`m.field` 也占上行，**单帧 × 帧率 ≠ 完整 ws 流量**。
 
@@ -208,6 +212,10 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$(curl -s https://weishu.
 
 ## 七、2026-10-09 线上复核：稳态是双峰，不是单值
 
+> 口径说明：本节写于 2026-10-09，当时快照基准档是 **10 Hz**（动态 20 Hz）。后续一轮把基准档升到 **15 Hz**
+> （`SNAPSHOT_EVERY = 4`，动态 20 Hz = `SNAPSHOT_EVERY_FAST = 3`），并改为**每个 watcher 独立计数**；
+> 本节保留为当时的定档依据，文中"10 Hz"均指当时基准。
+
 数据源：盒子 `D:\stronghold\nginx\logs\stronghold.access.log`，约 6.1 万条请求，跨 5 天
 （`04 Oct 17:00 → 09 Oct 16:42`；`bytes=$body_bytes_sent` 是 **gzip 之后**的字节，可当上行直接读）。
 
@@ -227,7 +235,7 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$(curl -s https://weishu.
 ### 7.1.1 根因已查明：服务端跑的战斗场以 20 Hz 推 `b.snap`
 
 `server/match/fields.js`：`INTERVAL_MS = 1000/30`、`GAME_SPEED = 2`
-→ **每真实秒 60 tick**（不是 30），`SNAPSHOT_EVERY = 3` 时 `_emit` 频率 = **60 / 3 = 20 帧/秒**，
+→ **每真实秒 60 tick**（不是 30），当时 `SNAPSHOT_EVERY = 3`（现名 `SNAPSHOT_EVERY_FAST`）时 `_emit` 频率 = **60 / 3 = 20 帧/秒**，
 `b.ev` 与 `b.snap` 同频。（源码注释原即写着 "20 Hz at 2× real time"，早期按 30 tick/s 推算的 10 Hz 是错的。）
 
 四类真实战斗的实测字节（单帧 gzip l6，取自 `public/dev/perf`）：
@@ -266,7 +274,7 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$(curl -s https://weishu.
 - `SP_WS_COMPRESSION=on` 端到端握手确认：
   `permessage-deflate; server_no_context_takeover; client_no_context_takeover; server_max_window_bits=9`（有界，非默认 15 窗口）。
 
-### 7.1.2 10 Hz 什么时候真的会难看：是链路抖动，不是位移
+### 7.1.2 当时基准 10 Hz 什么时候真的会难看：是链路抖动，不是位移
 
 先把一个反直觉的结论摆前面：**降帧不会让单位「跳」**。同一批 spec 上量相邻快照的单位位移，
 normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.js` 的 2.5 格瞬移阈值；
@@ -289,7 +297,7 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 | 75 ms | **4.2%** | 0.6% |
 | 150 ms | 11.2% | 3.6% |
 
-**所以判据是链路抖动**（阈值取 50 ms，正好是 10 Hz 间隔的一半 —— 缓冲装不下这么多）。
+**所以判据是链路抖动**（阈值取 50 ms，`SP_SNAP_JITTER_MS` 可调；该阈值定于基准 10 Hz 时期，推导见下表）。
 
 **实现**（`SP_SNAP_RATE=auto`，默认）：
 
@@ -300,9 +308,9 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
   老版本客户端一样有效。心跳那个无载荷 ping 不计入样本。
 - `server/match/snapRate.js`：判据 = RTT 的**相邻差均值**（mean |ΔRTT|），
   实测本机到线上约 56 ms。滞后：≥50 ms 升、≤20 ms 降、中间保持；换档要过 5 s 驻留。
-- `server/match/match/snapRate.js` + `server/match/fields.js`：**速率按连接，不按场** ——
-  某个 watcher 抖动就把**它那一场**提到 20 Hz，安静的连接仍拿 10 Hz。
-  一个抖动的人不该让同场其他人也翻倍。
+- `server/match/match/snapRate.js` + `server/match/fields.js`：**速率按 watcher，不按场** ——
+  每个 watcher 有自己的流逝 tick 计数；某个 watcher 抖动只把**它自己**提到 20 Hz，
+  同场的安静 watcher 仍拿基准档（当时 10 Hz，现 15 Hz）。一个抖动的人不该让同场其他人也翻倍。
 - **两个刹车**：socket 已在排队（`bufferedAmount` ≥ 32 KB）**一律不升级** ——
   加帧只会加深积压；`SP_SNAP_RATE=slow|fast` 可把两套配置任选一套钉死。
 - **跳帧不丢事件**：`drainEvents()` 是破坏性的，被跳过那帧的事件按 watcher 暂存、
@@ -311,7 +319,7 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 代价与边界（诚实说明）：每 2 s 一个 ws ping，约几十字节，只对正在推流的连接发；
 判定用的是**往返**抖动，而客户端关心的是**单向**（服务端→客户端）抖动，两者相关但不完全等价；
 阈值 50 ms 来自上面那张表，`SP_SNAP_JITTER_MS` 可调。升级只在确有抖动时发生，
-安静链路仍是 10 Hz，所以带宽收益基本保留。
+安静链路仍是基准档（当时 10 Hz，现 15 Hz），所以带宽收益基本保留。
 
 > 明细见 `C:\DDDD\Agent Work\tunnel-optimize\p90根因.md`。
 > 线上部署状态：改动已落盘到两个槽脚本 `update/sp_slot_300{1,2}.cmd`，下一次槽重启即生效。
@@ -368,6 +376,10 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 
 ## 八、改动清单
 
+> 口径说明：本清单是 2026-10-09 那一轮的改动记录（当时基准档 10 Hz）。其后一轮把基准档升到 **15 Hz**
+> （`SNAPSHOT_EVERY = 4`）、动态档 20 Hz 保持（`SNAPSHOT_EVERY_FAST = 3`），并改为按 watcher 独立计数；
+> 清单里的 `SNAPSHOT_EVERY 3 → 6` 是那一轮的事实，不是当前值。
+
 | 文件 | 改动 | 状态 |
 |---|---|---|
 | `server/match/snapRate.js` | **新增**：自适应快照率策略（纯逻辑，可单测） | ✅ 已加 |
@@ -409,7 +421,10 @@ WS 链路这块单独拆成了两份文档：
 [《WS 链路压缩（下一轮）》](./ws-link-compression-next.md) 是待执行的三步
 （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。本节是给站点访客的自包含摘要。
 
-上一轮把 `b.snap` 压到 10 Hz —— 但**默认路径（`clientCombat=on`）根本不发 `b.snap`**。
+快照率本轮从 10 Hz 调成 **15 Hz 基准 / 20 Hz 动态** —— 但**默认路径（`clientCombat=on`）根本不发 `b.snap`**：
+调频只动这一条流，本节与 §9.5 的每席位 / 容量数字（505 B/s、2,475 人）**不受本轮调频影响**。
+复测为证（生产默认、拦截每一帧出站消息）：每席位每场共 600.0 KiB、稳态 4,651.4 B/s（未压），
+拆分 `m.public` 147.44 KiB / `m.ticker` 2.54 KiB / `b.pool` 0.03 KiB —— 里面没有一帧 `b.snap`。
 真正占满上行的，是另一条流：`m.public`（对局的公开状态广播）。
 
 ### 9.1 实测：一个席位收到的字节里 98% 是 m.public
@@ -452,14 +467,14 @@ WS 链路这块单独拆成了两份文档：
 
 ### 9.4 观战 / AI 节流
 
-`server/match/fields.js` 的 `_emit`：**不是本场球员的观战者**每 2 帧才收一次 `b.snap`，
+`server/match/fields.js` 的 `_emit`：**不是本场球员的 watcher** 在**自己的档位**上每 2 帧才收一次 `b.snap`（即它自己的间隔翻倍），
 本场球员照收每一帧。覆盖两类，都是「全速位置更新买不到任何东西」的场合：
 
 - **纯观战者** —— 被淘汰的队友、观战席，其客户端本来就在快照之间插值；
 - **没人打的场** —— 每个球员都是 AI 的场（全 AI 场），它的 watcher 全是非球员。
 
 `b.ev` 永不丢（它带的是伤害数字 / 阵亡，观战 UI 仍要读）。
-这与 §7.1.2 的**链路自适应速率**合成：非球员拿到的是「该场当前发射速率的一半」。
+这与 §7.1.2 的**链路自适应速率**合成：非球员拿到的是**它自己档位的一半** —— 基准 **7.5 Hz**、动态 **10 Hz**（旧模型 5 / 10）。
 
 ### 9.5 10 Mbps 到底能不能带 2000 人
 
@@ -514,7 +529,7 @@ delta 之后每席位可望降到 **~130–170 B/s** → 10 Mbps 容纳 **~7,000
 |---|---|
 | `server/lobby.js` | `broadcastRoom` 传 `compress`；两条重放路径同样压（**真 bug 修复**） |
 | `server/wsCompression.js` | 白名单加 `m.public` / `m.private` / `m.result`；`serverMaxWindowBits` 9 → 12 |
-| `server/match/fields.js` | `_emit` 的观战 / AI 节流（非本场球员每 2 帧一发，事件不丢） |
+| `server/match/fields.js` | `_emit` 的观战 / AI 节流（非本场球员的 watcher 间隔翻倍，事件不丢） |
 | `tools/box/sp_update_zip.ps1` | 生成的槽脚本补 `set SP_WS_COMPRESSION=on`（否则切槽后压缩失效） |
 | `test/ws-compression.test.js` · `test/match/spectator.test.js` | 新增广播压缩断言 + 观战节流断言 |
 
@@ -550,14 +565,14 @@ delta 之后每席位可望降到 **~130–170 B/s** → 10 Mbps 容纳 **~7,000
   紧凑帧再也擦不掉基线给的常量。
 - **结算屏重放**保留完整帧（`ctx.lastPublicFull`），否则重连后会被重放一帧没有 `difficulty` 的视图。
 
-### 10.3 兜底（照抄 10Hz↔20Hz 那套的六要素）
+### 10.3 兜底（照抄 15Hz↔20Hz 那套的六要素）
 
 | 快照率（§7.1.2）的要素 | 本文的对应物 |
 |---|---|
 | `SP_SNAP_RATE=auto/slow/fast` pin | 能力位（**每 socket**，`hello.pub`） |
-| 每连接决策 | 每 socket 的 `pubCap`，**每次 hello 重新求值** |
-| 守恒守卫（慢 tick ⊂ 快 tick） | **基线一定先到**：`start()` 与 `_resync()` 都发 |
-| 无链路源 → plain 10 Hz | **未声明能力 → 一律发完整帧**（老客户端 / 第三方 / 部署前打开的旧 JS） |
+| 每 watcher 独立计数决策（15 / 20 Hz 两档互不嵌套） | 每 socket 的 `pubCap`，**每次 hello 重新求值** |
+| 快照已无「守恒守卫」（旧"慢 tick ⊂ 快 tick"随独立计数作废） | **基线一定先到**：`start()` 与 `_resync()` 都发 —— 理由不同：漏帧 / 重连的合并端需要一份权威全量帧 |
+| 无链路源 → plain 15 Hz | **未声明能力 → 一律发完整帧**（老客户端 / 第三方 / 部署前打开的旧 JS） |
 
 **`hello.version` 仍强校验**（`server/net.js`），所以能力位是**新增的可选字段**，不是版本号。
 
