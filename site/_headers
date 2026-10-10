@@ -86,3 +86,8 @@
 /admin.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: noindex
+
+# 覆盖包下载：短缓存（包会跟版本走），不进搜索索引。
+/files/*
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: noindex

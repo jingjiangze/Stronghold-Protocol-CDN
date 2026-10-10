@@ -395,6 +395,15 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </div>
       </a>
     </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>直接套用这套优化（低风险层，客户端零改动）：</b>
+      <a href="https://github.com/jingjiangze/Stronghold-Protocol/releases/download/ws-link-as-built/ws-link-AS-BUILT.zip" target="_blank" rel="noopener"><b>下载 ws-link-AS-BUILT.zip</b></a>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
+      来自 master-play <code class="inline">c587705f</code>；页面同款在 <a href="./files/ws-link-as-built.zip">/files/</a>）——
+      5 个文件：压缩模块 + <code class="inline">broadcastRoom</code>/重放接入 + 观战节流 + 更新器保开关 + 同步门禁。
+      <b>合并说明（含 diff 要点、开关、握手验收、回退、兼容边界）：<a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a></b>。
+      覆盖完跑 <code class="inline">node tools/ws-link-gate.mjs</code> 应 10/10；下一步 <code class="inline">SP_WS_COMPRESSION=on</code> 并做真实 Upgrade 握手验收。
+      热帧去常量（PR #157，未合并）<b>不在</b>本包 —— 那要服务端与客户端成对发布。</span>
+    </div>
   </section>
 
   <section class="section" id="asset-cdn">
