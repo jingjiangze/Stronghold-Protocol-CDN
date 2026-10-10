@@ -8637,6 +8637,24 @@
           151171
         ]
       ]
+    },
+    {
+      "id": "sp-update-023",
+      "what": "0.2.3 PWA app icon 192",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 3437,
+      "keys": [
+        [
+          "assets/icons/app-192.png",
+          884
+        ],
+        [
+          "assets/icons/app-512.png",
+          2553
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
