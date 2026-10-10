@@ -141,8 +141,12 @@ jobs:
       # cannot reach api.github.com for the live lookup -- which is exactly the audience this CDN
       # exists for. Without this step nothing ties the two together: the scheduled site run is daily,
       # so a package published at the wrong hour stayed invisible for up to a day.
+      # NOTE the condition compares the input as a BOOLEAN. `inputs.write == 'true'` is false here
+      # even when the box is ticked: a `type: boolean` input arrives as a real boolean, and GitHub's
+      # loose equality turns the string 'true' into NaN, so the comparison silently never matches.
+      # (The shell steps can compare to the string, because interpolation renders it as "true".)
       - name: refresh the download page's snapshot
-        if: ${{ success() && (inputs.write == 'true' || github.event_name == 'schedule') }}
+        if: ${{ success() && (inputs.write || github.event_name == 'schedule') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run site.yml
