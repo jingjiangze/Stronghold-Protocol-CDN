@@ -95,9 +95,14 @@ async function measureOnce(mirror, { path = DEFAULT_PROBE, timeoutMs = 6000, max
   const totalMs = Date.now() - started;
   const declared = Number(res.headers.get('content-length') || 0);
   // A short body with a 200 is the failure this project has actually hit on a third-party mirror
-  // (Statically truncated a 262,144-byte probe). Only check it when the read was not deliberately
-  // capped — a capped read is shorter than `content-length` by design.
-  if (!capped && declared > 0 && byteLength !== declared) throw new Error(`${mirror.id}: truncated ${byteLength}/${declared}`);
+  // (Statically truncated a 262,144-byte probe). Only check it when:
+  //   · the read was not deliberately capped (a capped read is shorter by design), and
+  //   · the response is NOT content-encoded. `content-length` counts the COMPRESSED bytes while
+  //     `arrayBuffer()` hands back the decoded ones, so comparing them reports a healthy compressed
+  //     response as truncated. The old probe file was incompressible by design, which hid this; the
+  //     picker now measures REAL paths, and jsDelivr/ghfast compress .atlas/.skel.
+  const encoded = !!res.headers.get('content-encoding');
+  if (!capped && !encoded && declared > 0 && byteLength !== declared) throw new Error(`${mirror.id}: truncated ${byteLength}/${declared}`);
   if (byteLength === 0) throw new Error(`${mirror.id}: empty body`);
 
   const bodyMs = Math.max(0.001, (totalMs - ttfbMs) / 1000);
@@ -276,3 +281,124 @@ export function rebaseManifest(text, { from, to }) {
   const target = String(to).replace(/\/+$/, '');
   return text.split(source).join(target);
 }
+
+// ---- picking by CLASS, measured on REAL paths ----------------------------------------------------
+//
+// WHY THIS EXISTS (measured 2026-10-10, eight real asset paths, one machine):
+//   r2 (origin)        median TTFB  926 ms | 3.2 MB file 16.6 s
+//   ghfast-assets      median TTFB  654 ms | 3.2 MB file  1.7 s
+//   jsdelivr-assets    median TTFB 1479 ms | 1 timeout in 8
+// The tree is ~12k SMALL files, so what a player pays is one round trip per file far more than the
+// bytes in it — the opposite of a 3.2 MB map image. So the two classes do not share a best source,
+// which is why `pickClassified` returns two winners instead of one.
+//
+// The earlier single choice measured a 256 KiB PROBE file: warm, single, unrepresentative. jsDelivr
+// won that benchmark and lost the workload, because it fetches uncached files from GitHub on demand.
+
+/** Large = the bytes dominate; everything else is latency-dominated (a round trip per file). */
+export function classOf(path) {
+  const p = String(path || '').toLowerCase().replace(/^\/+/, '');
+  if (p.startsWith('assets/audio/') || p.startsWith('assets/local/map/')) return 'large';
+  return /\.(mp3|ogg|m4a|wav|mp4|webm)$/.test(p) ? 'large' : 'small';
+}
+
+/** Median of the samples that have a TTFB — the number the latency-dominated workload actually pays. */
+export function medianTtfb(samples) {
+  const ok = (samples || []).filter((s) => typeof s.ttfbMs === 'number' && s.ttfbMs >= 0).map((s) => s.ttfbMs).sort((a, b) => a - b);
+  if (!ok.length) return null;
+  return ok[Math.floor(ok.length / 2)];
+}
+
+/**
+ * Rank for the latency-dominated class: median TTFB first, throughput only as the tiebreak.
+ *
+ * `samples[i].samples` carries the per-path numbers when a caller measured several paths; the median
+ * is what gets compared, so one slow path cannot decide the verdict on its own.
+ */
+export function rankByLatency(list) {
+  return [...list].sort((a, b) => {
+    const ta = a.medianTtfb ?? a.ttfbMs ?? 1e9;
+    const tb = b.medianTtfb ?? b.ttfbMs ?? 1e9;
+    if (ta !== tb) return ta - tb;
+    return (b.bytesPerSec || 0) - (a.bytesPerSec || 0);
+  });
+}
+
+/** Measure one mirror over the REAL paths of one class. Returns null when any path failed. */
+async function measurePaths(root, paths, { timeoutMs = 6000, fetchImpl = fetch, latencyClass = true } = {}) {
+  const samples = [];
+  for (const p of paths) {
+    const rel = `/${String(p).replace(/^\/+/, '')}`;
+    try {
+      // `probe` is set to the real path: measureOnce resolves against `root`, and a mirror's declared
+      // probe is exactly what we are NOT using here — that shortcut is the bug this replaces.
+      const s = await measureOnce({ id: root, root, probe: rel }, { path: rel, timeoutMs, fetchImpl });
+      samples.push(s);
+    } catch {
+      return null;
+    }
+  }
+  if (!samples.length) return null;
+  const ttfb = medianTtfb(samples);
+  const worst = Math.max(...samples.map((s) => s.ms || 0));
+  const bytes = samples.reduce((n, s) => n + (s.bytes || 0), 0);
+  const ms = samples.reduce((n, s) => n + (s.ms || 0), 0);
+  return { samples, ttfbMs: ttfb, medianTtfb: ttfb, ms, bytesPerSec: Math.round(bytes / Math.max(0.001, ms / 1000)), worstMs: worst, latencyClass };
+}
+
+/**
+ * Pick a source PER CLASS, measured on real asset paths, with the origin as the baseline.
+ *
+ * Three rules, all from the measurement above:
+ *   1. Measure real paths of the class being decided (never a warm probe file).
+ *   2. A mirror must beat the ORIGIN by `margin` before it may take over. The origin holds the bytes
+ *      natively with no on-demand fetch in between, so being wrong about it is the expensive direction.
+ *   3. A source that fails a real path is DROPPED for that class (the jsDelivr case: 1 timeout in 8).
+ *
+ * @returns {{small:object, large:object}} each `{ id, root, base, scoreMs, winner, ranked }` where
+ *   `winner` is `true` only when a mirror beat the origin (otherwise the origin's own numbers are returned).
+ */
+export async function pickClassified(mirrors, {
+  smallPaths = [], largePaths = [], originRoot = '', margin = 0.2,
+  timeoutMs = 6000, fetchImpl = fetch, requireAssets = true, allowRelay = false,
+} = {}) {
+  const origin = String(originRoot || '').replace(/\/+$/, '');
+  const candidates = eligibleMirrors(mirrors, { requireAssets, allowRelay })
+    .map((m) => ({ id: m.id, root: String(m.root || m.base || '').replace(/\/+$/, '') }))
+    .filter((m) => m.root && m.root !== origin);
+
+  const classes = [
+    { key: 'small', paths: smallPaths, latencyClass: true },
+    { key: 'large', paths: largePaths, latencyClass: false },
+  ];
+  const out = {};
+
+  for (const cls of classes) {
+    if (!cls.paths.length) { out[cls.key] = null; continue; }
+    const originMeasured = origin
+      ? { id: 'origin', root: origin, ...(await measurePaths(origin, cls.paths, { timeoutMs, fetchImpl, latencyClass: cls.latencyClass })) }
+      : null;
+    const measured = [];
+    for (const c of candidates) {
+      const m = await measurePaths(c.root, cls.paths, { timeoutMs, fetchImpl, latencyClass: cls.latencyClass });
+      if (m) measured.push({ ...c, ...m });
+    }
+    const ranked = cls.latencyClass ? rankByLatency(measured) : [...measured].sort((a, b) => a.ms - b.ms);
+    const best = ranked[0] || null;
+    const score = (x) => (cls.latencyClass ? (x?.medianTtfb ?? x?.ttfbMs ?? null) : (x?.ms ?? null));
+    const originScore = score(originMeasured);
+    const bestScore = score(best);
+    // Rule 2: the mirror wins only by a real margin; otherwise the origin keeps the class.
+    const mirrorWins = bestScore != null && (originScore == null || bestScore <= originScore * (1 - margin));
+    out[cls.key] = {
+      id: mirrorWins ? best.id : null,
+      root: mirrorWins ? best.root : (origin || null),
+      winner: mirrorWins,
+      scoreMs: mirrorWins ? bestScore : originScore,
+      originMs: originScore,
+      ranked: ranked.map((r) => ({ id: r.id, scoreMs: score(r), medianTtfb: r.medianTtfb, worstMs: r.worstMs })),
+    };
+  }
+  return out;
+}
+
