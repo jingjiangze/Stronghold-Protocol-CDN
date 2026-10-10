@@ -172,3 +172,33 @@ test('the fastest measured host is wired into the downloads', () => {
   assert.match(fn.slice(0, 1200), /byHost\.get\(host\)/, 'candidates must come from the download URLs');
   assert.match(fn.slice(0, 1200), /candidates\.size < 2/, 'with fewer than two candidates there is nothing to choose');
 });
+
+// The speed test probes each mirror on a path that mirror happens to serve, so an @main git mount
+// that answers 404 for every asset measures as fast as a full mirror. It used to take the "最快"
+// badge, and the base printed on that card is what a reader copies into SP_ASSET_CDN -- so the
+// badge could hand a 404-everything source to the asset base. The asset winner must be chosen
+// among asset-usable mirrors, and a no-asset winner must be qualified, never a plain 最快.
+test('a mirror that serves no assets can never take the asset badge', () => {
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+
+  // The split is derived from the published coverage, not assumed from a host name.
+  assert.match(script, /const servesAssets = /, 'coverage split must be derived');
+  assert.match(script, /coverage !== 'partial'/, 'partial coverage is what means "no asset tree"');
+
+  // Two winners: the speed winner keeps the badge, the asset winner is picked among usable mirrors.
+  const paint = script.slice(script.indexOf('function paintProbe'), script.indexOf('function wireProbe'));
+  assert.match(paint, /find\(servesAssets\)/, 'the asset winner must come from asset-usable mirrors');
+  assert.match(paint, /最快 · 不含素材/, 'a no-asset winner must be qualified, not plain 最快');
+  assert.match(paint, /素材最快/, 'the fastest asset-usable mirror must be named');
+
+  // The card itself must say the base is not an asset base, not just carry a chip.
+  assert.match(script, /card__warn/, 'a partial mirror needs the warning under its base');
+  assert.match(script, /不要<\/b>把它当素材基址/, 'the warning must say the base is not an asset base');
+
+  // And the prose must stop claiming every git source carries the assets.
+  assert.match(script, /@assets-raw/, 'the explanation must name the branch that carries the assets');
+  assert.ok(
+    !/git 挂载源（jsDelivr \/ ghfast \/ gitcdn）持有<b>素材部分<\/b>/.test(script),
+    'the old blanket claim that every git mount holds the asset part is exactly what was wrong',
+  );
+});

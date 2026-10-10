@@ -79,6 +79,17 @@ function renderStatus(art, source) {
   setText('status-line', parts.join(' · '));
 }
 
+/**
+ * A mirror can only serve as an asset base if it carries the asset tree. The `@main` git mounts do
+ * not: they publish this repo's interface/tool files and answer 404 for every `assets/**` path.
+ *
+ * The speed test probes each mirror on a path that mirror happens to have, so a 404-everything
+ * `@main` mount measures as fast as a full mirror and used to take the "最快" badge — and the base
+ * printed on that card is exactly what a reader copies into SP_ASSET_CDN. The split is therefore
+ * derived here and shown on the card, and the asset badge is awarded separately (paintProbe).
+ */
+const servesAssets = (mirror) => mirror?.coverage !== 'partial';
+
 function renderMirrors(flat) {
   const host = $('mirror-cards');
   if (!host) return;
@@ -87,11 +98,15 @@ function renderMirrors(flat) {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.mirror = mirror.id;
-    // A git mount only serves what is committed to git, so say so rather than implying a full mirror.
-    const coverage =
-      mirror.coverage === 'partial'
-        ? '<span class="chip" title="只挂载本仓 main 分支的工具文件，不含素材树">部分覆盖</span>'
-        : '';
+    card.dataset.assets = servesAssets(mirror) ? '1' : '0';
+    // A git mount only serves what is committed to git. The @main mounts carry the interface files
+    // and none of the asset tree, so say that plainly rather than implying a full mirror.
+    const coverage = servesAssets(mirror)
+      ? ''
+      : '<span class="chip chip--warn" title="只挂载本仓 main 分支的接口/工具文件，不含素材树">不含素材</span>';
+    const warn = servesAssets(mirror)
+      ? ''
+      : '<div class="card__warn">此源对 <b>assets/**</b> 返回 404，<b>不要</b>把它当素材基址。素材请用 R2 / Pages 或 <b>assets-raw</b> 源。</div>';
     // Show the path this card is measured on. It is not cosmetic: no single path exists on every
     // origin (the R2-only /cdn/v1/ tree 502s on a git mount), so the number below is only
     // comparable if the reader can see which object produced it.
@@ -102,6 +117,7 @@ function renderMirrors(flat) {
       `<div class="card__title">${mirror.id}</div>` +
       `<div class="mono muted" style="margin-top:8px;word-break:break-all">${mirror.base || mirror.root}</div>` +
       probe +
+      warn +
       `<div class="card__meta"><span>${mirror.kind || 'origin'}</span>${coverage}` +
       `<span class="card__value is-bad" data-ms>未测速</span></div>` +
       `<div class="card__stats" data-stats hidden>` +
@@ -240,13 +256,17 @@ function renderManifest(dirs, totals, art) {
     // innerHTML, not setText: the emphasis is the point, and setText escapes it into visible tags.
     lead.innerHTML =
       `这一批源在分发的是同一棵官方树：<b>${fmtCount(files)} 个文件 / ${fmtBytes(total)}</b>，全部由 ${tag} 解出。` +
-      `R2 与 Pages 持有<b>全部</b>；git 挂载源（jsDelivr / ghfast / gitcdn）持有<b>素材部分</b> —— ` +
-      `素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，抽样 40 条路径 × 3 个源逐字节 sha256 校验一致。` +
+      `R2 与 Pages 持有<b>全部</b>。git 挂载源分两种，不能混为一谈：` +
+      `<b>@main</b>（jsDelivr / ghfast 的 main 卡）只挂本仓的接口/工具文件，` +
+      `<b>对 assets/** 返回 404、不含任何素材</b>；` +
+      `<b>@assets-raw</b>（素材树，2026-10-09 提交到本仓 <b>assets-raw</b> 孤儿分支，` +
+      `抽样 40 条路径 × 3 个源逐字节 sha256 校验一致）持有<b>素材部分</b>。` +
+      `所以素材基址只能用 R2 / Pages 或 <b>assets-raw</b> 源 —— ` +
+      `「不含素材」这个标记就是为此，不是还没同步完，而是那批字节在该源里确实不存在。` +
       (docBytes
-        ? `其中 <b>docs/</b>（${fmtBytes(docBytes)} 官方文档与 wiki 数据）<b>只在 R2 / Pages 上</b>：` +
+        ? `另外 <b>docs/</b>（${fmtBytes(docBytes)} 官方文档与 wiki 数据）<b>只在 R2 / Pages 上</b>：` +
           `它不在本仓里，git 挂载源对它返回 404，下表最后一行已按实际情况标注。`
-        : '') +
-      `「部分覆盖」这个说法在素材树进 git 之前是对的 —— 不是说还没同步完，而是当时这批字节在源里确实不存在。`;
+        : '');
   }
 }
 
@@ -639,6 +659,14 @@ async function probeMirrors(flat) {
 }
 
 function paintProbe(ranked) {
+  const measured = ranked.filter((m) => m.kbps != null);
+  // The overall winner can be an @main mount that carries no assets. The asset base has to come
+  // from a source that actually holds the tree, so the two winners are tracked separately: the
+  // overall one keeps the speed badge, and a 404-everything winner is qualified instead of being
+  // allowed to look like a usable asset base.
+  const bestOverall = measured[0] || null;
+  const bestAsset = measured.find(servesAssets) || null;
+
   for (const mirror of ranked) {
     const card = document.querySelector(`.card[data-mirror="${CSS.escape(mirror.id)}"]`);
     if (!card) continue;
@@ -660,13 +688,19 @@ function paintProbe(ranked) {
       }
     }
 
-    const isBest = ranked[0]?.id === mirror.id && !failed;
-    card.classList.toggle('is-best', isBest);
+    const isBest = bestOverall?.id === mirror.id && !failed;
+    const isBestAsset = !isBest && bestAsset?.id === mirror.id && !failed;
+    card.classList.toggle('is-best', isBest || isBestAsset);
     card.querySelector('.badge')?.remove();
-    if (isBest) {
+    const label = isBest
+      ? (servesAssets(mirror) ? '最快' : '最快 · 不含素材')
+      : isBestAsset
+        ? '素材最快'
+        : null;
+    if (label) {
       const badge = document.createElement('span');
-      badge.className = 'badge';
-      badge.textContent = '最快';
+      badge.className = isBest && !servesAssets(mirror) ? 'badge badge--warn' : 'badge';
+      badge.textContent = label;
       card.appendChild(badge);
     }
   }
@@ -683,10 +717,17 @@ function wireProbe(flat) {
       const ranked = await probeMirrors(flat);
       paintProbe(ranked);
       const best = ranked.find((m) => m.kbps != null);
+      const bestAsset = ranked.find((m) => m.kbps != null && servesAssets(m));
       if (line) {
-        line.textContent = best
-          ? `最快：${best.id}（${fmtSpeed(best.kbps)}，延迟 ${best.latency} ms）——按下载速度排序`
-          : '所有镜像都不可达。';
+        if (!best) {
+          line.textContent = '所有镜像都不可达。';
+        } else if (servesAssets(best)) {
+          line.textContent = `最快：${best.id}（${fmtSpeed(best.kbps)}，延迟 ${best.latency} ms）——按下载速度排序`;
+        } else {
+          line.textContent =
+            `最快：${best.id}（${fmtSpeed(best.kbps)}）——但它不含素材（assets/** 返回 404），不能当素材基址；` +
+            `素材最快：${bestAsset ? `${bestAsset.id}（${fmtSpeed(bestAsset.kbps)}）` : '本次没有可用的素材源'}`;
+        }
       }
     } finally {
       button.disabled = false;
