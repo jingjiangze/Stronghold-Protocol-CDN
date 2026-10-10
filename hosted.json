@@ -8345,6 +8345,24 @@
           2632787
         ]
       ]
+    },
+    {
+      "id": "fanpack-art",
+      "what": "同人内容包 (fanpack) 武器与盟约美术图标",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 90704,
+      "keys": [
+        [
+          "assets/pack/bond_rhodesShip.png",
+          10950
+        ],
+        [
+          "assets/pack/bond_kazdelShip.png",
+          79754
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
