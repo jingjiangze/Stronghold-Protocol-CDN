@@ -32,6 +32,7 @@
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="#asset-cdn">素材 CDN 对账</a>
       <a href="#mirror-selection">多源自动选源</a>
+      <a href="#openi">第二镜像 OpenI</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -490,6 +491,38 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
           <span>含 <b>资格过滤表</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="openi">
+    <div class="section-heading">
+      <div><div class="eyebrow">SECOND MIRROR · OPENI</div><h2>第二镜像：OpenI（启智）</h2></div>
+      <span class="section-status">实测最快，但 CORS 不可用，默认停用</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      素材树已幂等同步到 OpenI 仓库 <code class="inline">assets-raw</code> 分支，每天四次推送。它是测过
+      <b>最快</b>的源（TTFB ~0.25 s，对比本桶 1.1–8.1 s），却也是唯一 <b>CORS 不可用</b>的源
+      （<code class="inline">ACAO</code> 写死成第三方域），跨域取 WebGL 贴图会被拒绝。所以默认
+      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，只用于
+      <b>直链下载 / 构建期取源</b>，不当玩家运行时源。
+    </p>
+    <div class="cards">
+      <a class="card" href="./openi-mirror">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>接入配置 / 同步机制 / 为什么停用 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>素材树 <b>12,706 文件</b></span>
+          <span>默认 <b>停用</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/openi-mirror.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>配置样例</b></span>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>

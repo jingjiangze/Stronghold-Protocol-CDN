@@ -62,8 +62,9 @@
     </p>
     <div class="notice">
       <span><b>资格过滤：</b>客户端逐条排除 <code class="inline">coverage:"partial"</code>（git 挂载源，源里没装全素材树）、
-      <code class="inline">assetEligible:false</code>、<code class="inline">proxied:true</code> 三类源；后两类当前线上没有源设，
-      是写死在客户端的防御性安全闸。</span>
+      <code class="inline">assetEligible:false</code>、<code class="inline">proxied:true</code>、以及 <code class="inline">enabled:false</code>
+      （<code class="inline">origins.json</code> 的 <code class="inline">disabled</code> 软开关）四类源；后三类当前线上只有
+      jsDelivr 两条进了 <code class="inline">disabled</code>，其余是写死在客户端的防御性安全闸。</span>
     </div>
   </section>
 
@@ -120,6 +121,12 @@
         <p>返回 <code class="inline">{ best, ranked }</code>，按时延排序；调用方取 <code class="inline">best.base</code> 即可拼素材 URL。</p>
       </div>
     </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>⚠️ 站点侧 <code class="inline">pick.js</code> 仍是旧逻辑（<code class="inline">src/pick.js</code> 未改）：</b>上面这套「32 KiB 探针 + 取最快」是 commit <code class="inline">6e38598a</code>
+      之前的行为，而<b>它正是把 <code class="inline">jsdelivr-assets</code> 误判成最快的元凶</b>（详见仓库 <code class="inline">docs/audit/asset-slowness-root-cause.md</code>）。
+      F1/F2/F3 只落在了 Java 客户端；站点页面与任何 JS 消费方仍按旧排序。当前 jsDelivr 两条已 <code class="inline">disabled</code>，
+      所以即便旧逻辑也不会把设备指到最慢源。把它也改成「真实路径 + 优于原站余量」是下一个待办。</span>
+    </div>
   </section>
 
   <!-- ===================== 资格过滤 ===================== -->
@@ -147,11 +154,16 @@
             <td>每字节都过 Worker 中转，免费计划预算付不起</td>
             <td><b>防御性</b>：当前没有任何源设这个值，默认 <code class="inline">false</code></td>
           </tr>
+          <tr>
+            <td class="mono">enabled == false</td>
+            <td>发布方软开关关掉（来自 <code class="inline">origins.json</code> 的 <code class="inline">disabled</code>）</td>
+            <td><b>真实存在</b>：jsDelivr 两条（<code class="inline">jsdelivr</code> / <code class="inline">jsdelivr-assets</code>，实测在真实素材上最慢且会超时）；OpenI 也在此列（CORS 不可用）</td>
+          </tr>
         </tbody>
       </table>
     </div>
     <div class="notice" style="margin-top:16px">
-      <span><b>当前线上真正被过滤掉的只有 <code class="inline">coverage:"partial"</code> 的 git 挂载源</b>，其它两条是写死在客户端的安全闸——
+      <span><b>当前线上真正被过滤掉的，是 <code class="inline">enabled:false</code> 的 jsDelivr 两条 + OpenI，以及 <code class="inline">coverage:"partial"</code> 的 git 挂载源（<code class="inline">@main</code>）</b>；其余是写死在客户端的安全闸——
       万一将来某源声明自己不胜任，客户端不会把它选上，不需要改客户端或发版。
       素材树已于 2026-10-09 提交到本仓 <code class="inline">assets-raw</code> 孤儿分支，所以指向那个分支的 git 源可以是全量；
       而 <code class="inline">root</code> 仍落在 <code class="inline">@main</code> 的那条仍是 <code class="inline">partial</code>。
@@ -170,20 +182,23 @@
   <section class="section" id="client">
     <div class="section-heading">
       <div><div class="eyebrow">CLIENT</div><h2>客户端集成（Android re-apk）</h2></div>
-      <span class="section-status">ArtSource.java + ArtCdn.java（commit f135be4e）</span>
+      <span class="section-status">ArtSource.java + ArtCdn.java（commit 6e38598a）</span>
     </div>
     <div class="two-col">
       <div class="mini">
-        <h4>挑源线程</h4>
+        <h4>按类分开选源 + 真实路径测速</h4>
         <ul>
-          <li><code class="inline">ArtSource.refresh()</code>：单独线程拉 <code class="inline">mirrors.json</code> → 对每个候选发一个<b>封顶 32 KB</b>的小探针 → 选最快；结果写 <code class="inline">SharedPreferences</code>，<b>6 小时 TTL，跨启动缓存</b>。</li>
-          <li><b>不阻塞启动</b>：挑源线程跑着，页面先用编译期常量 <code class="inline">Line.ASSETS_CDN_PREFIX</code>，挑好了再切。</li>
+          <li><code class="inline">ArtSource.baseFor(path)</code>：<code class="inline">assets/audio/</code>、<code class="inline">assets/local/map/</code> 及大媒体扩展名走<b>吞吐胜出源</b>，其余走<b>延迟胜出源</b>；两基址独立缓存、6h TTL。</li>
+          <li><b>F1 真实路径</b>：不再用 256 KiB 热探针；小文件类取 <b>TTFB 中位</b>、大文件类取<b>总耗时</b>。</li>
+          <li><b>F2 余量</b>：胜出源须比原站 <code class="inline">weishucdn</code> 好出 <code class="inline">MARGIN=20%</code> 才接管，否则留原站。</li>
+          <li><b>F3 失败降级</b>：任一真实文件失败即本次会话弃用该源。</li>
+          <li><code class="inline">ArtSource.refresh()</code>：后台线程拉 <code class="inline">mirrors.json</code> → 按类测量 → 写 <code class="inline">SharedPreferences</code>，<b>6 小时 TTL，跨启动缓存</b>；不阻塞启动。</li>
         </ul>
       </div>
       <div class="mini">
         <h4>取素材钩子</h4>
         <ul>
-          <li><code class="inline">ArtCdn.cdnUrlFor(rel)</code>：<b>唯一的取素材钩子</b>，把 <code class="inline">/assets/&lt;rel&gt;</code> 映射到选中源的 <code class="inline">ASSET_PREFIX</code>。</li>
+          <li><code class="inline">ArtCdn.cdnUrlFor(rel)</code>：<b>唯一的取素材钩子</b>，按 <code class="inline">baseFor(rel)</code> 把 <code class="inline">/assets/&lt;rel&gt;</code> 映射到选中源基址。</li>
           <li><code class="inline">MainActivity</code> 先查本地树 / APK，都没有才回退到该源<b>同域</b>取（跨域图会污染 canvas）。</li>
         </ul>
       </div>

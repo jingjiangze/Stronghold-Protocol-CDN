@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="description" content="第二镜像 OpenI（启智）：素材树已同步，实测最快但 CORS 不可用，默认停用，只用于直链下载与构建期取源（非官方同人作品）" />
+  <title>第二镜像：OpenI（启智）· 卫戍协议 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>素材 CDN<small>STRONGHOLD PROTOCOL</small></div>
+    </div>
+    <nav class="navigation">
+      <a href="./">CDN 首页</a>
+      <a href="#conclusion">结论</a>
+      <a href="#config">接入配置</a>
+      <a href="#sync">同步机制</a>
+      <a href="#cors">为什么停用</a>
+      <a href="#verify">验收</a>
+    </nav>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>第二镜像：OpenI（启智）</h1>
+      <p class="hero-description">
+        续《镜像站》与《多源自动选源》。那两篇讲「有哪些源、客户端怎么挑」；本篇专门记<b>第二镜像 OpenI</b>：
+        它是测过<b>最快</b>的源，也是唯一 <b>CORS 不可用</b>的源。快是它的价值，CORS 是它的边界。
+        事实来自 <code class="inline">feat/openi-mirror</code> 分支的源码、Workflow 与实测，不是估算（2026-10-11）。
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span>素材树 <strong>12,706 文件</strong></span>
+      <span>TTFB <strong>~0.25s</strong></span>
+      <span>默认 <strong>停用</strong></span>
+    </div>
+  </section>
+
+  <!-- ===================== 结论 ===================== -->
+  <section class="block" id="conclusion">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">结论先行</span>
+      <span class="block__who">最快的源，也是唯一 CORS 不可用的源（2026-10-11）</span>
+    </div>
+    <p class="block__lead">
+      素材树（<b>12,706 文件 / ~915 MiB</b>）已幂等同步到 OpenI 仓库
+      <code class="inline">jingjiangze/Stronghold-Protocol</code> 的 <b>assets-raw</b> 孤儿分支，由
+      <code class="inline">openi-mirror.yml</code> 每天四次推送。它<b>默认停用</b>（<code class="inline">enabled:false</code>
+      且进 <code class="inline">disabled</code> 数组）——唯一原因就是 <b>CORS 硬伤</b>，不足以当玩家运行时源；
+      现在只用于<b>直链下载 / 构建期取源</b>。
+    </p>
+    <div class="notice">
+      <span><b>实测它最快：</b>TTFB ~0.25 s，对比本桶 R2 主源 1.1–8.1 s，快约一个数量级；字节逐字节一致
+      （40 条路径抽样 sha256 全一致）。快不能替代跨域可用性，所以它停在「备用」。
+      详见仓库内 <code class="inline">docs/audit/openi-mirror.md</code>。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 接入配置 ===================== -->
+  <section class="section" id="config">
+    <div class="section-heading">
+      <div><div class="eyebrow">CONFIG</div><h2>接入形态与配置</h2></div>
+      <span class="section-status">origins.json：enabled:false + disabled 双写</span>
+    </div>
+    <pre class="code"><i>// origins.json：条目自身 enabled:false</i>
+{
+  "id": "openi",
+  "kind": "git",
+  "root": "https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw",
+  "probe": "/assets/char/avatar/char_1016_agoat2.png",
+  "coverage": "full",
+  "enabled": false,
+  "assets-ref": "assets-raw",
+  "note": "OpenI（启智）raw 挂载：实测 TTFB ~0.25s、字节逐字节一致、覆盖 full —— 但 ACAO 写死成第三方域、二进制忽略 Range。默认 enabled:false：CORS 不可用，只能用于直链下载/构建期取源。"
+}
+
+<i>// 同时写进 disabled 数组（双写防静默启用）</i>
+"disabled": [ "jsdelivr", "jsdelivr-assets", "openi" ]</pre>
+    <div class="notice" style="margin-top:16px">
+      <span><b>双写为什么必要：</b>主链读条目自身的 <code class="inline">enabled</code>，多源链读 <code class="inline">disabled</code> 列表。
+      只写一处，下一次由另一条链发布的 <code class="inline">mirrors.json</code> 就可能把它当可用源放出。两条都写成，
+      不论哪条链先发布，它都不会被选中。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 同步机制 ===================== -->
+  <section class="section" id="sync">
+    <div class="section-heading">
+      <div><div class="eyebrow">SYNC</div><h2>同步机制（openi-mirror）</h2></div>
+      <span class="section-status">幂等 git push，每日四次 :47</span>
+    </div>
+    <div class="two-col">
+      <div class="mini">
+        <h4>幂等推送器</h4>
+        <ul>
+          <li><code class="inline">src/openi-mirror.mjs</code>：解出本地 <code class="inline">assets-raw</code> 的 commit sha、与远端比对；<b>相同就直接退出、不重传那 915 MiB</b>。</li>
+          <li>字节取自 <b>git 自己</b>（当初发布所依据的孤儿分支），<b>不回读 CDN</b>——避免把 CDN 抖动当成内容发布。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>调度与凭据</h4>
+        <ul>
+          <li><code class="inline">openi-mirror.yml</code>：<code class="inline">cron: '47 0,6,12,18 * * *'</code>，与 <code class="inline">sync.yml</code>（每 6h :17）错开。</li>
+          <li>凭据走环境变量 <code class="inline">OPENI_TOKEN</code>，用完即写进远端 URL、<b>不落 .git/config</b>（否则会被后续步骤泄漏）。</li>
+          <li>默认 <code class="inline">--dry-run</code>：只读、零写入、不需凭据；真上传要 <code class="inline">--write</code>。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 为什么停用 ===================== -->
+  <section class="section" id="cors">
+    <div class="section-heading">
+      <div><div class="eyebrow">CORS</div><h2>为什么默认停用（CORS 硬伤）</h2></div>
+      <span class="section-status">跨域取 WebGL 贴图会被拒绝</span>
+    </div>
+    <pre class="code"><i># 带 / 不带 Origin，结果一致</i>
+Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com</pre>
+    <p class="block__lead" style="margin-top:14px">
+      这是<b>写死的第三方域</b>，不反射请求方、也无 <code class="inline">Vary: Origin</code>。后果：浏览器跨域拿不到响应——
+      对本项目就是那句老问题：<b>WebGL 贴图被污染，棋盘静默变白</b>。所以它<b>不能作为玩家运行时源</b>。
+    </p>
+    <div class="notice">
+      <span><b>两个次要缺陷（影响有限）：</b>二进制（png/skel）<b>忽略 Range</b>（只文本回 206），音频 seek 场景不能用它；
+      配额上限未验证（当前 915 MiB，后续加皮肤可能到 ~2.1 GiB）。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 验收 ===================== -->
+  <section class="section" id="verify">
+    <div class="section-heading">
+      <div><div class="eyebrow">VERIFY</div><h2>验收</h2></div>
+      <span class="section-status">仓库可达 / 字节保真 / CORS 写死</span>
+    </div>
+    <pre class="code"><i># 1. 仓库存在且 raw 可达（应 200 + 正确 MIME）</i>
+curl -sI https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw/assets/char/avatar/char_1016_agoat2.png | grep -iE "HTTP|content-type"
+
+<i># 2. 字节保真：raw 取回与本地 git blob sha256 一致</i>
+git -C <本地仓> cat-file blob $(git -C <本地仓> rev-parse assets-raw:assets/char/avatar/char_1016_agoat2.png) | sha256sum
+curl -s https://openi.pcl.ac.cn/.../char_1016_agoat2.png | sha256sum
+
+<i># 3. CORS（应看到写死的第三方域，证明它不能当运行时源）</i>
+curl -sI -H "Origin: https://weishucdn.jiangjiangze.icu" https://openi.pcl.ac.cn/.../char_1016_agoat2.png | grep -i "access-control-allow-origin"</pre>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div>
+        非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
+        本页数字来自仓库源码与线上实测，随代码变更可能漂移。
+      </div>
+      <div class="footer-links">
+        <a href="./">CDN 首页</a>
+        <a href="./#mirrors">↗ 镜像站</a>
+        <a href="./docs/openi-mirror.md">原始 Markdown</a>
+        <a href="./mirror-selection">↗ 多源自动选源</a>
+        <a href="./asset-cdn">↗ 素材 CDN 对账</a>
+        <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
+      </div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>
