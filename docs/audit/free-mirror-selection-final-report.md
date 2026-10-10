@@ -165,3 +165,22 @@ origins.json ──► src/origins.mjs(capabilitiesOf) ──► src/sync.mjs �
 `PENDING`：`cdn/v1/index.json` 是否已含 `docs/` 的 sha256 未核实（本机代理拉 1.77 MB 反复超时）
 —— P1 无论该问题答案如何都成立（它是索引的 docs 视图 + token，比拉全表更省）。
 
+## 13. 后续更正（2026-10-10 同日晚，选源指标错导致"真快源"被误判）
+
+同日晚玩家反馈战斗内**部分素材非常慢**，根因审计见 `docs/audit/asset-slowness-root-cause.md`（F1–F4 设计 + §5 状态）。
+要点，供读本节 §11 时对照、避免被误导：
+
+- **§11 第 142 行的「选中 `jsdelivr-assets` = PASS（按本机链路选最快）」是误判**，不是正确行为。
+  实测（同机、真实素材路径）表明 `jsdelivr-assets` 在真实素材上**最慢**：TTFB 中位 1479 ms、8 中 1 超时，
+  而 `ghfast-assets` 654 ms、`r2` 926 ms。`jsdelivr` 对未缓存文件按需回源 GitHub，在 ~12k 冷文件树上最慢；
+  而旧选源器在 **256 KiB 热探针**上把它判成了最快——**探针维度与真实负载维度（~12k 小文件、延迟受限）的最优解不是同一个源**。
+- 修复（客户端 `6e38598a`，分支 `feat/free-mirror-selection`）：**F1** 改按真实素材路径测（小类取 TTFB 中位、大类取总耗时）、
+  **F2** 须优于原站 `weishucdn` ≥20% 才接管、**F3** 失败即会话弃用；`ArtSource.baseFor(path)` 按类分流。
+  真机（AVD `medium_phone`）验收：两类都落在原站、`smallId`/`largeId` 为空——即「没有镜像以 ≥20% 优势击败原站就不切走」。
+- 止血（commit `424e8c0`）：`origins.json` 把 `jsdelivr` / `jsdelivr-assets` 放进 `disabled` 软开关，选源器不得再用；
+  已通过仓库 `sync.yml`（`write=true interface_only=true`，run `38056783234` = success）重发 `mirrors.json` 生效。
+- 因此本节原「客户端的选源接入 = 完成」结论在**机制层面成立**（确实接上了），但**初版打分指标本身是错的**，
+  后续用 `6e38598a` 改成了真实路径 + 优于原站余量；站点侧 `src/pick.js` 仍是旧探针逻辑（F1/F2 待落到 JS 侧），F4 未做。
+- 本节 §9 表里的客户端 commit `f135be4e` 是**初版接入**；`6e38598a` 是它的修正版（同一分支、同一客户端仓）。
+  读本节时以 `6e38598a` + `asset-slowness-root-cause.md` 为准。
+
