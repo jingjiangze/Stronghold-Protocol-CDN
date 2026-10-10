@@ -375,9 +375,21 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 128,
-      "bytes": 15356956,
+      "files": 148,
+      "bytes": 16255767,
       "keys": [
+        [
+          "assets/band/icon_ela.png",
+          52787
+        ],
+        [
+          "assets/bond/rainbowShip.png",
+          5283
+        ],
+        [
+          "assets/char/avatar/char_1001_amiya2_2.png",
+          64210
+        ],
         [
           "assets/char/avatar/char_121_lava.png",
           56004
@@ -511,6 +523,10 @@
           55355
         ],
         [
+          "assets/item/rogue_5_relic_return_29.png",
+          45434
+        ],
+        [
           "assets/local/operators/char_4123_ela/avatar_char_4123_ela.png",
           56057
         ],
@@ -591,12 +607,72 @@
           99316
         ],
         [
+          "assets/local/operators/token_10005_mgllan_drone1/front/token_10005_mgllan_drone1.png",
+          39602
+        ],
+        [
+          "assets/local/operators/token_10005_mgllan_drone2/front/token_10005_mgllan_drone2.png",
+          37724
+        ],
+        [
+          "assets/local/operators/token_10029_slent2_protrb/front/token_10029_slent2_protrb.png",
+          24438
+        ],
+        [
+          "assets/local/operators/token_10032_jesca2_jckshd/front/token_10032_jesca2_jckshd.png",
+          19893
+        ],
+        [
+          "assets/local/operators/token_10053_radian_tower3/front/token_10053_radian_tower3.png",
+          32794
+        ],
+        [
+          "assets/local/operators/token_10066_closur_ourbase/front/token_10066_closur_ourbase.png",
+          29285
+        ],
+        [
+          "assets/local/skills/skchr_ash_2.png",
+          11525
+        ],
+        [
+          "assets/local/skills/skchr_ash_3.png",
+          20471
+        ],
+        [
+          "assets/local/skills/skchr_ela_2.png",
+          21645
+        ],
+        [
+          "assets/skill/skchr_blitz_2.png",
+          18870
+        ],
+        [
+          "assets/skill/skchr_oblvns_2.png",
+          33324
+        ],
+        [
           "assets/spine/op/char_002_amiya/back/char_002_amiya.png",
           52368
         ],
         [
+          "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/back/char_002_amiya_epoque_4.atlas",
+          2864
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/back/char_002_amiya_epoque_4.png",
+          61869
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_test_1/back/char_002_amiya_test_1.skel",
+          145151
+        ],
+        [
           "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.atlas",
           5648
+        ],
+        [
+          "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.skel",
+          214644
         ],
         [
           "assets/spine/op/char_1011_lava2/char_1011_lava2_nian_6/back/char_1011_lava2_nian_6.png",
@@ -889,6 +965,10 @@
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.atlas",
           5640
+        ],
+        [
+          "assets/token/avatar/token_10016_rfrost_mine.png",
+          16998
         ]
       ]
     }
