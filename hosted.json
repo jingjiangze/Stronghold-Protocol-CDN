@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 153,
-      "bytes": 16649261,
+      "files": 173,
+      "bytes": 19722040,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -2973,12 +2973,20 @@
           67761
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_322_lmlee_whirlwind_10.png",
+          61030
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_332_archet_sale_14.png",
           54990
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_340_shwaz_striker_1.png",
           66050
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_341_sntlla_summer_15.png",
+          53633
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_350_surtr_ambienceSynesthesia_6.png",
@@ -2991,6 +2999,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_362_saga_sale_9.png",
           48306
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4013_kjera_epoque_18.png",
+          66881
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4042_lumen_sanrio_2.png",
@@ -3069,6 +3081,10 @@
           243155
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1016_agoat2/char_1016_agoat2_epoque_57/back/char_1016_agoat2_epoque_57.skel",
+          361131
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1016_agoat2/char_1016_agoat2_epoque_57/front/char_1016_agoat2_epoque_57.skel",
           469818
         ],
@@ -3119,6 +3135,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/back/char_102_texas_epoque_7.atlas",
           11530
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/back/char_102_texas_epoque_7.png",
+          144669
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/front/char_102_texas_epoque_7.png",
@@ -3249,6 +3269,10 @@
           97188
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_128_plosis/char_128_plosis_epoque_3/front/char_128_plosis_epoque_3.skel",
+          140373
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_128_plosis/char_128_plosis_yun_4/front/char_128_plosis_yun_4.atlas",
           13436
         ],
@@ -3293,6 +3317,10 @@
           116677
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_172_svrash/char_172_svrash_summer_4/front/char_172_svrash_summer_4.skel",
+          208783
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_173_slchan/char_173_slchan_wild_1/front/char_173_slchan_wild_1.atlas",
           10075
         ],
@@ -3311,6 +3339,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_181_flower/char_181_flower_daily_1/front/char_181_flower_daily_1.atlas",
           4235
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_181_flower/char_181_flower_epoque_9/front/char_181_flower_epoque_9.skel",
+          102194
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_199_yak/char_199_yak_summer_1/back/char_199_yak_summer_1.skel",
@@ -3377,6 +3409,10 @@
           207679
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_249_mlyss/char_249_mlyss_boc_8/back/char_249_mlyss_boc_8.skel",
+          304952
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_249_mlyss/char_249_mlyss_boc_8/front/char_249_mlyss_boc_8.skel",
           437016
         ],
@@ -3407,6 +3443,50 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_263_skadi/char_263_skadi_summer_3/back/char_263_skadi_summer_3.skel",
           141797
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_264_f12yin/char_264_f12yin_marthe_13/back/char_264_f12yin_marthe_13.png",
+          138897
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_264_f12yin/char_264_f12yin_marthe_13/front/char_264_f12yin_marthe_13.png",
+          168606
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_264_f12yin/char_264_f12yin_marthe_13/front/char_264_f12yin_marthe_13.skel",
+          416510
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_290_vigna/char_290_vigna_as_1/back/char_290_vigna_as_1.atlas",
+          5818
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_290_vigna/char_290_vigna_as_1/back/char_290_vigna_as_1.skel",
+          70738
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_290_vigna/char_290_vigna_summer_1/back/char_290_vigna_summer_1.atlas",
+          4950
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_290_vigna/char_290_vigna_summer_1/back/char_290_vigna_summer_1.png",
+          118064
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_291_aglina/char_291_aglina_summer_5/front/char_291_aglina_summer_5.skel",
+          324610
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_294_ayer/char_294_ayer_boc_3/back/char_294_ayer_boc_3.png",
+          122280
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_294_ayer/char_294_ayer_boc_3/back/char_294_ayer_boc_3.skel",
+          122760
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_294_ayer/char_294_ayer_boc_3/front/char_294_ayer_boc_3.png",
+          135900
         ]
       ]
     }
