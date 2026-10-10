@@ -372,11 +372,11 @@
     },
     {
       "id": "sp-fusion-mod-assets",
-      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
+      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 548,
-      "bytes": 41844132,
+      "files": 568,
+      "bytes": 42999608,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -461,6 +461,10 @@
         [
           "assets/audio/voice/cn/char_4123_ela/cn_030.mp3",
           19662
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_031.mp3",
+          5242
         ],
         [
           "assets/audio/voice/cn/char_4123_ela/cn_032.mp3",
@@ -663,6 +667,10 @@
           11511
         ],
         [
+          "assets/audio/voice/jp/char_456_ash/cn_027.mp3",
+          5242
+        ],
+        [
           "assets/audio/voice/jp/char_456_ash/cn_029.mp3",
           16318
         ],
@@ -787,6 +795,10 @@
           56863
         ],
         [
+          "assets/char/avatar/char_135_halo.png",
+          64558
+        ],
+        [
           "assets/char/avatar/char_135_halo_2.png",
           75465
         ],
@@ -799,6 +811,10 @@
           52150
         ],
         [
+          "assets/char/avatar/char_242_otter.png",
+          53007
+        ],
+        [
           "assets/char/avatar/char_242_otter_2.png",
           59546
         ],
@@ -809,6 +825,10 @@
         [
           "assets/char/avatar/char_4071_peper_2.png",
           65583
+        ],
+        [
+          "assets/char/avatar/char_4124_iana.png",
+          42922
         ],
         [
           "assets/char/avatar/char_4124_iana_2.png",
@@ -911,6 +931,10 @@
           122325
         ],
         [
+          "assets/char/portrait/char_1027_greyy2_1.png",
+          116135
+        ],
+        [
           "assets/char/portrait/char_1027_greyy2_2.png",
           119226
         ],
@@ -963,6 +987,10 @@
           118414
         ],
         [
+          "assets/char/portrait/char_4071_peper_1.png",
+          120427
+        ],
+        [
           "assets/char/portrait/char_4071_peper_2.png",
           126117
         ],
@@ -991,6 +1019,10 @@
           106823
         ],
         [
+          "assets/char/portrait/char_4131_odda_2.png",
+          124941
+        ],
+        [
           "assets/char/portrait/char_4182_oblvns_1.png",
           122223
         ],
@@ -1011,6 +1043,10 @@
           97774
         ],
         [
+          "assets/char/portrait/char_457_blitz_2.png",
+          101165
+        ],
+        [
           "assets/char/portrait/char_458_rfrost_1.png",
           105898
         ],
@@ -1025,6 +1061,10 @@
         [
           "assets/char/portrait/char_459_tachak_2.png",
           96056
+        ],
+        [
+          "assets/char/skin_avatar/char_002_amiya_epoque_4.png",
+          55816
         ],
         [
           "assets/char/skin_avatar/char_002_amiya_test_1.png",
@@ -1053,6 +1093,10 @@
         [
           "assets/char/skin_avatar/char_1027_greyy2_wild_12.png",
           58478
+        ],
+        [
+          "assets/char/skin_avatar/char_1036_fang2_snow_8.png",
+          59156
         ],
         [
           "assets/char/skin_avatar/char_120_hibisc_nian_1.png",
@@ -1117,6 +1161,10 @@
         [
           "assets/local/operators/char_4123_ela/front/char_4123_ela.png",
           423825
+        ],
+        [
+          "assets/local/operators/char_4123_ela/front/model.atlas",
+          10997
         ],
         [
           "assets/local/operators/char_4123_ela/front/model.skel",
@@ -1239,6 +1287,10 @@
           30909
         ],
         [
+          "assets/local/operators/token_10020_ling_soul2/front/token_10020_ling_soul2.png",
+          36088
+        ],
+        [
           "assets/local/operators/token_10020_ling_soul3/front/token_10020_ling_soul3.png",
           34318
         ],
@@ -1273,6 +1325,14 @@
         [
           "assets/local/operators/token_10035_wisdel_wward/front/token_10035_wisdel_wward.png",
           13401
+        ],
+        [
+          "assets/local/operators/token_10043_necras_skeltn/front/token_10043_necras_skeltn.png",
+          31978
+        ],
+        [
+          "assets/local/operators/token_10050_monstr_prosts/front/token_10050_monstr_prosts.png",
+          24703
         ],
         [
           "assets/local/operators/token_10051_radian_tower1/front/token_10051_radian_tower1.png",
@@ -1639,6 +1699,10 @@
           13818
         ],
         [
+          "assets/skill/skchr_tachak_2.png",
+          20544
+        ],
+        [
           "assets/skill/skchr_turdus_1.png",
           18980
         ],
@@ -1905,6 +1969,10 @@
         [
           "assets/spine/op/char_1027_greyy2/back/char_1027_greyy2.skel",
           159933
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_breaker_1/back/char_1027_greyy2_breaker_1.atlas",
+          8997
         ],
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_breaker_1/back/char_1027_greyy2_breaker_1.png",
@@ -2371,6 +2439,10 @@
           408855
         ],
         [
+          "assets/spine/op/char_4126_fuze/back/char_4126_fuze.skel",
+          96404
+        ],
+        [
           "assets/spine/op/char_4126_fuze/front/char_4126_fuze.atlas",
           8887
         ],
@@ -2443,6 +2515,10 @@
           9155
         ],
         [
+          "assets/spine/op/char_4224_turdus/front/char_4224_turdus.png",
+          173690
+        ],
+        [
           "assets/spine/op/char_4224_turdus/front/char_4224_turdus.skel",
           339998
         ],
@@ -2493,6 +2569,10 @@
         [
           "assets/spine/op/char_458_rfrost/front/char_458_rfrost.skel",
           50679
+        ],
+        [
+          "assets/spine/op/char_459_tachak/back/char_459_tachak.atlas",
+          3464
         ],
         [
           "assets/spine/op/char_459_tachak/back/char_459_tachak.png",
