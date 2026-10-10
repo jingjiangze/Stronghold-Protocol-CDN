@@ -8443,8 +8443,8 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 27,
-      "bytes": 26605251,
+      "files": 35,
+      "bytes": 31471869,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
@@ -8553,6 +8553,38 @@
         [
           "assets/docs/mockups/mod-ui-alliances-web.png",
           941693
+        ],
+        [
+          "assets/docs/mockups/mod-ui-equipment-phone.png",
+          269243
+        ],
+        [
+          "assets/docs/mockups/mod-ui-equipment-web.png",
+          1021281
+        ],
+        [
+          "assets/docs/mockups/mod-ui-overview.png",
+          2952976
+        ],
+        [
+          "assets/docs/mockups/title-settings-size.png",
+          77128
+        ],
+        [
+          "assets/docs/mockups/voice-switch-dual.png",
+          190183
+        ],
+        [
+          "assets/docs/mockups/voice-switch-phone.png",
+          35417
+        ],
+        [
+          "assets/docs/mockups/voice-switch-web.png",
+          253312
+        ],
+        [
+          "assets/docs/mockups/zoom-phone-bottomleft.png",
+          67078
         ]
       ]
     }
