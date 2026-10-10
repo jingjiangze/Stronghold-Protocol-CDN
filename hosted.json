@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 408,
-      "bytes": 30331001,
+      "files": 428,
+      "bytes": 32062334,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdslnt.mp3",
@@ -731,6 +731,10 @@
           50265
         ],
         [
+          "assets/char/avatar/char_4131_odda_2.png",
+          61818
+        ],
+        [
           "assets/char/avatar/char_4182_oblvns.png",
           63083
         ],
@@ -791,6 +795,10 @@
           122325
         ],
         [
+          "assets/char/portrait/char_1027_greyy2_2.png",
+          119226
+        ],
+        [
           "assets/char/portrait/char_1036_fang2_1.png",
           109925
         ],
@@ -829,6 +837,10 @@
         [
           "assets/char/portrait/char_4071_peper_2.png",
           126117
+        ],
+        [
+          "assets/char/portrait/char_4124_iana_1.png",
+          102149
         ],
         [
           "assets/char/portrait/char_4125_rdoc_2.png",
@@ -971,6 +983,14 @@
           119087
         ],
         [
+          "assets/local/operators/char_456_ash/avatar_char_456_ash.png",
+          51412
+        ],
+        [
+          "assets/local/operators/char_456_ash/avatar_char_456_ash_2.png",
+          55584
+        ],
+        [
           "assets/local/operators/char_456_ash/back/char_456_ash.png",
           72598
         ],
@@ -1019,6 +1039,10 @@
           30909
         ],
         [
+          "assets/local/operators/token_10020_ling_soul3/front/token_10020_ling_soul3.png",
+          34318
+        ],
+        [
           "assets/local/operators/token_10024_ebnhlz_rcube/front/token_10024_ebnhlz_rcube.png",
           25656
         ],
@@ -1029,6 +1053,10 @@
         [
           "assets/local/operators/token_10027_ironmn_pile1/front/token_10027_ironmn_pile1.png",
           36663
+        ],
+        [
+          "assets/local/operators/token_10027_ironmn_pile2/front/token_10027_ironmn_pile2.png",
+          36510
         ],
         [
           "assets/local/operators/token_10029_slent2_protrb/front/token_10029_slent2_protrb.png",
@@ -1239,6 +1267,10 @@
           23271
         ],
         [
+          "assets/skill/skchr_fuze_2.png",
+          13519
+        ],
+        [
           "assets/skill/skchr_greyy2_1.png",
           10029
         ],
@@ -1319,6 +1351,10 @@
           52368
         ],
         [
+          "assets/spine/op/char_002_amiya/back/char_002_amiya.skel",
+          115804
+        ],
+        [
           "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/back/char_002_amiya_epoque_4.atlas",
           2864
         ],
@@ -1365,6 +1401,10 @@
         [
           "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/back/char_002_amiya_winter_1.png",
           64700
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/back/char_002_amiya_winter_1.skel",
+          114480
         ],
         [
           "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.atlas",
@@ -1467,8 +1507,16 @@
           265842
         ],
         [
+          "assets/spine/op/char_1022_flwr2/front/char_1022_flwr2.atlas",
+          8828
+        ],
+        [
           "assets/spine/op/char_1022_flwr2/front/char_1022_flwr2.png",
           90517
+        ],
+        [
+          "assets/spine/op/char_1022_flwr2/front/char_1022_flwr2.skel",
+          376022
         ],
         [
           "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.atlas",
@@ -1493,6 +1541,10 @@
         [
           "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/back/char_1024_hbisc2_unveiling_2.skel",
           102275
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/front/char_1024_hbisc2_unveiling_2.atlas",
+          9697
         ],
         [
           "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/front/char_1024_hbisc2_unveiling_2.png",
@@ -1533,6 +1585,10 @@
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/back/char_1027_greyy2_snow_5.skel",
           189374
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/front/char_1027_greyy2_snow_5.atlas",
+          15312
         ],
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/front/char_1027_greyy2_snow_5.png",
@@ -1591,6 +1647,10 @@
           2479
         ],
         [
+          "assets/spine/op/char_120_hibisc/back/char_120_hibisc.png",
+          40339
+        ],
+        [
           "assets/spine/op/char_120_hibisc/back/char_120_hibisc.skel",
           29443
         ],
@@ -1601,6 +1661,10 @@
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.png",
           65285
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.skel",
+          28425
         ],
         [
           "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/front/char_120_hibisc_nian_1.png",
@@ -1681,6 +1745,10 @@
         [
           "assets/spine/op/char_124_kroos/char_124_kroos_sale_14/back/char_124_kroos_sale_14.atlas",
           8258
+        ],
+        [
+          "assets/spine/op/char_124_kroos/char_124_kroos_sale_14/back/char_124_kroos_sale_14.png",
+          195296
         ],
         [
           "assets/spine/op/char_124_kroos/char_124_kroos_sale_14/back/char_124_kroos_sale_14.skel",
@@ -1765,6 +1833,10 @@
         [
           "assets/spine/op/char_4071_peper/front/char_4071_peper.atlas",
           10634
+        ],
+        [
+          "assets/spine/op/char_4071_peper/front/char_4071_peper.png",
+          117940
         ],
         [
           "assets/spine/op/char_4071_peper/front/char_4071_peper.skel",
@@ -1857,6 +1929,10 @@
         [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.atlas",
           5948
+        ],
+        [
+          "assets/spine/op/char_4131_odda/back/char_4131_odda.skel",
+          135919
         ],
         [
           "assets/spine/op/char_4131_odda/front/char_4131_odda.atlas",
@@ -1977,6 +2053,10 @@
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.atlas",
           5640
+        ],
+        [
+          "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.png",
+          98735
         ],
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.skel",
