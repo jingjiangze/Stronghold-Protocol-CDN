@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 13,
-      "bytes": 631694,
+      "files": 33,
+      "bytes": 1868841,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -2847,6 +2847,86 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1013_chen2_boc_6.png",
           71132
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1013_chen2_summer_20.png",
+          66912
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1016_agoat2_epoque_57.png",
+          62906
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1021_kroos2_nian_8.png",
+          55613
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_102_texas_epoque_7.png",
+          52247
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1031_slent2_epoque_32.png",
+          61981
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1033_swire2_ambienceSynesthesia_4.png",
+          64224
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1038_whitw2_sale_15.png",
+          67997
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_103_angel_wild_1.png",
+          58892
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1041_angel2_iteration_6.png",
+          62007
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1044_hsgma2_whirlwind_11.png",
+          66128
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_107_liskam_nian_2.png",
+          51139
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_107_liskam_striker_1.png",
+          58897
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_134_ifrit_rilakkuma_1.png",
+          65236
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_140_whitew_boc_1.png",
+          58657
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_147_shining_summer_1.png",
+          66477
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1502_crosly_iteration_5.png",
+          66382
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_179_cgbird_sightseer_1.png",
+          66328
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_180_amgoat_sanrio_2.png",
+          67266
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_197_poca_epoque_12.png",
+          61119
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_2013_cerber_summer_4.png",
+          56739
         ]
       ]
     }
