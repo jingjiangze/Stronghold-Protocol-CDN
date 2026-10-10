@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES } from '../src/openi-mirror.mjs';
+import { parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES, planBatches, DEFAULT_BUDGET_MIB } from '../src/openi-mirror.mjs';
 
 // `git ls-tree -l` puts the size in a SPACE-separated column and introduces only the path with a
 // tab. Splitting the whole line on tabs therefore yields size 0 for every file — a mirror whose
@@ -65,4 +65,64 @@ test('listTree on this repo returns rows with a real size', async () => {
 
 test('remoteHead returns null instead of throwing when the remote is unusable', async () => {
   assert.equal(await remoteHead('definitely-not-a-remote', 'master'), null);
+});
+
+// The 413 that forced batching: one push of the whole 1,807 MiB tree was rejected outright. These
+// pin the arithmetic that replaces it, because a batching bug is invisible until a run 413s —
+// which is exactly the failure that costs 16 minutes to find out about.
+const MB = 1048576;
+
+test('planBatches keeps every batch under the budget', () => {
+  const commits = ['a', 'b', 'c', 'd'];
+  const sizes = { a: 400 * MB, b: 400 * MB, c: 400 * MB, d: 400 * MB };
+  const batches = planBatches(commits, sizes, 700 * MB);
+  assert.equal(batches.length, 4, 'each 400 MiB commit needs its own push under a 700 MiB budget');
+  for (const b of batches) {
+    const sum = b.reduce((s, c) => s + sizes[c], 0);
+    assert.ok(sum <= 700 * MB, `batch of ${sum / MB} MiB exceeds budget`);
+  }
+});
+
+test('planBatches packs small commits together rather than pushing one at a time', () => {
+  const commits = ['a', 'b', 'c', 'd'];
+  const sizes = { a: 100 * MB, b: 100 * MB, c: 100 * MB, d: 100 * MB };
+  const batches = planBatches(commits, sizes, 700 * MB);
+  // Four small commits in one batch: batching is about the ceiling, not about being timid.
+  assert.equal(batches.length, 1);
+  assert.deepEqual(batches[0], commits);
+});
+
+test('planBatches preserves commit order across batch boundaries', () => {
+  const commits = ['a', 'b', 'c', 'd', 'e'];
+  const sizes = { a: 300 * MB, b: 300 * MB, c: 300 * MB, d: 300 * MB, e: 300 * MB };
+  const flat = planBatches(commits, sizes, 700 * MB).flat();
+  // Order is the whole point: replaying out of order would push a tip whose ancestors are missing.
+  assert.deepEqual(flat, commits);
+});
+
+test('a commit larger than the budget still gets its own batch', () => {
+  const commits = ['small', 'huge'];
+  const sizes = { small: 10 * MB, huge: 900 * MB };
+  const batches = planBatches(commits, sizes, 700 * MB);
+  // Git moves whole objects, so an oversized commit cannot be split. Taking it alone gives it one
+  // honest attempt instead of folding it into something even bigger.
+  assert.deepEqual(batches, [['small'], ['huge']]);
+});
+
+test('a commit with no recorded size is treated as zero, not as a reason to stop', () => {
+  const commits = ['known', 'unknown'];
+  const sizes = { known: 500 * MB };
+  const batches = planBatches(commits, sizes, 700 * MB);
+  assert.deepEqual(batches, [['known', 'unknown']]);
+});
+
+test('planBatches on an empty replay pushes nothing', () => {
+  assert.deepEqual(planBatches([], {}, 700 * MB), []);
+});
+
+test('the default budget stays under the size that was seen to 413', () => {
+  // 915 MiB went through; 1,807 MiB got HTTP 413. Anything near the ceiling is a guess about
+  // someone else's limit, so the default keeps real distance from both numbers.
+  assert.ok(DEFAULT_BUDGET_MIB < 915, `budget ${DEFAULT_BUDGET_MIB} MiB is not safely under the 915 MiB that worked`);
+  assert.ok(DEFAULT_BUDGET_MIB > 0);
 });

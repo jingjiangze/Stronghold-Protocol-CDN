@@ -44,6 +44,13 @@ export const ASSETS_REF = process.env.OPENI_ASSETS_REF || 'assets-raw';
 /** Refuse to mirror anything this large: a guard against pushing the wrong ref by mistake. */
 export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
 
+/**
+ * Ceiling for a single push, in MiB. Measured: the whole tree at 1,807 MiB was answered with
+ * `HTTP 413` after 16 minutes, while 915 MiB had gone through. The limit belongs to the remote, so
+ * we stay under the size known to work instead of discovering the boundary by failing a real run.
+ */
+export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 700;
+
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
@@ -110,6 +117,101 @@ export async function localHead(cwd, ref) {
   return (await run('git', ['rev-parse', '--verify', `${ref}^{commit}`], { cwd })).trim();
 }
 
+/**
+ * The commits to replay onto a remote sitting at `from`, oldest first.
+ *
+ * `git rev-list --reverse A..B` lists B's ancestors A does not have, in the order they were made —
+ * which is also the order that transfers the least, because each push then sends only the objects
+ * the previous one did not. Empty when `from` already has everything; empty when `from` is null,
+ * because an absent branch is a fresh push, not a replay.
+ */
+export async function commitsSince(cwd, from, to) {
+  if (!from) return [];
+  const out = await run('git', ['rev-list', '--reverse', `${from}..${to}`], { cwd });
+  return out.split('\n').map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * Split a replay into pushes that each stay under `budgetBytes`.
+ *
+ * Measured, not guessed: one `git push` of the whole 1,807 MiB tree died with
+ * `error: RPC failed; HTTP 413 curl 22 The requested URL returned error: 413` after 16 minutes.
+ * The remote's front door caps a single request body, and a git push is exactly one POST — so no
+ * amount of `http.postBuffer` or `pack.packSizeLimit` helps; neither splits that POST.
+ * The tree had also grown past the 915 MiB that used to fit, so "it fit once" is not a property
+ * of the host we can lean on.
+ *
+ * Replaying the commits instead fixes it, and not by being smaller overall: each push after the
+ * first is a *delta* against what the remote just accepted, so the wire carries many small packs
+ * rather than one 1.8 GiB one. The budget bounds a single batch, so a run stops at the last commit
+ * that fits and leaves the rest for the next scheduled run — advancing part way is strictly better
+ * than a 413 that leaves the remote a gigabyte behind and retries the same impossible POST all day.
+ *
+ * Pure: given per-commit sizes the answer is arithmetic, so the boundary is testable without a
+ * repository or a network.
+ */
+export function planBatches(commits, sizes, budgetBytes) {
+  const batches = [];
+  let cur = [];
+  let curBytes = 0;
+  for (const c of commits) {
+    const size = Number(sizes[c]) || 0;
+    if (cur.length && curBytes + size > budgetBytes) {
+      batches.push(cur);
+      cur = [];
+      curBytes = 0;
+    }
+    cur.push(c);
+    curBytes += size;
+  }
+  if (cur.length) batches.push(cur);
+  return batches;
+}
+
+/**
+ * Bytes a commit's push would carry: the size of the blobs it added or changed.
+ *
+ * `git diff-tree` reports the blob sha but never the size — the `-l` that adds a size column
+ * belongs to `ls-tree`, and in `diff-tree` it is a rename limit that errors with
+ * "switch `l' expects an integer value". So the size comes from `cat-file --batch-check`, fed the
+ * new blob sha of every added/modified path in one call: one process per commit, not per file.
+ */
+export async function commitAddedBytes(cwd, commit) {
+  let out;
+  try {
+    // `--root` so the branch's first commit reports its files too; without it that commit looks
+    // empty and its whole payload silently escapes the budget.
+    out = await run('git', ['diff-tree', '-r', '--no-commit-id', '--root', '--diff-filter=ACM', commit], { cwd });
+  } catch {
+    return 0;
+  }
+  const shas = [];
+  for (const line of out.split('\n')) {
+    // `:100644 100644 <src-sha> <dst-sha> A\t<path>` — the size is not in here, the dst sha is.
+    const m = line.match(/^:\d{6}\s+\d{6}\s+[0-9a-f]+\s+([0-9a-f]{40})\s+[ACM]/);
+    if (m) shas.push(m[1]);
+  }
+  if (!shas.length) return 0;
+  const unique = [...new Set(shas)];
+  const input = `${unique.join('\n')}\n`;
+  const child = spawn('git', ['cat-file', '--batch-check'], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+  let sum = 0;
+  let buf = '';
+  child.stdout.on('data', (d) => { buf += d; });
+  // Writing before reading deadlocks once the pipe buffer fills, which it does at ~14k shas.
+  child.stdin.end(input);
+  await new Promise((resolve, reject) => {
+    child.on('error', reject);
+    child.on('close', resolve);
+  });
+  for (const line of buf.split('\n')) {
+    // `<sha> blob <size>`
+    const m = line.match(/^[0-9a-f]{40}\s+blob\s+(\d+)$/);
+    if (m) sum += Number(m[1]);
+  }
+  return sum;
+}
+
 export async function main(argv = process.argv) {
   const arg = (name, dflt) => {
     const hit = argv.find((a) => a.startsWith(`--${name}=`));
@@ -127,6 +229,9 @@ export async function main(argv = process.argv) {
   const branch = arg('branch', 'assets-raw');
   const assetsRef = arg('assets-ref', ASSETS_REF);
   const dryRun = !has('write');
+  // Per-push ceiling. 915 MiB went through; 1,807 MiB got a 413. The cap is the remote's, not
+  // ours, so stay under the size that is known to work rather than probing it in production.
+  const budgetBytes = Number(arg('budget-mib', DEFAULT_BUDGET_MIB)) * 1048576;
 
   const commit = await localHead(cwd, assetsRef);
   const rows = await listTree(cwd, assetsRef);
@@ -154,9 +259,41 @@ export async function main(argv = process.argv) {
     return { commit, files, bytes, pushed: false, skipped: true };
   }
 
-  await run('git', ['push', '--quiet', remote, `${commit}:refs/heads/${branch}`]);
+  // Replay rather than shove. A single push of the whole tree 413s (see planBatches); walking the
+  // commits keeps every POST small, and each one after the first is a delta against what the
+  // remote just received.
+  const pending = await commitsSince(cwd, before, commit);
+  const sizes = {};
+  for (const c of pending) sizes[c] = await commitAddedBytes(cwd, c);
+  const batches = planBatches(pending, sizes, budgetBytes);
+
+  if (dryRun) {
+    const total = Object.values(sizes).reduce((a, b) => a + b, 0);
+    console.log(`[openi] dry-run: ${pending.length} commit(s), ${(total / 1048576).toFixed(1)} MiB in ${batches.length} batch(es) — nothing pushed (pass --write)`);
+    return { commit, files, bytes, pushed: false, skipped: false, pending: pending.length, batches: batches.length };
+  }
+
+  let done = 0;
+  for (const [i, batch] of batches.entries()) {
+    const head = batch[batch.length - 1];
+    const batchBytes = batch.reduce((s, c) => s + (sizes[c] || 0), 0);
+    console.log(`[openi] batch ${i + 1}/${batches.length}: ${batch.length} commit(s), ${(batchBytes / 1048576).toFixed(1)} MiB → ${head.slice(0, 10)}`);
+    // Each push advances the real branch, so an interruption leaves the remote at a commit it can
+    // serve and the next run resumes from there. Pushing a batch's tip carries its ancestors.
+    await run('git', ['push', '--quiet', remote, `${head}:refs/heads/${branch}`]);
+    done += batch.length;
+  }
+
+  const after = await remoteHead(remote, branch);
+  if (after !== commit) {
+    // Not an error: the budget stopped us part way, and the next scheduled run continues. Saying
+    // so out loud is the difference between "slowly catching up" and "silently stale".
+    console.log(`[openi] advanced to ${String(after).slice(0, 10)}, ${pending.length - done} commit(s) left for the next run`);
+    return { commit, files, bytes, pushed: true, skipped: false, partial: true, at: after };
+  }
+
   console.log(`[openi] pushed → ${branch} @ ${commit.slice(0, 10)}`);
-  return { commit, files, bytes, pushed: true, skipped: false };
+  return { commit, files, bytes, pushed: true, skipped: false, partial: false };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
