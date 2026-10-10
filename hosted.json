@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 53,
-      "bytes": 3074801,
+      "files": 73,
+      "bytes": 5073231,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -2957,6 +2957,10 @@
           57881
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_264_f12yin_epoque_15.png",
+          58996
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_264_f12yin_marthe_13.png",
           60186
         ],
@@ -3007,6 +3011,82 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4087_ines_boc_8.png",
           68980
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4121_zuole_nian_11.png",
+          50484
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4137_udflow_epoque_46.png",
+          66875
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4163_rosesa_game_7.png",
+          69023
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4196_reckpr_yun_12.png",
+          71546
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_431_ashlok_epoque_28.png",
+          67500
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_469_indigo_nian_7.png",
+          55978
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_479_sleach_epoque_14.png",
+          50530
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_498_inside_summer_22.png",
+          54117
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/skill/skchr_lessng_1.png",
+          15005
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/skill/skcom_assist_cost[3].png",
+          24439
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_010_chen/back/char_010_chen.atlas",
+          3954
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_017_huang/back/char_017_huang.atlas",
+          5637
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1014_nearl2/char_1014_nearl2_epoque_17/front/char_1014_nearl2_epoque_17.atlas",
+          10505
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1016_agoat2/char_1016_agoat2_epoque_57/back/char_1016_agoat2_epoque_57.png",
+          243155
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1016_agoat2/char_1016_agoat2_epoque_57/front/char_1016_agoat2_epoque_57.skel",
+          469818
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1021_kroos2/char_1021_kroos2_game_3/back/char_1021_kroos2_game_3.png",
+          152612
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/back/char_102_texas_epoque_7.atlas",
+          11530
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/front/char_102_texas_epoque_7.png",
+          144669
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/front/char_102_texas_epoque_7.skel",
+          372057
         ]
       ]
     }
