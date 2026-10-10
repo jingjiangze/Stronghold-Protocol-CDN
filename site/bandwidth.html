@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
-  <meta name="description" content="上行带宽最大化压缩 —— 小上行带宽盒子的带宽优化实测与 10 Mbps 容量表（非官方同人作品）" />
-  <title>上行带宽最大化压缩 · 卫戍协议 CDN</title>
+  <meta name="description" content="WS 链路压缩与上行带宽最大化 —— 小上行带宽盒子的压缩实测、m.public 真 bug 与 10 Mbps 容量表（非官方同人作品）" />
+  <title>WS 压缩与上行带宽 · 卫戍协议 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
@@ -35,7 +35,7 @@
 
   <section class="hero">
     <div>
-      <h1>上行带宽最大化压缩</h1>
+      <h1>WS 压缩与上行带宽最大化</h1>
       <p class="hero-description">
         在<b>小上行带宽</b>（以 10 Mbps 为算例）的家用盒子上，让一台服务器能带更多人。
         全部数字来自工作树实测与线上探测，不是估算值。
@@ -44,7 +44,8 @@
     <div class="quick-stats">
       <span>首载提速 <strong>316×</strong></span>
       <span>稳态人均 <strong>2,048 B/s</strong></span>
-      <span>移出素材 <strong>462.6 MiB</strong></span>
+      <span>压缩后 <strong>505 B/s</strong></span>
+      <span>10 Mbps <strong>2,475 人</strong></span>
     </div>
   </section>
 
@@ -53,11 +54,12 @@
     <div class="block__head">
       <span class="block__num">1</span>
       <span class="block__title">结论先行</span>
-      <span class="block__who">首载要压 · 稳态也要压（2026-10-10 修正）</span>
+      <span class="block__who">首载要压 · 稳态更要压（2026-10-10 修正）</span>
     </div>
     <p class="block__lead">
       两件事分开看：<b>首载</b>是「新玩家第一次进场吃掉几百 MiB」，<b>稳态</b>是「一个席位对局中持续的上行」。
-      首载靠把素材挪走解决；<b>稳态实测人均 2,048 B/s，几乎全是 <code class="inline">m.public</code></b>（早前那句「只要 60 B/s」漏了它）。
+      首载靠把素材挪走解决；<b>稳态实测人均 2,048 B/s，几乎全是 <code class="inline">m.public</code></b>
+      （早前那句「只要 60 B/s」漏了它）。压掉它之后人均降到 <b>505 B/s</b>，10 Mbps 从 610 人抬到 <b>2,475 人</b>。
     </p>
 
     <div class="table-wrap" style="margin-top:16px">
@@ -76,6 +78,14 @@
       压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → 505 B/s，约 4×），
       而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。</span>
     </div>
+    <p class="section-note" style="margin-top:14px">
+      WS 链路这块单独拆成了两份文档：
+      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
+      （白名单 + 窗口 12、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
+      <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是待执行的三步
+      （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。
+      本页是给站点访客的自包含摘要。
+    </p>
   </section>
 
   <!-- ===================== 带宽去向 ===================== -->
@@ -113,6 +123,7 @@
 
     <p class="section-note" style="margin-top:14px">
       <b>素材那一块是全部问题的 99%。</b>它压不动，只能搬走 —— 这决定了后面所有措施的优先级。
+      <b>稳态 WS 的 30~35 B/s 是<b>建模值</b></b>，漏了占 98% 的 <code class="inline">m.public</code>；真实人均见下节。
     </p>
   </section>
 
@@ -139,10 +150,7 @@
         <div class="notice">
           <span>⚠️ <b>必须保留 <code class="inline">update\PAUSE_AUTOUPDATE</code></b>：<code class="inline">sp_update2</code>
           会重写槽脚本并丢掉 <code class="inline">SP_ASSET_CDN</code>，素材会静默回落到盒子本地（盒子是无素材版），
-          表现为<b>图片全挂 + 上行被打满</b>。这是唯一能让本措施归零的操作。<br />
-          <b>上线后怎么对账、清单索引为什么会漏掉 178 MiB</b> 见
-          <a href="./asset-cdn">《素材 CDN 对账》</a>：<code class="inline">index.json</code> 滞后、
-          <code class="inline">tree.json</code> 漏目录，判定必须以 <code class="inline">HEAD</code> 实测为权威。</span>
+          表现为<b>图片全挂 + 上行被打满</b>。这是唯一能让本措施归零的操作。</span>
         </div>
       </div>
 
@@ -180,7 +188,7 @@
       </div>
 
       <div class="mini">
-        <h4>措施 4 · permessage-deflate 窗口 12 → 9</h4>
+        <h4>措施 4 · permessage-deflate 窗口 12 → 9（仅战斗帧口径）</h4>
         <p class="download__meta">收益：<b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b></p>
         <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）</i>
 serverNoContextTakeover: true,   <i>// 保内存上界</i>
@@ -192,6 +200,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
           <li>小窗口用更便宜的距离码，实测<b>反而更省</b>：35.8% vs 36.5%、28.8% vs 30.0%。</li>
           <li>⚠️ <b>默认路径几乎用不到它</b>：<code class="inline">clientCombat</code> 默认 on，战斗跑在玩家浏览器里，
           服务端只在 AI / 接管 / <code class="inline">SP_COMBAT=server</code> 时才发 <code class="inline">b.snap</code>。</li>
+          <li>注意：<code class="inline">m.public</code> 用的是 <b>窗口 12</b>（见下节），不是这里的 9。</li>
         </ul>
       </div>
 
@@ -311,84 +320,6 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
   </section>
 
-  <!-- ===================== 对局流 ===================== -->
-  <section class="section" id="battle">
-    <div class="section-heading">
-      <div><div class="eyebrow">IN-GAME · THE OTHER AXIS</div><h2>对局流：战斗快照的两档与自适应</h2></div>
-      <span class="section-status">素材之外，唯一还在长的那块</span>
-    </div>
-
-    <p class="section-note">
-      素材搬走、代码压好之后，剩下的上行几乎只剩一件事：服务端跑的战斗场给观战者推的
-      <code class="inline">b.snap</code>。线上 nginx 日志（约 6.1 万条，跨 5 天）里，
-      <b>长连接（<code class="inline">rt&gt;5s</code>，n=1,503）中按速率排前 10% 的那 151 条，占了全部 ws 上行的 90.5%</b>
-      （618.2 / 682.8 MiB），而且都是 45 分钟 ~ 3 小时的超长连接。
-      <br /><span class="section-note">口径说明：分母是<b>全部 <code class="inline">/ws</code> 请求的上行字节</b>
-      （682.8 MiB，其中长连接占 682.7 MiB）；分位取自同一集合 ——
-      p50 15.2 / p90 1,352.7 / p99 3,374.4 B/s。早期文档里并列的 97.9% 与 88.8% 是两套不同分母，已统一为这一个。</span>
-    </p>
-
-    <div class="two-col">
-      <div class="mini">
-        <h4>措施 7 · 战斗快照 20 Hz → 10 Hz</h4>
-        <p class="download__meta">收益：<b>该流上行精确减半</b>（实测 49.8% ~ 50.0%）</p>
-        <ul>
-          <li>每 <code class="inline">SNAPSHOT_EVERY</code> tick 发一帧；战斗是 2 倍速（每真实秒 60 tick），
-          所以 <code class="inline">3</code> 是 20 帧/秒、<code class="inline">6</code> 是 10 帧/秒。</li>
-          <li>单帧 gzip 后字节几乎不变（99.6% ~ 100.1%）—— <b>帧变稀但每帧没有变重</b>，
-          不是「少发几次、每次更重」。</li>
-          <li>只动服务端跑的那条流式路径；大厅与 <code class="inline">clientCombat</code> 默认路径不受影响。</li>
-        </ul>
-      </div>
-
-      <div class="mini">
-        <h4>措施 8 · 抖动链路自动退回 20 Hz（两套配置并存）</h4>
-        <p class="download__meta">收益：<b>抖动链路的画质</b>；安静链路仍是 10 Hz，带宽收益保留</p>
-        <ul>
-          <li>客户端插值缓冲落后最新快照 <code class="inline">delay = 100 ms</code>，而 10 Hz 间隔
-          <b>正好也是 100 ms → 余量为零</b>；20 Hz 间隔 50 ms，同一段缓冲容得下两帧。</li>
-          <li>服务端对自己<b>正在推流</b>的 socket 做 ws ping/pong —— 浏览器按 RFC 6455 自动回 pong，
-          <b>不用改客户端、不用改协议</b>，老版本客户端一样有效；空闲连接不探，不花上行。</li>
-          <li>速率<b>按连接</b>：一个人抖，只把他那一场提到 20 Hz，同场其他人不受影响。</li>
-          <li>两个刹车：socket 已在排队（<code class="inline">bufferedAmount</code> ≥ 32 KB）<b>一律不升级</b>
-          （加帧只会加深积压）；换档要过 5 s 驻留，两档不会来回跳。</li>
-        </ul>
-      </div>
-    </div>
-
-    <h3 style="margin-top:26px">为什么判据是「抖动」而不是「位移」</h3>
-    <p class="section-note" style="margin-bottom:10px">
-      拿四类真实战斗量相邻快照的单位位移，p99 只有 <b>0.15 ~ 0.44 格</b>，远低于客户端 2.5 格的瞬移阈值；
-      唯一超标的 4.472 格是技能瞬移，<b>20 Hz 下数值完全相同</b>。也就是说降帧不会让任何东西「跳」。
-      真正会坏的是插值余量 —— 用<b>真实的 <code class="inline">interp.js</code></b>
-      （<code class="inline">delay=0.1</code>、<code class="inline">maxExtrapolate=0.12</code>、<code class="inline">rate=2</code>，
-      正是流式战斗的实参）喂抖动到达时刻，驱动 60 fps 渲染实测：
-    </p>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>链路抖动</th><th class="num">10 Hz 外推帧</th><th class="num">20 Hz 外推帧</th><th>说明</th></tr></thead>
-        <tbody>
-          <tr><td class="mono">≤ 20 ms</td><td class="num">0.0%</td><td class="num">0.0%</td><td>两者等价 —— 安静链路上 10 Hz 完全不亏</td></tr>
-          <tr><td class="mono">30 ms</td><td class="num">0.1%</td><td class="num">0.0%</td><td>临界</td></tr>
-          <tr><td class="mono"><b>50 ms</b></td><td class="num"><b>1.5%</b></td><td class="num">0.2%</td><td>升级阈值取这里（正好是 10 Hz 间隔的一半）</td></tr>
-          <tr><td class="mono"><b>75 ms</b></td><td class="num"><b>4.2%</b></td><td class="num">0.6%</td><td>明显卡顿</td></tr>
-          <tr><td class="mono">150 ms</td><td class="num">11.2%</td><td class="num">3.6%</td><td>——</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="notice">
-      <span><b>「外推」= 画面靠猜。</b>渲染时钟跑过最新快照后只能沿最后的速度外推，超过
-      <code class="inline">maxExtrapolate</code>（120 ms）就冻结。
-      <code class="inline">SP_SNAP_RATE=auto</code>（默认）按链路自判；<code class="inline">slow</code> /
-      <code class="inline">fast</code> 可以把两套配置任选一套钉死；<code class="inline">SP_SNAP_JITTER_MS</code> 调阈值。</span>
-    </div>
-    <p class="section-note" style="margin-top:14px">
-      诚实的边界：判据用的是<b>往返</b>抖动，而客户端关心的是<b>下行单向</b>抖动，两者相关但不完全等价；
-      阈值 50 ms 由上面的表推出，因此做成了可调项，并在换档时打一行日志
-      （<code class="inline">[snap] &lt;房号&gt; &lt;玩家&gt; → 20 Hz (jitter NN ms)</code>），运维可直接从线上日志看分布再调。
-    </p>
-  </section>
-
   <!-- ===================== m.public / 2000 人 ===================== -->
   <section class="section" id="mpub">
     <div class="section-heading">
@@ -434,7 +365,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
         </p>
       </div>
       <div class="mini">
-        <h4>窗口 9 → 12</h4>
+        <h4>窗口 9 → 12（这次为 m.public 调的）</h4>
         <div class="table-wrap" style="margin-top:8px">
           <table>
             <thead><tr><th><code class="inline">serverMaxWindowBits</code></th><th class="num"><code class="inline">m.public</code> 压缩后</th></tr></thead>
@@ -517,7 +448,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
   <section class="section" id="compact">
     <div class="section-heading">
       <div><div class="eyebrow">ANALYSIS · CONSTANTS OUT OF THE HOT FRAME</div><h2>把「整场不变的字段」请出热帧</h2></div>
-      <span class="section-status">基线 + 客户端合并；重连与兜底都按快照率那套做</span>
+      <span class="section-status">基线 + 客户端合并；重连与兜底都按快照率那套做（PR #157，待合并）</span>
     </div>
 
     <p class="section-note" style="margin-bottom:14px">
@@ -567,14 +498,6 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
     </div>
 
     <div class="notice" style="margin-top:16px">
-      <span><b>WS 链路这块单独拆成了两份文档：</b>
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
-      （白名单 + 窗口 12、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
-      <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是待执行的三步
-      （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。</span>
-    </div>
-
-    <div class="notice" style="margin-top:16px">
       <span><b>还没做（按顺序）：</b>
       ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
       ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（合计 2.05×）；
@@ -587,7 +510,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
   <section class="section" id="verify">
     <div class="section-heading">
       <div><div class="eyebrow">VERIFY</div><h2>验收命令</h2></div>
-      <span class="section-status">三条命令确认本页结论仍然成立</span>
+      <span class="section-status">四条命令确认本页结论仍然成立</span>
     </div>
     <pre class="code"><i># 1. 素材确已离场（应全部指向 CDN）</i>
 curl -s https://weishu.jiangjiangze.icu/data/assets.json \
@@ -599,7 +522,10 @@ curl -s https://weishu.jiangjiangze.icu/ | grep -o 'js/[a-z.]*js?v=[a-f0-9]*' | 
 <i># 3. 带版本的资源走 immutable（关键指标）</i>
 curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$( \
   curl -s https://weishu.jiangjiangze.icu/healthz | grep -o '"build":"[^"]*"' | cut -d'"' -f4)" \
-  | grep -i cache-control        <i># 期望 max-age=31536000, immutable</i></pre>
+  | grep -i cache-control        <i># 期望 max-age=31536000, immutable</i>
+
+<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=12）</i>
+curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
   </section>
 
   <footer class="footer">
@@ -610,6 +536,8 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$( \
       </div>
       <div class="footer-links">
         <a href="./">CDN 首页</a>
+        <a href="./docs/ws-link-compression.md">WS 压缩（已上线）</a>
+        <a href="./docs/ws-link-compression-next.md">WS 压缩（下一轮）</a>
         <a href="./docs/bandwidth-max-compression.md">原始 Markdown</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
