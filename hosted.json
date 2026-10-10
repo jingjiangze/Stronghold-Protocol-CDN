@@ -2787,6 +2787,20 @@
           16998
         ]
       ]
+    },
+    {
+      "id": "sp-four-02a466edd43d",
+      "what": "Four-server verified resource pack 02a466edd43d",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 14228,
+      "keys": [
+        [
+          "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
+          14228
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
