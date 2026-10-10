@@ -61,6 +61,9 @@
   "retired": [
     "statically"
   ],
-  "_disabled_comment": "Soft off-switch: these ids stay PUBLISHED (the site still shows them) but carry enabled:false, which every selector must honour. Use it for a source that is temporarily unhealthy or kept only as a last-resort fallback — `retired` would remove the fallback too.",
-  "disabled": []
+  "_disabled_comment": "Soft off-switch: these ids stay PUBLISHED (the site still shows them) but carry enabled:false, which every selector must honour. Use it for a source that is temporarily unhealthy or kept only as a last-resort fallback — `retired` would remove the fallback too. 2026-10-10: the jsDelivr pair is off for delivery. Measured on real asset paths (8 files, same machine): jsdelivr-assets median TTFB 1479 ms / 1 timeout in 8, vs r2 926 ms and ghfast-assets 654 ms. jsDelivr fetches uncached files from GitHub on demand, so on a ~12k-file cold tree it is the SLOWEST — and the probe-file metric had picked it as the fastest. It stays published (the site still shows it) but no selector may hand it to a player until the pick is measured on real paths with a must-beat-the-origin margin.",
+  "disabled": [
+    "jsdelivr",
+    "jsdelivr-assets"
+  ]
 }
