@@ -34,6 +34,13 @@ function arg(name, fallback = '') {
 }
 const flag = (name) => process.argv.slice(2).includes(`--${name}`);
 
+/**
+ * 使用者自己能修的错误：只打印一句话。
+ *
+ * 堆栈对「id 写错了一位」这种问题没有任何帮助，反而把真正有用的那句话淹掉。
+ */
+const usage = (message) => Object.assign(new Error(message), { userFacing: true });
+
 const base = (arg('base', BASE_DEFAULT) || BASE_DEFAULT).replace(/\/+$/, '');
 const adminKey = () => {
   const fromEnv = (process.env.CDN_ADMIN_KEY || '').trim();
@@ -212,7 +219,7 @@ async function showDocs() {
 /** 清掉一组还没上线的暂存：真删、立即生效、不走发布轮。 */
 async function purgeStaging(id) {
   if (!/^[0-9a-f]{12,24}$/.test(id)) {
-    throw new Error('--purge 要的是 begin 返回的十六进制 id（看 --list 输出里的第一列）');
+    throw usage('--purge 要的是 begin 返回的十六进制 id（看 --list 输出里的第一列）');
   }
   if (!flag('yes')) {
     console.log(`将立刻删掉暂存区 ${id} 这一组。这些字节还没上线，删掉不影响任何对外地址。`);
@@ -230,7 +237,7 @@ async function purgeStaging(id) {
 /** 提交下线一个「后台自己上线过」的键；真删由发布轮核对引用之后再执行。 */
 async function removePublished(rawKey) {
   const k = validateKey(rawKey);
-  if (!k.ok) throw new Error(`键名不行：${k.reason}`);
+  if (!k.ok) throw usage(`键名不行：${k.reason}`);
   if (!flag('yes')) {
     console.log(`将提交下线 ${k.key}。`);
     console.log('发布轮会先核对「不在上游素材清单、且没有任何线上清单引用」，通过才真删；被引用的会拒绝并写明原因。');
@@ -298,12 +305,12 @@ async function main() {
   }
 
   const abs = path.resolve(file);
-  if (!fs.existsSync(abs)) throw new Error(`文件不存在：${abs}`);
+  if (!fs.existsSync(abs)) throw usage(`文件不存在：${abs}`);
   const key = arg('to') || defaultKeyFor(abs);
   const k = validateKey(key);
-  if (!k.ok) throw new Error(`键名不行：${k.reason}`);
+  if (!k.ok) throw usage(`键名不行：${k.reason}`);
   const src = cleanSource(arg('source'));
-  if (!src.ok) throw new Error(`来源不行：${src.reason}`);
+  if (!src.ok) throw usage(`来源不行：${src.reason}`);
   const what = arg('what', '');
 
   const result = await uploadOne(abs, k.key, src.source, what);
@@ -316,6 +323,9 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(`[agent-upload] 失败：${error.stack || error.message}`);
+  // A usage mistake (a typo'd id, a bad key name) is answered with the sentence that says how to fix
+  // it; a stack trace is noise there. Anything else keeps its stack, because that is the case where
+  // the stack is the useful part.
+  console.error(`[agent-upload] 失败：${error.userFacing ? error.message : error.stack || error.message}`);
   process.exitCode = 1;
 });
