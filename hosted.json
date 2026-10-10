@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 288,
-      "bytes": 23616718,
+      "files": 308,
+      "bytes": 25054964,
       "keys": [
         [
           "assets/audio/sfx/player/p_imp/p_imp_mjckyrdglsnt.mp3",
@@ -551,6 +551,10 @@
           59189
         ],
         [
+          "assets/char/avatar/char_1022_flwr2.png",
+          50672
+        ],
+        [
           "assets/char/avatar/char_1024_hbisc2_2.png",
           56899
         ],
@@ -591,6 +595,10 @@
           65583
         ],
         [
+          "assets/char/avatar/char_4124_iana_2.png",
+          49648
+        ],
+        [
           "assets/char/avatar/char_4126_fuze.png",
           52636
         ],
@@ -619,12 +627,20 @@
           69853
         ],
         [
+          "assets/char/avatar/char_458_rfrost.png",
+          50027
+        ],
+        [
           "assets/char/avatar/char_459_tachak.png",
           47767
         ],
         [
           "assets/char/avatar/char_459_tachak_2.png",
           55248
+        ],
+        [
+          "assets/char/portrait/char_1001_amiya2_2.png",
+          124124
         ],
         [
           "assets/char/portrait/char_1011_lava2_1.png",
@@ -713,6 +729,10 @@
         [
           "assets/char/portrait/char_459_tachak_2.png",
           96056
+        ],
+        [
+          "assets/char/skin_avatar/char_002_amiya_test_1.png",
+          63036
         ],
         [
           "assets/char/skin_avatar/char_1024_hbisc2_unveiling_2.png",
@@ -987,6 +1007,10 @@
           30542
         ],
         [
+          "assets/relics/relic_079.png",
+          41700
+        ],
+        [
           "assets/relics/relic_080.png",
           29755
         ],
@@ -1037,6 +1061,10 @@
         [
           "assets/skill/skchr_greyy2_2.png",
           21282
+        ],
+        [
+          "assets/skill/skchr_hbisc2_1.png",
+          8070
         ],
         [
           "assets/skill/skchr_hbisc2_2.png",
@@ -1095,6 +1123,10 @@
           250546
         ],
         [
+          "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/back/char_002_amiya_winter_1.atlas",
+          3054
+        ],
+        [
           "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.atlas",
           5648
         ],
@@ -1103,8 +1135,16 @@
           99691
         ],
         [
+          "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.skel",
+          172304
+        ],
+        [
           "assets/spine/op/char_002_amiya/front/char_002_amiya.png",
           84155
+        ],
+        [
+          "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.atlas",
+          8134
         ],
         [
           "assets/spine/op/char_1001_amiya2/front/char_1001_amiya2.png",
@@ -1147,8 +1187,20 @@
           9095
         ],
         [
+          "assets/spine/op/char_1011_lava2/char_1011_lava2_whirlwind_9/front/char_1011_lava2_whirlwind_9.png",
+          185800
+        ],
+        [
+          "assets/spine/op/char_1022_flwr2/back/char_1022_flwr2.atlas",
+          5785
+        ],
+        [
           "assets/spine/op/char_1022_flwr2/front/char_1022_flwr2.png",
           90517
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.atlas",
+          5894
         ],
         [
           "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.png",
@@ -1179,8 +1231,16 @@
           7774
         ],
         [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_breaker_1/back/char_1027_greyy2_breaker_1.png",
+          108488
+        ],
+        [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_breaker_1/back/char_1027_greyy2_breaker_1.skel",
           198054
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/back/char_1027_greyy2_snow_5.atlas",
+          10113
         ],
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/back/char_1027_greyy2_snow_5.skel",
@@ -1197,6 +1257,10 @@
         [
           "assets/spine/op/char_1027_greyy2/front/char_1027_greyy2.skel",
           285883
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/back/char_1036_fang2.png",
+          54164
         ],
         [
           "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/back/char_1036_fang2_snow_8.atlas",
@@ -1245,6 +1309,10 @@
         [
           "assets/spine/op/char_120_hibisc/front/char_120_hibisc.png",
           50306
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/front/char_120_hibisc.skel",
+          57418
         ],
         [
           "assets/spine/op/char_121_lava/back/char_121_lava.atlas",
@@ -1427,6 +1495,10 @@
           8329
         ],
         [
+          "assets/spine/op/char_4125_rdoc/front/char_4125_rdoc.png",
+          114596
+        ],
+        [
           "assets/spine/op/char_4126_fuze/back/char_4126_fuze.atlas",
           7865
         ],
@@ -1503,6 +1575,10 @@
           79173
         ],
         [
+          "assets/spine/op/char_457_blitz/front/char_457_blitz.skel",
+          235424
+        ],
+        [
           "assets/spine/op/char_458_rfrost/back/char_458_rfrost.atlas",
           3462
         ],
@@ -1521,6 +1597,10 @@
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/back/char_459_tachak_rainbow6_1.atlas",
           4262
+        ],
+        [
+          "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/back/char_459_tachak_rainbow6_1.png",
+          89795
         ],
         [
           "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.atlas",
