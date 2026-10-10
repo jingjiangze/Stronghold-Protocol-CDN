@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 108,
-      "bytes": 14063842,
+      "files": 128,
+      "bytes": 15356956,
       "keys": [
         [
           "assets/char/avatar/char_121_lava.png",
@@ -411,6 +411,10 @@
           65583
         ],
         [
+          "assets/char/avatar/char_4126_fuze.png",
+          52636
+        ],
+        [
           "assets/char/avatar/char_4131_odda.png",
           50265
         ],
@@ -433,6 +437,10 @@
         [
           "assets/char/portrait/char_1022_flwr2_1.png",
           108291
+        ],
+        [
+          "assets/char/portrait/char_1022_flwr2_2.png",
+          112843
         ],
         [
           "assets/char/portrait/char_1024_hbisc2_1.png",
@@ -485,6 +493,10 @@
         [
           "assets/char/portrait/char_4224_turdus_2.png",
           135131
+        ],
+        [
+          "assets/char/portrait/char_459_tachak_2.png",
+          96056
         ],
         [
           "assets/char/skin_avatar/char_120_hibisc_nian_1.png",
@@ -577,6 +589,14 @@
         [
           "assets/local/operators/char_456_ash/portrait_char_456_ash_2.png",
           99316
+        ],
+        [
+          "assets/spine/op/char_002_amiya/back/char_002_amiya.png",
+          52368
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_winter_1/front/char_002_amiya_winter_1.atlas",
+          5648
         ],
         [
           "assets/spine/op/char_1011_lava2/char_1011_lava2_nian_6/back/char_1011_lava2_nian_6.png",
@@ -759,6 +779,38 @@
           284444
         ],
         [
+          "assets/spine/op/char_4124_iana/back/char_4124_iana.skel",
+          120817
+        ],
+        [
+          "assets/spine/op/char_4124_iana/char_4124_iana_rainbow6_2/back/char_4124_iana_rainbow6_2.atlas",
+          7156
+        ],
+        [
+          "assets/spine/op/char_4124_iana/char_4124_iana_rainbow6_2/back/char_4124_iana_rainbow6_2.skel",
+          162541
+        ],
+        [
+          "assets/spine/op/char_4124_iana/char_4124_iana_rainbow6_2/front/char_4124_iana_rainbow6_2.atlas",
+          9797
+        ],
+        [
+          "assets/spine/op/char_4124_iana/char_4124_iana_rainbow6_2/front/char_4124_iana_rainbow6_2.png",
+          197811
+        ],
+        [
+          "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/back/char_4125_rdoc_rainbow6_2.skel",
+          194719
+        ],
+        [
+          "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/front/char_4125_rdoc_rainbow6_2.atlas",
+          9068
+        ],
+        [
+          "assets/spine/op/char_4125_rdoc/front/char_4125_rdoc.atlas",
+          8329
+        ],
+        [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.atlas",
           5948
         ],
@@ -809,6 +861,34 @@
         [
           "assets/spine/op/char_4224_turdus/front/char_4224_turdus.skel",
           339998
+        ],
+        [
+          "assets/spine/op/char_457_blitz/back/char_457_blitz.atlas",
+          3321
+        ],
+        [
+          "assets/spine/op/char_457_blitz/back/char_457_blitz.png",
+          68757
+        ],
+        [
+          "assets/spine/op/char_457_blitz/back/char_457_blitz.skel",
+          79173
+        ],
+        [
+          "assets/spine/op/char_458_rfrost/back/char_458_rfrost.atlas",
+          3462
+        ],
+        [
+          "assets/spine/op/char_458_rfrost/back/char_458_rfrost.skel",
+          32367
+        ],
+        [
+          "assets/spine/op/char_458_rfrost/front/char_458_rfrost.png",
+          70605
+        ],
+        [
+          "assets/spine/op/char_459_tachak/char_459_tachak_rainbow6_1/front/char_459_tachak_rainbow6_1.atlas",
+          5640
         ]
       ]
     }
