@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 88,
-      "bytes": 12342560,
+      "files": 108,
+      "bytes": 14063842,
       "keys": [
         [
           "assets/char/avatar/char_121_lava.png",
@@ -431,6 +431,14 @@
           69853
         ],
         [
+          "assets/char/portrait/char_1022_flwr2_1.png",
+          108291
+        ],
+        [
+          "assets/char/portrait/char_1024_hbisc2_1.png",
+          105742
+        ],
+        [
           "assets/char/portrait/char_121_lava_1.png",
           93881
         ],
@@ -477,6 +485,10 @@
         [
           "assets/char/portrait/char_4224_turdus_2.png",
           135131
+        ],
+        [
+          "assets/char/skin_avatar/char_120_hibisc_nian_1.png",
+          52842
         ],
         [
           "assets/char/skin_avatar/char_121_lava_sale_9.png",
@@ -567,6 +579,66 @@
           99316
         ],
         [
+          "assets/spine/op/char_1011_lava2/char_1011_lava2_nian_6/back/char_1011_lava2_nian_6.png",
+          73407
+        ],
+        [
+          "assets/spine/op/char_1011_lava2/char_1011_lava2_whirlwind_9/back/char_1011_lava2_whirlwind_9.skel",
+          179827
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/back/char_1024_hbisc2.png",
+          64922
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/back/char_1024_hbisc2_unveiling_2.atlas",
+          5779
+        ],
+        [
+          "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/front/char_1024_hbisc2_unveiling_2.png",
+          142718
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/back/char_1027_greyy2.atlas",
+          7774
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_breaker_1/back/char_1027_greyy2_breaker_1.skel",
+          198054
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.skel",
+          270933
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/back/char_1036_fang2_snow_8.atlas",
+          6047
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/back/char_1036_fang2_snow_8.png",
+          134753
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/front/char_1036_fang2_snow_8.atlas",
+          9413
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/front/char_1036_fang2_snow_8.png",
+          154495
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.atlas",
+          2662
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/char_120_hibisc_nian_1/back/char_120_hibisc_nian_1.png",
+          65285
+        ],
+        [
+          "assets/spine/op/char_120_hibisc/front/char_120_hibisc.png",
+          50306
+        ],
+        [
           "assets/spine/op/char_121_lava/back/char_121_lava.atlas",
           2768
         ],
@@ -613,6 +685,14 @@
         [
           "assets/spine/op/char_124_kroos/back/char_124_kroos.skel",
           62302
+        ],
+        [
+          "assets/spine/op/char_124_kroos/char_124_kroos_sale_14/back/char_124_kroos_sale_14.atlas",
+          8258
+        ],
+        [
+          "assets/spine/op/char_124_kroos/char_124_kroos_witch_1/front/char_124_kroos_witch_1.png",
+          79774
         ],
         [
           "assets/spine/op/char_124_kroos/front/char_124_kroos.png",
