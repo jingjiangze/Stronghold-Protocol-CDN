@@ -372,11 +372,11 @@
     },
     {
       "id": "sp-fusion-mod-assets",
-      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
+      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 528,
-      "bytes": 39558872,
+      "files": 548,
+      "bytes": 41844132,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -469,6 +469,10 @@
         [
           "assets/audio/voice/cn/char_456_ash/cn_019.mp3",
           12974
+        ],
+        [
+          "assets/audio/voice/cn/char_456_ash/cn_020.mp3",
+          8168
         ],
         [
           "assets/audio/voice/cn/char_456_ash/cn_021.mp3",
@@ -931,6 +935,10 @@
           107010
         ],
         [
+          "assets/char/portrait/char_124_kroos_1.png",
+          109967
+        ],
+        [
           "assets/char/portrait/char_135_halo_1.png",
           132744
         ],
@@ -989,6 +997,10 @@
         [
           "assets/char/portrait/char_4182_oblvns_2.png",
           127540
+        ],
+        [
+          "assets/char/portrait/char_4224_turdus_1.png",
+          126099
         ],
         [
           "assets/char/portrait/char_4224_turdus_2.png",
@@ -1055,6 +1067,10 @@
           55355
         ],
         [
+          "assets/char/skin_avatar/char_124_kroos_sale_14.png",
+          65556
+        ],
+        [
           "assets/char/skin_avatar/char_124_kroos_witch_1.png",
           57790
         ],
@@ -1099,6 +1115,10 @@
           309732
         ],
         [
+          "assets/local/operators/char_4123_ela/front/char_4123_ela.png",
+          423825
+        ],
+        [
           "assets/local/operators/char_4123_ela/front/model.skel",
           820787
         ],
@@ -1111,12 +1131,20 @@
           115744
         ],
         [
+          "assets/local/operators/char_4217_makoto/avatar_char_4217_makoto.png",
+          51518
+        ],
+        [
           "assets/local/operators/char_4217_makoto/avatar_char_4217_makoto_2.png",
           63900
         ],
         [
           "assets/local/operators/char_4217_makoto/back/char_4217_makoto_v2.png",
           457507
+        ],
+        [
+          "assets/local/operators/char_4217_makoto/back/model_v2.atlas",
+          21154
         ],
         [
           "assets/local/operators/char_4217_makoto/back/model_v2.skel",
@@ -1183,6 +1211,10 @@
           41496
         ],
         [
+          "assets/local/operators/token_10003_cgbird_bird/front/token_10003_cgbird_bird.png",
+          35401
+        ],
+        [
           "assets/local/operators/token_10005_mgllan_drone1/front/token_10005_mgllan_drone1.png",
           39602
         ],
@@ -1235,6 +1267,10 @@
           19893
         ],
         [
+          "assets/local/operators/token_10034_ray_sndbst/front/token_10034_ray_sndbst.png",
+          15460
+        ],
+        [
           "assets/local/operators/token_10035_wisdel_wward/front/token_10035_wisdel_wward.png",
           13401
         ],
@@ -1253,6 +1289,10 @@
         [
           "assets/local/operators/token_10054_phatm2_encdool/front/token_10054_phatm2_encdool.png",
           24479
+        ],
+        [
+          "assets/local/operators/token_10059_nasti_nstdef/front/token_10059_nasti_nstdef.png",
+          15837
         ],
         [
           "assets/local/operators/token_10060_nasti_nstchr/front/token_10060_nasti_nstchr.png",
@@ -1559,6 +1599,10 @@
           4641
         ],
         [
+          "assets/skill/skchr_oblvns_1.png",
+          33325
+        ],
+        [
           "assets/skill/skchr_oblvns_2.png",
           33324
         ],
@@ -1683,6 +1727,10 @@
           172304
         ],
         [
+          "assets/spine/op/char_002_amiya/front/char_002_amiya.atlas",
+          5595
+        ],
+        [
           "assets/spine/op/char_002_amiya/front/char_002_amiya.png",
           84155
         ],
@@ -1761,6 +1809,10 @@
         [
           "assets/spine/op/char_1011_lava2/char_1011_lava2_whirlwind_9/front/char_1011_lava2_whirlwind_9.png",
           185800
+        ],
+        [
+          "assets/spine/op/char_1011_lava2/char_1011_lava2_whirlwind_9/front/char_1011_lava2_whirlwind_9.skel",
+          297114
         ],
         [
           "assets/spine/op/char_1011_lava2/front/char_1011_lava2.atlas",
@@ -1887,6 +1939,10 @@
           131273
         ],
         [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.png",
+          240141
+        ],
+        [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.skel",
           270933
         ],
@@ -1931,12 +1987,20 @@
           154495
         ],
         [
+          "assets/spine/op/char_1036_fang2/char_1036_fang2_snow_8/front/char_1036_fang2_snow_8.skel",
+          365432
+        ],
+        [
           "assets/spine/op/char_1036_fang2/front/char_1036_fang2.atlas",
           7172
         ],
         [
           "assets/spine/op/char_1036_fang2/front/char_1036_fang2.png",
           73391
+        ],
+        [
+          "assets/spine/op/char_1036_fang2/front/char_1036_fang2.skel",
+          242821
         ],
         [
           "assets/spine/op/char_120_hibisc/back/char_120_hibisc.atlas",
@@ -2115,6 +2179,10 @@
           79774
         ],
         [
+          "assets/spine/op/char_124_kroos/char_124_kroos_witch_1/front/char_124_kroos_witch_1.skel",
+          83967
+        ],
+        [
           "assets/spine/op/char_124_kroos/front/char_124_kroos.atlas",
           3958
         ],
@@ -2165,6 +2233,10 @@
         [
           "assets/spine/op/char_219_meteo/front/char_219_meteo.atlas",
           4355
+        ],
+        [
+          "assets/spine/op/char_219_meteo/front/char_219_meteo.png",
+          66210
         ],
         [
           "assets/spine/op/char_219_meteo/front/char_219_meteo.skel",
@@ -2459,6 +2531,10 @@
           4367
         ],
         [
+          "assets/spine/op/char_459_tachak/front/char_459_tachak.png",
+          74190
+        ],
+        [
           "assets/spine/op/char_459_tachak/front/char_459_tachak.skel",
           64321
         ],
@@ -2481,6 +2557,10 @@
         [
           "assets/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp_witch_4.png",
           4777
+        ],
+        [
+          "assets/spine/token/token_10025_doroth_recttp/token_10025_doroth_recttp_witch_4.skel",
+          3480
         ],
         [
           "assets/token/avatar/token_10004_otter_motter.png",
