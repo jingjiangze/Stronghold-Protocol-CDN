@@ -71,6 +71,66 @@ export const ART_SCHEMA = 5;
 /** The manifests the client reads, and the ones the game server rewrites. */
 const MANIFEST_NAMES = ['assets.json', 'local-assets.json', 'emotes.json'];
 
+/**
+ * Should this run stop here, or is there something the published interface still does not have?
+ *
+ * The watermark is what keeps a six-hourly run at seconds instead of a 505 MB download, and it is
+ * also the most consequential decision in the job: a wrong "skip" reports success while the
+ * publication quietly stays where it was. Every clause below is therefore a way the published state
+ * has actually gone stale, and each one is a named reason so the log says which.
+ *
+ * @returns {{skip: boolean, pending: string[]}}
+ */
+export function watermarkDecision({ published, releaseTag, opts }) {
+  if (!published) return { skip: false, pending: ['nothing is published yet'] };
+
+  const pending = [];
+  if (published.upstream?.tag !== releaseTag) {
+    pending.push(`the upstream tag moved (published ${published.upstream?.tag ?? '?'}, this run ${releaseTag})`);
+  }
+  if (published.schema !== ART_SCHEMA) {
+    pending.push(`the published interface is schema ${published.schema ?? 1}, this code publishes ${ART_SCHEMA}`);
+  }
+  if (published.verified?.missing !== 0) {
+    pending.push(`the last verification left ${published.verified?.missing ?? '?'} URLs unresolved`);
+  }
+  if (opts.pages && !(published.art?.mirrors || []).some((m) => m.id === 'pages')) {
+    pending.push('the pages origin is not published yet');
+  }
+  // A requested source the interface does not list means its files were never mirrored.
+  if (opts.sources && !(published.art?.sources || []).length) {
+    pending.push('the extra sources are not published yet');
+  }
+
+  if (opts.packs) {
+    const packs = published.art?.packs || [];
+    if (!packs.length) {
+      pending.push('the pack channel is not published yet');
+    } else {
+      // The packs and the two download zips are built from the release and every one of their URLs
+      // carries its tag, so a pack pointing at another tag is from another release. Asking only
+      // whether packs EXIST (which is what this clause used to do) misses the state that actually
+      // occurs: a run that publishes the interface without --packs moves the tag and carries the
+      // packs forward, which then satisfies every other clause — so the job skipped forever and the
+      // download page kept offering the previous release's packages. That is what happened at
+      // v0.2.3: the interface said v0.2.3 while all 17 packs and both zips still said v0.2.2.
+      //
+      // Gated on `opts.packs` because a run without it cannot rebuild them anyway, and flagging
+      // staleness there would cost a full download to learn nothing.
+      const stale = packs.filter((p) => {
+        const urls = p.urls || [];
+        return urls.length > 0 && !urls.some((u) => u.includes(`assets-${releaseTag}`));
+      });
+      if (stale.length) {
+        pending.push(
+          `${stale.length} of ${packs.length} packs still point at an older release (e.g. ${stale[0].id})`,
+        );
+      }
+    }
+  }
+  return { skip: pending.length === 0, pending };
+}
+
 function parseArgs(argv) {
   const opts = {
     write: false,
@@ -447,39 +507,20 @@ async function main() {
   // verified clean, so there is nothing to do — and, more to the point, no reason to pull 428 MB
   // every six hours to find that out.
   //
-  // The extras are part of "done": if Pages or the packs failed in the run that published the
-  // interface, art.json names the tag anyway, so a plain tag comparison would skip them forever.
+  // A wrong "skip" is invisible: the job reports success and the publication quietly stays where it
+  // was. So the decision is a pure function with tests (watermarkDecision) rather than an inline
+  // condition, and every clause in it is a way the published state has actually gone stale.
   if (!opts.force) {
     const published = await readPublishedArt(opts.base);
-    const missingPages = opts.pages && !(published?.art?.mirrors || []).some((m) => m.id === 'pages');
-    const missingPacks = opts.packs && !(published?.art?.packs || []).length;
-    // A requested source that the interface does not list yet means its files are not mirrored.
-    const missingSources = opts.sources && !(published?.art?.sources || []).length;
-    if (
-      published?.upstream?.tag === release.tag &&
-      published?.schema === ART_SCHEMA &&
-      published?.verified?.missing === 0 &&
-      !missingPages &&
-      !missingPacks &&
-      !missingSources
-    ) {
+    const decision = watermarkDecision({ published, releaseTag: release.tag, opts });
+    if (decision.skip) {
       log(
         `already mirrored ${release.tag}: ${published.verified.probed} URLs verified, 0 missing ` +
           `(synced ${published.syncedAt}) — nothing to do (--force to re-run anyway)`,
       );
       return;
     }
-    if (published && published.schema !== ART_SCHEMA) {
-      log(`the published interface is schema ${published.schema ?? 1}, this code publishes ${ART_SCHEMA} — continuing`);
-    }
-    const pending = [
-      missingPages && 'the pages origin',
-      missingPacks && 'the packs',
-      missingSources && 'the extra sources',
-    ].filter(Boolean);
-    if (published?.upstream?.tag === release.tag && pending.length) {
-      log(`already mirrored ${release.tag}, but ${pending.join(' and ')} are not published yet — continuing`);
-    }
+    for (const reason of decision.pending) log(`continuing — ${reason}`);
   }
 
   const workDir = path.resolve(ROOT, opts.work, release.tag);
