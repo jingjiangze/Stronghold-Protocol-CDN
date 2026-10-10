@@ -8704,12 +8704,84 @@
     },
     {
       "id": "stardust-skins",
-      "what": "Stardust 干员皮肤 271 套（ModelScope 公开数据集）— 试传 1 个验证通道",
+      "what": "Stardust 干员皮肤（ModelScope 公开数据集 Stardust/arknight-assets）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 39610,
+      "files": 19,
+      "bytes": 13050212,
       "keys": [
+        [
+          "assets/skins/char_003_kalts_boc_6/avatar.png",
+          40672
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/back/char_003_kalts_boc_6.atlas",
+          3709
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/back/char_003_kalts_boc_6.png",
+          47458
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/back/char_003_kalts_boc_6.skel",
+          58723
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/front/char_003_kalts_boc_6.atlas",
+          6646
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/front/char_003_kalts_boc_6.png",
+          61913
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/front/char_003_kalts_boc_6.skel",
+          120515
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/illustration.png",
+          5359819
+        ],
+        [
+          "assets/skins/char_003_kalts_boc_6/portrait.png",
+          41636
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/avatar.png",
+          62916
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/back/char_003_kalts_sale_14.atlas",
+          8299
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/back/char_003_kalts_sale_14.png",
+          75731
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/back/char_003_kalts_sale_14.skel",
+          123505
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/front/char_003_kalts_sale_14.atlas",
+          12894
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/front/char_003_kalts_sale_14.png",
+          106758
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/front/char_003_kalts_sale_14.skel",
+          224853
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/illustration.png",
+          6549012
+        ],
+        [
+          "assets/skins/char_003_kalts_sale_14/portrait.png",
+          105543
+        ],
         [
           "assets/skins/char_103_angel_wild_1/avatar.png",
           39610
