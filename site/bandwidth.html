@@ -139,7 +139,10 @@
         <div class="notice">
           <span>⚠️ <b>必须保留 <code class="inline">update\PAUSE_AUTOUPDATE</code></b>：<code class="inline">sp_update2</code>
           会重写槽脚本并丢掉 <code class="inline">SP_ASSET_CDN</code>，素材会静默回落到盒子本地（盒子是无素材版），
-          表现为<b>图片全挂 + 上行被打满</b>。这是唯一能让本措施归零的操作。</span>
+          表现为<b>图片全挂 + 上行被打满</b>。这是唯一能让本措施归零的操作。<br />
+          <b>上线后怎么对账、清单索引为什么会漏掉 178 MiB</b> 见
+          <a href="./asset-cdn">《素材 CDN 对账》</a>：<code class="inline">index.json</code> 滞后、
+          <code class="inline">tree.json</code> 漏目录，判定必须以 <code class="inline">HEAD</code> 实测为权威。</span>
         </div>
       </div>
 

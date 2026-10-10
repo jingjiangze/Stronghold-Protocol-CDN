@@ -45,6 +45,15 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
+# Same shape as /bandwidth and /mod: Pages 308s the .html name to the clean URL, so both need naming.
+/asset-cdn.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+/asset-cdn
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
 # Everything else is an operator surface, not content: keep it out of search.
 # The catch-all deliberately carries no robots header. Pages applies every matching rule, so a
 # noindex here would stack a second, contradictory X-Robots-Tag onto the documents above, and

@@ -30,6 +30,7 @@
       <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
+      <a href="#asset-cdn">素材 CDN 对账</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -391,6 +392,37 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__stats">
           <span>bonds 定制 <b>≈24%</b></span>
           <span>delta 合计 <b>2.05×</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="asset-cdn">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · ASSET CDN RECON</div><h2>素材 CDN 对账（索引滞后 / HEAD 反查）</h2></div>
+      <span class="section-status">上线后发现：清单不是真源，少卸的 178 MiB 怎么找回</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      《上行带宽压缩》的「措施 1 · <code class="inline">SP_ASSET_CDN</code>」只说了把素材挪出盒子。这一份记
+      <b>上线后对账</b>的坑：<code class="inline">index.json</code> 滞后、<code class="inline">tree.json</code> 漏目录，
+      按清单会<b>少卸 1,294 个素材（178 MiB）</b>。判定必须以 <code class="inline">HEAD</code> 实测为权威。
+    </p>
+    <div class="cards">
+      <a class="card" href="./asset-cdn">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>对账过程 / 索引滞后根因 / spine 安全 / 最终方案 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>上线 <b>22103cdn/1872local</b></span>
+          <span>HEAD 反查多卸 <b>1294 个</b></span>
+          <span>spine 目录 <b>0 混用</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/asset-cdn-reconcile.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>逐对象 HEAD</b> 实测</span>
+          <span>含 <b>验收命令</b></span>
         </div>
       </a>
     </div>
