@@ -8443,8 +8443,8 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 35,
-      "bytes": 31471869,
+      "files": 39,
+      "bytes": 31808755,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
@@ -8585,6 +8585,56 @@
         [
           "assets/docs/mockups/zoom-phone-bottomleft.png",
           67078
+        ],
+        [
+          "assets/docs/mockups/zoom-phone-detail.png",
+          50754
+        ],
+        [
+          "assets/docs/mockups/zoom-phone-members.png",
+          39698
+        ],
+        [
+          "assets/docs/mockups/zoom-web-members.png",
+          16590
+        ],
+        [
+          "assets/docs/mockups/zoom-web-right.png",
+          229844
+        ]
+      ]
+    },
+    {
+      "id": "docs-img",
+      "what": "文档战斗机制与背景插图",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 6,
+      "bytes": 1430284,
+      "keys": [
+        [
+          "assets/docs/img/band-draft.jpg",
+          243022
+        ],
+        [
+          "assets/docs/img/prep.jpg",
+          286906
+        ],
+        [
+          "assets/docs/img/room.jpg",
+          213155
+        ],
+        [
+          "assets/docs/img/combat.jpg",
+          279821
+        ],
+        [
+          "assets/docs/img/facing-wheel.jpg",
+          256209
+        ],
+        [
+          "assets/docs/img/final-assault.jpg",
+          151171
         ]
       ]
     }
