@@ -472,6 +472,15 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       以前只能去 GitHub 取；现在和素材一样走这个域名。
     </p>
     <div class="notice">
+      <span><b>给 agent：怎么保证拿到的是最新版。</b>这批文件<b>随上游每次发布整体更换，但路径不变</b>，
+      而裸路径的浏览器缓存是 1 小时 —— 直接抓 <code class="inline">/docs/&lt;path&gt;</code> 可能读到旧版本。
+      正确顺序：① 读 <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/art.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/art.json</code></a>
+      的 <code class="inline">token</code>（页顶状态行的「缓存令牌」就是同一个值）；
+      ② 请求 <code class="inline">/docs/&lt;path&gt;?v=&lt;token&gt;</code> —— 带令牌的边缘副本不可变（1 年），
+      令牌一变即表示上游发了新版本，应重新取。
+      <b>唯一的源是 R2 / Pages</b>：git 挂载源不含 <code class="inline">docs/</code>，对它返回 404。</span>
+    </div>
+    <div class="notice">
       <span><code class="inline">.md</code> 用 <code class="inline">text/plain; charset=utf-8</code> 发送，
       所以点开是<b>直接显示</b>而不是下载，中文也不会变乱码（不带 charset 时浏览器会按 Latin-1 解码，
       真机视口上实测成 <code class="inline"># çŽ©æ³•æŒ‡å—</code>）。手机浏览器上可直接读。

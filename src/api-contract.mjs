@@ -94,7 +94,7 @@ export const API_ENDPOINTS = [
     path: '/docs/**',
     contentType: '.md → text/plain; charset=utf-8；.json → application/json',
     cache: '浏览器 1 小时；边缘 裸路径 1 小时 / 带 ?v= 令牌 1 年',
-    what: '官方文档本体（PLAYING.md / DEPLOY.md / docs/research/*.json 的 wiki 数据）。键 = 上游包内 docs/**。.md 带 charset=utf-8：不带的话中文会被按 Latin-1 解码成乱码（真机视口实测过）',
+    what: '官方文档本体（PLAYING.md / DEPLOY.md / docs/research/*.json 的 wiki 数据）。键 = 上游包内 docs/**。.md 带 charset=utf-8：不带的话中文会被按 Latin-1 解码成乱码（真机视口实测过）。这些文件随上游每次发布整体更换、而 URL 不变，所以「取最新」必须：先读 /cdn/v1/art.json 的 token，再请求 ?v=<token>（令牌一变即上游发了新版本）。唯一的源是 R2 / Pages —— git 挂载源不含 docs/，对它返回 404',
   },
   {
     path: '/packs/assets-<tag>/<id>.zip',
