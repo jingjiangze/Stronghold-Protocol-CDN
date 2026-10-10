@@ -8443,8 +8443,8 @@
       "what": "双端适配与MOD系统设计UI高保真预览图",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 14,
-      "bytes": 13854745,
+      "files": 21,
+      "bytes": 17912868,
       "keys": [
         [
           "assets/docs/mockups/dual-platform-adaptation.png",
@@ -8501,6 +8501,34 @@
         [
           "assets/docs/mockups/mock-2-lobby-private-room-phone.png",
           455378
+        ],
+        [
+          "assets/docs/mockups/mock-3-matchmaking-modal.png",
+          337859
+        ],
+        [
+          "assets/docs/mockups/mock-4-admin-private-rooms.png",
+          192903
+        ],
+        [
+          "assets/docs/mockups/mod-1-lobby-packs.png",
+          2243832
+        ],
+        [
+          "assets/docs/mockups/mod-2-lobby-packs-phone.png",
+          450934
+        ],
+        [
+          "assets/docs/mockups/mod-3-room-badge.png",
+          360388
+        ],
+        [
+          "assets/docs/mockups/mod-4-admin-pool.png",
+          238200
+        ],
+        [
+          "assets/docs/mockups/mod-5-settings-packs.png",
+          234007
         ]
       ]
     }
