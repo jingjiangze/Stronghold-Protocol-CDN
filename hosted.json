@@ -372,19 +372,27 @@
     },
     {
       "id": "sp-fusion-mod-assets",
-      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
+      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 68,
-      "bytes": 9400850,
+      "files": 88,
+      "bytes": 12342560,
       "keys": [
         [
           "assets/char/avatar/char_121_lava.png",
           56004
         ],
         [
+          "assets/char/avatar/char_123_fang.png",
+          53003
+        ],
+        [
           "assets/char/avatar/char_124_kroos.png",
           56863
+        ],
+        [
+          "assets/char/avatar/char_135_halo_2.png",
+          75465
         ],
         [
           "assets/char/avatar/char_219_meteo.png",
@@ -397,6 +405,10 @@
         [
           "assets/char/avatar/char_242_otter_2.png",
           59546
+        ],
+        [
+          "assets/char/avatar/char_4071_peper_2.png",
+          65583
         ],
         [
           "assets/char/avatar/char_4131_odda.png",
@@ -417,6 +429,10 @@
         [
           "assets/char/avatar/char_4224_turdus_2.png",
           69853
+        ],
+        [
+          "assets/char/portrait/char_121_lava_1.png",
+          93881
         ],
         [
           "assets/char/portrait/char_123_fang_1.png",
@@ -463,12 +479,20 @@
           135131
         ],
         [
+          "assets/char/skin_avatar/char_121_lava_sale_9.png",
+          46092
+        ],
+        [
           "assets/char/skin_avatar/char_123_fang_winter_1.png",
           55355
         ],
         [
           "assets/local/operators/char_4123_ela/avatar_char_4123_ela.png",
           56057
+        ],
+        [
+          "assets/local/operators/char_4123_ela/avatar_char_4123_ela_2.png",
+          64590
         ],
         [
           "assets/local/operators/char_4123_ela/back/char_4123_ela.png",
@@ -483,12 +507,28 @@
           309732
         ],
         [
+          "assets/local/operators/char_4123_ela/front/model.skel",
+          820787
+        ],
+        [
           "assets/local/operators/char_4123_ela/portrait_char_4123_ela_1.png",
           122169
         ],
         [
+          "assets/local/operators/char_4123_ela/portrait_char_4123_ela_2.png",
+          115744
+        ],
+        [
+          "assets/local/operators/char_4217_makoto/back/char_4217_makoto_v2.png",
+          457507
+        ],
+        [
           "assets/local/operators/char_4217_makoto/back/model_v2.skel",
           391068
+        ],
+        [
+          "assets/local/operators/char_4217_makoto/front/char_4217_makoto_v2.png",
+          574549
         ],
         [
           "assets/local/operators/char_4217_makoto/front/model_v2.atlas",
@@ -503,16 +543,32 @@
           72598
         ],
         [
+          "assets/local/operators/char_456_ash/back/model.atlas",
+          6544
+        ],
+        [
           "assets/local/operators/char_456_ash/front/char_456_ash.png",
           87965
+        ],
+        [
+          "assets/local/operators/char_456_ash/front/model.atlas",
+          8236
         ],
         [
           "assets/local/operators/char_456_ash/front/model.skel",
           527043
         ],
         [
+          "assets/local/operators/char_456_ash/portrait_char_456_ash_1.png",
+          112858
+        ],
+        [
           "assets/local/operators/char_456_ash/portrait_char_456_ash_2.png",
           99316
+        ],
+        [
+          "assets/spine/op/char_121_lava/back/char_121_lava.atlas",
+          2768
         ],
         [
           "assets/spine/op/char_121_lava/char_121_lava_sale_9/back/char_121_lava_sale_9.skel",
@@ -531,6 +587,10 @@
           97382
         ],
         [
+          "assets/spine/op/char_123_fang/char_123_fang_winter_1/back/char_123_fang_winter_1.atlas",
+          4501
+        ],
+        [
           "assets/spine/op/char_123_fang/char_123_fang_winter_1/back/char_123_fang_winter_1.png",
           66336
         ],
@@ -545,6 +605,22 @@
         [
           "assets/spine/op/char_123_fang/front/char_123_fang.png",
           73954
+        ],
+        [
+          "assets/spine/op/char_124_kroos/back/char_124_kroos.atlas",
+          2464
+        ],
+        [
+          "assets/spine/op/char_124_kroos/back/char_124_kroos.skel",
+          62302
+        ],
+        [
+          "assets/spine/op/char_124_kroos/front/char_124_kroos.png",
+          52593
+        ],
+        [
+          "assets/spine/op/char_124_kroos/front/char_124_kroos.skel",
+          97301
         ],
         [
           "assets/spine/op/char_135_halo/back/char_135_halo.atlas",
@@ -613,6 +689,10 @@
         [
           "assets/spine/op/char_4131_odda/front/char_4131_odda.png",
           123232
+        ],
+        [
+          "assets/spine/op/char_4131_odda/front/char_4131_odda.skel",
+          224942
         ],
         [
           "assets/spine/op/char_4182_oblvns/back/char_4182_oblvns.png",
