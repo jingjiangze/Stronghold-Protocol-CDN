@@ -12,6 +12,10 @@ import { fileURLToPath } from 'node:url';
 
 import { assertPublicHttpsUrl } from './upstream.mjs';
 import { groupOf, readMirrorPrefixes } from './packs.mjs';
+import { buildDocsIndex } from './docs-index-build.mjs';
+
+/** This file lives in `src/`, so the checkout root is one level up. */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function getJson(url) {
   assertPublicHttpsUrl(url);
@@ -167,6 +171,12 @@ export async function buildSnapshot({ base, out, log = console.log }) {
     `site snapshot: ${snapshot.totals.files} files, ${dirs.length} directories, ` +
       `drop-in ${dropin ? dropin.name : 'unresolved'} → ${out}`,
   );
+
+  // The docs index is rebuilt on every deploy, which is what makes "the newest document" a fact
+  // rather than a path somebody has to remember to update. It is written beside the snapshot so the
+  // admin page (and any agent) can read it from the same origin without a key.
+  const docs = await buildDocsIndex({ siteDir: path.join(ROOT, 'site'), repoRoot: ROOT, log });
+  await fsp.writeFile(path.join(path.dirname(out), 'docs.json'), `${JSON.stringify(docs, null, 2)}\n`, 'utf8');
   return snapshot;
 }
 

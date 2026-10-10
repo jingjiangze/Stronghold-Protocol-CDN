@@ -52,18 +52,21 @@
   <section class="block" id="gate">
     <div class="block__head">
       <span class="block__num">0</span>
-      <span class="block__title">口令</span>
-      <span class="block__who">只存在本次浏览标签页里，关掉就没了</span>
+      <span class="block__title">口令与接入说明</span>
+      <span class="block__who">口令只存在本次浏览标签页里，关掉就没了</span>
     </div>
     <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px;flex-wrap:wrap">
       <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
       <button class="button button-primary" type="submit" id="gate-go">进入</button>
       <span class="section-note" id="gate-msg"></span>
       <span style="flex:1 1 auto"></span>
-      <button class="button button-secondary" type="button" id="copy-doc" title="复制 agent 接入说明的链接">复制接入说明</button>
-      <button class="button button-secondary" type="button" id="copy-key" title="复制直连后台用的密钥（agent 的 x-admin-key）">复制直连密钥</button>
+      <button class="button button-secondary" type="button" id="copy-agent" disabled
+              title="进入后可用：把完整的接入说明（含本次密钥）复制到剪贴板，直接粘给 agent">复制接入说明（含密钥）</button>
       <span class="section-note" id="copy-msg"></span>
     </form>
+    <p class="section-note" id="doc-note" style="margin:10px 0 0">
+      接入说明不写死路径：取站点文档里<b>最新的一份「描述上传通道」的文档</b>。进入后这里会写明是哪一份、以及为什么是它。
+    </p>
   </section>
 
   <!-- 上传区 -->
@@ -125,28 +128,48 @@
       <span class="block__title">暂存区与最近发布</span>
       <span class="block__who">读的是桶里的事实，不是浏览器缓存</span>
     </div>
+    <div class="toolbar">
+      <input id="stage-filter" type="search" placeholder="筛选暂存区，例如 sp-four 或 .skel" autocomplete="off" />
+      <button class="button button-secondary" type="button" id="stage-collapse">全部收起</button>
+      <span class="section-status" id="stage-status">读取中…</span>
+    </div>
     <div class="table-wrap">
-      <table id="staging-table">
-        <thead><tr><th>目标键</th><th class="num">大小</th><th>状态</th><th>来源</th><th>提交时间</th><th>操作</th></tr></thead>
-        <tbody><tr><td colspan="6" class="muted">读取中…</td></tr></tbody>
-      </table>
+      <div id="stage-tree" class="tree" role="tree" aria-label="暂存区目录"><p class="muted">读取中…</p></div>
     </div>
-    <div class="table-wrap" style="margin-top:14px">
-      <table id="log-table">
-        <thead><tr><th>时间</th><th>键</th><th class="num">大小</th><th>来源</th><th>操作</th></tr></thead>
-        <tbody><tr><td colspan="5" class="muted">读取中…</td></tr></tbody>
-      </table>
+    <p class="section-note" style="margin:10px 0 0">
+      按<b>目标键</b>展开（就是它上线之后会落在对外地址的位置）。暂存区的字节对外没有任何用处，
+      没有任何清单引用它，所以清掉不影响任何玩家 —— 但这条通道<b>只给 agent</b>，见下面的删除说明。
+    </p>
+
+    <div class="toolbar" style="margin-top:20px">
+      <input id="log-filter" type="search" placeholder="筛选最近发布，例如 assets/char" autocomplete="off" />
+      <button class="button button-secondary" type="button" id="log-collapse">全部收起</button>
+      <span class="section-status" id="log-status">读取中…</span>
     </div>
+    <div class="table-wrap">
+      <div id="log-tree" class="tree" role="tree" aria-label="最近发布目录"><p class="muted">读取中…</p></div>
+    </div>
+
     <p class="section-note" style="margin-top:12px">
-      发布是触发式的：上传、提交、撤销都会当场叫起发布轮（约 1–2 分钟落到对外地址），
+      发布是触发式的：上传、提交都会当场叫起发布轮（约 1–2 分钟落到对外地址），
       每半小时的定时只是兜底。一轮没排干会自己再补一轮。叫不动时会明说原因，不会假装已发布。
     </p>
+    <div class="notice">
+      <span><b>删除不在这张页面上，是刻意的。</b>删除只走 agent 通道（命令行），因为一次误点就会把对外
+      正在被引用的字节拿掉。可用的两条是：<code class="inline">--purge=&lt;上传 id&gt;</code> 清掉一组
+      还没上线的暂存（立即生效），<code class="inline">--rm=&lt;键&gt;</code> 下线一个后台自己上线过的键
+      （要经过发布轮核对：不在上游清单、且没有任何线上清单引用，才真删）。上游镜像件与 APK 按需素材包
+      删不掉 —— 不是界面藏了按钮，是判定拒绝。</span>
+    </div>
   </section>
 
   <p class="section-note" style="margin:26px 0">
-    接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · status · kick</code>；
+    接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · remove · kick</code>、
+    <code class="inline">DELETE /api/cdn/upload/staging?id=</code>、
+    <code class="inline">GET /api/cdn/upload/agent-doc</code>；
     只接受同源调用，命令行请用仓库里的 <code class="inline">tools/agent-upload.mjs</code>。
     经 CF 代理的域名单次请求体上限 100 MB，所以本页面先把字节直传桶的 S3 端点，再由发布机搬到对外键。
+    站点文档的索引在 <code class="inline">/data/docs.json</code>（每次部署重新生成）。
   </p>
 </main>
 

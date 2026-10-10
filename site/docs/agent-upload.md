@@ -38,10 +38,17 @@ node tools/agent-upload.mjs \
   --source=demo-mod --what="说明：这批字节是什么、出处" \
   --dispatch --wait
 node tools/agent-upload.mjs --list          # 暂存区与最近发布
+node tools/agent-upload.mjs --docs          # 打这一份说明（含密钥）——路径不写死，见下
 node tools/agent-upload.mjs --kick          # 催一次发布轮
+node tools/agent-upload.mjs --purge=<id> --yes   # 清掉一组还没上线的暂存
+node tools/agent-upload.mjs --rm=<键> --yes      # 下线一个后台上线过的键
 ```
 
 `--source` 会成为 `hosted.json` 里的分组 id（2–60 位字母数字 `. _ -`），也是 prune 的唯一保护名单——**不登记的文件会被例行清理当镜像残渣删掉**。
+
+**这一份说明本身不写死路径。** 后台取的是「站点文档里提到本接口的**最新一份**」：索引在
+<https://downcdn.jiangjiangze.icu/data/docs.json>（每次部署重新生成，`agentDoc` 字段就是当前这一份）。
+所以要拿最新说明，用 `--docs` 或 `GET /api/cdn/upload/agent-doc`，不要记某个固定文件路径。
 
 **2) 三次 HTTP 调用（大文件走这条，字节直传桶的 S3 端点）**
 
@@ -62,4 +69,16 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 ## 删除
 
-只能删**后台自己上线过的**文件（在 `upload-log.json` 里、且不在上游 `index.json`、也不被 `site/manifest.json` / `data/*.json` 引用）。暂存区里未上线的字节可以立刻清掉。上游镜像件与 APK 按需素材包删不掉——不是界面藏了按钮，是判定拒绝。
+**删除只走命令行，后台页面上没有按钮 —— 这是刻意的，不是没做。** 一次误点就会把对外正在被引用的
+字节拿掉，所以这条能力只留给能明确说出「删哪个」的调用方。两条命令都不加 `--yes` 时只打印将要发生什么，
+不动任何字节。
+
+| 想删什么 | 命令 | 什么时候真的删掉 |
+|---|---|---|
+| 一组**还没上线**的暂存 | `--purge=<上传 id> --yes` | 立刻。这些字节对外没有任何用处，没有任何清单引用它，删掉不影响任何玩家 |
+| 一个**已经上线**的键 | `--rm=<键> --yes` | 由发布轮核对后删：必须在 `upload-log.json` 里、不在上游 `index.json`、且不被 `site/manifest.json` / `data/*.json` 引用。任一条不符就拒绝，并在日志里写明原因 |
+
+上游镜像件与 APK 按需素材包删不掉——不是界面藏了按钮，是判定拒绝。
+
+HTTP 层对应 `DELETE /api/cdn/upload/staging?id=<id>` 与 `POST /api/cdn/upload/remove {key}`；
+两者都只接受同源调用，命令行请用上面的工具。

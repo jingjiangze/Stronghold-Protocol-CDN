@@ -118,7 +118,16 @@ export async function onRequestGet(context) {
     log: (log.items || []).slice(0, 20),
     hostedIndex: '/cdn/v1/hosted-index.json',
     tree: '/cdn/v1/tree.json',
-    docs: '/docs/agent-upload.md',
+    // 文档路径不写死在这里：索引由部署生成，接入说明是「索引里提到上传通道的最新一份」。
+    // 以前这里返回一个固定路径，改文档名就会静默指向不存在的地方。
+    docsIndex: '/data/docs.json',
+    agentDoc: '/api/cdn/upload/agent-doc',
+    deletes: {
+      staging: 'DELETE /api/cdn/upload/staging?id=<上传 id>（立刻生效）',
+      published: 'POST /api/cdn/upload/remove {key}（发布轮核对无引用后才真删）',
+      cli: 'node tools/agent-upload.mjs --purge=<上传 id> | --rm=<键> [--yes]',
+      note: '删除只走 agent 通道，后台页面上没有按钮 —— 一次误点就会拿掉对外正被引用的字节。',
+    },
   });
 }
 

@@ -1,17 +1,20 @@
 // 上传后台的前端：口令门 → 选文件 → 浏览器算 sha256 → PUT /api/cdn/upload/put → 看状态。
 //
-// 三条刻意的设计：
+// 四条刻意的设计：
 //   1. 口令只放 sessionStorage（关标签页就没了），不是 localStorage —— 这把钥匙能往玩家下载的
 //      域名里写字节，不该在一台公用机器上活过下一次开机。
 //   2. 摘要在浏览器算，服务端与发布机各算一遍做三方核对；三份不一致就不上线。
-//   3. 页面上没有任何「覆盖」「删除」按钮 —— 后端也没有这两个入口，不是藏起来了。
+//   3. 页面上没有任何「覆盖」「删除」按钮，而且**这是刻意的、不是没做**：删除确实存在，但只走
+//      agent 通道（CLI 的 --purge / --rm），因为一次误点就会把对外正被引用的字节拿掉。
+//      这里没有按钮可点，就没有误点的可能。
+//   4. 「复制接入说明（含密钥）」由服务端拼（GET /api/cdn/upload/agent-doc）：文档路径不写死，
+//      取站点文档里最新的一份描述上传通道的文档，密钥由边缘替换进占位符。页面自己拼也能做，
+//      但「复制的说明里少了钥匙」是静默失败 —— 粘出来的文本看起来完全正常。
 (() => {
   'use strict';
 
   const KEY_STORE = 'sp.cdnAdminKey';
   const MAX_BYTES = 64 * 1024 * 1024;
-  // 最后一次读到的 status 载荷。点「下线」后要就地改一行，不能等下一次刷新才给反馈。
-  let lastDoc = null;
   const $ = (id) => document.getElementById(id);
   const key = () => sessionStorage.getItem(KEY_STORE) || '';
 
@@ -93,122 +96,217 @@
     }
   }
 
-  function cellLink(row, text, href) {
-    const td = row.insertCell();
-    if (!href) {
-      td.textContent = text;
-      return td;
-    }
-    const a = document.createElement('a');
-    a.href = href;
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.textContent = text;
-    a.title = href;
-    td.appendChild(a);
-    return td;
-  }
+  /**
+   * 转义要进 innerHTML 的文本。
+   *
+   * 键名、来源标识都是上传方给的 —— 也就是不可信输入。它们进模板字符串拼 HTML，不转义就等于
+   * 让投稿者在这个域上放标签。首页那份只处理自家键表，这里必须转。
+   */
+  const esc = (s) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-  function actionButton(row, label, title, handler) {
-    const td = row.insertCell();
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'button button-secondary';
-    b.style.padding = '2px 10px';
-    b.textContent = label;
-    b.title = title;
-    b.addEventListener('click', handler);
-    td.appendChild(b);
-    return td;
-  }
+  // ---- 目录树（与首页同一套标记与手感） --------------------------------------------------------
+  //
+  // 首页那份是惰性构建的，因为它有 1.2 万个文件；这里的两棵树是「暂存区」和「最近发布 20 条」，
+  // 量级完全不同，所以一次画完，但用的 class 与交互（▸ 展开、行可点、筛选拍平成文件清单）保持一致：
+  // 同一套观感，不为了复用把首页那棵改成能跑的通用件。
 
-  async function purgeStaging(item) {
-    if (!window.confirm(`清掉暂存区这一组？\n${item.stagingKey || item.id}\n\n这些字节还没上线，删掉不影响任何对外地址。`)) return;
-    const { status, doc } = await api(`/api/cdn/upload/staging?id=${encodeURIComponent(item.id)}`, { method: 'DELETE' });
-    if (doc && doc.ok) {
-      line(`已清掉 ${doc.deleted} 个暂存对象，回收 ${fmt(doc.freed)}`);
-      await refresh();
+  const countFiles = (node) => node.files.length + [...node.dirs.values()].reduce((s, c) => s + countFiles(c), 0);
+
+  function treeRow(node, depth, isDir) {
+    const row = document.createElement('div');
+    row.className = 'tree__row' + (isDir ? ' tree__row--dir' : '');
+    row.style.paddingLeft = `${depth * 14 + 8}px`;
+    row.setAttribute('role', 'treeitem');
+    if (isDir) {
+      row.setAttribute('aria-expanded', 'false');
+      row.innerHTML =
+        `<span class="tree__caret">▸</span><span class="tree__name mono">${esc(node.name)}/</span>` +
+        `<span class="tree__meta">${countFiles(node)} 个 · ${fmt(node.bytes)}</span>`;
     } else {
-      // 失败就别再刷一遍把提示盖掉 —— 那正是"点了没反应"的来源。
-      line(`清理失败：${(doc && doc.error) || `HTTP ${status}（响应不是 JSON）`}`, 'err');
+      const label = node.url
+        ? `<a class="tree__name mono" href="${esc(node.url)}" target="_blank" rel="noopener">${esc(node.name)}</a>`
+        : `<span class="tree__name mono">${esc(node.name)}</span>`;
+      row.innerHTML =
+        `<span class="tree__caret"></span>${label}` +
+        (node.tag ? `<span class="chip chip--mod" title="${esc(node.note || '')}">${esc(node.tag)}</span>` : '') +
+        `<span class="tree__meta">${node.size == null ? '—' : fmt(node.size)}</span>`;
+    }
+    return row;
+  }
+
+  /** {path, size, url, ...} 的扁平清单 → 嵌套模型。 */
+  function buildTree(rows) {
+    const root = { name: '', path: '', dirs: new Map(), files: [], bytes: 0 };
+    for (const r of rows) {
+      const parts = String(r.path || '').split('/').filter(Boolean);
+      const name = parts.pop();
+      if (!name) continue;
+      let node = root;
+      let acc = '';
+      for (const part of parts) {
+        acc = acc ? `${acc}/${part}` : part;
+        if (!node.dirs.has(part)) node.dirs.set(part, { name: part, path: acc, dirs: new Map(), files: [], bytes: 0 });
+        node = node.dirs.get(part);
+      }
+      node.files.push({ ...r, name });
+      node.bytes += r.size || 0;
+    }
+    const rollUp = (node) => {
+      for (const child of node.dirs.values()) node.bytes += rollUp(child);
+      return node.bytes;
+    };
+    rollUp(root);
+    return root;
+  }
+
+  function renderTree(host, filterEl, statusEl, collapseEl, rows, emptyText) {
+    if (!host) return;
+    const draw = () => {
+      host.textContent = '';
+      if (!rows.length) {
+        host.innerHTML = `<p class="muted">${esc(emptyText)}</p>`;
+        if (statusEl) statusEl.textContent = '';
+        return;
+      }
+      const model = buildTree(rows);
+      const paint = (node, container, depth) => {
+        for (const child of [...node.dirs.values()].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+          const row = treeRow(child, depth, true);
+          const kids = document.createElement('div');
+          kids.className = 'tree__children';
+          kids.hidden = true;
+          paint(child, kids, depth + 1);
+          for (const f of child.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
+            kids.appendChild(treeRow({ ...f, path: `${child.path}/${f.name}` }, depth + 1, false));
+          }
+          const toggle = () => {
+            kids.hidden = !kids.hidden;
+            row.setAttribute('aria-expanded', String(!kids.hidden));
+            row.querySelector('.tree__caret').textContent = kids.hidden ? '▸' : '▾';
+          };
+          row.addEventListener('click', (e) => { if (!e.target.closest('a')) toggle(); });
+          row.tabIndex = 0;
+          row.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+          });
+          container.appendChild(row);
+          container.appendChild(kids);
+        }
+        for (const f of node.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
+          container.appendChild(treeRow({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth, false));
+        }
+      };
+      paint(model, host, 0);
+      if (statusEl) statusEl.textContent = `${rows.length} 个 · ${fmt(rows.reduce((s, r) => s + (r.size || 0), 0))}`;
+    };
+
+    if (filterEl) {
+      let timer = null;
+      filterEl.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          const q = filterEl.value.trim().toLowerCase();
+          if (!q) { draw(); return; }
+          // 筛选结果直接列出来，不套目录：问的是「这个文件在哪」，不是「这棵树长什么样」。
+          const shown = rows.filter((r) => String(r.path).toLowerCase().includes(q))
+            .sort((a, b) => String(a.path).localeCompare(String(b.path)));
+          host.textContent = '';
+          for (const r of shown) host.appendChild(treeRow({ ...r, name: r.path }, 0, false));
+          if (!shown.length) host.innerHTML = '<p class="muted">没有匹配的路径</p>';
+          if (statusEl) statusEl.textContent = `${shown.length} / ${rows.length} 个匹配`;
+        }, 120);
+      });
+    }
+    if (collapseEl) {
+      collapseEl.addEventListener('click', () => { if (filterEl) filterEl.value = ''; draw(); });
+    }
+    draw();
+  }
+
+  // ---- 接入说明 ------------------------------------------------------------------------------
+
+  let agentDoc = null;
+
+  function setCopyEnabled() {
+    const btn = $('copy-agent');
+    if (btn) btn.disabled = !key();
+  }
+
+  async function fetchAgentDoc() {
+    const res = await fetch('/api/cdn/upload/agent-doc', { headers: { 'x-admin-key': key() }, cache: 'no-store' });
+    const doc = await res.json().catch(() => null);
+    if (!res.ok || !doc || doc.ok !== true) throw new Error((doc && doc.error) || `HTTP ${res.status}`);
+    agentDoc = doc;
+    showDocNote();
+    return doc;
+  }
+
+  /** 只把「这份说明是哪一份」显示出来，不复制。进入后台时用。 */
+  async function peekAgentDoc() {
+    if (!key()) return;
+    try {
+      await fetchAgentDoc();
+    } catch (error) {
+      const el = $('doc-note');
+      if (el) el.textContent = `取接入说明失败：${String(error.message || error).slice(0, 80)}`;
     }
   }
 
-  async function removePublished(entry) {
-    if (!entry.key) return;
-    if (!window.confirm(`提交下线这个文件？\n${entry.key}\n\n发布轮会先核对「不在上游素材清单、且没有任何线上清单引用」才真删；被引用的会拒绝并写明原因。`)) return;
-    const { status, doc } = await api('/api/cdn/upload/remove', { method: 'POST', body: { key: entry.key, reason: '后台手动下线' } });
-    if (status === 202 || (doc && doc.ok)) {
-      // 就地先标一行，让点击立刻有反馈；真实状态下一次刷新覆盖。
-      entry.pendingRemoval = true;
-      if (lastDoc) renderStatus(lastDoc);
-      line(doc && doc.dispatched === false
-        ? '撤销已入队，但叫不动发布轮（后台没配 GH_DISPATCH_TOKEN）—— 等下一次定时兜底'
-        : '撤销已入队并已叫起发布轮，约 1–2 分钟后这个键就该 404');
-    } else {
-      line(`撤销被拒：${(doc && doc.error) || `HTTP ${status}（响应不是 JSON）`}`, 'err');
+  async function copyAgentDoc() {
+    const box = $('copy-msg');
+    if (!key()) { if (box) box.textContent = '先输入口令再复制'; return; }
+    if (box) box.textContent = '取接入说明…';
+    try {
+      const doc = await fetchAgentDoc();
+      // 复制的是**含密钥的正文**，不是链接：调用方拿到就能干活。
+      await copyText(doc.text, doc.injected ? '接入说明（已含本次密钥）' : '接入说明（⚠ 未含密钥）');
+    } catch (error) {
+      if (box) box.textContent = `取不到接入说明：${String(error.message || error).slice(0, 80)}`;
     }
+  }
+
+  /** 说清「这份说明是哪来的」——路径与挑选理由都来自服务端，不是页面猜的。 */
+  function showDocNote() {
+    const el = $('doc-note');
+    if (!el || !agentDoc) return;
+    el.textContent = `接入说明 = ${agentDoc.path}${agentDoc.injected ? '（已含本次密钥）' : '（未含密钥）'}`;
+    if (agentDoc.why) el.textContent += ` · ${agentDoc.why}`;
   }
 
   function renderStatus(doc) {
-    lastDoc = doc;
     const staged = (doc.staging || []);
     $('q-staged').textContent = String(staged.length);
     $('q-pending').textContent = String(doc.pending || 0);
     $('q-published').textContent = String((doc.log || []).filter((l) => !l.removedAt).length);
 
-    const sbody = $('staging-table').tBodies[0];
-    sbody.textContent = '';
-    if (!staged.length) {
-      const tr = sbody.insertRow();
-      const td = tr.insertCell();
-      td.colSpan = 6;
-      td.className = 'muted';
-      td.textContent = '暂存区是空的';
-    }
     const STATE_CN = { queued: '等发布', 'verified-at-edge': '边缘已核对', 'awaiting-commit': '只传了字节、没提交' };
-    for (const item of staged) {
-      const tr = sbody.insertRow();
-      cellLink(tr, item.key || item.stagingKey || item.id, item.url);
-      const size = tr.insertCell();
-      size.className = 'num';
-      size.textContent = fmt(item.size || item.stagedSize);
-      tr.insertCell().textContent = STATE_CN[item.state] || item.state;
-      tr.insertCell().textContent = item.source || '—';
-      tr.insertCell().textContent = item.claimedAt ? item.claimedAt.replace('T', ' ').slice(0, 19) : '—';
-      actionButton(tr, '清暂存', '删掉这一组还没上线的字节（立即生效）', () => purgeStaging(item));
-    }
+    // 按目标键成树：那才是这些字节上线之后的位置。还没提交的只有暂存键，就用它。
+    const stageRows = staged.map((item) => ({
+      path: item.key || item.stagingKey || item.id,
+      size: item.size || item.stagedSize || 0,
+      url: item.url || null,
+      tag: STATE_CN[item.state] || item.state,
+      note: `来源 ${item.source || '—'}${item.claimedAt ? ` · ${item.claimedAt.replace('T', ' ').slice(0, 19)}` : ''}`,
+    }));
+    renderTree(
+      $('stage-tree'), $('stage-filter'), $('stage-status'), $('stage-collapse'),
+      stageRows, '暂存区是空的（刚发布完，或还没传过东西）',
+    );
 
-    const lbody = $('log-table').tBodies[0];
-    lbody.textContent = '';
     const logs = doc.log || [];
     const pendingRemoval = new Set((doc.removals || []).map((r) => r.key));
-    if (!logs.length) {
-      const tr = lbody.insertRow();
-      const td = tr.insertCell();
-      td.colSpan = 5;
-      td.className = 'muted';
-      td.textContent = '还没有发布记录（第一次上线之后才会有）';
-    }
-    for (const entry of logs) {
-      const tr = lbody.insertRow();
-      tr.insertCell().textContent = (entry.at || '').replace('T', ' ').slice(0, 19);
-      cellLink(tr, entry.key || '', entry.url);
-      const size = tr.insertCell();
-      size.className = 'num';
-      size.textContent = fmt(entry.size);
-      tr.insertCell().textContent = entry.source || '—';
-      if (entry.removedAt) {
-        const td = tr.insertCell();
-        td.textContent = `已下线 ${entry.removedAt.slice(0, 10)}`;
-      } else if (pendingRemoval.has(entry.key) || entry.pendingRemoval) {
-        const td = tr.insertCell();
-        td.textContent = '撤销排队中';
-      } else {
-        actionButton(tr, '下线', '提交撤销请求（发布轮核对无引用后才真删）', () => removePublished(entry));
-      }
-    }
-    // 撤销排队中的条目已经在上面按 key 标出来了；被拒的请求由发布轮直接丢弃并记在 Actions 日志里。
+    const logRows = logs.map((entry) => ({
+      path: entry.key || '',
+      size: entry.size,
+      url: entry.url || null,
+      tag: entry.removedAt ? `已下线 ${entry.removedAt.slice(0, 10)}` : pendingRemoval.has(entry.key) ? '撤销排队中' : null,
+      note: [(entry.at || '').replace('T', ' ').slice(0, 19), entry.source ? `来源 ${entry.source}` : ''].filter(Boolean).join(' · '),
+    }));
+    renderTree(
+      $('log-tree'), $('log-filter'), $('log-status'), $('log-collapse'),
+      logRows, '还没有发布记录（第一次上线之后才会有）',
+    );
   }
 
   async function refresh() {
@@ -338,11 +436,8 @@
     setTimeout(() => { box.textContent = ''; }, 4000);
   }
 
-  $('copy-doc').addEventListener('click', () => copyText(`${location.origin}/docs/agent-upload.md`, '接入说明链接'));
-  $('copy-key').addEventListener('click', () => {
-    if (!key()) { $('gate-msg').textContent = '先进入再复制'; return; }
-    copyText(key(), '直连密钥');
-  });
+  $('copy-agent').addEventListener('click', copyAgentDoc);
+  setCopyEnabled();
 
   $('gate-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -354,6 +449,7 @@
     if (status === 401) {
       sessionStorage.removeItem(KEY_STORE);
       $('gate-msg').textContent = (doc && doc.error) || '口令不对';
+      setCopyEnabled();
       return;
     }
     if (!doc || doc.ok !== true) {
@@ -365,6 +461,9 @@
     $('todo').hidden = false;
     renderStatus(doc);
     setNav('在线');
+    setCopyEnabled();
+    // 顺手把「这份说明是哪一份」显示出来：它由服务端挑，页面不该让人猜。
+    peekAgentDoc();
   });
 
   $('go').addEventListener('click', upload);

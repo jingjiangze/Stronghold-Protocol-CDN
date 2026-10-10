@@ -2,12 +2,18 @@
 //
 //   node tools/agent-upload.mjs --file=art.png --to=assets/char/mod_x.png \
 //        --source=demo-mod --what="说明" [--dispatch] [--wait]
-//   node tools/agent-upload.mjs --list
-//   node tools/agent-upload.mjs --kick
+//   node tools/agent-upload.mjs --list              暂存区与最近发布
+//   node tools/agent-upload.mjs --docs              最新的接入说明（含密钥）
+//   node tools/agent-upload.mjs --kick              催一次发布轮
+//   node tools/agent-upload.mjs --purge=<id> --yes  清掉一组还没上线的暂存
+//   node tools/agent-upload.mjs --rm=<键> --yes     下线一个后台上线过的键
 //
 // 与网页的区别只有两件：
 //   1. 走 presigned 直传桶的 S3 端点，不受「经代理域名单次请求体 100 MB」的限制（上限是单次 PUT 的 5 GiB）；
 //   2. 可以顺手 --dispatch 叫起发布轮（要一个对本仓有 actions:write 的 token），不必等 20 分钟的 cron。
+//
+// 删除**只在这条命令行上**，后台页面上没有按钮：一次误点就会拿掉对外正被引用的字节。
+// 两条删除都不加 --yes 时只打印将要发生什么，不动任何字节。
 // 口令：env CDN_ADMIN_KEY 优先，否则读本机 ~/.cdn_admin_key。绝不打印，绝不进 git。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -183,6 +189,65 @@ async function waitPublished(id, timeoutMs = 420000) {
   return false;
 }
 
+/**
+ * 打印「最新的接入说明」（含密钥）。
+ *
+ * 路径不在这边写死：服务端读部署时生成的文档索引，挑出「提到上传通道的最新一份」。所以换文档名、
+ * 新写一份接入说明，这条命令都会自动跟到，不需要改代码。
+ */
+async function showDocs() {
+  const { status, doc } = await api('GET', '/api/cdn/upload/agent-doc');
+  if (!doc || doc.ok !== true) {
+    console.log(`取接入说明失败 HTTP ${status}：${(doc && doc.error) || ''}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(`# 接入说明 = ${doc.path}`);
+  if (doc.why) console.log(`# 为什么是它：${doc.why}`);
+  console.log(`# 密钥${doc.injected ? '已注入' : '未注入（这份说明里没有密钥）'}；索引生成于 ${doc.docsIndexGeneratedAt || '未知'}`);
+  console.log('');
+  console.log(doc.text);
+}
+
+/** 清掉一组还没上线的暂存：真删、立即生效、不走发布轮。 */
+async function purgeStaging(id) {
+  if (!/^[0-9a-f]{12,24}$/.test(id)) {
+    throw new Error('--purge 要的是 begin 返回的十六进制 id（看 --list 输出里的第一列）');
+  }
+  if (!flag('yes')) {
+    console.log(`将立刻删掉暂存区 ${id} 这一组。这些字节还没上线，删掉不影响任何对外地址。`);
+    console.log('确认请加 --yes。');
+    return;
+  }
+  const { status, doc } = await api('DELETE', `/api/cdn/upload/staging?id=${encodeURIComponent(id)}`);
+  if (doc && doc.ok) console.log(`已清掉 ${doc.deleted} 个暂存对象，回收 ${doc.freed} 字节`);
+  else {
+    console.log(`清理失败 HTTP ${status}：${(doc && doc.error) || ''}`);
+    process.exitCode = 1;
+  }
+}
+
+/** 提交下线一个「后台自己上线过」的键；真删由发布轮核对引用之后再执行。 */
+async function removePublished(rawKey) {
+  const k = validateKey(rawKey);
+  if (!k.ok) throw new Error(`键名不行：${k.reason}`);
+  if (!flag('yes')) {
+    console.log(`将提交下线 ${k.key}。`);
+    console.log('发布轮会先核对「不在上游素材清单、且没有任何线上清单引用」，通过才真删；被引用的会拒绝并写明原因。');
+    console.log('确认请加 --yes。');
+    return;
+  }
+  const { status, doc } = await api('POST', '/api/cdn/upload/remove', { key: k.key, reason: arg('reason', 'cli --rm') });
+  if (status === 202 || (doc && doc.ok)) {
+    console.log(doc && doc.dispatched === false
+      ? `撤销已入队（HTTP ${status}），但没叫起发布轮：${(doc && doc.message) || ''}`
+      : `撤销已入队并已叫起发布轮：${(doc && doc.message) || ''}`);
+  } else {
+    console.log(`撤销被拒 HTTP ${status}：${(doc && doc.error) || ''}`);
+    process.exitCode = 1;
+  }
+}
+
 async function uploadOne(abs, targetKey, source, what) {
   const stat = fs.statSync(abs);
   const sha256 = await sha256OfFile(abs);
@@ -215,8 +280,19 @@ async function main() {
   const file = arg('file');
   if (flag('list') && !file) { await listStatus(); return; }
   if (flag('kick') && !file) { await dispatchPromote(); return; }
+  if (flag('docs') && !file) { await showDocs(); return; }
+  if (arg('purge') && !file) { await purgeStaging(arg('purge')); return; }
+  if (arg('rm') && !file) { await removePublished(arg('rm')); return; }
   if (!file) {
-    console.log('用法：--file=<路径> --to=<键名> --source=<分组id> --what=<说明> [--dispatch] [--wait]\n     --list 看暂存与日志，--kick 催发布轮');
+    console.log(
+      '用法：--file=<路径> --to=<键名> --source=<分组id> --what=<说明> [--dispatch] [--wait]\n' +
+        '     --list                   暂存区与最近发布\n' +
+        '     --docs                   打印最新的接入说明（含密钥）\n' +
+        '     --kick                   催一次发布轮\n' +
+        '     --purge=<上传 id> --yes   清掉一组还没上线的暂存（立即生效）\n' +
+        '     --rm=<键> --yes           下线一个后台上线过的键（发布轮核对引用后才真删）\n' +
+        '删除不加 --yes 只打印将要发生什么，不动任何字节。',
+    );
     process.exitCode = 2;
     return;
   }
