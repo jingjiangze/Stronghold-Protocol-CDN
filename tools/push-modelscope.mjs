@@ -67,13 +67,20 @@ const WORK = fs.mkdtempSync(path.join(os.tmpdir(), 'ms-mirror-'));
 
 /** Hash of the source tree as it will be mirrored, so an unchanged tree costs nothing. */
 function sourceFingerprint() {
-  const spec = INCLUDE_SKINS ? SRC_REF : `${SRC_REF} ':(exclude)assets/skins/*'`;
-  const out = execSync(`git archive --format=tar ${spec} | tar -tf -`, {
+  // Two hard-won constraints here:
+  //  - enumerate with `ls-tree`, not `tar -tf`. tar also emits a line per directory, which inflates
+  //    the count (13,689 against 12,265 real files) and would record a lie in the manifest.
+  //  - filter with grep, not `':(exclude)...'`. `ls-tree` rejects that pathspec magic outright
+  //    ("pathspec magic not supported by this command"), and `ls-files --with-tree` mixes in index
+  //    state and disagrees with the tree by 120 entries.
+  const out = execSync(`git ls-tree -r --name-only ${SRC_REF}`, {
     cwd: REPO,
     shell: SHELL,
     maxBuffer: 1 << 28,
   }).toString();
-  const lines = out.split('\n').filter(Boolean).sort();
+  let lines = out.split('\n').filter(Boolean).sort();
+  if (!INCLUDE_SKINS) lines = lines.filter((p) => !p.startsWith('assets/skins/'));
+  if (!lines.length) throw new Error(`source ref ${SRC_REF} listed no files`);
   return { count: lines.length, hash: crypto.createHash('sha256').update(lines.join('\n')).digest('hex') };
 }
 
