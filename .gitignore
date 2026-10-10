@@ -7,3 +7,4 @@ report.md
 .mimosa/
 .DS_Store
 Thumbs.db
+.warm-state.json
