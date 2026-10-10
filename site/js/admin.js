@@ -287,7 +287,12 @@
       size: item.size || item.stagedSize || 0,
       url: item.url || null,
       tag: STATE_CN[item.state] || item.state,
-      note: `来源 ${item.source || '—'}${item.claimedAt ? ` · ${item.claimedAt.replace('T', ' ').slice(0, 19)}` : ''}`,
+      // 树节点只显示一条 note：把「没提交的原因」也带进去，让 awaiting-commit 不再是无理由一行字。
+      // 重复不是这一态的成因（重复在 begin/commit 时就以 409 当场拒了），所以原因只说「缺 claim / 中断」。
+      note:
+        item.state === 'awaiting-commit'
+          ? (item.reason || '选中的字节还在暂存区，没点提交，发布轮不会碰它')
+          : `来源 ${item.source || '—'}${item.claimedAt ? ` · ${item.claimedAt.replace('T', ' ').slice(0, 19)}` : ''}`,
     }));
     renderTree(
       $('stage-tree'), $('stage-filter'), $('stage-status'), $('stage-collapse'),

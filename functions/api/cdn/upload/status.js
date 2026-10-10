@@ -7,6 +7,15 @@ import { LOG_KEY, REMOVAL_PREFIX, STAGING_PREFIX, claimsFromListing } from '../.
 // 与 r2.mjs 的 mimeFor 同源：这里只用于把 claim 里的键显示成人类认得出的类型。
 const TYPE_BY_EXT = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', gif: 'image/gif', json: 'application/json', txt: 'text/plain', mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4', woff: 'font/woff', woff2: 'font/woff2', ttf: 'font/ttf', otf: 'font/otf', zip: 'application/zip', bin: 'application/octet-stream' };
 
+// 与前端共用的轻量体积格式（这里不依赖前端代码，避免跨层耦合）。仅用于状态里的人类可读说明。
+function fmtSize(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x) || x <= 0) return '0 B';
+  if (x >= 1048576) return `${(x / 1048576).toFixed(1)} MiB`;
+  if (x >= 1024) return `${(x / 1024).toFixed(1)} KiB`;
+  return `${x} B`;
+}
+
 async function listStaging(cfg) {
   const q = `list-type=2&max-keys=1000&prefix=${encodeURIComponent(STAGING_PREFIX)}`;
   const res = await s3fetch(cfg, 'GET', null, { query: q });
@@ -49,7 +58,14 @@ export async function onRequestGet(context) {
       junkKeys: g.junk,
     };
     if (!g.claim) {
-      items.push({ ...base, state: 'awaiting-commit' });
+      // 「只传了字节、没提交」—— 明确说清为什么它永远上不了线，免得管理员对着一排同名行猜原因。
+      // 这里不 HEAD 最终键：awaiting-commit 的组根本没落地最终键（claim 没写，publisher 不碰它），
+      // 所以「重复」不是这一态的成因；真正的重复会在 commit/put 时以 409 当场拒绝。这一态的唯一成因是
+      // 字节进了暂存区、却没点 commit（begin + presigned PUT 那条路），于是 publisher 按设计跳过。
+      const reason = g.payload
+        ? `字节已传（${fmtSize(g.payload.size)}）但缺少 claim：没点「提交 / commit」。发布轮只处理有 claim 的组，所以这组的字节永远不会上线、也不会被任何清单引用 —— 清暂存即可，对外地址零影响。`
+        : `暂存区只有残留对象（没有字节也没有 claim），多半是中断的上传或自检残留 —— 清掉不影响任何对外地址。`;
+      items.push({ ...base, state: 'awaiting-commit', reason });
       continue;
     }
     let claim = null;

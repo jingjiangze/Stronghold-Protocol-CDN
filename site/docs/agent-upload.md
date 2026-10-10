@@ -67,6 +67,21 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
 
+## 后台状态：为什么一行会停在「只传了字节、没提交」
+
+`GET /api/cdn/upload/status` 把暂存区按 `id` 归并后，凡是**没有 `claim.json`** 的那一组就标 `awaiting-commit`（状态中文「只传了字节、没提交」），并带一句 `reason`。这行**永远上不了线**，原因是设计如此，不是报错：
+
+- 发布机（`promote-uploads`）只处理「有 claim」的组——claim 是 `commit` 写下的「这份声明完了」凭据；
+  字节先进 `cdn/incoming/<id>/` 暂存区，**没点 `commit` 就不会有任何 claim**，发布机按设计跳过它。
+- 所以这一态的**唯一成因是「begin + 直传 PUT 之后没调 commit」**，不是「重复」。
+  「重复 / 已存在」会在 `begin` 或 `commit` 时以 **409** 当场拒绝（最终键已存在），根本到不了这一态。
+- 后台页面会在「说明」列直接写明：字节已传多大、为什么不会上线、清暂存对外零影响；
+  没有字节只有残留对象的组则标为「中断的上传 / 自检残留」。**两类都只是暂存区里的垃圾，清掉不影响任何对外地址。**
+
+> 调用方最常见的误操作：直传 PUT 请求失败后没重试就以为传完了，于是卡在 `awaiting-commit`。
+> 判据很直白——这一组在 `upload-log.json` 里**不会出现**，测速 / 取数也不会引用它的键。
+> 想要它上线，重新走一遍 `begin → PUT → commit` 即可；不要的就用「清暂存」按钮或 `DELETE /api/cdn/upload/staging?id=`。
+
 ## 删除
 
 **删除只走命令行，后台页面上没有按钮 —— 这是刻意的，不是没做。** 一次误点就会把对外正在被引用的
