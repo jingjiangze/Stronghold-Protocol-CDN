@@ -148,14 +148,16 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 function renderDocs(treePromise) {
   const body = $('doc-rows');
   if (!body) return;
-  const dirs = treePromise ? treePromise.then((d) => d?.dirs || []).catch(() => []) : Promise.resolve([]);
-  return dirs.then((list) => {
+  const dirs = treePromise ? treePromise.catch(() => null) : Promise.resolve(null);
+  return dirs.then((doc) => {
+    // `dirs` is an object keyed by directory path, not an array of nodes -- iterating it as an
+    // array throws, and a throw here is invisible because the caller swallows it, leaving the
+    // "loading" placeholder forever. That is exactly how this section shipped broken once.
+    const byDir = doc?.dirs && typeof doc.dirs === 'object' ? doc.dirs : {};
     const rows = [];
-    for (const d of list) {
-      if (d.path !== 'docs' && !d.path.startsWith('docs/')) continue;
-      for (const f of d.files || []) {
-        rows.push({ path: `${d.path}/${f[0]}`, size: f[1] });
-      }
+    for (const [dir, entry] of Object.entries(byDir)) {
+      if (dir !== 'docs' && !dir.startsWith('docs/')) continue;
+      for (const f of entry.files || []) rows.push({ path: `${dir}/${f[0]}`, size: f[1] });
     }
     rows.sort((a, b) => a.path.localeCompare(b.path));
     setText('doc-status', rows.length ? `${rows.length} 个文件` : '');

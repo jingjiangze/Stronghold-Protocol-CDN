@@ -28,6 +28,12 @@ export function pagesBase(subdomain = PAGES_PROJECT) {
  * correct, and the docs have no such token when read as `/docs/PLAYING.md`. On R2 that case is
  * handled by a rule that keys off the query string; a Pages `_headers` rule cannot, so the docs
  * take the unversioned answer — the same one R2 gives a bare path.
+ *
+ * The `.md` rule restates the content type. Pages infers `text/markdown` from the extension, which
+ * a Chromium test showed does render — but it disagrees with what R2 serves for the same key, and
+ * a page with no charset makes the browser guess at Chinese text. Stating both makes the two
+ * origins give one answer. (`_headers` rules stack, so this neither replaces nor fights the `/*`
+ * rule above it.)
  */
 const HEADERS = `/*
   Access-Control-Allow-Origin: *
@@ -43,6 +49,9 @@ const HEADERS = `/*
 
 /docs/*
   Cache-Control: public, max-age=3600
+
+/docs/*.md
+  Content-Type: text/plain; charset=utf-8
 
 /packs/*
   Cache-Control: public, max-age=31536000, immutable

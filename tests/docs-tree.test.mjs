@@ -46,13 +46,14 @@ test('docs/ is a prefix this repository owns', () => {
   assert.throws(() => assertOwnedKey('docsx/PLAYING.md'), /refusing to write outside/);
 });
 
-// The whole point of mirroring the docs is that a phone can open them. `text/markdown` would be
-// served with nosniff, which browsers treat as "not renderable" and download instead — a 200 that
-// looks fine in a health check and is useless to a reader.
-test('a markdown doc is served as renderable text, never as a download', () => {
+// The whole point of mirroring the docs is that a phone can open them. The charset is the part a
+// real-device test caught: `text/plain` with no charset made Chromium decode a Chinese guide as
+// Latin-1 and render "# çŽ©æ³•æŒ‡å—" instead of "# 玩法指南". The type also has to stay renderable —
+// `application/octet-stream` would download instead of display.
+test('a markdown doc is served as renderable, correctly-decoded text', () => {
   const type = mimeFor('docs/PLAYING.md');
-  assert.equal(type, 'text/plain');
-  assert.notEqual(type, 'text/markdown');
+  assert.match(type, /^text\/plain/);
+  assert.match(type, /charset=utf-8/, 'without a charset the Chinese text renders as mojibake');
   assert.notEqual(type, 'application/octet-stream');
   assert.equal(mimeFor('docs/research/03-operators.json'), 'application/json');
 });
@@ -118,6 +119,8 @@ test('the Pages deploy directory carries the docs', async () => {
   assert.equal(result.files, walk(out), 'the reported file count must match the directory');
   const headers = fs.readFileSync(path.join(out, '_headers'), 'utf8');
   assert.match(headers, /\/docs\/\*\n  Cache-Control: public, max-age=3600/, 'docs need a cache rule');
+  // Pages infers text/markdown from the extension; the rule makes it answer what R2 answers.
+  assert.match(headers, /\/docs\/\*\.md\n  Content-Type: text\/plain; charset=utf-8/, 'md needs an explicit type');
   fs.rmSync(root, { recursive: true, force: true });
 });
 

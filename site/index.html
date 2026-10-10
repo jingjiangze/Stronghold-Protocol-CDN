@@ -415,9 +415,9 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       以前只能去 GitHub 取；现在和素材一样走这个域名。
     </p>
     <div class="notice">
-      <span><code class="inline">.md</code> 用 <code class="inline">text/plain</code> 发送，
-      所以点开是<b>直接显示</b>而不是下载——<code class="inline">text/markdown</code> 在
-      <code class="inline">nosniff</code> 下会被浏览器当成未知类型直接下载。手机浏览器上也能直接读。
+      <span><code class="inline">.md</code> 用 <code class="inline">text/plain; charset=utf-8</code> 发送，
+      所以点开是<b>直接显示</b>而不是下载，中文也不会变乱码（不带 charset 时浏览器会按 Latin-1 解码，
+      真机视口上实测成 <code class="inline"># çŽ©æ³•æŒ‡å—</code>）。手机浏览器上可直接读。
       需要原始文件就右键另存，或者 <code class="inline">curl -O</code>。</span>
     </div>
     <div class="table-wrap">

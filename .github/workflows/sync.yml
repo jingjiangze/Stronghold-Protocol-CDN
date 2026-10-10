@@ -20,6 +20,10 @@ on:
         description: 'true = upload the diff to R2 and publish the interface files'
         type: boolean
         default: false
+      force:
+        description: 'true = ignore the watermark even though the published interface already names this tag (needed to redeploy Pages after a code change: the dist is rebuilt from code, and the watermark compares data, so it cannot see that)'
+        type: boolean
+        default: false
       pages:
         description: 'true = also deploy the flat tree to Cloudflare Pages (second origin)'
         type: boolean
@@ -106,6 +110,7 @@ jobs:
           if [ "$(want "${{ inputs.packs }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --packs"; fi
           if [ "$(want "${{ inputs.sources }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --sources"; fi
           if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
+          if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
           if [ "${{ inputs.interface_only }}" = "true" ]; then args="$args --interface-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
           if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi

@@ -114,6 +114,15 @@ test('the page lists the official docs from the tree it already fetches', () => 
   assert.match(script, /function renderDocs/, 'the docs list needs a renderer');
   assert.match(script, /renderDocs\(treePromise\)/, 'the docs must reuse the tree fetch, not add one');
   assert.match(html, /href="#official-docs"/, 'the docs section needs a nav entry');
+  // tree.json's `dirs` is an object keyed by directory path, not an array of nodes. Treating it as
+  // an array throws inside a promise the caller swallows, which leaves the section on "loading"
+  // forever -- it shipped that way once. (The real gate is the mobile-viewport browser check at
+  // ~/tools/pwshot/verify-docs-realmachine.mjs; this is the cheap guard that runs in CI.)
+  assert.match(script, /Object\.entries\(byDir\)/, 'the docs renderer must iterate the dirs object');
+  assert.ok(
+    !/for \(const d of list\)/.test(script),
+    'iterating dirs as an array is the bug this guards against',
+  );
 });
 
 // The manifest table used to assert "git mounts have it" for every row. That stopped being true

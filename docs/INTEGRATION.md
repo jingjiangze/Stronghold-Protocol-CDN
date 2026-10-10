@@ -55,8 +55,8 @@ const ops = await (await fetch(`${CDN}/docs/research/03-operators.json`)).json()
 
 `docs/**` 来自上游发布包，原样镜像：`PLAYING.md`（玩家手册）、`DEPLOY.md`（部署）、
 `docs/research/*.json`（干员 / 敌人 / 地图 / 素材四份数据集）。上游游戏服务器**没有** `/docs/` 路由，
-所以这是这些文件唯一走 CDN 的入口。**`.md` 以 `text/plain` 发送**，浏览器会内联显示而不是下载
-（`text/markdown` 在 `nosniff` 下会被当未知类型下载）；要原始文件请用 `curl -O`。
+所以这是这些文件唯一走 CDN 的入口。**`.md` 以 `text/plain; charset=utf-8` 发送**，浏览器会内联显示
+而不是下载；`charset` 是必须的——不带的话中文会被按 Latin-1 解码成乱码。要原始文件请用 `curl -O`。
 
 ## 缓存约定
 

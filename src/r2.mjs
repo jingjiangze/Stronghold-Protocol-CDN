@@ -197,11 +197,12 @@ export const MIME = {
   skel: 'application/octet-stream',
   json: 'application/json',
   css: 'text/css',
-  // `text/plain`, deliberately not `text/markdown`: the edge sends `X-Content-Type-Options:
-  // nosniff` and browsers have no built-in markdown renderer, so `text/markdown` is served as a
-  // download instead of rendered. As plain text it renders inline and is readable on a phone,
-  // which is the whole point of mirroring the docs.
-  md: 'text/plain',
+  // `text/plain; charset=utf-8`, and the charset is the part that matters: without it a browser
+  // decoding a Chinese guide as Latin-1 renders mojibake (measured on a phone viewport:
+  // "# çŽ©æ³•æŒ‡å—" instead of "# 玩法指南"). Plain `text/plain` also renders in every browser and
+  // carries no download semantics, which is why it is preferred over `text/markdown` here -- but a
+  // Chromium test showed `text/markdown` renders too, so that is a preference, not a hard rule.
+  md: 'text/plain; charset=utf-8',
 };
 
 export function mimeFor(key) {
