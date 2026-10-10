@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 353,
-      "bytes": 51068359,
+      "files": 373,
+      "bytes": 52134010,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -2905,12 +2905,20 @@
           58897
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_112_siege_striker_2.png",
+          67783
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_134_ifrit_rilakkuma_1.png",
           65236
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_140_whitew_boc_1.png",
           58657
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_145_prove_wild_5.png",
+          52136
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_147_shining_summer_1.png",
@@ -3041,6 +3049,10 @@
           65564
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4048_doroth_witch_4.png",
+          62141
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4051_akkord_summer_23.png",
           60620
         ],
@@ -3065,8 +3077,16 @@
           68980
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4117_ray_summer_22.png",
+          59632
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4121_zuole_nian_11.png",
           50484
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4134_cetsyr_epoque_50.png",
+          70210
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4137_udflow_epoque_46.png",
@@ -3083,6 +3103,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_4196_reckpr_yun_12.png",
           71546
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_420_flamtl_game_2.png",
+          67899
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_423_blemsh_littlePony_1.png",
@@ -3147,6 +3171,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1016_agoat2/char_1016_agoat2_epoque_57/front/char_1016_agoat2_epoque_57.skel",
           469818
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1020_reed2/char_1020_reed2_epoque_30/back/char_1020_reed2_epoque_30.png",
+          173834
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1020_reed2/char_1020_reed2_summer_17/front/char_1020_reed2_summer_17.atlas",
@@ -3215,6 +3243,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_epoque_7/front/char_102_texas_epoque_7.skel",
           372057
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_102_texas/char_102_texas_winter_1/back/char_102_texas_winter_1.skel",
+          80930
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1032_excu2/char_1032_excu2_sale_12/back/char_1032_excu2_sale_12.atlas",
@@ -3287,6 +3319,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1046_sbell2/char_1046_sbell2_ambienceSynesthesia_8/front/char_1046_sbell2_ambienceSynesthesia_8.png",
           253354
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_1050_chen3/back/char_1050_chen3.atlas",
+          17809
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_107_liskam/char_107_liskam_nian_2/back/char_107_liskam_nian_2.atlas",
@@ -3481,6 +3517,10 @@
           89392
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_196_sunbr/char_196_sunbr_summer_1/back/char_196_sunbr_summer_1.skel",
+          42416
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_199_yak/char_199_yak_summer_1/back/char_199_yak_summer_1.skel",
           55197
         ],
@@ -3515,6 +3555,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_202_demkni/char_202_demkni_ambienceSynesthesia_7/back/char_202_demkni_ambienceSynesthesia_7.png",
           162965
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_202_demkni/char_202_demkni_ambienceSynesthesia_7/front/char_202_demkni_ambienceSynesthesia_7.atlas",
+          9825
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_202_demkni/char_202_demkni_boc_1/back/char_202_demkni_boc_1.skel",
@@ -3669,6 +3713,10 @@
           118064
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_291_aglina/char_291_aglina_summer_5/front/char_291_aglina_summer_5.png",
+          119834
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_291_aglina/char_291_aglina_summer_5/front/char_291_aglina_summer_5.skel",
           324610
         ],
@@ -3757,6 +3805,10 @@
           208547
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_344_beewax/char_344_beewax_epoque_9/back/char_344_beewax_epoque_9.atlas",
+          2593
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_344_beewax/char_344_beewax_epoque_9/back/char_344_beewax_epoque_9.skel",
           51134
         ],
@@ -3807,6 +3859,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_lxh_1/back/char_358_lisa_lxh_1.png",
           98428
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_lxh_1/back/char_358_lisa_lxh_1.skel",
+          172790
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_358_lisa/char_358_lisa_lxh_1/front/char_358_lisa_lxh_1.png",
@@ -4025,6 +4081,10 @@
           424201
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4148_philae/char_4148_philae_nian_12/back/char_4148_philae_nian_12.atlas",
+          10543
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4148_philae/char_4148_philae_nian_12/back/char_4148_philae_nian_12.skel",
           289386
         ],
@@ -4069,6 +4129,10 @@
           872058
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/back/char_4194_rmixer_boc_12.atlas",
+          8291
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/back/char_4194_rmixer_boc_12.skel",
           268793
         ],
@@ -4079,6 +4143,10 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4194_rmixer/char_4194_rmixer_boc_12/front/char_4194_rmixer_boc_12.skel",
           459170
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4195_radian/back/char_4195_radian.atlas",
+          8039
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_420_flamtl/char_420_flamtl_game_2/front/char_420_flamtl_game_2.atlas",
@@ -4141,6 +4209,10 @@
           6235
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_437_mizuki/char_437_mizuki_game_6/front/char_437_mizuki_game_6.atlas",
+          10940
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_437_mizuki/char_437_mizuki_game_6/front/char_437_mizuki_game_6.skel",
           358955
         ],
@@ -4149,12 +4221,20 @@
           149963
         ],
         [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_440_pinecn/char_440_pinecn_epoque_31/front/char_440_pinecn_epoque_31.atlas",
+          8823
+        ],
+        [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_440_pinecn/char_440_pinecn_epoque_31/front/char_440_pinecn_epoque_31.png",
           125725
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_440_pinecn/char_440_pinecn_shining_1/front/char_440_pinecn_shining_1.skel",
           261847
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_446_aroma/char_446_aroma_epoque_54/front/char_446_aroma_epoque_54.atlas",
+          19183
         ],
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_469_indigo/char_469_indigo_nian_7/back/char_469_indigo_nian_7.atlas",
