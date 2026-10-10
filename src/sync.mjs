@@ -201,6 +201,19 @@ export function localPathFor(stage, key) {
   throw new Error(`no local source for index key ${key}`);
 }
 
+/**
+ * How long an object may be cached, per key.
+ *
+ * Art and fonts are addressed with a `?v=<token>` in every manifest URL, so a year is safe: a
+ * content change arrives as a different URL. The docs have no token in the URL a reader types
+ * (`/docs/PLAYING.md`) and they change whenever upstream releases, so a year would keep a browser
+ * on a stale guide long after the release that replaced it. An hour is what the zone Cache Rule
+ * already gives an unversioned asset path — this makes the browser agree with the edge.
+ */
+export function cacheControlFor(key) {
+  return key.startsWith(DOCS_PREFIX) ? 'public, max-age=3600' : IMMUTABLE;
+}
+
 async function uploadKeys(config, stage, keys, files) {
   let done = 0;
   let failed = 0;
@@ -212,7 +225,7 @@ async function uploadKeys(config, stage, keys, files) {
         if (body.length !== files[key].size) {
           throw new Error(`size changed while uploading (${body.length} vs ${files[key].size})`);
         }
-        await putObject(config, key, body, { contentType: mimeFor(key), cacheControl: IMMUTABLE });
+        await putObject(config, key, body, { contentType: mimeFor(key), cacheControl: cacheControlFor(key) });
       } catch (error) {
         failed++;
         console.error(`[sync] FAIL ${key}: ${error.message}`);

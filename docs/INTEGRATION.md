@@ -63,7 +63,8 @@ const ops = await (await fetch(`${CDN}/docs/research/03-operators.json`)).json()
 | 内容 | 头 |
 |---|---|
 | 素材 / 字体（带 `?v=<令牌>`） | `public, max-age=31536000, immutable` |
-| 素材 / 字体 / 文档（裸路径，无令牌） | `public, max-age=3600` |
+| 素材 / 字体（裸路径，无令牌） | `public, max-age=3600` |
+| 文档 `/docs/**` | `public, max-age=3600`（浏览器也是 1 小时——文档没有令牌可依，且每次发版都可能变） |
 | 清单与 `cdn/v1/*.json` | `public, max-age=300` |
 | 按令牌冻结的副本（`cdn/v1/*-<令牌>.json`、`packs/**`） | `public, max-age=31536000, immutable` |
 

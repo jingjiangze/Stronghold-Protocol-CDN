@@ -23,7 +23,7 @@ import {
 } from '../src/names.mjs';
 import { assertOwnedKey, mimeFor } from '../src/r2.mjs';
 import { groupOf, planPacks } from '../src/packs.mjs';
-import { localPathFor } from '../src/sync.mjs';
+import { localPathFor, cacheControlFor } from '../src/sync.mjs';
 import { preparePagesDist } from '../src/pages.mjs';
 
 test('the selective extraction pulls the docs out of the package', () => {
@@ -119,6 +119,17 @@ test('the Pages deploy directory carries the docs', async () => {
   const headers = fs.readFileSync(path.join(out, '_headers'), 'utf8');
   assert.match(headers, /\/docs\/\*\n  Cache-Control: public, max-age=3600/, 'docs need a cache rule');
   fs.rmSync(root, { recursive: true, force: true });
+});
+
+// The art is addressed with a `?v=` token in every manifest URL, so a year is safe. A reader types
+// `/docs/PLAYING.md` with no token, and the docs change every release — a year of browser caching
+// would serve a stale guide long after the release that replaced it.
+test('a doc is cacheable for an hour, not a year', () => {
+  assert.equal(cacheControlFor('docs/PLAYING.md'), 'public, max-age=3600');
+  assert.equal(cacheControlFor('docs/research/03-operators.json'), 'public, max-age=3600');
+  // The art keeps the immutable answer: its URLs carry the token that makes it correct.
+  assert.match(cacheControlFor('assets/char/avatar/a.png'), /immutable/);
+  assert.match(cacheControlFor('fonts/f.woff2'), /immutable/);
 });
 
 test('the pack channel stays art-only', () => {
