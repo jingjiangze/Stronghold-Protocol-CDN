@@ -2,7 +2,8 @@
 //
 //   node src/promote-uploads.mjs            处理 cdn/incoming/ 下所有已提交 claim 的上传
 //   node src/promote-uploads.mjs --dry      只报告，不写字节、不改 hosted.json
-//   node src/promote-uploads.mjs --max=5    单轮上限（默认 20）
+//   node src/promote-uploads.mjs --max=5    单轮份数上限（默认 2000，实际由时间预算先到先停）
+//   node src/promote-uploads.mjs --budget-seconds=300   单轮时间预算（默认 1200，0 = 不限）
 //
 // 为什么这一半放在 Actions 而不是边缘：
 //   - 摘要要逐字节算。600 MB 的素材在 Pages Functions 上算不动（免费档每次调用 10 ms CPU、
@@ -51,12 +52,22 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const log = (...a) => console.log('[promote]', ...a);
 
-function parseArgs(argv) {
-  const opts = { dry: false, max: 20 };
+/** Exported so a test can pin the defaults, which are also what the chained re-dispatch uses. */
+export function parseArgs(argv) {
+  const opts = { dry: false, max: 2000, budgetSeconds: 1200 };
   for (const arg of argv) {
     if (arg === '--dry') opts.dry = true;
-    else if (arg.startsWith('--max=')) opts.max = Math.max(1, Number(arg.slice('--max='.length)) || 20);
-    else throw new Error(`未知参数：${arg}`);
+    else if (arg.startsWith('--max=')) {
+      // A count that is not a positive number is treated as "unset", never as zero: a zero-file
+      // round would report success while doing nothing, which is the worst failure shape there is.
+      const n = Number(arg.slice('--max='.length));
+      if (Number.isFinite(n) && n >= 1) opts.max = Math.floor(n);
+    } else if (arg.startsWith('--budget-seconds=')) {
+      // 0 is meaningful here -- it means "no time limit, drain the backlog" -- so only a negative or
+      // unparseable value falls back to the default.
+      const n = Number(arg.slice('--budget-seconds='.length));
+      if (Number.isFinite(n) && n >= 0) opts.budgetSeconds = Math.floor(n);
+    } else throw new Error(`未知参数：${arg}`);
   }
   return opts;
 }
@@ -233,9 +244,17 @@ async function dropStaging(config, key, { dry }) {
   await deleteObject(config, key);
 }
 
-export async function promote({ dry = false, max = 20 } = {}) {
+export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } = {}) {
   const config = r2Config(process.env);
   const report = { dry, scanned: 0, published: [], rejected: [], already: [], skippedNoClaim: 0, pendingLeft: 0, errors: [] };
+
+  // A round is bounded by a count AND by a clock, whichever comes first.
+  //
+  // The count alone cannot be the bound, because what actually constrains a round is the job's
+  // 30-minute timeout and the cost per file depends on the upload: measured here at ~2.5 s per file
+  // for ~150 KB art, so 500 files is already ~21 minutes while 500 files of 5 MB would not fit at
+  // all. A clock is the honest bound; the count stays only as a stop for a surprise.
+  const deadline = budgetSeconds > 0 ? Date.now() + budgetSeconds * 1000 : Infinity;
 
   const rows = await listKeys(config, STAGING_PREFIX);
   report.scanned = rows.length;
@@ -247,11 +266,13 @@ export async function promote({ dry = false, max = 20 } = {}) {
       report.skippedNoClaim++;
       continue;
     }
-    if (report.published.length + report.rejected.length + report.already.length >= max) {
+    const done = report.published.length + report.rejected.length + report.already.length;
+    if (done >= max || Date.now() >= deadline) {
       // 还剩多少要发的必须报出来：触发式发布靠这个数字决定"做完这一轮马上再来一轮"，
       // 而不是回头等定时。
       report.pendingLeft = groups.slice(i).filter((x) => x.claim).length;
-      log(`到单轮上限 ${max}，还剩 ${report.pendingLeft} 份等下一轮`);
+      const why = done >= max ? `到单轮上限 ${max}` : `到单轮时间预算 ${budgetSeconds}s（已处理 ${done} 份）`;
+      log(`${why}，还剩 ${report.pendingLeft} 份等下一轮`);
       break;
     }
     const payloadSize = g.payload?.size ?? null;

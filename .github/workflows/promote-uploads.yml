@@ -8,7 +8,20 @@ name: promote-uploads
 # 节拍是**触发式**：commit / put / remove / kick 四个端点都会当场 dispatch 这一轮
 # （Pages secret GH_DISPATCH_TOKEN + GH_REPO）。定时那两条只是兜底 —— 万一触发失败、
 # 或者有人绕过接口直接往暂存区放了东西，最迟半小时也会被处理。
-# 一轮里到上限（默认 20 份）就立刻自己补投一轮，把积压连续排干，不让人等定时。
+# 一轮里到上限就立刻自己补投一轮，把积压连续排干，不让人等定时。
+#
+# 单轮上限为什么从 20 改掉：**每轮有一大块固定开销**，与处理几份无关 —— checkout + setup-node
+# + 单测 + 最后那条 `sync.mjs --interface-only`（重发整个接口与 tree.json）。实测一轮 20 份的
+# promote 步骤 65 秒（≈ 2.5 秒/份，≈ 12 份/分钟），于是一个 ~1000 份的补包要排 ~80 分钟。
+# 20 份/轮等于把固定开销付了 50 次。每份文件是**各自独立**过闸的（逐字节 sha256 比对、目标键
+# 已存在且摘要不同就拒绝），没有跨文件一致性要保护，所以批量纯粹是运行时间旋钮。
+#
+# 但单纯把份数调大是把「按份数限流」换成「按猜一个份数限流」：真正的边界是下面那条 30 分钟
+# 超时，而每份的耗时取决于上传内容（实测 ~150 KB 的素材 ~2.5 秒/份；500 份就已经 ~21 分钟，
+# 换成 5 MB 一份则根本跑不完）。所以**单轮由时间预算（默认 1200 秒）先停**，份数只留作兜底。
+# 空闲时轮次照样是几秒就结束（没货可做，循环自己退出），长轮只发生在确实有积压的时候。
+# 注意：补投那一轮不带任何 input，所以它用的是**这里的默认值** —— 改默认值即可让整条链提速，
+# 不需要人工手跑一轮。
 
 on:
   schedule:
@@ -20,9 +33,13 @@ on:
         type: boolean
         default: false
       max:
-        description: '单轮最多处理多少份上传'
+        description: '单轮份数上限（兜底；实际由时间预算先停）'
         type: number
-        default: 20
+        default: 2000
+      budget_seconds:
+        description: '单轮时间预算秒数（默认 1200 = 20 分钟，留出 30 分钟作业超时的余量；0 = 不限）'
+        type: number
+        default: 1200
 
 permissions:
   contents: write
@@ -55,7 +72,16 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
-          args="--max=${{ inputs.max || 20 }}"
+          # The `|| N` fallbacks and the inputs' `default:` above are the same numbers in two places,
+          # because a `default:` cannot read a variable. Change them together: these are what the
+          # chained re-dispatch actually uses (it passes no inputs).
+          #
+          # The count is deliberately far above what fits, so the time budget is what normally stops
+          # a round. 1200s against a 30-minute job timeout leaves room for checkout, the unit tests,
+          # the manifest commit and the interface republish (~1 min) on top of the promote step.
+          max="${{ inputs.max || 2000 }}"
+          budget="${{ inputs.budget_seconds || 1200 }}"
+          args="--max=${max} --budget-seconds=${budget}"
           if [ "${{ inputs.dry }}" = "true" ]; then args="$args --dry"; fi
           echo "node src/promote-uploads.mjs $args"
           node src/promote-uploads.mjs $args | tee /tmp/promote.log
