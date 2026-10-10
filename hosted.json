@@ -2793,12 +2793,60 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 14228,
+      "files": 13,
+      "bytes": 631694,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
           14228
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_imp/p_imp_bngel.mp3",
+          6573
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_imp/p_imp_lightning_n.mp3",
+          7541
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_imp/p_imp_shakebell_n.mp3",
+          12347
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_003_kalts_boc_6.png",
+          61075
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_003_kalts_sale_14.png",
+          65867
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_010_chen_nian_2.png",
+          64702
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_010_chen_sale_10.png",
+          49101
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_017_huang_as_1.png",
+          67015
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_017_huang_witch_5.png",
+          73147
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1012_skadi2_boc_4.png",
+          70159
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1012_skadi2_iteration_2.png",
+          68807
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/char/skin_avatar/char_1013_chen2_boc_6.png",
+          71132
         ]
       ]
     }
