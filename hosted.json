@@ -375,9 +375,65 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 148,
-      "bytes": 16255767,
+      "files": 168,
+      "bytes": 16703119,
       "keys": [
+        [
+          "assets/audio/sfx/player/p_imp/p_imp_mjckyrdglsnt.mp3",
+          5805
+        ],
+        [
+          "assets/audio/sfx/player/p_skill/p_skill_mjckyrdslnt_s1.mp3",
+          87789
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_020.mp3",
+          16318
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_021.mp3",
+          12974
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_028.mp3",
+          7332
+        ],
+        [
+          "assets/audio/voice/jp/char_4123_ela/cn_023.mp3",
+          8795
+        ],
+        [
+          "assets/audio/voice/jp/char_4123_ela/cn_026.mp3",
+          11093
+        ],
+        [
+          "assets/audio/voice/jp/char_4123_ela/cn_031.mp3",
+          5242
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_023.mp3",
+          9213
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_025.mp3",
+          5033
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_027.mp3",
+          5242
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_029.mp3",
+          29902
+        ],
+        [
+          "assets/audio/voice/jp/char_456_ash/cn_020.mp3",
+          8168
+        ],
+        [
+          "assets/audio/voice/jp/char_456_ash/cn_021.mp3",
+          8795
+        ],
         [
           "assets/band/icon_ela.png",
           52787
@@ -615,6 +671,10 @@
           37724
         ],
         [
+          "assets/local/operators/token_10007_phatom_twin/front/token_10007_phatom_twin.png",
+          32824
+        ],
+        [
           "assets/local/operators/token_10029_slent2_protrb/front/token_10029_slent2_protrb.png",
           24438
         ],
@@ -623,8 +683,16 @@
           19893
         ],
         [
+          "assets/local/operators/token_10035_wisdel_wward/front/token_10035_wisdel_wward.png",
+          13401
+        ],
+        [
           "assets/local/operators/token_10053_radian_tower3/front/token_10053_radian_tower3.png",
           32794
+        ],
+        [
+          "assets/local/operators/token_10060_nasti_nstchr/front/token_10060_nasti_nstchr.png",
+          25500
         ],
         [
           "assets/local/operators/token_10066_closur_ourbase/front/token_10066_closur_ourbase.png",
@@ -647,6 +715,14 @@
           18870
         ],
         [
+          "assets/skill/skchr_greyy2_1.png",
+          10029
+        ],
+        [
+          "assets/skill/skchr_hbisc2_2.png",
+          25944
+        ],
+        [
           "assets/skill/skchr_oblvns_2.png",
           33324
         ],
@@ -661,6 +737,10 @@
         [
           "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/back/char_002_amiya_epoque_4.png",
           61869
+        ],
+        [
+          "assets/spine/op/char_002_amiya/char_002_amiya_epoque_4/front/char_002_amiya_epoque_4.png",
+          117953
         ],
         [
           "assets/spine/op/char_002_amiya/char_002_amiya_test_1/back/char_002_amiya_test_1.skel",
