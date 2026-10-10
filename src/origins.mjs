@@ -11,6 +11,42 @@ import path from 'node:path';
 import { assertPublicHttpsUrl } from './upstream.mjs';
 
 /**
+ * Capability fields for one origin, DERIVED from its own config rather than hand-filled — so a new
+ * entry cannot disagree with what it is, and a caller never has to guess from the id.
+ *
+ *   assetEligible / fontEligible  follow `coverage`: a `partial` mount carries the interface files
+ *                                 and answers 404 for `assets/**`, so it must never be a candidate
+ *                                 for a source that serves art or fonts.
+ *   supportsRange                 the client's resumable/segmented path needs 206; measured true on
+ *                                 every full source (see docs/audit/free-mirror-verification.json).
+ *   direct / proxied              a relay (sp-git-mount-relay) fronts other backends, so its bytes
+ *                                 travel through a Worker — fine to use, but it must not be a
+ *                                 DEFAULT candidate under the free-plan request budget.
+ *   faultDomain                   two custom domains on ONE R2 bucket are two entrances to one copy,
+ *                                 not two independent failure domains (r2 + r2-alt -> 'r2-bucket').
+ */
+export function capabilitiesOf(origin) {
+  const root = String(origin?.root || '');
+  let host = '';
+  try { host = new URL(root).host.toLowerCase(); } catch { /* an origin without a parseable host */ }
+  const proxied = /中转|中继|relay/i.test(origin?.note || '');
+  const full = origin?.coverage !== 'partial';
+  const r2Bucket = /^weishucdn2?\.jiangjiangze\.icu$/.test(host);
+  return {
+    enabled: origin?.enabled !== false,
+    assetEligible: full,
+    fontEligible: full,
+    supportsRange: origin?.supportsRange !== false,
+    direct: !proxied,
+    ...(proxied ? { proxied: true } : {}),
+    faultDomain: r2Bucket ? 'r2-bucket' : host || 'unknown',
+  };
+}
+
+/** An origin with its derived capability fields attached. */
+export const withCapabilities = (origin) => ({ ...origin, ...capabilitiesOf(origin) });
+
+/**
  * @returns {{id:string, kind:string, root:string, base:string, note?:string}[]}
  */
 export function readExtraOrigins(root) {
@@ -28,13 +64,13 @@ export function readExtraOrigins(root) {
       // Same rule as everywhere else: https only, and never a loopback/private/reserved host.
       const url = assertPublicHttpsUrl(entry.root);
       const root_ = url.href.replace(/\/+$/, '');
-      out.push({
+      out.push(withCapabilities({
         id: String(entry.id),
         kind: String(entry.kind || 'cdn'),
         root: root_,
         base: `${root_}/assets/`,
         ...(entry.note ? { note: String(entry.note) } : {}),
-      });
+      }));
     } catch {
       // A malformed entry must not take the whole sync down; it simply is not published.
     }
@@ -73,7 +109,7 @@ export function readGitOrigins(root) {
     try {
       const url = assertPublicHttpsUrl(entry.root);
       const root_ = url.href.replace(/\/+$/, '');
-      out.push({
+      out.push(withCapabilities({
         id: String(entry.id),
         kind: String(entry.kind || 'git'),
         root: root_,
@@ -82,7 +118,7 @@ export function readGitOrigins(root) {
         probe: String(entry.probe || GIT_PROBE_PATH),
         coverage: String(entry.coverage || 'partial'),
         ...(entry.note ? { note: String(entry.note) } : {}),
-      });
+      }));
     } catch {
       // A malformed entry must not take the whole sync down; it simply is not published.
     }
@@ -111,5 +147,24 @@ export function readRetiredOrigins(root) {
     return new Set();
   }
   const list = Array.isArray(cfg?.retired) ? cfg.retired : [];
+  return new Set(list.filter((id) => typeof id === 'string' && id));
+}
+
+/**
+ * Origin ids that stay PUBLISHED but must not be selected.
+ *
+ * `retired` removes an origin from the interface entirely; `disabled` keeps it visible (so the site
+ * can still show it and say why) while marking `enabled:false`, which every selector must honour.
+ * A source that is temporarily unhealthy, or one kept only as a last-resort fallback, belongs here
+ * rather than in `retired` — removing it from the manifest would also remove the fallback.
+ */
+export function readDisabledOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return new Set();
+  }
+  const list = Array.isArray(cfg?.disabled) ? cfg.disabled : [];
   return new Set(list.filter((id) => typeof id === 'string' && id));
 }

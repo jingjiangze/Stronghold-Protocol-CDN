@@ -60,5 +60,7 @@
   "_retired_comment": "Retired origin ids. carryForwardOrigins restores any previously-published origin the current run does not produce, which is what keeps the Pages origin alive on runs without --pages -- but it also resurrects an origin that was deliberately removed from this file. Naming it here is how a removal sticks.",
   "retired": [
     "statically"
-  ]
+  ],
+  "_disabled_comment": "Soft off-switch: these ids stay PUBLISHED (the site still shows them) but carry enabled:false, which every selector must honour. Use it for a source that is temporarily unhealthy or kept only as a last-resort fallback — `retired` would remove the fallback too.",
+  "disabled": []
 }

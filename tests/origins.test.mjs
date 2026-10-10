@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readGitOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
+import { readGitOrigins, GIT_PROBE_PATH, capabilitiesOf, withCapabilities, readDisabledOrigins } from '../src/origins.mjs';
 import { carryForwardOrigins } from '../src/sync.mjs';
 
 function withOriginsJson(doc, fn) {
@@ -123,4 +123,64 @@ test('the shipped origins.json retires statically', () => {
   assert.ok(Array.isArray(cfg.retired), 'origins.json needs a retired array');
   assert.ok(cfg.retired.includes('statically'), 'statically must be listed as retired');
   assert.ok(!(cfg.gitOrigins || []).some((o) => o.id === 'statically'), 'and must not also be declared');
+});
+
+// --- capability fields (Stage 2) ---------------------------------------------------------------
+// The whole point of these is that a SELECTOR can ask "may I use this source for art" instead of
+// guessing from the id. They are derived, so a new origins.json entry cannot get them wrong.
+
+test('assetEligible/fontEligible follow coverage: a partial mount is not an art source', () => {
+  const partial = capabilitiesOf({ root: 'https://cdn.jsdelivr.net/gh/o/r@main', coverage: 'partial' });
+  assert.equal(partial.assetEligible, false);
+  assert.equal(partial.fontEligible, false);
+  const full = capabilitiesOf({ root: 'https://cdn.jsdelivr.net/gh/o/r@assets-raw', coverage: 'full' });
+  assert.equal(full.assetEligible, true);
+  assert.equal(full.fontEligible, true);
+  // No coverage field at all (r2 / pages) means a full mirror, not a partial one.
+  assert.equal(capabilitiesOf({ root: 'https://weishucdn.example' }).assetEligible, true);
+});
+
+test('a relay is usable but not a default candidate (direct:false, proxied:true)', () => {
+  const relay = capabilitiesOf({ root: 'https://gitcdn.example', note: '自有域中转（sp-git-mount-relay）' });
+  assert.equal(relay.direct, false);
+  assert.equal(relay.proxied, true);
+  assert.equal(relay.assetEligible, true, 'a relay still carries the bytes');
+  const plain = capabilitiesOf({ root: 'https://weishucdn.example' });
+  assert.equal(plain.direct, true);
+  assert.equal(plain.proxied, undefined, 'a direct origin must not carry a proxied flag');
+});
+
+test('two domains on one R2 bucket share a fault domain, so they are not counted as two mirrors', () => {
+  const a = capabilitiesOf({ root: 'https://weishucdn.jiangjiangze.icu' });
+  const b = capabilitiesOf({ root: 'https://weishucdn2.jiangjiangze.icu' });
+  assert.equal(a.faultDomain, 'r2-bucket');
+  assert.equal(b.faultDomain, 'r2-bucket');
+  // A different host is its own domain.
+  assert.equal(capabilitiesOf({ root: 'https://spages.jiangjiangze.icu' }).faultDomain, 'spages.jiangjiangze.icu');
+});
+
+test('every published git origin carries the capability fields', () => {
+  const out = withOriginsJson(
+    { gitOrigins: [{ id: 'jsdelivr-assets', root: 'https://cdn.jsdelivr.net/gh/o/r@assets-raw', coverage: 'full' }] },
+    readGitOrigins,
+  );
+  const o = out[0];
+  for (const f of ['enabled', 'assetEligible', 'fontEligible', 'supportsRange', 'direct', 'faultDomain']) {
+    assert.ok(f in o, `a published origin is missing ${f}`);
+  }
+  assert.equal(o.assetEligible, true);
+});
+
+test('disabled is a soft off-switch: published but not selectable', () => {
+  assert.deepEqual([...readDisabledOrigins(path.join(os.tmpdir(), 'sp-does-not-exist'))], []);
+  const set = withOriginsJson({ disabled: ['ghfast-assets', 42, null] }, readDisabledOrigins);
+  assert.deepEqual([...set], ['ghfast-assets'], 'only string ids count');
+  // withCapabilities honours an explicit enabled:false and defaults to enabled otherwise.
+  assert.equal(withCapabilities({ root: 'https://x.test' }).enabled, true);
+  assert.equal(withCapabilities({ root: 'https://x.test', enabled: false }).enabled, false);
+});
+
+test('the shipped origins.json declares a disabled array (even when empty)', () => {
+  const cfg = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '..', 'origins.json'), 'utf8'));
+  assert.ok(Array.isArray(cfg.disabled), 'origins.json needs a disabled array so the off-switch is discoverable');
 });

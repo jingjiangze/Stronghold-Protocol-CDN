@@ -37,7 +37,7 @@ import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins, readGitOrigins, readRetiredOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins, withCapabilities } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
@@ -349,12 +349,14 @@ async function main() {
     const config = r2Config();
     // 来源表要按**当前配置**重算，不能照抄已发布的那份：往 origins.json 加一个镜像，
     // 本该是一次「重发接口」就能生效的事；照抄旧列表会让它永远等不到下一次上游版本才出现。
-    const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
+    const origins = [withCapabilities({ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` })];
     const extraOrigins = readExtraOrigins(ROOT);
     if (extraOrigins.length) log(`extra origins: ${extraOrigins.map((o) => o.id).join(', ')}`);
     origins.push(...extraOrigins);
     const gitOrigins = readGitOrigins(ROOT);
     origins.push(...gitOrigins);
+    const disabled = readDisabledOrigins(ROOT);
+    for (const o of origins) if (disabled.has(o.id)) o.enabled = false;
     const flatOrigins = carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT));
     const mirrorsDoc = `${JSON.stringify(
       {
@@ -737,7 +739,7 @@ async function main() {
 
   // Extra origins. Both are best-effort: the bucket is the primary, and a failure here must not
   // invalidate it — the interface below simply reports one origin fewer.
-  const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
+  const origins = [withCapabilities({ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` })];
   // A CDN sitting in front of the bucket is one entry in origins.json, not a code change.
   const extraOrigins = readExtraOrigins(ROOT);
   if (extraOrigins.length) log(`extra origins: ${extraOrigins.map((o) => o.id).join(', ')}`);
@@ -753,7 +755,7 @@ async function main() {
       });
       log(`pages dist: ${dist.files} files → ${opts.pagesBase}`);
       deployPages({ dist: dist.out });
-      origins.push({ id: 'pages', kind: 'pages', root: opts.pagesBase, base: `${opts.pagesBase}/assets/` });
+      origins.push(withCapabilities({ id: 'pages', kind: 'pages', root: opts.pagesBase, base: `${opts.pagesBase}/assets/` }));
       report.pages = { base: opts.pagesBase, files: dist.files };
     } catch (error) {
       console.error(`[sync] pages origin FAILED: ${error.message}`);
@@ -775,7 +777,17 @@ async function main() {
   // already carry forward (below); origins now do the same, keeping the structural ones (r2, pages)
   // from the published interface and merging this run's view into it.
   const publishedBefore = await readPublishedArt(opts.base);
+  const disabledIds = readDisabledOrigins(ROOT);
+  for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
   const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors, readRetiredOrigins(ROOT));
+
+  // A manifest whose only sources cannot serve art is a manifest that breaks every model. Refuse it
+  // rather than publish it: the point of the capability fields is that this is checkable, not implied.
+  const assetCapable = mergedOrigins.filter((o) => o.enabled !== false && o.assetEligible !== false && o.direct !== false);
+  if (!assetCapable.length) {
+    throw new Error('no enabled, direct, asset-eligible origin — refusing to publish a manifest whose sources cannot serve assets/**');
+  }
+  log(`asset-eligible direct origins: ${assetCapable.map((o) => o.id).join(', ')}`);
 
   let packs = [];
   if (opts.packs) {
@@ -830,6 +842,16 @@ async function main() {
         ...(origin.probe ? { probe: origin.probe } : {}),
         ...(origin.coverage ? { coverage: origin.coverage } : {}),
         ...(origin.note ? { note: origin.note } : {}),
+        // Capability fields (Stage 2): derived from the origin's own config in src/origins.mjs, never
+        // hand-filled. A selector reads these instead of guessing from the id, and `assetEligible`
+        // is what keeps a `@main` git mount (404 for assets/**) out of the art candidates.
+        enabled: origin.enabled !== false,
+        assetEligible: origin.assetEligible !== false,
+        fontEligible: origin.fontEligible !== false,
+        supportsRange: origin.supportsRange !== false,
+        direct: origin.direct !== false,
+        ...(origin.proxied ? { proxied: true } : {}),
+        ...(origin.faultDomain ? { faultDomain: origin.faultDomain } : {}),
       })),
       packs: packs.map((pack) => ({
         id: pack.id,
