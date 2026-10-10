@@ -8701,6 +8701,20 @@
           14672
         ]
       ]
+    },
+    {
+      "id": "stardust-skins",
+      "what": "Stardust 干员皮肤 271 套（ModelScope 公开数据集）— 试传 1 个验证通道",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 39610,
+      "keys": [
+        [
+          "assets/skins/char_103_angel_wild_1/avatar.png",
+          39610
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
