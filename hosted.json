@@ -2793,8 +2793,8 @@
       "what": "Four-server verified resource pack 02a466edd43d",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 213,
-      "bytes": 26531765,
+      "files": 233,
+      "bytes": 31100283,
       "keys": [
         [
           "assets/local/sp-four-02a466edd43d/assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
@@ -3647,6 +3647,86 @@
         [
           "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4054_malist/char_4054_malist_summer_14/back/char_4054_malist_summer_14.skel",
           140582
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4064_mlynar/char_4064_mlynar_iteration_3/back/char_4064_mlynar_iteration_3.atlas",
+          7014
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4079_haini/char_4079_haini_epoque_45/back/char_4079_haini_epoque_45.atlas",
+          4629
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4079_haini/char_4079_haini_epoque_45/front/char_4079_haini_epoque_45.skel",
+          393822
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4087_ines/char_4087_ines_ambienceSynesthesia_5/back/char_4087_ines_ambienceSynesthesia_5.png",
+          219867
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4087_ines/char_4087_ines_ambienceSynesthesia_5/back/char_4087_ines_ambienceSynesthesia_5.skel",
+          201188
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4087_ines/char_4087_ines_boc_8/front/char_4087_ines_boc_8.skel",
+          731487
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4100_caper/char_4100_caper_summer_18/front/char_4100_caper_summer_18.skel",
+          576705
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4114_harold/char_4114_harold_snow_7/back/char_4114_harold_snow_7.png",
+          142021
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4114_harold/char_4114_harold_snow_7/back/char_4114_harold_snow_7.skel",
+          174076
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4116_blkkgt/char_4116_blkkgt_witch_5/back/char_4116_blkkgt_witch_5.atlas",
+          6310
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4116_blkkgt/char_4116_blkkgt_witch_5/front/char_4116_blkkgt_witch_5.skel",
+          370831
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4117_ray/back/char_4117_ray.atlas",
+          5124
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4122_grabds/char_4122_grabds_yun_3/back/char_4122_grabds_yun_3.atlas",
+          8962
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4134_cetsyr/char_4134_cetsyr_epoque_50/front/char_4134_cetsyr_epoque_50.png",
+          498227
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4137_udflow/char_4137_udflow_epoque_46/back/char_4137_udflow_epoque_46.atlas",
+          8300
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4137_udflow/char_4137_udflow_epoque_46/back/char_4137_udflow_epoque_46.png",
+          267182
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4139_papyrs/char_4139_papyrs_game_8/front/char_4139_papyrs_game_8.skel",
+          372617
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4145_ulpia/char_4145_ulpia_epoque_48/back/char_4145_ulpia_epoque_48.png",
+          273125
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4146_nymph/char_4146_nymph_epoque_42/back/char_4146_nymph_epoque_42.skel",
+          289797
+        ],
+        [
+          "assets/local/sp-four-02a466edd43d/assets/spine/op/char_4146_nymph/char_4146_nymph_epoque_42/front/char_4146_nymph_epoque_42.atlas",
+          17234
         ]
       ]
     }
