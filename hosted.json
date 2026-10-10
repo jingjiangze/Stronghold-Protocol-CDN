@@ -8397,6 +8397,32 @@
           288355
         ]
       ]
+    },
+    {
+      "id": "fanpack-data",
+      "what": "同人内容包 (fanpack) 官方数据底表与召唤物配置",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 4,
+      "bytes": 258871,
+      "keys": [
+        [
+          "packs/fanpack/records.json",
+          107389
+        ],
+        [
+          "packs/fanpack/tokens.json",
+          29492
+        ],
+        [
+          "packs/fanpack/variants.json",
+          121097
+        ],
+        [
+          "packs/fanpack/pack.json",
+          893
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
