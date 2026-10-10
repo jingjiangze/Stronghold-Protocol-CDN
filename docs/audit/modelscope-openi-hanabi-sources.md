@@ -180,9 +180,13 @@ interface-only 重发」与此一致）。`sync.yml` 的 `actions/checkout@v4` �
 
 1. ~~修路径 bug~~ —— **不需要**：经复测，2,476 个皮肤文件路径本来就是对的（见 §3 更正）。
 2. ~~补 OpenI 例外~~ —— **已完成**：`char_340_shwaz_snow_1/illustration.png` 已在磁盘（缺 0）。
-3. **入库**：把这批 skin 文件提交到 `assets-raw` 分支，由现有 git 挂载源自动服务。
+3. **入库**（`IMPLEMENTED`，用户拍板「全部入库并发布」）：
+   2,476 个文件以 `assets: batch 17` 系列提交到 `assets-raw` 分支。
+   复制后逐文件校验：数量 2476/2476、字节 1,594,609,770 两边一致、25 例 sha256 抽样 0 不符。
+   **1.5 GiB 单次推送会超时**（`HTTP 408` / `schannel: server closed abruptly`），
+   改为约 12 套皮肤一批分批推送（实测 45 文件一批可成功）。
 4. **明确不接入**：OpenI / hanabi 不写进 `origins.json`（理由见 §0 与 §7）。
-5. **审计文档**入仓，说明为什么 ModelScope 不作为运行时默认源。
+5. **审计文档**入仓（本文件）。
 
 `PENDING`（不在本次范围，写明）：
 - 皮肤入库后 `assets-raw` 从 618 MiB → 约 2.1 GiB，需确认 jsDelivr 对超大仓的限制
