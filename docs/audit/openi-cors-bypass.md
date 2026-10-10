@@ -139,10 +139,55 @@ studio 的 `/resolve/` `/raw/` 全返回 8.6 KB SPA HTML，**没有直链**。
 
 ### 顺带证伪/证实
 - **凭据链路 `PASS`**：dry-run 那次读到 `OPENI_TOKEN`，`ls-remote` 成功，0 字节传输退出。
-- **1.7 GiB 能否推进去**：`PENDING` → 该 run 正在验证（本次审计时已跑 11.7 分钟）。
-- **耗时约束**：1.7 GiB 全量传需 ~12 分钟以上，`timeout-minutes: 90` 有余量，
-  但每次素材变更都要全量重传（孤儿分支无增量）。四次/天意味着**最坏 4×12 分钟**的上传。
-  幂等比较（commit sha 相同即退出）保证**没变更时 0 字节**，这是成本控制的关键。
+- **1.7 GiB 推不进去（`FAIL`，已修）** —— 见 §8。
+
+---
+
+## 8. `HTTP 413`：单次全量 push 撞远程请求体上限（`IMPLEMENTED` 已修）
+
+首次真推送（run 38080231681）跑了 **17 分钟**后失败：
+
+```
+[openi] assets-raw @ c175e23c46: 14178 files, 1807.5 MiB
+error: RPC failed; HTTP 413 curl 22 The requested URL returned error: 413
+fatal: the remote end hung up unexpectedly
+```
+
+**根因**：OpenI 前端（nginx 类）限制**单个请求体**大小，而 `git push` 就是**一个 POST**。
+所以 `http.postBuffer` 和 `pack.packSizeLimit` **都帮不上** —— 前者调的是 curl 缓冲区，
+后者只影响 packfile 落盘分片，两者都不拆那个 POST。
+
+**已知边界**：915 MiB 通过，1,807 MiB → 413。阈值在中间，但那是别人的配置，不去探。
+
+### 修法：按 commit 链分批增量推送
+
+`assets-raw` 有 78 个 batch commit，远端 `7663627cb6` 是其中的祖先，中间隔 **59 个 commit**。
+沿 `rev-list --reverse` 重放，每批只发差量 —— wire 上是多个小 pack，不是一个 1.8 GiB POST。
+
+真实仓库实测（budget 700 MiB/批）：
+```
+pending: 59 commits | total added: 1221.1 MiB
+batches: 2  →  1: 10 commits, 640.9 MiB   2: 49 commits, 580.3 MiB
+```
+
+预算用完就**停在下边界**并如实报 `partial`，下次定时继续。部分推进优于一次 413
+让远端落后 1 GiB、然后整天重试同一个不可能的 POST。
+
+### 两个坑（改的时候踩到）
+
+1. **`git diff-tree` 没有 `-l` 尺寸列。** `-l` 在 `diff-tree` 里是**重命名限制**，
+   直接报 `error: switch 'l' expects an integer value with an optional k/m/g suffix`。
+   尺寸列只有 `ls-tree -l` 有。→ 改从 `diff-tree` 取 **dst blob sha**，
+   再用 `cat-file --batch-check` 一次批量查大小（每 commit 一个进程，不是每文件）。
+   *第一版因此把每个 commit 算成 0 字节 → 59 个 commit 全塞进一个批次 → 等于没分批，照样 413。*
+   （喂 stdin 时要先 `end()` 再读，否则 14k 个 sha 会把管道缓冲区写满而死锁。）
+2. **必须带 `--root`。** 否则孤儿分支的**首个 commit** 显示为空，整批体积逃出预算。
+
+### 耗时约束
+1.8 GiB 全量约 17 分钟；改成分批后每批 ≤700 MiB。四次/天最坏仍可能数小时，
+但**幂等快路径**（commit sha 相同即退出）保证没变更时 0 字节 —— 成本控制靠这个，不靠限速。
+
+Related: [[openi-mirror]]
 
 Related: [[openi-mirror]]、[[modelscope-studio-no-raw-urls]]、[[web-cdn-art-webgl-taint]]、
 [[stronghold-cdn-git-relay]]、[[stronghold-asset-cdn-reconcile]]
