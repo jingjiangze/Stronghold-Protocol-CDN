@@ -8423,6 +8423,34 @@
           893
         ]
       ]
+    },
+    {
+      "id": "fanpack-mod",
+      "what": "MOD 完整清单 (fanpack manifest)",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 15953,
+      "keys": [
+        [
+          "packs/fanpack-mod/manifest.json",
+          15953
+        ]
+      ]
+    },
+    {
+      "id": "docs-mockups",
+      "what": "双端适配与MOD系统设计UI高保真预览图",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 394950,
+      "keys": [
+        [
+          "assets/docs/mockups/dual-platform-adaptation.png",
+          394950
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
