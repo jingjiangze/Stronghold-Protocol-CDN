@@ -93,14 +93,15 @@ test('the two classes can come out as different sources', async () => {
       originRoot: 'https://origin.test',
       timeoutMs: 3000,
       fetchImpl: async (u) => {
-        // The LARGE path is where a source's link matters: a.test stalls on it, b.test does not.
-        // (An in-memory Response is not slower for being bigger, so the difference has to be modelled
-        // by the link — which is exactly what the picker is measuring in the field.)
+        // Both wins must be unambiguous: a tie decided by CI noise is a flaky test, not a measurement.
+        // small class: a.test instant, b.test +200 ms, origin +150 ms  → a wins it.
+        // large class: b.test instant, a.test +250 ms, origin +150 ms  → b wins it.
         if (u.includes('big.png')) {
           if (u.includes('a.test')) await new Promise((r) => setTimeout(r, 250));
           if (u.includes('origin.test')) await new Promise((r) => setTimeout(r, 150));
           return body(3_000_000);
         }
+        if (u.includes('b.test')) await new Promise((r) => setTimeout(r, 200));
         if (u.includes('origin.test')) await new Promise((r) => setTimeout(r, 150));
         return body(500);
       },
