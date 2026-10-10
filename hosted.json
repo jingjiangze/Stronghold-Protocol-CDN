@@ -8351,16 +8351,50 @@
       "what": "同人内容包 (fanpack) 武器与盟约美术图标",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 90704,
+      "files": 7,
+      "bytes": 3030633,
       "keys": [
+        [
+          "assets/pack/bond_kazdelShip.png",
+          79754
+        ],
         [
           "assets/pack/bond_rhodesShip.png",
           10950
         ],
         [
-          "assets/pack/bond_kazdelShip.png",
-          79754
+          "assets/pack/index.json",
+          531
+        ],
+        [
+          "assets/pack/trap_c_01.png",
+          648968
+        ],
+        [
+          "assets/pack/trap_c_02.png",
+          600539
+        ],
+        [
+          "assets/pack/trap_c_03.png",
+          765928
+        ],
+        [
+          "assets/pack/trap_c_04.png",
+          923963
+        ]
+      ]
+    },
+    {
+      "id": "fanpack-data",
+      "what": "同人内容包 (fanpack) 官方数据底表与召唤物配置",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 288355,
+      "keys": [
+        [
+          "packs/fanpack/chess.json",
+          288355
         ]
       ]
     }
