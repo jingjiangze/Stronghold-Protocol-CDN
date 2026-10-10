@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 588,
-      "bytes": 44343354,
+      "files": 602,
+      "bytes": 45435901,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -625,6 +625,10 @@
         [
           "assets/audio/voice/jp/char_4182_oblvns/cn_027.mp3",
           5242
+        ],
+        [
+          "assets/audio/voice/jp/char_4182_oblvns/cn_028.mp3",
+          3570
         ],
         [
           "assets/audio/voice/jp/char_4182_oblvns/cn_029.mp3",
@@ -899,6 +903,10 @@
           50027
         ],
         [
+          "assets/char/avatar/char_458_rfrost_2.png",
+          58738
+        ],
+        [
           "assets/char/avatar/char_459_tachak.png",
           47767
         ],
@@ -1093,6 +1101,10 @@
         [
           "assets/char/skin_avatar/char_1011_lava2_nian_6.png",
           52629
+        ],
+        [
+          "assets/char/skin_avatar/char_1011_lava2_whirlwind_9.png",
+          65119
         ],
         [
           "assets/char/skin_avatar/char_1024_hbisc2_unveiling_2.png",
@@ -1333,6 +1345,10 @@
         [
           "assets/local/operators/token_10027_ironmn_pile2/front/token_10027_ironmn_pile2.png",
           36510
+        ],
+        [
+          "assets/local/operators/token_10027_ironmn_pile3/front/token_10027_ironmn_pile3.png",
+          39199
         ],
         [
           "assets/local/operators/token_10029_slent2_protrb/front/token_10029_slent2_protrb.png",
@@ -1755,6 +1771,10 @@
           25584
         ],
         [
+          "assets/spine/op/char_002_amiya/back/char_002_amiya.atlas",
+          3052
+        ],
+        [
           "assets/spine/op/char_002_amiya/back/char_002_amiya.png",
           52368
         ],
@@ -1841,6 +1861,10 @@
         [
           "assets/spine/op/char_002_amiya/front/char_002_amiya.png",
           84155
+        ],
+        [
+          "assets/spine/op/char_002_amiya/front/char_002_amiya.skel",
+          179880
         ],
         [
           "assets/spine/op/char_1001_amiya2/back/char_1001_amiya2.atlas",
@@ -2067,6 +2091,10 @@
           131273
         ],
         [
+          "assets/spine/op/char_1027_greyy2/char_1027_greyy2_snow_5/front/char_1027_greyy2_snow_5.skel",
+          359623
+        ],
+        [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.atlas",
           10500
         ],
@@ -2077,6 +2105,10 @@
         [
           "assets/spine/op/char_1027_greyy2/char_1027_greyy2_wild_12/front/char_1027_greyy2_wild_12.skel",
           270933
+        ],
+        [
+          "assets/spine/op/char_1027_greyy2/front/char_1027_greyy2.atlas",
+          11717
         ],
         [
           "assets/spine/op/char_1027_greyy2/front/char_1027_greyy2.png",
@@ -2399,8 +2431,16 @@
           52446
         ],
         [
+          "assets/spine/op/char_242_otter/front/char_242_otter.atlas",
+          6644
+        ],
+        [
           "assets/spine/op/char_242_otter/front/char_242_otter.png",
           75027
+        ],
+        [
+          "assets/spine/op/char_242_otter/front/char_242_otter.skel",
+          143762
         ],
         [
           "assets/spine/op/char_4071_peper/back/char_4071_peper.atlas",
@@ -2463,6 +2503,10 @@
           354791
         ],
         [
+          "assets/spine/op/char_4124_iana/front/char_4124_iana.atlas",
+          8651
+        ],
+        [
           "assets/spine/op/char_4124_iana/front/char_4124_iana.png",
           200554
         ],
@@ -2471,8 +2515,16 @@
           302101
         ],
         [
+          "assets/spine/op/char_4125_rdoc/back/char_4125_rdoc.atlas",
+          4352
+        ],
+        [
           "assets/spine/op/char_4125_rdoc/back/char_4125_rdoc.png",
           89192
+        ],
+        [
+          "assets/spine/op/char_4125_rdoc/back/char_4125_rdoc.skel",
+          99911
         ],
         [
           "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/back/char_4125_rdoc_rainbow6_2.atlas",
@@ -2537,6 +2589,10 @@
         [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.atlas",
           5948
+        ],
+        [
+          "assets/spine/op/char_4131_odda/back/char_4131_odda.png",
+          108329
         ],
         [
           "assets/spine/op/char_4131_odda/back/char_4131_odda.skel",
