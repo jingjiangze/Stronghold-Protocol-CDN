@@ -53,9 +53,12 @@ on:
         type: boolean
         default: false
 
-# gh release create/upload for the pack channel needs to write releases.
+# gh release create/upload for the pack channel needs to write releases. `actions: write` is for the
+# site refresh below: it dispatches another workflow (`workflow_dispatch` is the documented
+# exception to "events from GITHUB_TOKEN do not start runs").
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: sync
@@ -131,3 +134,15 @@ jobs:
             report.md
           if-no-files-found: warn
           retention-days: 30
+
+      # The download page bakes the resolved package names into its deploy-time snapshot, and that
+      # snapshot only rebuilds on a site deploy. So a run that moves the download packages must also
+      # refresh it, or the page keeps offering the previous release's zips to every visitor who
+      # cannot reach api.github.com for the live lookup -- which is exactly the audience this CDN
+      # exists for. Without this step nothing ties the two together: the scheduled site run is daily,
+      # so a package published at the wrong hour stayed invisible for up to a day.
+      - name: refresh the download page's snapshot
+        if: ${{ success() && (inputs.write == 'true' || github.event_name == 'schedule') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run site.yml
