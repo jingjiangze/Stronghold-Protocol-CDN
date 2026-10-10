@@ -184,3 +184,25 @@ test('the shipped origins.json declares a disabled array (even when empty)', () 
   const cfg = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, '..', 'origins.json'), 'utf8'));
   assert.ok(Array.isArray(cfg.disabled), 'origins.json needs a disabled array so the off-switch is discoverable');
 });
+
+// docs/** rides the release package, NOT this repository, so only the origins that hold the release
+// tree can serve it. That fact used to live only in the site's own JS (onGitMount), where no selector
+// could see it — now it is a capability field like the rest.
+test('docsEligible is true only for the origins that hold the release tree', () => {
+  assert.equal(capabilitiesOf({ kind: 'r2', root: 'https://weishucdn.jiangjiangze.icu' }).docsEligible, true);
+  assert.equal(capabilitiesOf({ kind: 'pages', root: 'https://spages.jiangjiangze.icu' }).docsEligible, true);
+  // A git mount can only serve what is committed to git, and docs/ is not in the repo.
+  assert.equal(capabilitiesOf({ kind: 'git', root: 'https://cdn.jsdelivr.net/gh/o/r@assets-raw', coverage: 'full' }).docsEligible, false);
+  // It is independent of art eligibility: an assets-raw mount IS an art source but still not a docs one.
+  const gitAssets = capabilitiesOf({ kind: 'git', root: 'https://cdn.jsdelivr.net/gh/o/r@assets-raw', coverage: 'full' });
+  assert.equal(gitAssets.assetEligible, true);
+  assert.equal(gitAssets.docsEligible, false);
+});
+
+test('every published git origin carries docsEligible', () => {
+  const out = withOriginsJson(
+    { gitOrigins: [{ id: 'jsdelivr-assets', root: 'https://cdn.jsdelivr.net/gh/o/r@assets-raw', coverage: 'full' }] },
+    readGitOrigins,
+  );
+  assert.equal(out[0].docsEligible, false);
+});

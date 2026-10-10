@@ -22,6 +22,11 @@ import { assertPublicHttpsUrl } from './upstream.mjs';
  *   direct / proxied              a relay (sp-git-mount-relay) fronts other backends, so its bytes
  *                                 travel through a Worker — fine to use, but it must not be a
  *                                 DEFAULT candidate under the free-plan request budget.
+ *   docsEligible                  whether this source can serve `docs/**` at all. The official
+ *                                 documentation rides the release package, NOT this git repository,
+ *                                 so a git-mount origin answers 404 for it — that fact used to live
+ *                                 only in the page's own JS (`onGitMount`), where no selector could
+ *                                 see it and every consumer re-derived it by hand.
  *   faultDomain                   two custom domains on ONE R2 bucket are two entrances to one copy,
  *                                 not two independent failure domains (r2 + r2-alt -> 'r2-bucket').
  */
@@ -32,10 +37,14 @@ export function capabilitiesOf(origin) {
   const proxied = /中转|中继|relay/i.test(origin?.note || '');
   const full = origin?.coverage !== 'partial';
   const r2Bucket = /^weishucdn2?\.jiangjiangze\.icu$/.test(host);
+  // `docs/**` is not in this repository, so only the origins that hold the release tree can serve
+  // it: r2 / r2-alt / pages. A git mount carries what is committed to git.
+  const gitMount = String(origin?.kind || '') === 'git';
   return {
     enabled: origin?.enabled !== false,
     assetEligible: full,
     fontEligible: full,
+    docsEligible: !gitMount,
     supportsRange: origin?.supportsRange !== false,
     direct: !proxied,
     ...(proxied ? { proxied: true } : {}),

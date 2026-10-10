@@ -36,6 +36,7 @@ import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './pa
 import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
+import { buildDocsDoc, DOCS_SOURCE_PATH } from './docs-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
 import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins, withCapabilities } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
@@ -848,6 +849,7 @@ async function main() {
         enabled: origin.enabled !== false,
         assetEligible: origin.assetEligible !== false,
         fontEligible: origin.fontEligible !== false,
+        docsEligible: origin.docsEligible !== false,
         supportsRange: origin.supportsRange !== false,
         direct: origin.direct !== false,
         ...(origin.proxied ? { proxied: true } : {}),
@@ -1128,8 +1130,15 @@ async function publishArt(config, { opts, release, version, sources, manifest, r
     contentType: 'text/javascript',
     cacheControl: SHORT,
   });
+  // The upstream docs (official handbooks + the research datasets) as an index an agent can read
+  // with one small fetch and verify by sha256 — see src/docs-source.mjs for why it exists.
+  const docsDoc = buildDocsDoc({ files: index.files, token: version, upstream: { repo: release.repo, tag: release.tag } });
+  await putObject(config, DOCS_SOURCE_PATH, Buffer.from(`${JSON.stringify(docsDoc, null, 2)}\n`, 'utf8'), {
+    contentType: 'application/json',
+    cacheControl: SHORT,
+  });
   log(
-    `published cdn/v1/{art,mirrors}.json + pick.js (schema 2: ${origins.length} origin(s), ${packs.length} pack(s))`,
+    `published cdn/v1/{art,mirrors}.json + pick.js (schema 2: ${origins.length} origin(s), ${packs.length} pack(s)) + docs.json (${docsDoc.count} doc(s), ${docsDoc.bytes} B)`,
   );
 }
 

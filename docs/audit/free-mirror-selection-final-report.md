@@ -11,7 +11,7 @@
 | 1 镜像实测 | `PASS` | `docs/audit/free-mirror-verification.json` + `tools/verify-mirrors.mjs`，commit `ba91be8` |
 | 2 清单能力字段 | `PASS` | commit `a364f5d`，`tests/origins.test.mjs` +6 |
 | 3 选源器 | `PASS` | commit `5012b9d`，`tests/pick-eligibility.test.mjs` 12 条 |
-| 4 客户端接入 | `IMPLEMENTED` + 编译 `PASS`；**真机行为 `PENDING`** | commit `f135be4e`，`gradle :app:compileDebugJavaWithJavac` BUILD SUCCESSFUL |
+| 4 客户端接入 | 编译 `PASS` + **选源半程真机 `PASS`**；素材供给半程 `PENDING`（见 §11） | commit `f135be4e`，`gradle :app:compileDebugJavaWithJavac`/`assembleDebug` BUILD SUCCESSFUL；设备 prefs 证据见 §11 |
 | 5 缓存/源健康/成本 | 部分 `IMPLEMENTED`（6h 缓存、防抖、字节预算、失败回退常量）；**持续失败降级 `PENDING`** | 见 §5 |
 | 6 测试与门禁 | `PASS`（CDN 侧）；客户端集成门禁 `PENDING` | 见 §6 |
 
@@ -123,8 +123,45 @@ origins.json ──► src/origins.mjs(capabilitiesOf) ──► src/sync.mjs �
 
 ## 10. 未通过项 / 风险 / 回滚
 
-- `PENDING` **真机行为验收**（阶段 4 的核心要求）：需在真机/模拟器确认「启动确实执行选源、素材 URL 用胜出源、直连镜像、首选源禁用后换源、热更新/首页/服务器配置不受影响」。验收脚本思路见基线文档。
+- `PENDING` **素材供给半程的真机观察**（阶段 4 的剩余要求）：选源本身已在真机 `PASS`（§11），但「素材 URL 用胜出源、直连镜像」需要 arm64 环境或流水线包才能观察——本机 x86_64 AVD 跑不了 arm64 Node 载荷，页面不加载就没有逐文件 `/assets/**` 请求。首选源禁用后换源同理。
 - `PENDING` **`/m/<id>` 单域网关**：本任务未实现（审计文档 §4 建议 302+缓存，避免 Worker 承担素材转发）。当前形态是**客户端直连各镜像**，已满足"不新增服务器、不让 Worker 转发素材"。
 - `PENDING` **持续失败的短期降级**：目前失败即回退常量，未实现"降级 N 分钟后重试"。
 - 风险：CF Workers/Pages 免费额度需按实际套餐核（基线文档 §7）。
 - 回滚：CDN 侧 revert `feat/free-mirror-selection`（未合并即无影响）；客户端 revert `f135be4e`，或把 `ArtSource.refresh()` 调用摘掉即完全恢复旧行为（`base()` 回退常量）。
+
+## 11. 真机（模拟器）验收结果（2026-10-10 补）
+
+环境：AVD `medium_phone`（API 35，**x86_64**）+ `assembleDebug` 出的 17 MB APK（webroot 由
+`build-webroot.mjs --no-assets` 生成，stamp `b9ffe0cc10e8fe55d32f1414`）。完整记录见客户端仓
+`docs/audit/pr1-device-acceptance.md`（commit `d8518ed9`）。
+
+| 验收项 | 状态 | 证据 |
+|---|---|---|
+| 启动执行选源逻辑 | **PASS** | 设备写出 `shared_prefs/sp-art-source.xml` |
+| 过滤掉不能供素材的源 | **PASS** | 选中 `jsdelivr-assets`（assets-raw），**未**选中 `jsdelivr`（@main，对 assets/** 全 404） |
+| 按本机链路选最快 | **PASS** | 选中 `id=jsdelivr-assets`，与硬编码的 `weishucdn` 不同 → 真实测量而非默认值 |
+| 结果持久化并被复用 | **PASS** | 同文件含 `at` 时间戳；二次启动复用 |
+| **素材 URL 使用胜出源** | **PENDING** | 该 APK 缺 Node 宿主载荷（`server.log`: `Cannot run program "./libnode.so"`），页面不加载 → 无逐文件 `/assets/**` 请求可观察；且载荷是 arm64 而本机 AVD 是 x86_64 |
+| 首选源禁用后自动换源 | **PENDING** | 同上 |
+
+- 「走域名可以做到自动最快镜像」这一前置条件：**PASS**（真机证据）。
+- 端到端需 **arm64 设备/模拟器**，或用发布流水线（T4）出的包。
+- 验收用临时签名密钥已删除；构建期改动的 `shell-ui-version.txt` 已还原。
+
+## 12. P1/P2（docs 作为一等 CDN 源）——已执行
+
+审计见 `docs/audit/official-docs-wiki-as-cdn-source.md`（PR #2）。审计里 P3（文案）先落地，P1/P2 于本轮补齐：
+
+| 项 | 内容 | 状态 |
+|---|---|---|
+| **P2** `docsEligible` | `src/origins.mjs` 的 `capabilitiesOf()` 新增该字段（只有持发布树的源为 true：r2 / r2-alt / pages；git 挂载源 false），`sync` 随清单发布 | `PASS`（`tests/origins.test.mjs` 2 条） |
+| **P1** `cdn/v1/docs.json` | 新增 `src/docs-source.mjs`：把发布索引按 `docs/` 过滤成索引（每文件 path/size/sha256 + 发布 token + upstream tag + 取最新说明），`publishArt` 发布 | `PASS`（`tests/docs-source.test.mjs` 6 条） |
+| 契约 | `src/api-contract.mjs` 增加 `/cdn/v1/docs.json` 条目；`/cdn/v1/pick.js` 条目补上「只挑能供素材的源」 | `IMPLEMENTED`（随下次 sync 生效） |
+
+**注意**：P1/P2 是**发布侧**改动——`cdn/v1/docs.json` 要等下一次 `sync` 运行才会出现在线上；
+`docsEligible` 同理随下次清单发布生效。在此之前线上接口里没有这两个字段（页面与选源器对旧清单的
+行为不变：`docsEligible` 缺省视为可用，`docs.json` 尚未存在）。
+
+`PENDING`：`cdn/v1/index.json` 是否已含 `docs/` 的 sha256 未核实（本机代理拉 1.77 MB 反复超时）
+—— P1 无论该问题答案如何都成立（它是索引的 docs 视图 + token，比拉全表更省）。
+

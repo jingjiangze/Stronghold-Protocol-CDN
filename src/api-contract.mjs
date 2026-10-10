@@ -58,7 +58,13 @@ export const API_ENDPOINTS = [
     path: '/cdn/v1/pick.js',
     contentType: 'text/javascript',
     cache: 'public, max-age=300',
-    what: '零依赖 ES 模块：pickFastest() 测速并返回最快来源；rebaseManifest() 改一次清单换源',
+    what: '零依赖 ES 模块：pickFastest() 测速并返回最快来源；rebaseManifest() 改一次清单换源。只挑能供素材的源（assetEligible/coverage），默认不选 Worker 中继',
+  },
+  {
+    path: '/cdn/v1/docs.json',
+    contentType: 'application/json',
+    cache: 'public, max-age=300',
+    what: '官方文档与 wiki 数据的索引（上游包内 docs/** 的 filtered view）：每个文件的 path/size/sha256 + 发布 token。取最新 = 读这里的 token 再请求 /<path>?v=<token>（令牌变即上游发新版）；唯一的源是 R2 / Pages，git 挂载源不含 docs/',
   },
   {
     path: '/cdn/v1/probe.bin',
