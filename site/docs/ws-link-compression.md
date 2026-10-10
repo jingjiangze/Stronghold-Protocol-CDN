@@ -106,8 +106,18 @@
 ## 六、验收（三条命令）
 
 ```bash
-# 1. 握手确实协商出有界 deflate（期望 server_max_window_bits=12）
-curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"   # 或用 ws 客户端看 extensions
+# 1. 真实 WS Upgrade 握手，读协商出的扩展参数（期望 server_max_window_bits=12）
+#    ⚠️ 不要用 `curl -sI <站点>/ | grep sec-websocket` —— 那是普通 HEAD，不是 Upgrade 握手，验不了压缩。
+#    生效槽在盒子上是 127.0.0.1:3001 / :3002，从盒子本机（或经隧道）直连做握手：
+node -e '
+const n=require("net"),s=n.connect(PORT,"HOST",()=>s.write(
+ "GET /ws HTTP/1.1\r\nHost: HOST\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
+ "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n"+
+ "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n\r\n"));
+let b="";s.on("data",d=>{b+=d;if(b.includes("\r\n\r\n")){
+ console.log(b.split("\r\n").filter(l=>/^(HTTP|Sec-WebSocket-Extensions)/i.test(l)).join("\n"));s.destroy();}});'
+# 期望：Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover;
+#       client_no_context_takeover; server_max_window_bits=12
 
 # 2. 生效槽的脚本里有压缩开关（否则切槽后静默失效）
 #    盒子上：update/sp_slot_<port>.cmd 应含 set SP_WS_COMPRESSION=on
@@ -115,6 +125,11 @@ curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"   # 或用 w
 # 3. 契约与 buildTag（部署后）
 node tools/box/verify-service.mjs --expect=<新 buildTag>
 ```
+
+> ⚠️ **只看到扩展协商成功，不等于 `m.public` 广播路径已经修好。** 白名单只在单播 `send()` 里被查询过 ——
+> 广播路径（`Lobby.broadcastRoom`）必须自己把 `compress` 传下去，否则占 98% 的那条流一字节都不会被压。
+> 两者要分别验：握手看扩展，广播看代码接入点（或看线上实际出站字节）。
+
 
 ---
 
