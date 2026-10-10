@@ -375,40 +375,120 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 8,
-      "bytes": 2807630,
+      "files": 28,
+      "bytes": 5162223,
       "keys": [
+        [
+          "assets/char/avatar/char_242_otter_2.png",
+          59546
+        ],
         [
           "assets/char/avatar/char_4182_oblvns.png",
           63083
         ],
         [
-          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.skel",
-          1071707
+          "assets/char/avatar/char_4182_oblvns_2.png",
+          67747
         ],
         [
-          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.atlas",
-          19845
+          "assets/char/avatar/char_4224_turdus.png",
+          62419
+        ],
+        [
+          "assets/char/avatar/char_4224_turdus_2.png",
+          69853
+        ],
+        [
+          "assets/char/portrait/char_135_halo_1.png",
+          132744
+        ],
+        [
+          "assets/char/portrait/char_135_halo_2.png",
+          145121
+        ],
+        [
+          "assets/char/portrait/char_242_otter_1.png",
+          115508
+        ],
+        [
+          "assets/char/portrait/char_242_otter_2.png",
+          118414
         ],
         [
           "assets/char/portrait/char_4182_oblvns_1.png",
           122223
         ],
         [
-          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.png",
-          332918
-        ],
-        [
           "assets/char/portrait/char_4182_oblvns_2.png",
           127540
+        ],
+        [
+          "assets/char/portrait/char_4224_turdus_2.png",
+          135131
+        ],
+        [
+          "assets/spine/op/char_135_halo/back/char_135_halo.atlas",
+          6702
+        ],
+        [
+          "assets/spine/op/char_135_halo/back/char_135_halo.png",
+          98456
+        ],
+        [
+          "assets/spine/op/char_135_halo/front/char_135_halo.atlas",
+          9166
+        ],
+        [
+          "assets/spine/op/char_135_halo/front/char_135_halo.png",
+          111747
+        ],
+        [
+          "assets/spine/op/char_135_halo/front/char_135_halo.skel",
+          288214
+        ],
+        [
+          "assets/spine/op/char_242_otter/back/char_242_otter.png",
+          54937
+        ],
+        [
+          "assets/spine/op/char_242_otter/front/char_242_otter.png",
+          75027
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/back/char_4182_oblvns.png",
+          332918
         ],
         [
           "assets/spine/op/char_4182_oblvns/back/char_4182_oblvns.skel",
           1002567
         ],
         [
-          "assets/char/avatar/char_4182_oblvns_2.png",
-          67747
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.atlas",
+          19845
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.png",
+          332918
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.skel",
+          1071707
+        ],
+        [
+          "assets/spine/op/char_4224_turdus/back/char_4224_turdus.atlas",
+          5987
+        ],
+        [
+          "assets/spine/op/char_4224_turdus/back/char_4224_turdus.skel",
+          183550
+        ],
+        [
+          "assets/spine/op/char_4224_turdus/front/char_4224_turdus.atlas",
+          9155
+        ],
+        [
+          "assets/spine/op/char_4224_turdus/front/char_4224_turdus.skel",
+          339998
         ]
       ]
     }
