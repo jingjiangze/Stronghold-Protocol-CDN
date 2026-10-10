@@ -375,8 +375,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
       "addedAt": "2026-10-10",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 428,
-      "bytes": 32062334,
+      "files": 448,
+      "bytes": 33511470,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdslnt.mp3",
@@ -437,6 +437,14 @@
         [
           "assets/audio/voice/cn/char_4123_ela/cn_028.mp3",
           7332
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_029.mp3",
+          19244
+        ],
+        [
+          "assets/audio/voice/cn/char_4123_ela/cn_030.mp3",
+          19662
         ],
         [
           "assets/audio/voice/cn/char_456_ash/cn_019.mp3",
@@ -675,8 +683,16 @@
           56899
         ],
         [
+          "assets/char/avatar/char_1027_greyy2.png",
+          54270
+        ],
+        [
           "assets/char/avatar/char_1036_fang2.png",
           54290
+        ],
+        [
+          "assets/char/avatar/char_120_hibisc.png",
+          53866
         ],
         [
           "assets/char/avatar/char_121_lava.png",
@@ -763,6 +779,10 @@
           55248
         ],
         [
+          "assets/char/portrait/char_002_amiya_1.png",
+          119664
+        ],
+        [
           "assets/char/portrait/char_002_amiya_2.png",
           116213
         ],
@@ -803,6 +823,10 @@
           109925
         ],
         [
+          "assets/char/portrait/char_1036_fang2_2.png",
+          116921
+        ],
+        [
           "assets/char/portrait/char_120_hibisc_1.png",
           115425
         ],
@@ -841,6 +865,10 @@
         [
           "assets/char/portrait/char_4124_iana_1.png",
           102149
+        ],
+        [
+          "assets/char/portrait/char_4125_rdoc_1.png",
+          104459
         ],
         [
           "assets/char/portrait/char_4125_rdoc_2.png",
@@ -1027,6 +1055,10 @@
           37724
         ],
         [
+          "assets/local/operators/token_10005_mgllan_drone3/front/token_10005_mgllan_drone3.png",
+          38388
+        ],
+        [
           "assets/local/operators/token_10007_phatom_twin/front/token_10007_phatom_twin.png",
           32824
         ],
@@ -1199,6 +1231,10 @@
           37753
         ],
         [
+          "assets/relics/relic_055.png",
+          44468
+        ],
+        [
           "assets/relics/relic_070.png",
           39884
         ],
@@ -1339,12 +1375,20 @@
           14321
         ],
         [
+          "assets/skill/skchr_rfrost_2.png",
+          14183
+        ],
+        [
           "assets/skill/skchr_tachak_1.png",
           13818
         ],
         [
           "assets/skill/skchr_turdus_1.png",
           18980
+        ],
+        [
+          "assets/skill/skchr_turdus_2.png",
+          25584
         ],
         [
           "assets/spine/op/char_002_amiya/back/char_002_amiya.png",
@@ -1551,6 +1595,10 @@
           142718
         ],
         [
+          "assets/spine/op/char_1024_hbisc2/char_1024_hbisc2_unveiling_2/front/char_1024_hbisc2_unveiling_2.skel",
+          166118
+        ],
+        [
           "assets/spine/op/char_1024_hbisc2/front/char_1024_hbisc2.png",
           80791
         ],
@@ -1691,6 +1739,10 @@
           2768
         ],
         [
+          "assets/spine/op/char_121_lava/char_121_lava_sale_9/back/char_121_lava_sale_9.png",
+          60847
+        ],
+        [
           "assets/spine/op/char_121_lava/char_121_lava_sale_9/back/char_121_lava_sale_9.skel",
           53909
         ],
@@ -1705,6 +1757,10 @@
         [
           "assets/spine/op/char_121_lava/char_121_lava_sale_9/front/char_121_lava_sale_9.skel",
           97382
+        ],
+        [
+          "assets/spine/op/char_121_lava/front/char_121_lava.png",
+          49286
         ],
         [
           "assets/spine/op/char_123_fang/char_123_fang_winter_1/back/char_123_fang_winter_1.atlas",
@@ -1815,8 +1871,16 @@
           114845
         ],
         [
+          "assets/spine/op/char_242_otter/back/char_242_otter.atlas",
+          4408
+        ],
+        [
           "assets/spine/op/char_242_otter/back/char_242_otter.png",
           54937
+        ],
+        [
+          "assets/spine/op/char_242_otter/back/char_242_otter.skel",
+          52446
         ],
         [
           "assets/spine/op/char_242_otter/front/char_242_otter.png",
@@ -1879,6 +1943,10 @@
           200554
         ],
         [
+          "assets/spine/op/char_4125_rdoc/back/char_4125_rdoc.png",
+          89192
+        ],
+        [
           "assets/spine/op/char_4125_rdoc/char_4125_rdoc_rainbow6_2/back/char_4125_rdoc_rainbow6_2.atlas",
           3488
         ],
@@ -1905,6 +1973,10 @@
         [
           "assets/spine/op/char_4125_rdoc/front/char_4125_rdoc.png",
           114596
+        ],
+        [
+          "assets/spine/op/char_4125_rdoc/front/char_4125_rdoc.skel",
+          232533
         ],
         [
           "assets/spine/op/char_4126_fuze/back/char_4126_fuze.atlas",
@@ -1969,6 +2041,10 @@
         [
           "assets/spine/op/char_4224_turdus/back/char_4224_turdus.atlas",
           5987
+        ],
+        [
+          "assets/spine/op/char_4224_turdus/back/char_4224_turdus.png",
+          148700
         ],
         [
           "assets/spine/op/char_4224_turdus/back/char_4224_turdus.skel",
@@ -2073,6 +2149,10 @@
         [
           "assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.atlas",
           2317
+        ],
+        [
+          "assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.png",
+          34897
         ],
         [
           "assets/spine/token/token_10004_otter_motter/token_10004_otter_motter_ghost_1.skel",
