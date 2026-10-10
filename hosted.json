@@ -369,6 +369,48 @@
           6994564
         ]
       ]
+    },
+    {
+      "id": "sp-fusion-mod-assets",
+      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 8,
+      "bytes": 2807630,
+      "keys": [
+        [
+          "assets/char/avatar/char_4182_oblvns.png",
+          63083
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.skel",
+          1071707
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.atlas",
+          19845
+        ],
+        [
+          "assets/char/portrait/char_4182_oblvns_1.png",
+          122223
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.png",
+          332918
+        ],
+        [
+          "assets/char/portrait/char_4182_oblvns_2.png",
+          127540
+        ],
+        [
+          "assets/spine/op/char_4182_oblvns/back/char_4182_oblvns.skel",
+          1002567
+        ],
+        [
+          "assets/char/avatar/char_4182_oblvns_2.png",
+          67747
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
