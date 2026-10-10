@@ -8683,6 +8683,24 @@
           422
         ]
       ]
+    },
+    {
+      "id": "stronghold-v024",
+      "what": "Official v0.2.4 champagne token model, SHA256 verified",
+      "addedAt": "2026-10-10",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 15719,
+      "keys": [
+        [
+          "assets/local/spine/token/token_10031_swire2_gdtrap/token_10031_swire2_gdtrap.atlas",
+          1047
+        ],
+        [
+          "assets/local/spine/token/token_10031_swire2_gdtrap/token_10031_swire2_gdtrap.skel",
+          14672
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
