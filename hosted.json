@@ -21131,12 +21131,76 @@
       "what": "Ark 工坊包素材（ave-mujica / rimbilliton / columbia）——pack.json.art 引用的头像/立绘/骨架/语音，来源 workshop/<pack>/assets",
       "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 41520,
+      "files": 17,
+      "bytes": 1284649,
       "keys": [
         [
           "packs/ave-mujica/band/band_wuyouyoumeng.png",
           41520
+        ],
+        [
+          "packs/ave-mujica/bond/icon_aveMujica.png",
+          24022
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4182_oblvns.png",
+          61856
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4182_oblvns_2.png",
+          67747
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4183_mortis.png",
+          48143
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4183_mortis_2.png",
+          64344
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4184_dolris.png",
+          52054
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4184_dolris_2.png",
+          62499
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4185_amoris.png",
+          58617
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4185_amoris_2.png",
+          59919
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4186_tmoris.png",
+          53452
+        ],
+        [
+          "packs/ave-mujica/char/avatar/char_4186_tmoris_2.png",
+          64498
+        ],
+        [
+          "packs/ave-mujica/char/portrait/char_4182_oblvns.png",
+          133813
+        ],
+        [
+          "packs/ave-mujica/char/portrait/char_4182_oblvns_2.png",
+          127540
+        ],
+        [
+          "packs/ave-mujica/char/portrait/char_4183_mortis_1.png",
+          108377
+        ],
+        [
+          "packs/ave-mujica/char/portrait/char_4183_mortis_2.png",
+          130558
+        ],
+        [
+          "packs/ave-mujica/char/portrait/char_4184_dolris.png",
+          125690
         ]
       ]
     }
