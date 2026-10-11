@@ -8705,10 +8705,10 @@
     {
       "id": "stardust-skins",
       "what": "Stardust 干员皮肤（ModelScope 公开数据集 Stardust/arknight-assets）",
-      "addedAt": "2026-10-10",
+      "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 68,
-      "bytes": 44415334,
+      "files": 74,
+      "bytes": 50948658,
       "keys": [
         [
           "assets/skins/char_003_kalts_boc_6/avatar.png",
@@ -8977,6 +8977,30 @@
         [
           "assets/skins/char_1012_skadi2_iteration_2/front/char_1012_skadi2_iteration_2.png",
           249308
+        ],
+        [
+          "assets/skins/char_1026_gvial2_summer_12/front/char_1026_gvial2_summer_12.skel",
+          701982
+        ],
+        [
+          "assets/skins/char_1026_gvial2_summer_12/illustration.png",
+          5612139
+        ],
+        [
+          "assets/skins/char_1026_gvial2_summer_12/portrait.png",
+          138236
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/avatar.png",
+          62636
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/back/char_1028_texas2_epoque_36.atlas",
+          6399
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/front/char_1028_texas2_epoque_36.atlas",
+          11932
         ],
         [
           "assets/skins/char_103_angel_wild_1/avatar.png",
