@@ -199,16 +199,22 @@ test('a flat origin may name its own probe and coverage, and a plain one stays u
   assert.equal(out[1].coverage, 'full');
 });
 
-test('the shipped origins.json ships ms-edge parked, because the container is not live yet', () => {
+test('the shipped origins.json ships ms-edge live, with the probe on a real asset path', () => {
   const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
   const edge = origins.find((o) => o.id === 'ms-edge');
-  assert.ok(edge, 'ms-edge must be listed so the site can show it once it is verified');
-  assert.equal(edge.enabled, false);
+  assert.ok(edge, 'ms-edge must be listed so the site can show it');
+  // 2026-10-11: the edge went live — /assets/** 302 verified for the default target and ?sp_source=r2 / openi.
+  assert.notEqual(edge.enabled, false, 'ms-edge must not be parked now that the 302 edge is verified live');
   assert.equal(edge.coverage, 'full');
   // The probe has to be a real asset path: the container answers /robots.txt from the game server.
   assert.match(edge.probe, /^\/assets\//);
   const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
-  assert.ok(disabled.includes('ms-edge'));
+  assert.ok(!disabled.includes('ms-edge'), 'ms-edge must not sit in the disabled list either — the two spellings ship together');
+});
+
+test('parking still works: openi stays parked in the shipped disabled list (CORS blocks direct browser use)', () => {
+  const raw = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8'));
+  assert.ok((raw.disabled || []).includes('openi'), 'openi stays parked — reachable only through the ms-edge ?sp_source=openi channel');
 });
 
 // The dataset mirror is the one source measured to satisfy all three requirements at once
