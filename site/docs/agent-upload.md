@@ -67,11 +67,14 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 「会同步到 Git 源仓库吗？」——分两层，结论如下（链路审计，依据 `src/promote-uploads.mjs` 与 `promote-uploads.yml`）：
 
-- **素材字节：不同步进 git。** 字节从 `cdn/incoming/<id>/` 暂存区经 `CopyObject` 落到 R2 对外键（`Cache-Control: public, max-age=31536000, immutable` + `x-amz-meta-sha256`），全程在桶内；git 源仓库里从始至终不存任何素材字节。
+- **素材字节：进 git，但不是当场。** 字节从 `cdn/incoming/<id>/` 暂存区经 `CopyObject` 落到 R2 对外键（`Cache-Control: public, max-age=31536000, immutable` + `x-amz-meta-sha256`）。R2 是**当场**的权威副本；随后 `.github/workflows/git-art-sync.yml`（一天四次：01:07 / 07:07 / 13:07 / 19:07）把它们补提交进 `assets-raw` 孤儿分支，git 挂载镜像（ghfast / gitcdn / OpenI raw …）才拿得到。
+  - 为什么这一环不可省：那些镜像拉的是 `assets-raw`，不是 R2。2026-10-12 审计实测 `hosted.json` 登记 5,246 个键而分支上只有 1,856 个路径，缺 3,390 个（约 932 MiB）——缺的正是后台上传的那批，于是"git 挂载层 coverage:full"名不副实。
+  - 补的时候不检出工作树（分支是 14k 文件 / 2 GiB）：`read-tree` 进临时索引 → `hash-object -w` → `update-index --index-info` → `write-tree` → `commit-tree`，只追加提交。每个字节先与 `hosted-index.json` 的 sha256 比对，不一致就跳过——索引平面写错一个 blob sha 会静默发布空内容树而 push 仍报成功。
+  - 首轮积压按 700 MiB/轮排，两轮排干；排干后每轮几秒退出。所以**新上传的素材在 git 侧最多滞后约 6 小时**，R2 侧始终即时。
 - **登记元数据：会进 git。** 发布轮在本地 `fs.writeFileSync('hosted.json', …)`，然后 workflow 末尾 `git add hosted.json && git commit && git push origin main`（带重试 + rebase，冲突要人工并）。这一步**失败会让整轮变红**——因为 `prune` 只读仓库里的那份 `hosted.json`，桶里上线但 git 没登记 = 下次例行清理会把这批字节当镜像残渣删掉。
 - **接口/浏览面：重发而非同步。** 发布轮最后跑 `sync.mjs --write --interface-only`，重发 `cdn/v1/tree.json`、`hosted-index.json`、`upload-log.json` 等到 R2（几十秒，不重下上游 428 MB 包）。
 
-一句话：**"同步到 Git"指的是 `hosted.json` 这份登记（谁传的、传了什么、键、sha256、来源），不是素材字节；素材字节的权威副本始终在 R2 桶。** 要查"传上去了吗"，看 `upload-log.json` 与 `hosted-index.json`，而不是 git 历史里的文件内容。
+一句话：**"同步到 Git"是两条腿**——`hosted.json` 这份登记（谁传的、传了什么、键、sha256、来源）当场进 main；素材字节随后由 `git-art-sync` 一天四次补进 `assets-raw`。权威副本始终先落在 R2 桶，git 是给镜像站的第二份。要查"传上去了吗"，看 `upload-log.json` 与 `hosted-index.json`，而不是 git 历史里的文件内容。
 
 
 所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。

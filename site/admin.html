@@ -42,10 +42,10 @@
       </p>
     </div>
     <div class="notice" style="margin-top:14px">
-      <span><b>上传完会同步到哪（链路审计结论）：</b>① <b>字节本身只进 R2 桶</b>（暂存 <code class="inline">cdn/incoming/</code> → 发布轮 <code class="inline">CopyObject</code> 到对外键），<b>不经过 git 源仓库</b>；
-      ② 发布轮把这批字节的<b>登记</b>（谁传的、传了什么、键、sha256、来源）写进仓库根目录的 <code class="inline">hosted.json</code> 并 <code class="inline">git commit &amp; push</code> 到 <code class="inline">main</code>——只有这份元数据进 git，能让"谁传的"在提交历史里查到；
-      ③ 浏览面（<code class="inline">cdn/v1/tree.json</code>、<code class="inline">hosted-index.json</code>、<code class="inline">upload-log.json</code>）由发布轮重发，约 1–2 分钟生效。
-      <b>所以"同步到 Git 源仓库"指的不是素材字节，而是 hosted.json 登记</b>；素材字节的权威副本始终在 R2。</span>
+      <span><b>上传完会同步到哪（链路审计结论）：</b>① <b>字节先落 R2 桶，当场生效</b>（暂存 <code class="inline">cdn/incoming/</code> → 发布轮 <code class="inline">CopyObject</code> 到对外键）；
+      ② 发布轮把这批字节的<b>登记</b>（谁传的、传了什么、键、sha256、来源）写进仓库根目录的 <code class="inline">hosted.json</code> 并 <code class="inline">git commit &amp; push</code> 到 <code class="inline">main</code>；
+      ③ 浏览面（<code class="inline">cdn/v1/tree.json</code>、<code class="inline">hosted-index.json</code>、<code class="inline">upload-log.json</code>）由发布轮重发，约 1–2 分钟生效；
+      ④ <b>字节随后也会补进 git</b>：<code class="inline">git-art-sync</code> 一天四次（01:07 / 07:07 / 13:07 / 19:07）把它们提交进 <code class="inline">assets-raw</code> 分支——git 挂载镜像拉的是这个分支，不走 R2，所以这一步是镜像站拿得到素材的前提。<b>git 侧最多滞后约 6 小时</b>，R2 侧始终即时。</span>
     </div>
     <div class="quick-stats" id="quota">
       <span>暂存 <strong id="q-staged">…</strong></span>
