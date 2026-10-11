@@ -45,7 +45,7 @@ gh 取上游 latest release（或 --tag 指定）
 
 素材树还同步到 [OpenI](https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol)（`assets-raw` 分支），
 由 `.github/workflows/openi-mirror.yml` 每天四次推送。它就是 `assets-raw` 的一次幂等 git push：
-远端已是同一 commit 时直接退出，不传那 915 MiB。
+远端已是同一 commit 时直接退出，不传那 2.14 GiB。
 
 **它默认停用（`origins.json` 里 `enabled: false`），因为它的 CORS 不能用。**
 实测它把 `Access-Control-Allow-Origin` 写死成第三方域 `experience.pro.iflyaicloud.com`，
@@ -67,8 +67,10 @@ gh 取上游 latest release（或 --tag 指定）
 直接退出、不重传那 ~650 MiB。
 
 **它不做运行时源**：创空间不提供文件直链——`/resolve/`、`/raw/`、`/tree/` 任意路径都返回同一份 SPA HTML，
-浏览器取不到字节，所以只供 clone / git-mount CDN 挂载，且**不写进 `origins.json`**。默认**排除 `assets/skins/**`**
-（commit message 写明「不含皮肤，待补齐」），`--include-skins` 留给皮肤集完整时再用。
+浏览器取不到字节，所以只供 clone / git-mount CDN 挂载，且**不写进 `origins.json`**。
+`assets-raw` 源树现已含 **2,476 个皮肤文件**（与上游素材同树），经 git-mount 层（jsdelivr-assets / ghfast-assets / gitcdn-own→OpenI）以 `coverage:full` 提供；
+但本镜像推送**默认仍排除 `assets/skins/**`**（`--include-skins` 开启才带），ModelScope 侧暂不含皮肤；
+而 R2 / Pages（实测 weishucdn 与 assets-raw 字节一致）**同样含皮肤**——上游现已把 `assets/skins/**` 一并打出。
 
 与 `docs/audit/modelscope-openi-hanabi-sources.md` 区分开：那篇审的是 **Stardust fork 的 `Stardust/arknight-assets`**
 （对音频 0% 覆盖、只补皮肤有价值）；本镜像是我**自己树**的第三份存放。

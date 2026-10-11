@@ -41,7 +41,7 @@
       </p>
     </div>
     <div class="quick-stats">
-      <span>素材树 <strong>12,706 文件</strong></span>
+      <span>素材树 <strong>14,741 文件</strong></span>
       <span>TTFB <strong>~0.25s</strong></span>
       <span>默认 <strong>停用</strong></span>
     </div>
@@ -55,7 +55,7 @@
       <span class="block__who">最快的源，也是唯一 CORS 不可用的源（2026-10-11）</span>
     </div>
     <p class="block__lead">
-      素材树（<b>12,706 文件 / ~915 MiB</b>）已幂等同步到 OpenI 仓库
+      素材树（<b>14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件</b>）已幂等同步到 OpenI 仓库
       <code class="inline">jingjiangze/Stronghold-Protocol</code> 的 <b>assets-raw</b> 孤儿分支，由
       <code class="inline">openi-mirror.yml</code> 每天四次推送。它<b>默认停用</b>（<code class="inline">enabled:false</code>
       且进 <code class="inline">disabled</code> 数组）——唯一原因就是 <b>CORS 硬伤</b>，不足以当玩家运行时源；
@@ -105,7 +105,7 @@
       <div class="mini">
         <h4>幂等推送器</h4>
         <ul>
-          <li><code class="inline">src/openi-mirror.mjs</code>：解出本地 <code class="inline">assets-raw</code> 的 commit sha、与远端比对；<b>相同就直接退出、不重传那 915 MiB</b>。</li>
+          <li><code class="inline">src/openi-mirror.mjs</code>：解出本地 <code class="inline">assets-raw</code> 的 commit sha、与远端比对；<b>相同就直接退出、不重传那 2.14 GiB</b>。</li>
           <li>字节取自 <b>git 自己</b>（当初发布所依据的孤儿分支），<b>不回读 CDN</b>——避免把 CDN 抖动当成内容发布。</li>
         </ul>
       </div>
@@ -134,7 +134,7 @@ Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com</pre>
     </p>
     <div class="notice">
       <span><b>两个次要缺陷（影响有限）：</b>二进制（png/skel）<b>忽略 Range</b>（只文本回 206），音频 seek 场景不能用它；
-      配额上限未验证（当前 915 MiB，后续加皮肤可能到 ~2.1 GiB）。</span>
+      配额上限未验证（当前 2.14 GiB，已含 2,476 个皮肤文件）。</span>
     </div>
   </section>
 

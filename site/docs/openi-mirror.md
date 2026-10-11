@@ -8,7 +8,7 @@
 
 ## 一、一句话结论
 
-- 素材树（**14,741 文件 / ~2.14 GiB**）已幂等同步到 OpenI 仓库
+- 素材树（**14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件**）已幂等同步到 OpenI 仓库
   `jingjiangze/Stronghold-Protocol` 的 **`assets-raw`** 孤儿分支（远端当前 `19506266` = 本地 `assets-raw` tip），
   由 `.github/workflows/openi-mirror.yml` 每天四次（`cron: '47 0,6,12,18 * * *'`）推送。
 - 它**默认停用**：`origins.json` 里 `id: "openi"` 带 `enabled: false`，且同时写进 `disabled` 数组。

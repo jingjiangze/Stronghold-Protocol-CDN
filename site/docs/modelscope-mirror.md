@@ -10,13 +10,15 @@
 
 ## 一、一句话结论
 
-- 素材树（我的 `assets-raw` 分支，约 12,200+ 文件 / 618 MiB）由 `tools/push-modelscope.mjs` **幂等**推送到
+- 素材树（我的 `assets-raw` 分支，14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件）由 `tools/push-modelscope.mjs` **幂等**推送到
   ModelScope 创空间 `jingjiangze/Stronghold-Protocol` 的 **`cdn` 分支**，由 `.github/workflows/mirror-modelscope.yml`
   每天四次（`cron: '23 */6 * * *'`）调用。
 - **它不是运行时源**：创空间**不提供文件直链**——`/resolve/`、`/raw/`、`/tree/`、`/api/v1/.../repo/blob/` 对任意路径
   都返回同一份 ~8.6 KB 的 SPA HTML（实测）。所以它只能被 **clone / 被 git-mount CDN 挂载**，浏览器不能直连取字节。
-- **默认不含皮肤**：源分支 `assets-raw` 只携带上游皮肤集的一部分，因此推送**默认排除 `assets/skins/**`**，
-  并在 commit message 里写明「不含皮肤，待补齐」；`--include-skins` 留给皮肤集完整时再用。
+- **源树已含皮肤，本镜像默认仍排除**：`assets-raw` 现已手工提交 **2,476 个皮肤文件**（与上游素材同树、字节一致），
+  经 git-mount 层（jsdelivr-assets / ghfast-assets / gitcdn-own→OpenI）以 `coverage:full` 提供给玩家；
+  但本镜像推送**默认排除 `assets/skins/**`**（`--include-skins` 开启才带），所以 ModelScope 侧暂不含皮肤；
+  R2/Pages 则**同样含皮肤**（上游 release 包现已打入 `assets/skins/**`，实测与 assets-raw 字节一致）。
 - 它和仓库里另一篇审计 `docs/audit/modelscope-openi-hanabi-sources.md` **不是一回事**：那篇审的是
   **Stardust fork 的 `Stardust/arknight-assets`**（对音频 0% 覆盖、只补皮肤有价值、不接运行时）；本篇是我**自己树**的镜像。
 

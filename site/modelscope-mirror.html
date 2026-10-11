@@ -57,7 +57,7 @@
       <span class="block__who">我自己树的第三份存放，不是运行时源（2026-10-11）</span>
     </div>
     <p class="block__lead">
-      素材树（我的 <code class="inline">assets-raw</code> 分支，约 12,200+ 文件 / 618 MiB）由
+      素材树（我的 <code class="inline">assets-raw</code> 分支，14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件）由
       <code class="inline">tools/push-modelscope.mjs</code> <b>幂等</b>推送到 ModelScope 创空间
       <code class="inline">jingjiangze/Stronghold-Protocol</code> 的 <b>cdn</b> 分支，由
       <code class="inline">mirror-modelscope.yml</code> 每天四次调用。
@@ -65,8 +65,10 @@
     <div class="notice">
       <span><b>它不是运行时源：</b>创空间<b>不提供文件直链</b>——<code class="inline">/resolve/</code>、<code class="inline">/raw/</code>、
       <code class="inline">/tree/</code>、<code class="inline">/api/v1/.../repo/blob/</code> 对任意路径都返回同一份 ~8.6 KB 的 SPA HTML（实测）。
-      所以它只能被 <b>clone / 被 git-mount CDN 挂载</b>，浏览器不能直连取字节。也<b>默认不含皮肤</b>
-      （<code class="inline">assets/skins/**</code> 默认排除，commit message 写明「不含皮肤，待补齐」）。</span>
+      所以它只能被 <b>clone / 被 git-mount CDN 挂载</b>，浏览器不能直连取字节。
+      源分支 <code class="inline">assets-raw</code> 现已包含 <b>2,476 个皮肤文件</b>（与上游素材同树、字节逐字节一致），
+      经 git-mount 层（jsdelivr-assets / ghfast-assets / gitcdn-own→OpenI）以 <code class="inline">coverage:full</code> 对外服务；
+      但本镜像推送<b>默认仍排除 <code class="inline">assets/skins/**</code></b>（<code class="inline">--include-skins</code> 开启才带），所以 ModelScope 侧暂不含皮肤。</span>
     </div>
     <div class="notice">
       <span><b>与另一篇审计区分开：</b>仓库里 <code class="inline">docs/audit/modelscope-openi-hanabi-sources.md</code> 审的是
