@@ -260,9 +260,31 @@ curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/
       <li><b>CI runner 的即时探测只作证据</b>（<code class="inline">liveMs</code>）：实测从 runner 看 ms-dataset/ms-edge/r2 全不可达，
         拿它降级会把健康源标死。</li>
       <li>当前顺序（2026-10-12 实测）：<code class="inline">ms-dataset 0.157s &gt; ms-edge 0.566s &gt; r2-alt 0.808s &gt; r2 0.865s &gt; gitcdn-own &gt; ghfast-*</code>。</li>
-      <li>生成器 <code class="inline">src/rank.mjs</code> + <code class="inline">rank.yml</code>（<code class="inline">23 1,7,13,19 * * *</code>，一天四次）。</li>
-      <li>边缘侧（创空间容器）每 5 分钟取一次该排名来决定 302 目标；<b>id 映射必须显式</b>（ms-dataset→modelscope、ms-edge→跳过自身，否则会 302 到自己）。</li>
+      <li>生成器 <code class="inline">src/rank.mjs</code> + <code class="inline">rank.yml</code>（<code class_inline">23 1,7,13,19 * * *</code>，一天四次）。</li>
     </ul>
+    <div class="two-col" style="margin-top:18px">
+      <div class="mini">
+        <h4>C · 容器边缘按排名选源（已上线）</h4>
+        <ul>
+          <li>创空间容器（ms-edge）的 <code class="inline">asset-jump.js</code> 每 <b>5 分钟</b>取一次 rank.json，把最快源排到 302 次序最前；
+            <b>启动预热 + 同步 peek</b>，请求路径上永不等待网络（后台按 TTL 刷新）。</li>
+          <li><b>id 映射必须显式</b>（<code class="inline">RANK_ID_MAP</code>）：<code class="inline">ms-dataset→modelscope</code>、<code class_inline">r2-alt→r2</code>、
+            <code class="inline">ms-edge→null</code>（跳过自身——否则边缘 302 到自己，客户端无限跳）；取不到/解析失败则沿用 sources.json 的静态 order。</li>
+          <li>实测：默认 302 → <code class="inline">modelscope.cn/datasets/...releases/v1-trial/...</code>（最快镜像）；<code class="inline">?sp_source=r2</code> → weishucdn（点名通道不受影响）。</li>
+          <li>这是「默认返回最快源」的落地：素材字节不经容器，仍由真实字节源直出。</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>A · 客户端沿排名回退（已上线）</h4>
+        <ul>
+          <li>客户端 <code class="inline">materialFallback.js</code> 从「失败只试 OpenI」改为<b>沿发布排名往下走（默认 2 个）+ OpenI 收尾</b>；
+            rank.json 会话内<b>只取一次</b>。</li>
+          <li>只在<b>浏览器内</b>生效，node 测试环境返回空 → 行为与原来完全一致（26/26 测试通过）。</li>
+          <li>构成<b>两层兜底</b>：服务端按排名降级（小时级）+ 客户端秒级切换（秒级故障由它覆盖）。</li>
+          <li>本版 C+A 已按你的要求<b>冻结</b>（只做正确性修复）；要让「拉清单动态更新 + 选最快源」对工坊包生效，仍需引擎侧 <code class="inline">sources(ctx)</code> 表面（见 CDN 源选择 mod 提案）。</li>
+        </ul>
+      </div>
+    </div>
   </section>
 </main>
 </body>

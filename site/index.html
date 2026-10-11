@@ -493,12 +493,16 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
-  <section class="section" id="official-docs">
-    <div class="section-heading">
-      <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
-      <span class="section-status" id="doc-status">读取中…</span>
-    </div>
-    <p class="section-lead">
+    <section class="section" id="official-docs">
+    <details class="fold">
+      <summary class="fold__summary">
+        <div class="fold__head">
+          <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
+          <span class="section-status">读取中…</span>
+        </div>
+        <span class="fold__chevron" aria-hidden="true">▸</span>
+      </summary>
+<p class="section-lead">
       上游发布包里的 <code class="inline">docs/**</code>，原样镜像到本 CDN，键就是包内路径。
       这里面是<b>官方自己写的</b>资料：<code class="inline">PLAYING.md</code>（玩家手册）、
       <code class="inline">DEPLOY.md</code>（部署），以及 <code class="inline">docs/research/*.json</code>
@@ -527,6 +531,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <tbody id="doc-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
+  
+    </details>
   </section>
 
   <section class="section" id="api">

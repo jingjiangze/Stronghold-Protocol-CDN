@@ -146,7 +146,6 @@ curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/
     `disabled` 已通过仓库自己的 `sync.yml`（`write=true interface_only=true`，run `38056783234` = success）重发
     `mirrors.json` 生效。已缓存选源的设备最长 6h 后才会切走（`ArtSource` TTL）。
   - 本机代理对 `weishucdn` 持续 TLS 握手失败（curl 一次都未成功），「线上已生效」依据为工作流成功，非本机独立复核字节。
-
 ## 发布排名（speedcdn 上的 rank.json）
 
 `https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json`（与 weishucdn/weishucdn2 同桶同文）。
@@ -162,3 +161,17 @@ curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/
 工坊包 `CDN 源选择（最快镜像）`（投稿 pending）只做排名展示 + 现场测速 + 偏好：0.13.0 的客户端表面
 （`client.panels`/`theme`/`requires`）拿到的是只读快照，**改不了素材清单的加载源**；要真正生效需要引擎侧
 一个 `sources(ctx)` 提供者表面（同 0.13.0 的 `appearance` 形状）。
+
+### C · 容器边缘按排名选源（已上线）
+
+创空间容器（ms-edge）的 `asset-jump.js` 每 **5 分钟**取一次 rank.json，把最快源排到 302 次序最前；
+启动预热 + 同步 peek，请求路径上永不等待网络。**id 映射必须显式**（`RANK_ID_MAP`）：
+`ms-dataset→modelscope`、`r2-alt→r2`、`ms-edge→null`（跳过自身——否则边缘 302 到自己，客户端无限跳）；
+取不到解析失败则沿用 sources.json 的静态 order。实测默认 302 → 最快镜像（`modelscope.cn/.../releases/v1-trial/...`），
+`?sp_source=r2` → weishucdn。这是「默认返回最快源」的落地，字节不经容器。
+
+### A · 客户端沿排名回退（已上线）
+
+客户端 `materialFallback.js` 从「失败只试 OpenI」改为**沿发布排名往下走（默认 2 个）+ OpenI 收尾**，
+rank.json 会话内只取一次；只在浏览器内生效（node 测试返回空，行为与原来一致）。构成两层兜底：
+服务端按排名降级（小时级）+ 客户端秒级切换。本版 C+A 已按用户要求冻结（只做正确性修复）。
