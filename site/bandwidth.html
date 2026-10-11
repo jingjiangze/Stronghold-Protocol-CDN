@@ -44,8 +44,8 @@
     <div class="quick-stats">
       <span>首载提速 <strong>316×</strong></span>
       <span>稳态人均 <strong>2,048 B/s</strong></span>
-      <span>压缩后 <strong>505 B/s</strong></span>
-      <span>10 Mbps <strong>2,475 人</strong></span>
+      <span>压缩后 <strong>~160 B/s</strong></span>
+      <span>10 Mbps <strong>~7,000 人</strong></span>
     </div>
   </section>
 
@@ -59,7 +59,8 @@
     <p class="block__lead">
       两件事分开看：<b>首载</b>是「新玩家第一次进场吃掉几百 MiB」，<b>稳态</b>是「一个席位对局中持续的上行」。
       首载靠把素材挪走解决；<b>稳态实测人均 2,048 B/s，几乎全是 <code class="inline">m.public</code></b>
-      （早前那句「只要 60 B/s」漏了它）。压掉它之后人均降到 <b>505 B/s</b>，10 Mbps 从 610 人抬到 <b>2,475 人</b>。
+      （早前那句「只要 60 B/s」漏了它）。压掉它之后人均降到 <b>505 B/s</b>（第一轮），
+      再迭代（阈值 64 + 保留上下文 + 窗口 15）真机实测 <b>~160 B/s</b>，10 Mbps 从 610 人抬到 <b>~7,000 人</b>。
     </p>
 
     <div class="table-wrap" style="margin-top:16px">
@@ -67,15 +68,15 @@
         <thead><tr><th></th><th>稳态（默认配置）</th><th>首次进场（新玩家）</th></tr></thead>
         <tbody>
           <tr><td>优化前人均上行</td><td class="num">≈2,048 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
-          <tr><td>优化后人均上行</td><td class="num"><b>≈505 B/s</b>（压缩后）</td><td class="num"><b>1.48 MiB</b></td></tr>
-          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>2,475 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
+          <tr><td>优化后人均上行</td><td class="num"><b>≈160 B/s</b>（压缩后，真机实测）</td><td class="num"><b>1.48 MiB</b></td></tr>
+          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>~7,000 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="notice">
       <span><b>取舍：</b>把素材和代码挪走消掉的是<b>首载</b>（几百 MiB → 1.48 MiB，几百倍）；
-      压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → 505 B/s，约 4×），
+      压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → 505 B/s，约 4×；再迭代到 ~160 B/s），
       而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。</span>
     </div>
     <p class="section-note" style="margin-top:14px">
@@ -190,12 +191,17 @@
       <div class="mini">
         <h4>措施 4 · permessage-deflate 窗口 12 → 9（仅战斗帧口径）</h4>
         <p class="download__meta">收益：<b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b></p>
-        <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）</i>
+        <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）—— 这是给 ~250 B 战斗帧调的</i>
 serverNoContextTakeover: true,   <i>// 保内存上界</i>
 clientNoContextTakeover: true,
 threshold: 512,                  <i>// 小帧不压</i>
 concurrencyLimit: 8,
 zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
+        <p class="download__meta" style="margin-top:8px">
+          ⚠️ 注意：上面这组是<b>战斗帧（<code class="inline">b.snap</code>）</b>的参数，不是 <code class="inline">m.public</code> 的。
+          <code class="inline">m.public</code> 走的是另一套：<b>阈值 64 + 保留上下文（无 no_context_takeover）+ 窗口 15</b>，
+          真机在线字节 −54.8%（见「m.public 才是稳态的全部」）。
+        </p>
         <ul>
           <li>小窗口用更便宜的距离码，实测<b>反而更省</b>：35.8% vs 36.5%、28.8% vs 30.0%。</li>
           <li>⚠️ <b>默认路径几乎用不到它</b>：<code class="inline">clientCombat</code> 默认 on，战斗跑在玩家浏览器里，
@@ -282,7 +288,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
           <tr>
             <td><b>B. 对局中</b><br /><span class="section-note">默认 <code class="inline">clientCombat</code></span></td>
             <td class="num">≈2,048 B/s</td><td class="num">≈16 kbps</td><td class="num"><b>610 人</b></td>
-            <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）。压缩后 505 B/s → <b>2,475 人</b></td>
+            <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）。压缩后 505 B/s → 2,475 人；再迭代（阈值 64 + 保留上下文 + 窗口 15）真机 <b>~160 B/s → ~7,000 人</b></td>
           </tr>
           <tr>
             <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">15,870 B/s</td><td class="num">≈127 kbps</td><td class="num"><b>78 人</b></td>
@@ -324,7 +330,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       <p class="download__meta" style="margin-top:8px">
         ⚠️ <b>2026-10-10 修正</b>：稳态容量<b>不是</b>「由 CPU 决定（万级）」—— 那个数字建立在漏了
         <code class="inline">m.public</code> 的 60 B/s 建模值上。实测稳态人均 <b>2,048 B/s</b>，
-        10 Mbps 只能带 <b>~610 人</b>；开了 <code class="inline">m.public</code> 压缩后 <b>~2,475 人</b>。
+        10 Mbps 只能带 <b>~610 人</b>；开了 <code class="inline">m.public</code> 压缩后 <b>~2,475 人</b>（第一轮），再迭代到 <b>~7,000 人</b>。
         详见下一节。
       </p>
     </div>
@@ -384,12 +390,15 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
             <thead><tr><th><code class="inline">serverMaxWindowBits</code></th><th class="num"><code class="inline">m.public</code> 压缩后</th></tr></thead>
             <tbody>
               <tr><td>9（上一轮为 ~250 B 战斗帧调的）</td><td class="num">29.8%（<b>3.36×</b>）</td></tr>
-              <tr><td><b>12</b></td><td class="num"><b>20.3%（4.94×）</b></td></tr>
+              <tr><td>12（第一轮定稿）</td><td class="num">20.3%（<b>4.94×</b>）</td></tr>
+              <tr><td><b>15 + 保留上下文（第二轮）</b></td><td class="num"><b>在线字节 −54.8%（3.67×）</b></td></tr>
             </tbody>
           </table>
         </div>
         <p class="download__meta" style="margin-top:8px">
           <code class="inline">m.public</code> 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块。
+          第二轮把窗口从 12 提到 <b>15</b>、并<b>去掉 no_context_takeover（保留上下文）</b>，
+          交错流从 3.76× 跳到 <b>26.59×</b>，单座位 ~960 → <b>~160 B/s</b>。
           浏览器 WebSocket 自动解压，<b>对客户端完全透明</b>。
         </p>
       </div>
@@ -407,14 +416,16 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
         <thead><tr><th></th><th class="num">每席位上行</th><th class="num">10 Mbps 容纳</th><th>2000 人</th></tr></thead>
         <tbody>
           <tr><td>未压</td><td class="num">2,048 B/s</td><td class="num"><b>610 人</b></td><td>✗ 差 3.3×</td></tr>
-          <tr><td><b>压缩后（本轮）</b></td><td class="num"><b>505 B/s</b>（24.7%）</td><td class="num"><b>2,475 人</b></td><td>✓ 余量 ~24%</td></tr>
+          <tr><td>压缩后（第一轮，wb12）</td><td class="num"><b>505 B/s</b>（24.7%）</td><td class="num"><b>2,475 人</b></td><td>✓ 余量 ~24%</td></tr>
+          <tr><td><b>压缩后（第二轮，wb15 + 上下文）</b></td><td class="num"><b>~160 B/s</b></td><td class="num"><b>~7,000 人</b></td><td>✓ 很宽裕</td></tr>
         </tbody>
       </table>
     </div>
     <div class="notice" style="margin-top:12px">
-      <span><b>结论：本轮之前，10 Mbps 只能带 ~610 人，远达不到 2000；开上 <code class="inline">m.public</code> 压缩后是 ~2,475 人，
-      2000 人「能」跑，但余量只有约 24%</b> —— 是「刚好够」，不是「宽裕」。
-      （留 20% 余量的习惯口径下安全值 ≈1,980 人，正好卡在 2000 线上。）<br />
+      <span><b>结论：第一轮之前，10 Mbps 只能带 ~610 人，远达不到 2000；开上 <code class="inline">m.public</code> 压缩后 2,475 人、
+      2000 人「能」跑但余量约 24%</b>。第二轮（阈值 64 + 保留上下文 + 窗口 15）真机实测<b>~160 B/s / ~7,000 人</b>，
+      2000 人变得<b>很宽裕</b>（在线字节 −54.8%）。
+      （第一轮留 20% 余量的安全值 ≈1,980 人，正好卡在 2000 线上；第二轮余量已非常大。）<br />
       ⚠️ 前提：<code class="inline">SP_WS_COMPRESSION=on</code> 必须真的在<b>生效槽</b>上。盒子更新器会重写槽脚本、抹掉手工加的那行 ——
       已修 <code class="inline">tools/box/sp_update_zip.ps1</code> 让它每次都写；否则切槽后压缩静默失效，容量掉回 610。</span>
     </div>
@@ -435,7 +446,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       </table>
     </div>
     <p class="section-note" style="margin-top:10px">
-      delta 之后每席位可望降到 <b>~130–170 B/s</b> → 10 Mbps 容纳 <b>~7,000–9,000 人</b>，2000 人变得很宽裕。
+      delta 叠在已 ~160 B/s 的第二轮之上，每席位可望进一步降到 <b>~100 B/s 量级</b> → 10 Mbps 容纳 <b>~10,000+ 人</b>，2000 人变得极宽裕。
       代价：要同时改<b>客户端合并逻辑</b>，风险高于本轮，建议单开一轮 + golden 验收。
     </p>
 
@@ -539,7 +550,7 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$( \
   curl -s https://weishu.jiangjiangze.icu/healthz | grep -o '"build":"[^"]*"' | cut -d'"' -f4)" \
   | grep -i cache-control        <i># 期望 max-age=31536000, immutable</i>
 
-<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=12）</i>
+<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=15，且无 *_no_context_takeover）</i>
 curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
   </section>
 
