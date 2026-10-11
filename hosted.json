@@ -7,76 +7,32 @@
       "what": "卫戍协议盟约 mod: 结成理 (char_4217_makoto, Persona 3 Reload) + char_1037_amiya3, their skins, tokens, band and bond art",
       "addedAt": "2026-10-09",
       "source": "user-supplied package 卫戍协议盟约-新增结成理，罗德岛，加强阿戈尔对空-内置Node.zip",
-      "files": 64,
-      "bytes": 10664771,
+      "files": 48,
+      "bytes": 10447262,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_amdermicfr_n.mp3",
           3309
         ],
         [
-          "assets/audio/sfx/player/p_atk/p_atk_archet_s.mp3",
-          15064
-        ],
-        [
           "assets/audio/sfx/player/p_atk/p_atk_archet_s_cast.mp3",
           5660
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_crochammer_h.mp3",
-          14855
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_cteflt_h.mp3",
-          5037
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_goldspear_s.mp3",
-          22404
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_greyy_h.mp3",
-          9004
         ],
         [
           "assets/audio/sfx/player/p_atk/p_atk_lightning_n.mp3",
           6078
         ],
         [
-          "assets/audio/sfx/player/p_atk/p_atk_lmwlcrstr_d.mp3",
-          26349
-        ],
-        [
           "assets/audio/sfx/player/p_atk/p_atk_pskptldr_n.mp3",
           3885
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_seasword_d.mp3",
-          12556
         ],
         [
           "assets/audio/sfx/player/p_atk/p_atk_shotgun_double.mp3",
           18408
         ],
         [
-          "assets/audio/sfx/player/p_atk/p_atk_shotgunx_h.mp3",
-          10221
-        ],
-        [
           "assets/audio/sfx/player/p_atk/p_atk_silver_n.mp3",
           14228
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_snwlprdg_s.mp3",
-          9069
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_swlprdbl_h.mp3",
-          27117
-        ],
-        [
-          "assets/audio/sfx/player/p_atk/p_atk_whtolfdrksl_d.mp3",
-          9645
         ],
         [
           "assets/audio/sfx/player/p_imp/p_imp_amdermic_n.mp3",
@@ -87,36 +43,16 @@
           6573
         ],
         [
-          "assets/audio/sfx/player/p_imp/p_imp_gtshpbrnch_s.mp3",
-          7725
-        ],
-        [
           "assets/audio/sfx/player/p_imp/p_imp_lightning_n.mp3",
           7541
-        ],
-        [
-          "assets/audio/sfx/player/p_imp/p_imp_loyalsword_d.mp3",
-          28674
-        ],
-        [
-          "assets/audio/sfx/player/p_imp/p_imp_posnspgn_h.mp3",
-          3309
         ],
         [
           "assets/audio/sfx/player/p_imp/p_imp_pskptldr_n.mp3",
           5997
         ],
         [
-          "assets/audio/sfx/player/p_imp/p_imp_reticentsword_h.mp3",
-          10675
-        ],
-        [
           "assets/audio/sfx/player/p_imp/p_imp_shakebell_n.mp3",
           12347
-        ],
-        [
-          "assets/audio/sfx/player/p_imp/p_imp_staffcannon_d.mp3",
-          5805
         ],
         [
           "assets/band/band_kun.png",
@@ -8681,24 +8617,6 @@
         [
           "assets/icons/favicon-48.png",
           422
-        ]
-      ]
-    },
-    {
-      "id": "stronghold-v024",
-      "what": "Official v0.2.4 champagne token model, SHA256 verified",
-      "addedAt": "2026-10-10",
-      "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 15719,
-      "keys": [
-        [
-          "assets/local/spine/token/token_10031_swire2_gdtrap/token_10031_swire2_gdtrap.atlas",
-          1047
-        ],
-        [
-          "assets/local/spine/token/token_10031_swire2_gdtrap/token_10031_swire2_gdtrap.skel",
-          14672
         ]
       ]
     },
