@@ -68,7 +68,9 @@ const rows = [];
 for (const c of candidates()) {
   const m = measure(c.host);
   const live = await liveProbe(c.host, c.probe);
-  const down = !!(live && live.ok === false);
+  // 降级只认内地实测（network.json）：CI runner 在境外，它探不到 ≠ 源挂了（2026-10-12 实测：
+  // 从 runner 看 ms-dataset/ms-edge/r2 全部不可达，而它们对玩家完全可用）。实时探测只作证据上报。
+  const down = false;
   rows.push({ ...c, ...(m || { measured: false, usable: null, ttfbMs: null }), live, down, excluded: excluded.has(c.id) });
 }
 const order = readPreferredOrder(ROOT);
@@ -87,7 +89,7 @@ rows.sort((a, b) => {
 const doc = {
   schema: 1,
   generatedAt: new Date().toISOString(),
-  method: 'network.json（内地三运营商实测 TTFB，来源见其 _method）；无实测的新源按 origins.json 的 order 排在其后并标 measured:false',
+  method: '排序以内地实测为准（network.json）；liveMs 是 CI runner 的即时探测，仅作证据（境外视角，不作为降级依据）；无实测的新源按 origins.json 的 order 排并标 measured:false',
   measuredAt: net.measuredAt,
   carriers: net.carriers,
   rank: rows.map((r, i) => ({
