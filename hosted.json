@@ -16141,24 +16141,104 @@
       "what": "Four-server chat stickers and previews; stable IDs; original GIF animations",
       "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4,
-      "bytes": 6325538,
+      "files": 24,
+      "bytes": 8768378,
       "keys": [
+        [
+          "assets/local/sp-four-emotes/08492b9a02a8b391cf1b.jpg",
+          23707
+        ],
+        [
+          "assets/local/sp-four-emotes/20c5e2b578d4748f6b3c.preview.webp",
+          3486
+        ],
+        [
+          "assets/local/sp-four-emotes/2a77fa6e6ea8b525a9b3.jpg",
+          14840
+        ],
+        [
+          "assets/local/sp-four-emotes/3e7743455b52242ff04d.preview.webp",
+          2050
+        ],
+        [
+          "assets/local/sp-four-emotes/4e35059a9b6978774012.jpg",
+          74187
+        ],
+        [
+          "assets/local/sp-four-emotes/55acd08e7ae58d58f568.preview.webp",
+          1686
+        ],
+        [
+          "assets/local/sp-four-emotes/614be12beee0c0124c91.jpg",
+          118141
+        ],
+        [
+          "assets/local/sp-four-emotes/6a985871cc9d84baf9d9.preview.webp",
+          2620
+        ],
+        [
+          "assets/local/sp-four-emotes/6b6c263d3561732fb006.preview.webp",
+          2150
+        ],
+        [
+          "assets/local/sp-four-emotes/70667e214507611bb202.preview.webp",
+          3064
+        ],
         [
           "assets/local/sp-four-emotes/9385384c3869e743837b.preview.webp",
           2454
         ],
         [
-          "assets/local/sp-four-emotes/f76a6ff2dcc515ecf15c.gif",
-          4515027
+          "assets/local/sp-four-emotes/a2740c609a5bb0720995.preview.webp",
+          2760
+        ],
+        [
+          "assets/local/sp-four-emotes/a496ba96905df17d5b2f.preview.webp",
+          1530
+        ],
+        [
+          "assets/local/sp-four-emotes/ab36d30847389923f61f.jpg",
+          118079
+        ],
+        [
+          "assets/local/sp-four-emotes/cb5c780c280dd9e3668b.jpg",
+          75930
+        ],
+        [
+          "assets/local/sp-four-emotes/cf0435447c93f883be37.preview.webp",
+          1928
+        ],
+        [
+          "assets/local/sp-four-emotes/d0039b4be474cb3040de.gif",
+          1012716
+        ],
+        [
+          "assets/local/sp-four-emotes/d0a572ef9520e094f4d3.jpg",
+          51714
         ],
         [
           "assets/local/sp-four-emotes/d32bfe4b05515f2f70ba.gif",
           1805251
         ],
         [
+          "assets/local/sp-four-emotes/dace518351dda8424372.jpg",
+          72615
+        ],
+        [
           "assets/local/sp-four-emotes/ea7ecdec5c0bdfbdbe2c.preview.webp",
           2806
+        ],
+        [
+          "assets/local/sp-four-emotes/f1a3904b902bf7bf9ff5.preview.webp",
+          3878
+        ],
+        [
+          "assets/local/sp-four-emotes/f732522ae5240cb3b9e7.gif",
+          855759
+        ],
+        [
+          "assets/local/sp-four-emotes/f76a6ff2dcc515ecf15c.gif",
+          4515027
         ]
       ]
     }
