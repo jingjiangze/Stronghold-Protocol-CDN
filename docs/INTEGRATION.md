@@ -43,7 +43,7 @@ const art = await (await fetch(`${CDN}/cdn/v1/art.json`)).json();
 // art.tree.files / art.tree.bytes → 覆盖规模
 ```
 
-`art` 块的字段名与 re 线 `site/manifest-re.json` 的 `art` 块一致（`base` / `version` / `format` / `mirrors` / `packs`），同一套解析代码可以同时吃两条轴。
+`art` 块的字段定义见 `src/api-contract.mjs`（`base` / `version` / `format` / `mirrors` / `packs`），同一套解析代码可以同时吃两条轴。
 
 ## 5. 要读官方文档 / wiki 数据的
 

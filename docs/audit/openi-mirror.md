@@ -9,7 +9,7 @@
 
 | 问题 | 结论 |
 |---|---|
-| 内容能不能传上去？ | **能**。`915 MiB / 12,706 文件`已推送到分支 `assets-raw` |
+| 内容能不能传上去？ | **能**。`assets-raw` 孤儿分支（当前 **14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件**）已推送到 OpenI |
 | 字节对不对？ | **对**。raw 取回与本地 git blob 逐字节一致（sha256 核对） |
 | 快不快？ | **很快**。TTFB ~0.25s；同一文件在 R2 主源是 **1.1–8.1s** |
 | 能不能给玩家当运行时源？ | **不能（默认停用）**。CORS 是硬伤，见 §4 |
@@ -22,7 +22,7 @@ CORS 是它的边界。它已被接入并默认停用，改一行就能启用 �
 
 ## 1. 这次和上次审计（2026-10-11 早些时候）的区别
 
-`BASELINE`：本仓已有一份审计 `docs/audit/modelscope-openi-hanabi-sources.md`，结论是「**OpenI 不接入**」。
+`BASELINE`：本仓早先有一份审计（现已未留存），结论是「**OpenI 不接入**」。
 
 那次与这次不是同一件事，不要混为一谈：
 
@@ -62,7 +62,7 @@ R2     主源  ttfb 1.15–8.07 s     （同一路径 /assets/char/avatar/char_1
 gitcdn 自有  ttfb 1.16–2.03 s
 ```
 
-`PASS`：OpenI 比现有主源快**一个数量级**。这解释了为什么值得为它花 915 MiB 的推送成本。
+`PASS`：OpenI 比现有主源快**一个数量级**。这解释了为什么值得为它花 ~2.14 GiB 的推送成本。
 
 ---
 
@@ -129,7 +129,7 @@ Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com
 
 `PASS`（已落地）：
 
-- `src/openi-mirror.mjs` —— 幂等推送器；远端已是同一 commit 时直接退出，不传 915 MiB。
+- `src/openi-mirror.mjs` —— 幂等推送器；远端已是同一 commit 时直接退出，不传那 ~2.14 GiB。
 - `.github/workflows/openi-mirror.yml` —— `cron: '47 0,6,12,18 * * *'`，每天四次；
   与既有 `sync.yml`（每 6 小时 :17）错开，避免读到对方发布到一半的状态。
 - `origins.json` —— 新增 `openi` 条目，`coverage: full`、`enabled: false`、原因写进 `note`。
@@ -144,5 +144,5 @@ Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com
   但音频 seek 场景不能用它。
 - **CI 凭据**：workflow 需要仓库 secret `OPENI_TOKEN`（用账号 Access Token）。
   未配置时定时任务会在 `git ls-remote` 处失败 —— 失败是安全的（不会误发），但要配了才跑得起来。
-- **配额**：未验证仓库容量上限。当前 915 MiB；若后续加皮肤可能到 ~2.1 GiB，
-  届时需确认平台是否仍接受。
+- **配额**：未验证仓库容量上限。当前树已含 2,476 个皮肤文件、共 ~2.14 GiB；
+  届时若继续增长，需确认平台是否仍接受。
