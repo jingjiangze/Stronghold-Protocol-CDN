@@ -65,6 +65,15 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 **发布是触发式的**：`commit` / `put` / `remove` / `kick` 任一发生，都会当场叫起 `.github/workflows/promote-uploads.yml`（靠 Pages secret `GH_DISPATCH_TOKEN` + `GH_REPO`；没配就退回定时兜底，定时是每半小时的保险，不是主路径）。一轮做完若还有积压会立刻自补一轮排干。它做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
 
+「会同步到 Git 源仓库吗？」——分两层，结论如下（链路审计，依据 `src/promote-uploads.mjs` 与 `promote-uploads.yml`）：
+
+- **素材字节：不同步进 git。** 字节从 `cdn/incoming/<id>/` 暂存区经 `CopyObject` 落到 R2 对外键（`Cache-Control: public, max-age=31536000, immutable` + `x-amz-meta-sha256`），全程在桶内；git 源仓库里从始至终不存任何素材字节。
+- **登记元数据：会进 git。** 发布轮在本地 `fs.writeFileSync('hosted.json', …)`，然后 workflow 末尾 `git add hosted.json && git commit && git push origin main`（带重试 + rebase，冲突要人工并）。这一步**失败会让整轮变红**——因为 `prune` 只读仓库里的那份 `hosted.json`，桶里上线但 git 没登记 = 下次例行清理会把这批字节当镜像残渣删掉。
+- **接口/浏览面：重发而非同步。** 发布轮最后跑 `sync.mjs --write --interface-only`，重发 `cdn/v1/tree.json`、`hosted-index.json`、`upload-log.json` 等到 R2（几十秒，不重下上游 428 MB 包）。
+
+一句话：**"同步到 Git"指的是 `hosted.json` 这份登记（谁传的、传了什么、键、sha256、来源），不是素材字节；素材字节的权威副本始终在 R2 桶。** 要查"传上去了吗"，看 `upload-log.json` 与 `hosted-index.json`，而不是 git 历史里的文件内容。
+
+
 所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
 
 ## 后台状态：为什么一行会停在「只传了字节、没提交」
