@@ -25,16 +25,11 @@
     <nav class="navigation">
       <a href="#players">玩家下载</a>
       <a href="#agents">agent 接入</a>
-      <a href="#params">拉取参数</a>
-      <a href="#mirrors">镜像站</a>
+      <a href="#mirrors">镜像与选源</a>
       <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
-      <a href="#asset-cdn">素材 CDN 对账</a>
-      <a href="#mirror-selection">多源自动选源</a>
-      <a href="#openi">第二镜像 OpenI</a>
-      <a href="#modelscope">第三镜像 ModelScope</a>
-      <a href="#ms-edge">边缘分流 ms-edge</a>
+      <a href="#asset-cdn">素材对账</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -257,6 +252,14 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"
 curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   </section>
 
+
+    <div class="mirror-index" id="mirror-index">
+      <a href="./mirror-selection">多源自动选源 ↗</a>
+      <a href="./openi-mirror">第二镜像 OpenI ↗</a>
+      <a href="./modelscope-mirror">第三镜像 ModelScope ↗</a>
+      <a href="./ms-edge">边缘分流 ms-edge ↗</a>
+    </div>
+
   <!-- ============================ 参考区 ============================ -->
   <section class="section" id="params">
     <div class="section-heading">
@@ -341,18 +344,10 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="cards" style="margin-top:16px">
       <a class="card" href="./mirror-selection">
         <div class="card__title">多源自动选源（机制文档）</div>
-        <div class="card__meta"><span>pick.js 测速 / 资格过滤 / 客户端按设备挑源 / fail-closed 白名单</span></div>
+        <div class="card__meta"><span>客户端按设备挑最快镜像、换源只改一次清单；含资格过滤表与验收命令（网页版 + 原始 Markdown 同一份）</span></div>
         <div class="card__stats">
-          <span>换源 <b>只改一次清单</b></span>
           <span>客户端 TTL <b>6h</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/mirror-selection.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>资格过滤表</b></span>
-          <span>含 <b>验收命令</b></span>
+          <span>换源 <b>只改一次</b></span>
         </div>
       </a>
     </div>
@@ -469,137 +464,13 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
-  <section class="section" id="mirror-selection">
-    <div class="section-heading">
-      <div><div class="eyebrow">GUIDE · MULTI-SOURCE</div><h2>多源自动选源（CDN 优化）</h2></div>
-      <span class="section-status">客户端按自身链路挑最快镜像，换源只改一次清单</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      《镜像站》只说「有哪些源、各源分发什么」。这份记「用哪个镜像」怎么从写死域名变成<b>运行时决策</b>：
-      部署机在一个网络、玩家在另一个网络，两边对「谁最快」没有共同答案。<code class="inline">pick.js</code> 给每个镜像
-      测速、选最快的，再用 <code class="inline">rebaseManifest()</code> 把清单基址整体换掉——<b>换源只改一次清单，不动客户端代码</b>。
-      客户端（Android re-apk）每台设备自己挑，6 小时 TTL，fail-closed 白名单兜底。
-    </p>
-    <div class="cards">
-      <a class="card" href="./mirror-selection">
-        <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>两份数据 / 测速做法 / 资格过滤表 / 客户端集成 / 验收命令</span></div>
-        <div class="card__stats">
-          <span>客户端 TTL <b>6h</b></span>
-          <span>换源 <b>只改一次</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/mirror-selection.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>资格过滤表</b></span>
-          <span>含 <b>验收命令</b></span>
-        </div>
-      </a>
-    </div>
-  </section>
+  
 
-  <section class="section" id="openi">
-    <div class="section-heading">
-      <div><div class="eyebrow">SECOND MIRROR · OPENI</div><h2>第二镜像：OpenI（启智）</h2></div>
-      <span class="section-status">最快，但 CORS 不可用；经 ms-edge 点名 ?sp_source=openi 可达</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      素材树已幂等同步到 OpenI 仓库 <code class="inline">assets-raw</code> 分支，每天四次推送。它是测过
-      <b>最快</b>的源（直连 TTFB ~0.28 s，对比本桶直连 0.64 s —— 约 2.5×，
-      <b>不是</b>之前写的「10×」；旧数走 Clash 代理测的，已作废），却也是唯一 <b>CORS 不可用</b>的源
-      （<code class="inline">ACAO</code> 写死成第三方域 <code class="inline">experience.pro.iflyaicloud.com</code>，
-      不反射 Origin，<code class="inline">OPTIONS</code> 预检直接 401）。跨域取 WebGL 贴图会被拒绝，所以默认
-      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，不当玩家直连源；
-      但可从 <b>ms-edge 边缘层点名</b>（<code class="inline">?sp_source=openi</code>，边缘只回 302，字节仍直出 OpenI）——只给不需要 CORS 的通道用。
-    </p>
-    <div class="cards">
-      <a class="card" href="./openi-mirror">
-        <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>接入配置 / 同步机制 / CORS 为什么补不了 / 413 分批推送</span></div>
-        <div class="card__stats">
-          <span>素材树 <b>14,741 文件</b></span>
-          <span>默认停用 · 边缘可点名</span>
-        </div>
-      </a>
-      <a class="card" href="./docs/openi-mirror.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>配置样例</b></span>
-          <span>含 <b>验收命令</b></span>
-        </div>
-      </a>
-    </div>
-  </section>
+  
 
-  <section class="section" id="modelscope">
-    <div class="section-heading">
-      <div><div class="eyebrow">THIRD MIRROR · MODELSCOPE</div><h2>第三镜像：ModelScope 创空间</h2></div>
-      <span class="section-status">assets-raw 的 git 镜像；运行时形态＝同族数据集（ms-edge 默认源）</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      素材树由 <code class="inline">tools/push-modelscope.mjs</code> <b>幂等</b>推送到 ModelScope 创空间
-      <code class="inline">jingjiangze/Stronghold-Protocol</code> 的 <code class="inline">cdn</code> 分支，每天四次。它是
-      <b>我自己树的第三份存放</b>——和 OpenI 不同，它<b>不是运行时源</b>：创空间不提供文件直链
-      （任何路径都返回 SPA HTML），只能被 clone / 被 git-mount CDN 挂载。源树 <code class="inline">assets-raw</code> 现已含
-      <b>2,476 个皮肤文件</b>（经 git-mount 层以 <code class="inline">coverage:full</code> 提供），但本镜像默认仍排除皮肤，且不写进
-      <code class="inline">origins.json</code>。运行时取字节用<b>同族数据集</b>（<code class="inline">ms-dataset</code>）经
-      <b>ms-edge 边缘层</b>——那是 ms-edge 的默认 302 目标；本分支本身始终是 git-only。
-    </p>
-    <div class="cards">
-      <a class="card" href="./modelscope-mirror">
-        <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>机制 / 为什么独立 Workflow / 状态词 / 验收命令</span></div>
-        <div class="card__stats">
-          <span>源 <b>assets-raw</b></span>
-          <span>推送 <b>幂等</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/modelscope-mirror.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>三处踩坑</b></span>
-          <span>含 <b>验收命令</b></span>
-        </div>
-      </a>
-    </div>
-  </section>
+  
 
-  <section class="section" id="ms-edge">
-    <div class="section-heading">
-      <div><div class="eyebrow">EDGE REDIRECT · MS-EDGE</div><h2>边缘分流源：ms-edge</h2></div>
-      <span class="section-status">容器 302 边缘层，字节不经容器，已上线（2026-10-11 晚）</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      和前三个「镜像」不同，ms-edge <b>不是素材树的又一份拷贝</b>，而是站在字节源前面的<b>分流边缘层</b>：跑在创空间容器
-      <code class="inline">:7860</code> 里，把 <code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code>
-      <b>302 跳转</b>到真实字节源（当前指向自建 ModelScope 数据集镜像），<b>字节不经容器</b>；其余路径由容器里的游戏服务器回答。
-      <b>已上线</b>（2026-10-11 晚验收）：分流判定在游戏进程内（<code class="inline">asset-jump.js</code>），三个镜像经边缘实测可达
-      （默认 → 数据集、<code class="inline">?sp_source=r2</code> → weishucdn、<code class="inline">?sp_source=openi</code> → OpenI）；
-      CDN 仓已把 ms-edge 从 <code class="inline">enabled:false</code> 与 <code class="inline">disabled</code> 两处移出。
-    </p>
-    <div class="cards">
-      <a class="card" href="./ms-edge">
-        <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>架构 / 接入配置 / 状态词 / 验收命令</span></div>
-        <div class="card__stats">
-          <span>形态 <b>302 边缘</b></span>
-          <span>现状 <b>已上线</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/ms-edge.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>接入配置样例</b></span>
-          <span>含 <b>验收命令</b></span>
-        </div>
-      </a>
-    </div>
-  </section>
+  
 
   <section class="section" id="layout">
     <div class="section-heading">

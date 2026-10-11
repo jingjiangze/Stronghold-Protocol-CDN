@@ -84,20 +84,28 @@ h1 { font-size: 26px; letter-spacing: -.5px; font-weight: 650; line-height: 1.35
 .quick-stats .ok { color: var(--accent); }
 .quick-stats .warn { color: var(--amber); }
 
-.section { margin-bottom: 38px; }
+.section { margin-bottom: 52px; }
 .section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
 .eyebrow { font-size: 11px; letter-spacing: 1.8px; color: var(--dim); font-weight: 600; text-transform: uppercase; margin-bottom: 7px; }
 h2 { font-size: 22px; letter-spacing: -.5px; font-weight: 650; line-height: 1.3; }
 h3 { font-size: 15px; font-weight: 600; }
-.section-note { font-size: 12px; color: var(--dim); line-height: 1.75; }
-.section p { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 82ch; }
+.section-note { font-size: 12px; color: var(--dim); line-height: 1.75; max-width: 72ch; }
+.section p { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 72ch; }
 .section p + p { margin-top: 8px; }
 .section-status { font-size: 11px; color: var(--dim); }
 
 /* ---- cards ------------------------------------------------------------------------------- */
 
-.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
 
+
+.mirror-index { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.mirror-index a {
+  font-size: 12px; color: var(--muted); text-decoration: none;
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.mirror-index a:hover { color: var(--fg); border-color: var(--accent); background: var(--surface-raised); }
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
