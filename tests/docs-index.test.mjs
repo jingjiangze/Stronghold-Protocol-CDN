@@ -146,15 +146,18 @@ test('with real history the dates discriminate and the newer document wins', asy
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-docs-git-'));
   const site = path.join(root, 'site');
   fs.mkdirSync(path.join(site, 'docs'), { recursive: true });
+  // 本机开过全局 commit.gpgsign，子进程里的 git commit 会在没有签名代理时直接失败
+  // （"Couldn't get agent socket?"）。与被测逻辑无关，所以这里显式关掉签名，让断言只受日期影响。
+  const NOGPG = ['-c', 'commit.gpgsign=false', '-c', 'tag.gpgsign=false'];
   const git = (...a) => {
-    const res = spawnSync('git', ['-C', root, '-c', 'user.email=t@example.test', '-c', 'user.name=t', ...a], {
+    const res = spawnSync('git', ['-C', root, ...NOGPG, '-c', 'user.email=t@example.test', '-c', 'user.name=t', ...a], {
       encoding: 'utf8',
       env: process.env,
     });
     if (res.status !== 0) throw new Error(`git ${a.join(' ')} failed: ${res.stderr}`);
   };
   const commitAt = (iso) => {
-    const res = spawnSync('git', ['-C', root, '-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'c'], {
+    const res = spawnSync('git', ['-C', root, ...NOGPG, '-c', 'user.email=t@example.test', '-c', 'user.name=t', 'commit', '-q', '-m', 'c'], {
       encoding: 'utf8',
       env: { ...process.env, GIT_AUTHOR_DATE: iso, GIT_COMMITTER_DATE: iso },
     });
