@@ -505,17 +505,19 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
     <p class="section-note" style="margin-bottom:14px">
       素材树已幂等同步到 OpenI 仓库 <code class="inline">assets-raw</code> 分支，每天四次推送。它是测过
-      <b>最快</b>的源（TTFB ~0.25 s，对比本桶 1.1–8.1 s），却也是唯一 <b>CORS 不可用</b>的源
-      （<code class="inline">ACAO</code> 写死成第三方域），跨域取 WebGL 贴图会被拒绝。所以默认
-      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，只用于
-      <b>直链下载 / 构建期取源</b>，不当玩家运行时源。
+      <b>最快</b>的源（直连 TTFB ~0.28 s，对比本桶直连 0.64 s —— 约 2.5×，
+      <b>不是</b>之前写的「10×」；旧数走 Clash 代理测的，已作废），却也是唯一 <b>CORS 不可用</b>的源
+      （<code class="inline">ACAO</code> 写死成第三方域 <code class="inline">experience.pro.iflyaicloud.com</code>，
+      不反射 Origin，<code class="inline">OPTIONS</code> 预检直接 401）。跨域取 WebGL 贴图会被拒绝，所以默认
+      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，只当
+      <b>冷备 / 直链下载</b>，不当玩家运行时源。
     </p>
     <div class="cards">
       <a class="card" href="./openi-mirror">
         <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>接入配置 / 同步机制 / 为什么停用 / 验收命令</span></div>
+        <div class="card__meta"><span>接入配置 / 同步机制 / CORS 为什么补不了 / 413 分批推送</span></div>
         <div class="card__stats">
-          <span>素材树 <b>12,706 文件</b></span>
+          <span>素材树 <b>14,000+ 文件</b></span>
           <span>默认 <b>停用</b></span>
         </div>
       </a>
