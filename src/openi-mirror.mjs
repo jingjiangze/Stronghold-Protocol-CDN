@@ -45,11 +45,14 @@ export const ASSETS_REF = process.env.OPENI_ASSETS_REF || 'assets-raw';
 export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
 
 /**
- * Ceiling for a single push, in MiB. Measured: the whole tree at 1,807 MiB was answered with
- * `HTTP 413` after 16 minutes, while 915 MiB had gone through. The limit belongs to the remote, so
- * we stay under the size known to work instead of discovering the boundary by failing a real run.
+ * Ceiling for a single push, in MiB. Measured against the real remote, not guessed:
+ *   - 1 commit (51.8 MiB) of delta: OK
+ *   - 4 commits (232 MiB) of delta: OK
+ *   - 10 commits (640.9 MiB) of delta: HTTP 413
+ * so the boundary sits somewhere between 232 and 641 MiB. We stay well under the size known to work
+ * (200 < 232) rather than probing the boundary by failing a 16-minute run.
  */
-export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 700;
+export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 200;
 
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {

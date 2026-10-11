@@ -120,9 +120,9 @@ test('planBatches on an empty replay pushes nothing', () => {
   assert.deepEqual(planBatches([], {}, 700 * MB), []);
 });
 
-test('the default budget stays under the size that was seen to 413', () => {
-  // 915 MiB went through; 1,807 MiB got HTTP 413. Anything near the ceiling is a guess about
-  // someone else's limit, so the default keeps real distance from both numbers.
-  assert.ok(DEFAULT_BUDGET_MIB < 915, `budget ${DEFAULT_BUDGET_MIB} MiB is not safely under the 915 MiB that worked`);
+test('the default budget stays under the size that was measured to pass', () => {
+  // Measured: 232 MiB of delta went through, 640.9 MiB got HTTP 413. The default keeps real
+  // distance below the size known to pass rather than probing the boundary with a 16-minute run.
+  assert.ok(DEFAULT_BUDGET_MIB < 232, `budget ${DEFAULT_BUDGET_MIB} MiB is not safely under the 232 MiB that was seen to pass`);
   assert.ok(DEFAULT_BUDGET_MIB > 0);
 });
