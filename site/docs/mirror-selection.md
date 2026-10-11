@@ -146,3 +146,19 @@ curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/
     `disabled` 已通过仓库自己的 `sync.yml`（`write=true interface_only=true`，run `38056783234` = success）重发
     `mirrors.json` 生效。已缓存选源的设备最长 6h 后才会切走（`ArtSource` TTL）。
   - 本机代理对 `weishucdn` 持续 TLS 握手失败（curl 一次都未成功），「线上已生效」依据为工作流成功，非本机独立复核字节。
+
+## 发布排名（speedcdn 上的 rank.json）
+
+`https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json`（与 weishucdn/weishucdn2 同桶同文）。
+
+- **排序依据 = 内地实测**（三运营商 TTFB，`network.json`）+ `origins.json` 的 `order`；被排除/不可用的源标掉。
+- **CI runner 的即时探测只作证据**（`liveMs`）：从 runner 看 ms-dataset/ms-edge/r2 全不可达（境外视角），
+  拿它降级会把健康源标死、把 gitcdn 推上前排。
+- 当前顺序（2026-10-12 实测）：`ms-dataset 0.157s > ms-edge 0.566s > r2-alt 0.808s > r2 0.865s > gitcdn-own > ghfast-*`。
+- 生成器 `src/rank.mjs` + `rank.yml`（`23 1,7,13,19 * * *`，**一天四次**，与 sync 的 `17 */6` 错开 6 分钟）。
+- 客户端**不每次重测**：读一次（会话缓存）后按序取源；边缘（创空间容器）每 5 分钟取一次排名决定 302 目标，
+  id 映射必须显式（`ms-dataset→modelscope`、`ms-edge→跳过自身`）。
+
+工坊包 `CDN 源选择（最快镜像）`（投稿 pending）只做排名展示 + 现场测速 + 偏好：0.13.0 的客户端表面
+（`client.panels`/`theme`/`requires`）拿到的是只读快照，**改不了素材清单的加载源**；要真正生效需要引擎侧
+一个 `sources(ctx)` 提供者表面（同 0.13.0 的 `appearance` 形状）。

@@ -244,6 +244,26 @@ curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/
     </div>
   </footer>
 
+
+  <section class="section" id="rank">
+    <div class="section-heading">
+      <div><div class="eyebrow">RANK · SPEEDCDN</div><h2>发布排名：speedcdn 上的 rank.json</h2></div>
+      <span class="section-status">一天四次 · 内地实测排序</span>
+    </div>
+    <p class="block__lead">
+      <code class="inline">https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json</code>（与 weishucdn/weishucdn2 同桶同文）——
+      客户端在测速前、或测不了速时按它取源；<b>不每次重新测</b>。
+    </p>
+    <ul>
+      <li><b>排序依据 = 内地实测</b>（三运营商 TTFB，<code class="inline">network.json</code>）+ <code class="inline">origins.json</code> 的
+        <code class="inline">order</code>；被排除/不可用的源会被标掉。</li>
+      <li><b>CI runner 的即时探测只作证据</b>（<code class="inline">liveMs</code>）：实测从 runner 看 ms-dataset/ms-edge/r2 全不可达，
+        拿它降级会把健康源标死。</li>
+      <li>当前顺序（2026-10-12 实测）：<code class="inline">ms-dataset 0.157s &gt; ms-edge 0.566s &gt; r2-alt 0.808s &gt; r2 0.865s &gt; gitcdn-own &gt; ghfast-*</code>。</li>
+      <li>生成器 <code class="inline">src/rank.mjs</code> + <code class="inline">rank.yml</code>（<code class="inline">23 1,7,13,19 * * *</code>，一天四次）。</li>
+      <li>边缘侧（创空间容器）每 5 分钟取一次该排名来决定 302 目标；<b>id 映射必须显式</b>（ms-dataset→modelscope、ms-edge→跳过自身，否则会 302 到自己）。</li>
+    </ul>
+  </section>
 </main>
 </body>
 </html>
