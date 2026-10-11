@@ -32,6 +32,7 @@
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="#asset-cdn">素材 CDN 对账</a>
       <a href="#mirror-selection">多源自动选源</a>
+      <a href="#cdn-deploy">CDN 部署</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -415,15 +416,6 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </div>
       </a>
     </div>
-    <div class="notice" style="margin-top:16px">
-      <span><b>直接套用这套优化（低风险层，客户端零改动）：</b>
-      <a href="https://github.com/jingjiangze/Stronghold-Protocol/releases/download/ws-link-as-built/ws-link-AS-BUILT.zip" target="_blank" rel="noopener"><b>下载 ws-link-AS-BUILT.zip</b></a>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
-      来自 master-play <code class="inline">c587705f</code>；页面同款在 <a href="./files/ws-link-as-built.zip">/files/</a>）——
-      5 个文件：压缩模块 + <code class="inline">broadcastRoom</code>/重放接入 + 观战节流 + 更新器保开关 + 同步门禁。
-      <b>合并说明（含 diff 要点、开关、握手验收、回退、兼容边界）：<a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a></b>。
-      覆盖完跑 <code class="inline">node tools/ws-link-gate.mjs</code> 应 10/10；下一步 <code class="inline">SP_WS_COMPRESSION=on</code> 并做真实 Upgrade 握手验收。
-      热帧去常量（PR #157，未合并）<b>不在</b>本包 —— 那要服务端与客户端成对发布。</span>
-    </div>
   </section>
 
   <section class="section" id="asset-cdn">
@@ -491,6 +483,36 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__stats">
           <span>含 <b>资格过滤表</b></span>
           <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="cdn-deploy">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · CDN DEPLOY</div><h2>CDN 部署文档</h2></div>
+      <span class="section-status">仓库结构 / 自动同步 / ModelScope 镜像 / 验收</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      这份记「素材 CDN 本身怎么部署」：整体拓扑（R2 私有桶 + Pages + git 挂载）、仓库结构、
+      <code class="inline">sync.yml</code> 自动同步链路、<code class="inline">mirror-modelscope.yml</code> 推到 ModelScope 创空间做 git 镜像，
+      以及部署触发与验收命令。所有写操作都在 CI 里用仓库 secret 完成，本机只做写文件 + 提交 + 推 GitHub。
+    </p>
+    <div class="cards">
+      <a class="card" href="./cdn-deploy">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>拓扑 / 仓库结构 / 自动同步 / ModelScope 镜像 / 部署触发 / 验收</span></div>
+        <div class="card__stats">
+          <span>同步 <b>每 6 小时</b></span>
+          <span>清单 <b>只指主源</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/cdn-deploy.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>验收命令</b></span>
+          <span>含 <b>状态词</b></span>
         </div>
       </a>
     </div>
