@@ -153,3 +153,31 @@ export function readDisabledOrigins(root) {
   const list = Array.isArray(cfg?.disabled) ? cfg.disabled : [];
   return new Set(list.filter((id) => typeof id === 'string' && id));
 }
+
+/**
+ * Preferred publication order (`origins.json` 的 `order`)：把实测最快的源排在前面，让**不能测速**
+ * （或测速打平）的选择器从列表头部开始。没点名的 id 保持自己的相对次序、排在点名者之后。
+ * 这是数据不是代码——改这一行就能改下一次发布。
+ */
+export function readPreferredOrder(root) {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+    return Array.isArray(cfg?.order) ? cfg.order.filter((id) => typeof id === 'string' && id) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** 稳定重排：点名 id 按给定次序在前，其余按原相对次序随后。 */
+export function applyPreferredOrder(origins, order) {
+  if (!Array.isArray(order) || order.length === 0) return origins;
+  const rank = new Map(order.map((id, i) => [id, i]));
+  return origins
+    .map((o, i) => ({ o, i }))
+    .sort((a, b) => {
+      const ra = rank.has(a.o.id) ? rank.get(a.o.id) : Infinity;
+      const rb = rank.has(b.o.id) ? rank.get(b.o.id) : Infinity;
+      return ra === rb ? a.i - b.i : ra - rb;
+    })
+    .map((x) => x.o);
+}

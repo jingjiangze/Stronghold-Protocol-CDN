@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readExtraOrigins, readGitOrigins, readDisabledOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
+import { readExtraOrigins, readGitOrigins, readDisabledOrigins, GIT_PROBE_PATH, readPreferredOrder, applyPreferredOrder } from '../src/origins.mjs';
 import { carryForwardOrigins } from '../src/sync.mjs';
 
 function withOriginsJson(doc, fn) {
@@ -233,4 +233,13 @@ test('the shipped origins.json carries the ModelScope dataset as a selectable fu
   assert.match(ds.probe, /^\/assets\//);
   const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
   assert.ok(!disabled.includes('ms-dataset'), 'the dataset mirror is verified, not parked');
+});
+
+test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
+  const order = readPreferredOrder(path.resolve(process.cwd(), '.'));
+  assert.deepEqual(order.slice(0, 2), ['ms-dataset', 'ms-edge'], '2026-10-12 实测：镜像最快、其次 ms-edge');
+  const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'r2-alt' }];
+  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['ms-dataset', 'r2-alt', 'r2', 'ghfast-assets']);
+  // 空 order = 原样返回（不改动历史行为）
+  assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'r2-alt']);
 });

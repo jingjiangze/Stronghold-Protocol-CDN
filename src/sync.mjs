@@ -37,7 +37,7 @@ import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins, readPreferredOrder, applyPreferredOrder } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
@@ -361,7 +361,7 @@ async function main() {
     // parked last run must not come back enabled just because this run did not rebuild it.
     const disabledIds = readDisabledOrigins(ROOT);
     for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
-    const flatOrigins = carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT));
+    const flatOrigins = applyPreferredOrder(carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT)), readPreferredOrder(ROOT));
     const mirrorsDoc = `${JSON.stringify(
       {
         schema: 1,
@@ -832,7 +832,7 @@ async function main() {
         zip: release.zip.name,
         zipSha256: release.zip.sha256,
       },
-      flat: mergedOrigins.map((origin) => ({
+      flat: applyPreferredOrder(mergedOrigins, readPreferredOrder(ROOT)).map((origin) => ({
         id: origin.id,
         kind: origin.kind,
         root: origin.root,

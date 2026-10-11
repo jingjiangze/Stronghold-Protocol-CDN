@@ -88,6 +88,8 @@
     "statically"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
+  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-dataset 0.157s < ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。",
+  "order": ["ms-dataset", "ms-edge", "r2-alt", "r2"],
   "disabled": [
     "jsdelivr",
     "jsdelivr-assets",
