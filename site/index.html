@@ -398,19 +398,27 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </div>
       </a>
       <a class="card" href="./docs/ws-link-compression.md">
-        <div class="card__title">WS 链路压缩（当前已上线）</div>
-        <div class="card__meta"><span>白名单 + 窗口 12 / 广播漏压的真 bug / 观战节流 / 热帧去常量</span></div>
+        <div class="card__title">WS 链路压缩（当前已上线 · 2026-10-12）</div>
+        <div class="card__meta"><span>三档 off/on/safe · 两个「故意不声明」的参数 · 白名单 + b.start · 广播漏压的真 bug</span></div>
         <div class="card__stats">
-          <span>每席位 <b>2,048 → 505 B/s</b></span>
-          <span>10 Mbps 带 <b>2,475 人</b></span>
+          <span>每席位 <b>57.5 B/s</b></span>
+          <span>10 Mbps 带 <b>≈21,000 人</b></span>
         </div>
       </a>
       <a class="card" href="./docs/ws-link-compression-next.md">
         <div class="card__title">WS 链路压缩（下一轮）</div>
-        <div class="card__meta"><span>待执行三步 + 准入条件 / 验收判据 / 退路</span></div>
+        <div class="card__meta"><span>真瓶颈是冷启动 5.4 MB · ③④ 已做但没上线 · 隐藏标签页停推</span></div>
         <div class="card__stats">
-          <span>bonds 定制 <b>≈24%</b></span>
-          <span>delta 合计 <b>2.05×</b></span>
+          <span>冷启动 <b>1,573 B/s</b></span>
+          <span>比稳态贵 <b>27×</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/ws-compression-library-and-pack.md">
+        <div class="card__title">独立库与工坊兼容包</div>
+        <div class="card__meta"><span>零依赖库已发布 · 工坊包为什么开不了传输压缩 · 写包格式约定</span></div>
+        <div class="card__stats">
+          <span>MIT · <b>28 项测试</b></span>
+          <span>含 <b>只读接口</b></span>
         </div>
       </a>
     </div>
@@ -421,7 +429,10 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       5 个文件：压缩模块 + <code class="inline">broadcastRoom</code>/重放接入 + 观战节流 + 更新器保开关 + 同步门禁。
       <b>合并说明（含 diff 要点、开关、握手验收、回退、兼容边界）：<a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a></b>。
       覆盖完跑 <code class="inline">node tools/ws-link-gate.mjs</code> 应 10/10；下一步 <code class="inline">SP_WS_COMPRESSION=on</code> 并做真实 Upgrade 握手验收。
-      热帧去常量（PR #157，未合并）<b>不在</b>本包 —— 那要服务端与客户端成对发布。</span>
+      热帧去常量（PR #157，未合并）<b>不在</b>本包 —— 那要服务端与客户端成对发布。
+      ⚠️ <b>本包是 2026-10-10 的旧配置</b>（阈值 512 / 关上下文接管 / 窗口 pin 12）—— 现行配置见
+      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>，零依赖库在
+      <a href="https://github.com/jingjiangze/stronghold-ws-compression" target="_blank" rel="noopener">stronghold-ws-compression</a>。</span>
     </div>
   </section>
 
