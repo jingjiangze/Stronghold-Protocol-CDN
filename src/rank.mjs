@@ -25,9 +25,9 @@ const excluded = new Set((net.excluded || []).map((e) => e.id));
 /** 每个启用源的候选项：来自 origins.json（r2 + extras + git origins），按 order 排好。 */
 function candidates() {
   const list = [
-    { id: 'r2', kind: 'r2', host: 'weishucdn.jiangjiangze.icu', coverage: 'full' },
-    ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), coverage: o.coverage })),
-    ...readGitOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), coverage: o.coverage })),
+    { id: 'r2', kind: 'r2', host: 'weishucdn.jiangjiangze.icu', probe: '/probe/cdn-probe.bin', coverage: 'full' },
+    ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
+    ...readGitOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
   ];
   const parked = readDisabledOrigins(ROOT);
   return list.filter((c) => !parked.has(c.id));
@@ -49,15 +49,32 @@ function measure(host) {
   return { measured: true, usable: true, ok, ttfbMs: ttfb, worst: Math.max(...Object.values(ttfb)) };
 }
 
+/** 实时探测：每次运行真探一遍各源的探针路径（HTTP 成功 + 首字节时间），失败的当场标 down。 */
+async function liveProbe(host, probePath) {
+  if (!host || !probePath) return null;
+  const t0 = Date.now();
+  try {
+    const res = await fetch(`https://${host}${probePath}`, { headers: { 'user-agent': 'sp-rank/1' }, signal: AbortSignal.timeout(8000) });
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok || ct.includes('html')) return { ok: false, ms: Date.now() - t0, status: res.status };
+    await res.arrayBuffer().catch(() => {});
+    return { ok: true, ms: Date.now() - t0, status: res.status };
+  } catch (e) {
+    return { ok: false, ms: Date.now() - t0, error: String(e?.message || e).slice(0, 60) };
+  }
+}
+
 const rows = [];
 for (const c of candidates()) {
   const m = measure(c.host);
-  rows.push({ ...c, ...(m || { measured: false, usable: null, ttfbMs: null }), excluded: excluded.has(c.id) });
+  const live = await liveProbe(c.host, c.probe);
+  const down = !!(live && live.ok === false);
+  rows.push({ ...c, ...(m || { measured: false, usable: null, ttfbMs: null }), live, down, excluded: excluded.has(c.id) });
 }
 const order = readPreferredOrder(ROOT);
 const rank = (id) => { const i = order.indexOf(id); return i < 0 ? 999 : i; };
 rows.sort((a, b) => {
-  const ea = a.excluded || a.usable === false, eb = b.excluded || b.usable === false;
+  const ea = a.excluded || a.usable === false || a.down === true, eb = b.excluded || b.usable === false || b.down === true;
   if (ea !== eb) return ea ? 1 : -1;                 // 实测不可用/被排除的排最后
   const ra = rank(a.id), rb = rank(b.id);            // 主序：origins.json 的 order（已按实测最快打头）
   if (ra !== rb) return ra - rb;
@@ -76,6 +93,7 @@ const doc = {
   rank: rows.map((r, i) => ({
     n: i + 1, id: r.id, kind: r.kind, host: r.host, coverage: r.coverage,
     measured: r.measured, usable: r.usable, ttfbMs: r.ttfbMs, ok: r.ok, excluded: r.excluded,
+    down: r.down === true, liveMs: r.live?.ms ?? null,
   })),
 };
 const body = `${JSON.stringify(doc, null, 2)}\n`;
