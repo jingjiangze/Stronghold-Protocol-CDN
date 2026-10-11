@@ -38,13 +38,28 @@ const BACKENDS = [
 
 // Same two backends pointed at the asset branch. Built separately because the ref is part of the
 // URL for both forms: jsDelivr wants '@ref' after the repo, ghfast wants '/ref' in the raw path.
+//
+// `openi` is listed first on purpose. OpenI serves the SAME committed `assets-raw` tree and measures
+// ~0.28s TTFB vs jsDelivr/ghfast's higher latency, BUT it hard-codes `Access-Control-Allow-Origin`
+// to a third-party domain and ignores Range on binaries — so the browser cannot use it directly.
+// The Worker fetches it server-side (no browser-CORS limit) and re-emits our own `ACAO:*` + Range
+// headers, which is exactly the "anti-proxy that fixes CORS" shape. If OpenI is down the request
+// falls through to jsdelivr/ghfast unchanged.
 const ASSET_BACKENDS = [
+  { id: 'openi', prefix: 'https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/' + REF_ASSETS },
   { id: 'jsdelivr-assets', prefix: 'https://cdn.jsdelivr.net/gh/' + REPO + '@' + REF_ASSETS },
   { id: 'ghfast-assets', prefix: 'https://ghfast.top/https://raw.githubusercontent.com/' + REPO + '/' + REF_ASSETS },
 ];
 
 const MAX_PATH = 300;
+// Interface files (main) change in place, so a short TTL lets an edit show up within the hour.
 const CACHE_TTL = 3600;
+// The art tree on `assets-raw` is IMMUTABLE: every upstream release replaces it wholesale with a new
+// ref, and no path is ever rewritten. So a cached asset never goes stale, and a long TTL means
+// repeats become Cloudflare HITs that never re-invoke the Worker — which is how we keep this
+// OpenI-backed route free of request/CPU budget. (Same trick as a 302's Cache-Control, applied to
+// the 200: edge cacheability is identical for both status codes.)
+const ASSET_CACHE_TTL = 86400;
 const NEGATIVE_TTL = 60;
 
 // Where /dl/ sends a browser for a release asset. Ordered; only the first is used, because a
@@ -148,11 +163,11 @@ const cors = (extra = {}) => ({
   ...extra,
 });
 
-async function fetchBackend(backend, path, { range, method }) {
+async function fetchBackend(backend, path, { range, method, ttl = CACHE_TTL }) {
   const url = backend.prefix + path.split('/').map(encodeURIComponent).join('/');
   const headers = { 'user-agent': 'sp-git-mount-relay', accept: '*/*' };
   if (range) headers.range = range;
-  const res = await fetch(url, { method, headers, redirect: 'follow', cf: { cacheTtl: CACHE_TTL } });
+  const res = await fetch(url, { method, headers, redirect: 'follow', cf: { cacheTtl: ttl } });
   return { res, url };
 }
 
@@ -210,7 +225,7 @@ export default {
 
     for (const backend of backends) {
       try {
-        const { res, url: backendUrl } = await fetchBackend(backend, path, { range, method });
+        const { res, url: backendUrl } = await fetchBackend(backend, path, { range, method, ttl: asset ? ASSET_CACHE_TTL : CACHE_TTL });
         if (!res.ok) {
           failures.push(backend.id + ':' + res.status);
           continue;
@@ -227,7 +242,8 @@ export default {
         // Claim Range support only when the backend actually honoured it, or audio seek breaks.
         if (range && !res.headers.get('content-range')) headers.delete('accept-ranges');
         else headers.set('accept-ranges', 'bytes');
-        headers.set('cache-control', 'public, max-age=' + CACHE_TTL);
+        // Immutable art tree: cache long so repeats are edge HITs that never hit the Worker (free).
+        headers.set('cache-control', 'public, max-age=' + (asset ? ASSET_CACHE_TTL : CACHE_TTL));
         headers.set('x-git-mount-backend', backend.id);
         headers.set('x-git-mount-url', backendUrl);
         return new Response(method === 'HEAD' ? null : res.body, { status: res.status, headers });
