@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="description" content="服务器部署文档：卫戍协议游戏服从零部署到 ModelScope 创空间（Docker），含所需信息、默认配置与验收（非官方同人作品）" />
+  <title>服务器部署文档 · 卫戍协议 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>素材 CDN<small>STRONGHOLD PROTOCOL</small></div>
+    </div>
+    <nav class="navigation">
+      <a href="./">CDN 首页</a>
+      <a href="#checklist">所需信息</a>
+      <a href="#topology">架构</a>
+      <a href="#studio">创建创空间</a>
+      <a href="#config">默认配置</a>
+      <a href="#push">推送部署</a>
+      <a href="#verify">验证</a>
+    </nav>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>服务器部署文档</h1>
+      <p class="hero-description">
+        把卫戍协议游戏服从零部署到 <b>ModelScope 创空间</b>（一个 Docker 容器）。文档写清了：部署前
+        要准备什么信息、怎么创建创空间、默认配置是什么、怎么推送并触发重新部署、怎么验收。
+        所有默认配置都随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上、逐字可用。
+        全部来自仓库源码与平台实测（2026-10-11）。
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span>端口 <strong>7860 锁死</strong></span>
+      <span>源码 <strong>已内置</strong></span>
+      <span>字节 <strong>不过容器</strong></span>
+    </div>
+  </section>
+
+  <!-- ===================== 结论 ===================== -->
+  <section class="block" id="conclusion">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">结论先行</span>
+      <span class="block__who">创空间 = Docker 容器，端口硬锁 7860（2026-10-11）</span>
+    </div>
+    <p class="block__lead">
+      游戏服跑在 ModelScope 创空间的 Docker 容器里，对外只暴露一个端口 <b>7860</b>（平台写死，不可改）。
+      容器内部三个进程共用这个口：<b>nginx</b> 占 7860 做分流，<b>edge-sidecar</b>（:3130）只把素材请求 302 到 CDN，
+      <b>游戏</b>（:3120）跑页面 / WebSocket / 数据。素材字节<b>从不经过容器</b>——玩家浏览器拿到的是 302，
+      自己去 CDN 取。默认配置已写好，复制即用，不用自己猜参数。
+    </p>
+    <div class="notice">
+      <span><b>这是服务端部署，不是素材 CDN：</b>本页讲「游戏服怎么跑起来」。素材本身由
+      既有 R2 / git 镜像分发（文档站其它页有素材 CDN 的同步与镜像说明）；游戏服只负责把清单里的素材地址
+      指向那些源。两者是不同系统，不要混。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 所需信息 ===================== -->
+  <section class="section" id="checklist">
+    <div class="section-heading">
+      <div><div class="eyebrow">CHECKLIST</div><h2>部署前需要准备什么</h2></div>
+      <span class="section-status">带 ⚠️ 的是平台硬约束</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>项</th><th>必需</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>ModelScope 账号</td><td class="mono">✅</td><td>当前用 <code class="inline">jingjiangze</code>。没有先注册。</td></tr>
+          <tr><td>ModelScope Access Token</td><td class="mono">✅</td><td>形如 <code class="inline">ms-xxxx-xxxx</code>。做 git 远程鉴权与「重新部署」，不要用主密码。</td></tr>
+          <tr><td>游戏服务端代码</td><td class="mono">✅</td><td>上游 <code class="inline">sganggs/Stronghold-Protocol</code> 的 fork，或配套仓库（其 <code class="inline">Dockerfile</code> 假定 <code class="inline">server/ public/ data/ tools/</code> 在同目录）。</td></tr>
+          <tr><td>素材 CDN 源</td><td class="mono">⚠️ 默认已给</td><td>容器不存素材字节，只 302。默认两个源：<code class="inline">modelscope</code>（数据集镜像，公开）+ <code class="inline">r2</code>（<code class="inline">weishucdn.jiangjiangze.icu</code>）。</td></tr>
+          <tr><td>基础镜像</td><td class="mono">⚠️</td><td><code class="inline">node:22-alpine</code>。本项目是 Node 应用，不需要 torch 镜像。</td></tr>
+          <tr><td>硬件规格</td><td class="mono">⚠️</td><td><code class="inline">platform/2v-cpu-8g-mem</code>（免费 CPU，2 vCPU / 8 GB）。</td></tr>
+          <tr><td>对外端口</td><td class="mono">⚠️</td><td><b>7860，硬锁</b>（<code class="inline">deploy_schema.json</code> 的 <code class="inline">port.const</code>；8080 已被平台占用）。</td></tr>
+          <tr><td>对外域名</td><td class="mono">⚠️</td><td>平台分配 <code class="inline">https://jingjiangze-stronghold-protocol.ms.show/</code>，不能自定义（自有域名需走 Cloudflare Worker 代理）。</td></tr>
+          <tr><td>实例数</td><td class="mono">建议</td><td><code class="inline">1</code>（免费档默认）。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== 架构 ===================== -->
+  <section class="section" id="topology">
+    <div class="section-heading">
+      <div><div class="eyebrow">TOPOLOGY</div><h2>架构总览</h2></div>
+      <span class="section-status">游戏 3120 / sidecar 3130 / nginx 7860</span>
+    </div>
+    <pre class="code"><i># 三个进程共用一个对外端口 7860，按路径分流</i>
+                    ┌─ /assets/** /fonts/** ─► edge-sidecar :3130 ──302──► 素材源（字节不过容器）
+玩家 ──:7860──► nginx┤                                              ↑ 只有 Location，没有字节
+                    └─ 其余（页面/data/js/vendor/media/ws/healthz）─► 游戏 :3120</pre>
+    <div class="two-col" style="margin-top:16px">
+      <div class="mini">
+        <h4>为什么这么分</h4>
+        <p>创空间只给一个公网口（7860），所以 nginx 占住它，另外两个退到内部端口（绑 <code class="inline">127.0.0.1</code>）。这与 Stardust 的 compose 同构（游戏 3120 / 素材解析器 3130 / 一个 nginx 在前面）。</p>
+      </div>
+      <div class="mini">
+        <h4>监督语义是故意不对称的</h4>
+        <ul>
+          <li>游戏或 nginx 退出 → 整体退出，让平台重启容器（少一个就没服务）。</li>
+          <li>sidecar 退出 → 只记日志；nginx 的 fallback 还能供素材，不为它重启整个容器。</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 创建创空间 ===================== -->
+  <section class="section" id="studio">
+    <div class="section-heading">
+      <div><div class="eyebrow">STUDIO</div><h2>第一步：创建 ModelScope 创空间</h2></div>
+      <span class="section-status">控制台 + Git 远程</span>
+    </div>
+    <ol class="steps">
+      <li class="step">
+        <span class="step__n">1</span>
+        <div class="step__body">
+          <div class="step__title">创空间里建仓库</div>
+          <div class="step__note">打开 ModelScope 创空间控制台 → 创建创空间；命名空间保持你的账号，仓库名填 <code class="inline">Stronghold-Protocol</code>；基础镜像选 <code class="inline">node:22-alpine</code>，硬件选 <code class="inline">platform/2v-cpu-8g-mem</code>。先别点部署。</div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">2</span>
+        <div class="step__body">
+          <div class="step__title">拿到 Git 仓库地址</div>
+          <div class="step__note">进创空间「设置」，复制 Git 仓库地址，形如 <code class="inline">https://oauth2:&lt;Token&gt;@www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git</code>（Token 已嵌进 URL，无需 ssh key）。第 6 步当 git remote 用。</div>
+        </div>
+      </li>
+    </ol>
+    <div class="notice">
+      <span><b>端口在控制台看不到输入框</b>——它被平台的 <code class="inline">deploy_schema.json</code> 锁成 7860。记住它、别在 Dockerfile 里改端口即可；构建失败日志会提示端口约束。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 默认配置 ===================== -->
+  <section class="section" id="config">
+    <div class="section-heading">
+      <div><div class="eyebrow">CONFIG</div><h2>第二步：默认配置（随配套仓库附上）</h2></div>
+      <span class="section-status">复制即用，逐字可用</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 已把边缘层 5 个文件放在
+      <code class="inline">deploy/stardust/ms-edge/</code>，整目录复制进你的服务端代码即可（路径不变，根
+      <code class="inline">Dockerfile</code> 按这个路径 <code class="inline">COPY</code>）：
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">sources.json</td><td>源表与例外表（唯一真源，运行时读取）</td></tr>
+          <tr><td class="mono">edge-sidecar.mjs</td><td>决策：路径校验、选源、302、CORS、方法限制（纯 Node，无 Lua）</td></tr>
+          <tr><td class="mono">nginx.conf</td><td>分流 + 后端故障兜底（不含任何 Lua）</td></tr>
+          <tr><td class="mono">render-nginx.mjs</td><td>构建期从 <code class="inline">sources.json</code> 渲染 <code class="inline">sources-nginx.conf</code>（定兜底基址）</td></tr>
+          <tr><td class="mono">entrypoint.sh</td><td>三个进程的启动顺序与监督</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="mini">
+        <h4>Dockerfile 环境变量（写死）</h4>
+        <pre class="code">ENV NODE_ENV=production \
+    SP_PUBLIC_PORT=7860 \
+    SP_GAME_PORT=3120 \
+    SP_EDGE_PORT=3130 \
+    PORT=3120 \
+    HOST=127.0.0.1</pre>
+      </div>
+      <div class="mini">
+        <h4>sources.json 默认（节选）</h4>
+        <pre class="code">{
+  "order": ["modelscope", "r2"],
+  "sources": [
+    { "id": "modelscope",
+      "base": "https://modelscope.cn/datasets/<b>jingjiangze</b>/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial" },
+    { "id": "r2",
+      "base": "https://weishucdn.jiangjiangze.icu" }
+  ],
+  "exceptions": {
+    "/assets/skins/char_340_shwaz_snow_1/illustration.png": "r2"
+  }
+}</pre>
+      </div>
+    </div>
+    <div class="notice" style="margin-top:16px">
+      <span><b>order 是静态顺序，不是实时测速</b>：容器在 ModelScope 机房，量不出玩家那边的链路。真正按玩家网络选最快是<b>客户端</b> <code class="inline">pick.js</code> 的事，两者分工。新增镜像后要核对覆盖率——平台审核会拒收个别文件（如上面的 <code class="inline">exceptions</code> 路径），这些必须点名改道，否则玩家 404。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 推送部署 ===================== -->
+  <section class="section" id="push">
+    <div class="section-heading">
+      <div><div class="eyebrow">DEPLOY</div><h2>第三步：推送并触发重新部署</h2></div>
+      <span class="section-status">push ≠ 部署</span>
+    </div>
+    <pre class="code"><i># 1) 加 ModelScope git 远程（oauth2 把 token 嵌进 URL）</i>
+git remote add ms "https://oauth2:${MS_TOKEN}@www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git"
+
+<i># 2) 提交默认配置（本机若开了 SSH 签字，用一次性覆盖避免 agent 缺失）</i>
+git add deploy/stardust/ms-edge Dockerfile
+git -c commit.gpgsign=false commit -m "deploy: 内置边缘层默认配置（ms-edge）"
+
+<i># 3) 推到创空间的 git 远程</i>
+git push ms HEAD:master
+
+<i># 4) 推送后，在创空间控制台点「重新部署」——API 在 Running 态会拒绝 start</i></pre>
+    <div class="notice">
+      <span><b>推送 ≠ 部署。</b>推到创空间 git 远程只是落地代码；还要在控制台点「重新部署」（或调 API）才会重新 build。忘了这步，线上不会变。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 验证 ===================== -->
+  <section class="section" id="verify">
+    <div class="section-heading">
+      <div><div class="eyebrow">VERIFY</div><h2>第四步：验收</h2></div>
+      <span class="section-status">healthz / 302 / WebSocket</span>
+    </div>
+    <pre class="code"><i># 1. 健康检查（探的是对外口 7860，由 nginx 代理到游戏）</i>
+curl -fsS https://jingjiangze-stronghold-protocol.ms.show/healthz
+
+<i># 2. 素材请求应拿到 302 到某个源（字节不经过容器）</i>
+curl -fsS -o /dev/null -w '%{http_code} -> %{redirect_url}\n' \
+  https://jingjiangze-stronghold-protocol.ms.show/assets/char/avatar/char_1016_agoat2.png
+
+<i># 3. WebSocket（联机用）</i>
+wss://jingjiangze-stronghold-protocol.ms.show/ws</pre>
+    <div class="table-wrap" style="margin-top:16px">
+      <table>
+        <thead><tr><th>现象</th><th>原因 / 处理</th></tr></thead>
+        <tbody>
+          <tr><td>构建失败，<code class="inline">nginx -t</code> 错</td><td><code class="inline">sources.json</code> 渲染不出 <code class="inline">sources-nginx.conf</code>，或 <code class="inline">nginx.conf</code> 语法错。本地先复现。</td></tr>
+          <tr><td>素材 404</td><td>命中 <code class="inline">exceptions</code> 没覆盖的被审核拒收路径，或 <code class="inline">order</code> 里的源挂了。</td></tr>
+          <tr><td>连不上自有域名</td><td>平台 WAF 拦了：用 <code class="inline">*.ms.show</code> 域名 + <code class="inline">iframe no-referrer</code>，或 Cloudflare Worker 代理。</td></tr>
+          <tr><td>push 成功但没生效</td><td>忘了点「重新部署」。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div>
+        非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
+        本站不提供游戏本体下载，只镜像上游仓库发布包里的静态资源。
+      </div>
+      <div class="footer-links">
+        <a href="./">CDN 首页</a>
+        <a href="./docs/server-deploy.md">原始 Markdown</a>
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol-Server-Deploy" target="_blank" rel="noopener">配套部署仓库</a>
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
+        <a href="https://github.com/sganggs/Stronghold-Protocol" target="_blank" rel="noopener">上游仓库</a>
+        <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
+      </div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>

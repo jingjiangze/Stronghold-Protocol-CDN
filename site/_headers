@@ -63,12 +63,12 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
-# Same shape: Pages 308s /cdn-deploy.html to /cdn-deploy, so both need naming.
-/cdn-deploy.html
+# Same shape: Pages 308s /server-deploy.html to /server-deploy, so both need naming.
+/server-deploy.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
-/cdn-deploy
+/server-deploy
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
