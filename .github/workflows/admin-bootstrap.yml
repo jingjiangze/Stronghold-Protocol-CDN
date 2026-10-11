@@ -95,6 +95,14 @@ jobs:
           done
           echo "Pages secret 都在位：$want"
 
+      - name: bundle Functions + their src deps into the deploy root
+        run: |
+          set -euo pipefail
+          mkdir -p site/functions site/src
+          cp -r functions/. site/functions/
+          cp src/upload.mjs src/docs-index.mjs site/src/
+          echo "bundled functions: $(find site/functions -name '*.js' | wc -l) files"
+
       - name: deploy site with functions
         if: ${{ inputs.deploy }}
         env:

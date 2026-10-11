@@ -13,6 +13,21 @@
 (() => {
   'use strict';
 
+  // 静默失效兜底：脚本中途抛错（如后端接口没上线、资源没加载全）会让所有 addEventListener 永远不执行，
+  // 表现就是「按钮点不了」而页面毫无提示。这里先把错误显式打出来，而不是让按钮静默死掉。
+  function failBanner(text) {
+    const host = document.getElementById('nav-status');
+    if (host) { host.textContent = text; host.style.color = '#ff8a8a'; }
+    const note = document.getElementById('gate-msg');
+    if (note) { note.textContent = text; note.className = 'section-note err'; }
+  }
+  window.addEventListener('error', (event) => {
+    failBanner(`后台脚本出错：${String(event.message || event.error || '未知错误').slice(0, 120)}（多半是接口没上线，联系维护）`);
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    failBanner(`后台请求失败：${String(event.reason && event.reason.message || event.reason || '未知').slice(0, 120)}（多半是接口没上线，联系维护）`);
+  });
+
   const KEY_STORE = 'sp.cdnAdminKey';
   const MAX_BYTES = 64 * 1024 * 1024;
   const $ = (id) => document.getElementById(id);

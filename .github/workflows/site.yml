@@ -59,6 +59,20 @@ jobs:
       - name: content-hash the site assets
         run: node src/site-hash.mjs --dir=site
 
+      # The admin page's Functions live at the repo root in functions/, and they import the shared
+      # src/ modules via ../../../../src/*.mjs. Pages only deploys the directory passed to
+      # `wrangler pages deploy` (here: site/), so we copy functions/ AND the src/ modules it reaches
+      # into the deploy root, preserving their relative depth — otherwise the live project ships with
+      # no Functions and every /api/cdn/upload/* falls through to a Cloudflare 404. (2026-10-12 audit:
+      # the admin page was dead precisely because the Functions were never deployed.)
+      - name: bundle Functions + their src deps into the deploy root
+        run: |
+          set -euo pipefail
+          mkdir -p site/functions site/src
+          cp -r functions/. site/functions/
+          cp src/upload.mjs src/docs-index.mjs site/src/
+          echo "bundled functions: $(find site/functions -name '*.js' | wc -l) files"
+
       - name: deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
