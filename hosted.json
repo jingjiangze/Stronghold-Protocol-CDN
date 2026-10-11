@@ -16135,6 +16135,32 @@
           3524568
         ]
       ]
+    },
+    {
+      "id": "sp-four-emotes",
+      "what": "Four-server chat stickers and previews; stable IDs; original GIF animations",
+      "addedAt": "2026-10-11",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 4,
+      "bytes": 6325538,
+      "keys": [
+        [
+          "assets/local/sp-four-emotes/9385384c3869e743837b.preview.webp",
+          2454
+        ],
+        [
+          "assets/local/sp-four-emotes/f76a6ff2dcc515ecf15c.gif",
+          4515027
+        ],
+        [
+          "assets/local/sp-four-emotes/d32bfe4b05515f2f70ba.gif",
+          1805251
+        ],
+        [
+          "assets/local/sp-four-emotes/ea7ecdec5c0bdfbdbe2c.preview.webp",
+          2806
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
