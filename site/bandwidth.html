@@ -128,7 +128,11 @@
 
     <p class="section-note" style="margin-top:14px">
       <b>素材那一块是全部问题的 99%。</b>它压不动，只能搬走 —— 这决定了后面所有措施的优先级。
-      <b>稳态 WS 的 30~35 B/s 是<b>建模值</b></b>，漏了占 98% 的 <code class="inline">m.public</code>；真实人均见下节。
+      <b>稳态 WS 的 30~35 B/s 是建模值</b>，漏了整局流量里真正的两个大头
+      <code class="inline">b.start</code> 与 <code class="inline">m.private</code>；
+      真实人均（2026-10-12 整局实测）<b>57.5 B/s</b>，见下节。
+      <br />⚠️ 中间那版「98% 是 <code class="inline">m.public</code>」也不对 —— 它是在<b>机器人座位</b>上量的，
+      而机器人收不到任何单播，样本里根本没有 <code class="inline">m.private</code>。
     </p>
   </section>
 
