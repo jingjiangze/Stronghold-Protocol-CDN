@@ -20,7 +20,15 @@
       "probe": "/assets/char/avatar/char_003_kalts.png",
       "coverage": "full",
       "enabled": false,
-      "note": "创空间容器里的分流边缘层：本站不持字节，/assets/** 与 /fonts/** 由容器内的 nginx+lua 302 出去（当前指向自建 ModelScope 数据集镜像），其余路径由容器里的游戏服务器回答。probe 必须点名一个真实素材路径——默认的 /robots.txt 会落到游戏服务器上，量到的是游戏页面而不是镜像。默认 enabled:false：容器里的边缘层还没上线（平台要求人工在设置页重新部署才重建镜像），在那之前这个源的 /assets/** 是 404。边缘层验收通过后把这里的 enabled 与 disabled 列表里的条目一起去掉即可。"
+      "note": "创空间容器里的分流边缘层：本站不持字节，/assets/** 与 /fonts/** 由一个 Node 解析器进程决定 302 去哪（默认指向自建 ModelScope 数据集镜像），其余路径由容器里的游戏服务器回答。probe 必须点名一个真实素材路径——默认的 /robots.txt 会落到游戏服务器上，量到的是游戏页面而不是镜像。默认 enabled:false：容器里的边缘层还没上线（平台要求人工在设置页重新部署才重建镜像），在那之前这个源的 /assets/** 是 404。边缘层验收通过后把这里的 enabled 与 disabled 列表里的条目一起去掉即可。"
+    },
+    {
+      "id": "ms-dataset",
+      "kind": "cdn",
+      "root": "https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial",
+      "probe": "/assets/char/avatar/char_003_kalts.png",
+      "coverage": "full",
+      "note": "自建 ModelScope **数据集**镜像（15,979 assets + 7 fonts，逐字节校验过）。这是本次测过**唯一同时满足三件事**的源：ACAO 反射/`*`（浏览器跨域可取）、Range 返回 206（seek 可用）、且直连比 R2 快 —— 小文件 TTFB 0.21–0.22s vs R2 0.62–0.69s，855 KB 大文件 0.26s/3.3 MB/s vs R2 1.6–2.2s/0.4 MB/s。对照：OpenI 同样快但 ACAO 写死第三方域且二进制忽略 Range，只能作非浏览器通道。收口了 docs/audit/openi-cors-bypass.md §5 的 PENDING-E（「ModelScope dataset 有 ACAO:* 但需另开仓」）。**root 用的是可变 master 而不是 40hex**：镜像还在追加文件，钉死后新素材要等换版才可见。Stardust 的 MATERIAL-SOURCES.md 要求钉 40hex，这一条属已知取舍，待定。缺一个文件（平台审核拒收 char_340_shwaz_snow_1/illustration.png，见 ms-edge 的 exceptions）。"
     }
   ],
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 618 MiB art tree lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
