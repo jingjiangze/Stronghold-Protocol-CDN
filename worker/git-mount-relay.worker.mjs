@@ -46,6 +46,17 @@ const ASSET_BACKENDS = [
 const MAX_PATH = 300;
 const CACHE_TTL = 3600;
 const NEGATIVE_TTL = 60;
+// /dl/ lives a day at the edge, not an hour. The target is `mirror + github/releases/download/<tag>/<file>`
+// — a release asset, immutable once published — so a long cache is safe for the BYTES, and it is the
+// whole point: a Worker response that hits the edge cache never runs the Worker, so it never spends a
+// free-plan request. CAVEAT that makes this real (and is enforced outside this file): Cloudflare does
+// NOT cache 302 by default (the default cacheable set is 200/203/204/206/300/301/308/404/… — 302 is
+// absent), so this header alone is a no-op. A zone Cache Rule must mark /dl/* cache-eligible AND list
+// 302 among the statuses to cache, or the Worker runs on every download and the budget is spent
+// anyway. tools/warm-cache.mjs warms the bytes; the paired Cache Rule (see
+// tools/dl-cache-rule.mjs) is what makes this TTL actually take effect. If a mirror host in
+// MIRROR_PREFIXES dies, purge /dl/* — a cached 302 would otherwise keep pointing players at it for a day.
+const DL_TTL = 86400;
 
 // Where /dl/ sends a browser for a release asset. Ordered; only the first is used, because a
 // redirect has no retry -- a mirror that is down must not be the one every visitor lands on.
@@ -188,7 +199,7 @@ export default {
         return new Response('bad tag or file name', { status: 400, headers: cors() });
       }
       const target = 'https://github.com/' + REPO + '/releases/download/' + tag + '/' + file;
-      const headers = new Headers({ ...cors(), location: MIRROR_PREFIXES[0] + target.replace(/^https:\/\//, ''), 'cache-control': 'public, max-age=3600' });
+      const headers = new Headers({ ...cors(), location: MIRROR_PREFIXES[0] + target.replace(/^https:\/\//, ''), 'cache-control': 'public, max-age=' + DL_TTL });
       headers.set('x-download-target', target);
       return new Response(null, { status: 302, headers });
     }

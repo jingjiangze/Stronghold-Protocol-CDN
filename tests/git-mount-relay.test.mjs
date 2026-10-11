@@ -2,6 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { safePath, hasTraversal, rawPathOf, isAssetTree, backendFor, MAX_BYTES } from '../worker/git-mount-relay.worker.mjs';
+import worker from '../worker/git-mount-relay.worker.mjs';
+
+// /dl/ returns a 302 BEFORE any backend fetch, so this is deterministic and offline: the whole point
+// of the day-long cache-control is that a cache hit never runs the Worker, and the header is the
+// contract that makes that true. Assert it here; the paired zone Cache Rule (tools/dl-cache-rule.mjs)
+// is what actually lets an edge cache store a 302 — verify that live with cf-cache-status, not here.
+test('/dl/ answers 302 with a day-long cache-control and an immutable-shaped target', async () => {
+  const res = await worker.fetch(new Request('https://relay.test/dl/assets-v0.2.3/assets-ui-1.zip'));
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get('cache-control'), 'public, max-age=86400');
+  const loc = res.headers.get('location') || '';
+  assert.ok(loc.includes('github.com/'), 'redirects to a github release asset, not through the Worker');
+  assert.ok(loc.includes('/releases/download/assets-v0.2.3/assets-ui-1.zip'), 'tag+file are the immutable release coordinates');
+});
+
+test('/dl/ still refuses a name that tries to escape the path', async () => {
+  const res = await worker.fetch(new Request('https://relay.test/dl/..%2fx/y.zip'));
+  assert.equal(res.status, 400);
+});
 
 // `new URL()` normalises '..' away while constructing: '/../../etc/passwd' becomes '/etc/passwd'
 // and '%2e%2e' is decoded, so neither `pathname` nor `href` shows what was requested. The Worker
