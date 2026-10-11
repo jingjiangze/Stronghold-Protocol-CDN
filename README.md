@@ -58,6 +58,23 @@ gh 取上游 latest release（或 --tag 指定）
 
 细节见 [`docs/audit/openi-mirror.md`](docs/audit/openi-mirror.md)。
 
+## 第三镜像：ModelScope 创空间
+
+素材树（我自己的 `assets-raw`）另有一份幂等 git 镜像，由 `tools/push-modelscope.mjs` 推送到
+[ModelScope 创空间](https://www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git) 的 `cdn` 分支，
+`.github/workflows/mirror-modelscope.yml` 每天四次（`23 */6`）调用。它是 `assets-raw` 的一次
+`git archive` 直推（字节保真，`.gitattributes` 随树带走），树未变时比对 `assets.summary.json` 的 `treeHash`
+直接退出、不重传那 ~650 MiB。
+
+**它不做运行时源**：创空间不提供文件直链——`/resolve/`、`/raw/`、`/tree/` 任意路径都返回同一份 SPA HTML，
+浏览器取不到字节，所以只供 clone / git-mount CDN 挂载，且**不写进 `origins.json`**。默认**排除 `assets/skins/**`**
+（commit message 写明「不含皮肤，待补齐」），`--include-skins` 留给皮肤集完整时再用。
+
+与 `docs/audit/modelscope-openi-hanabi-sources.md` 区分开：那篇审的是 **Stardust fork 的 `Stardust/arknight-assets`**
+（对音频 0% 覆盖、只补皮肤有价值）；本镜像是我**自己树**的第三份存放。
+
+细节见 [`site/docs/modelscope-mirror.md`](site/docs/modelscope-mirror.md)。
+
 ## 接口
 
 基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`

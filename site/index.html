@@ -33,6 +33,7 @@
       <a href="#asset-cdn">素材 CDN 对账</a>
       <a href="#mirror-selection">多源自动选源</a>
       <a href="#openi">第二镜像 OpenI</a>
+      <a href="#modelscope">第三镜像 ModelScope</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -523,6 +524,38 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
           <span>含 <b>配置样例</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="modelscope">
+    <div class="section-heading">
+      <div><div class="eyebrow">THIRD MIRROR · MODELSCOPE</div><h2>第三镜像：ModelScope 创空间</h2></div>
+      <span class="section-status">我自己 assets-raw 的 git 镜像，非运行时源</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      素材树由 <code class="inline">tools/push-modelscope.mjs</code> <b>幂等</b>推送到 ModelScope 创空间
+      <code class="inline">jingjiangze/Stronghold-Protocol</code> 的 <code class="inline">cdn</code> 分支，每天四次。它是
+      <b>我自己树的第三份存放</b>——和 OpenI 不同，它<b>不是运行时源</b>：创空间不提供文件直链
+      （任何路径都返回 SPA HTML），只能被 clone / 被 git-mount CDN 挂载。默认<b>不含皮肤</b>，且<b>不写进
+      <code class="inline">origins.json</code></b>。
+    </p>
+    <div class="cards">
+      <a class="card" href="./modelscope-mirror">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>机制 / 为什么独立 Workflow / 状态词 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>源 <b>assets-raw</b></span>
+          <span>推送 <b>幂等</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/modelscope-mirror.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>三处踩坑</b></span>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>

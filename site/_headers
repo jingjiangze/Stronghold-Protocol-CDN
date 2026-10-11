@@ -72,6 +72,15 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
+# Same shape: Pages 308s /modelscope-mirror.html to /modelscope-mirror, so both need naming.
+/modelscope-mirror.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+/modelscope-mirror
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
 # Same shape: the agent upload console is an operator surface, not public content.
 /admin.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
