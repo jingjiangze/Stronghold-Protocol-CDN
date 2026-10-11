@@ -188,7 +188,10 @@
       const model = buildTree(rows);
       // 文件行后面跟上「说明」：必须可见，不能只藏在 chip 的 tooltip 里。
       // awaiting-commit 行的 note 就是「没提交的原因」，后台一眼要能看到，不用悬停。
-      const appendFile = (file, atDepth) => {
+      // container 必须由调用方传进来：它是 paint() 的形参，appendFile 的作用域里没有它。
+      // 之前这里直接引用 container，画根级文件行就抛 ReferenceError，整棵树连同暂存区一起渲染中断
+      // （2026-10-12 实测：进后台就报「container is not defined」，暂存区永远停在「读取中…」）。
+      const appendFile = (file, atDepth, container) => {
         const row = treeRow(file, atDepth, false);
         container.appendChild(row);
         if (file.note) {
@@ -223,7 +226,7 @@
           container.appendChild(kids);
         }
         for (const f of node.files.sort((a, b) => (a.name < b.name ? -1 : 1))) {
-          appendFile({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth);
+          appendFile({ ...f, path: node.path ? `${node.path}/${f.name}` : f.name }, depth, container);
         }
       };
       paint(model, host, 0);
