@@ -503,7 +503,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   <section class="section" id="openi">
     <div class="section-heading">
       <div><div class="eyebrow">SECOND MIRROR · OPENI</div><h2>第二镜像：OpenI（启智）</h2></div>
-      <span class="section-status">实测最快，但 CORS 不可用，默认停用</span>
+      <span class="section-status">最快，但 CORS 不可用；经 ms-edge 点名 ?sp_source=openi 可达</span>
     </div>
     <p class="section-note" style="margin-bottom:14px">
       素材树已幂等同步到 OpenI 仓库 <code class="inline">assets-raw</code> 分支，每天四次推送。它是测过
@@ -511,8 +511,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <b>不是</b>之前写的「10×」；旧数走 Clash 代理测的，已作废），却也是唯一 <b>CORS 不可用</b>的源
       （<code class="inline">ACAO</code> 写死成第三方域 <code class="inline">experience.pro.iflyaicloud.com</code>，
       不反射 Origin，<code class="inline">OPTIONS</code> 预检直接 401）。跨域取 WebGL 贴图会被拒绝，所以默认
-      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，只当
-      <b>冷备 / 直链下载</b>，不当玩家运行时源。
+      <code class="inline">enabled:false</code> 并写进 <code class="inline">disabled</code> 数组，不当玩家直连源；
+      但可从 <b>ms-edge 边缘层点名</b>（<code class="inline">?sp_source=openi</code>，边缘只回 302，字节仍直出 OpenI）——只给不需要 CORS 的通道用。
     </p>
     <div class="cards">
       <a class="card" href="./openi-mirror">
@@ -520,7 +520,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>接入配置 / 同步机制 / CORS 为什么补不了 / 413 分批推送</span></div>
         <div class="card__stats">
           <span>素材树 <b>14,741 文件</b></span>
-          <span>默认 <b>停用</b></span>
+          <span>默认停用 · 边缘可点名</span>
         </div>
       </a>
       <a class="card" href="./docs/openi-mirror.md">
@@ -537,7 +537,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   <section class="section" id="modelscope">
     <div class="section-heading">
       <div><div class="eyebrow">THIRD MIRROR · MODELSCOPE</div><h2>第三镜像：ModelScope 创空间</h2></div>
-      <span class="section-status">我自己 assets-raw 的 git 镜像，非运行时源</span>
+      <span class="section-status">assets-raw 的 git 镜像；运行时形态＝同族数据集（ms-edge 默认源）</span>
     </div>
     <p class="section-note" style="margin-bottom:14px">
       素材树由 <code class="inline">tools/push-modelscope.mjs</code> <b>幂等</b>推送到 ModelScope 创空间
@@ -545,7 +545,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <b>我自己树的第三份存放</b>——和 OpenI 不同，它<b>不是运行时源</b>：创空间不提供文件直链
       （任何路径都返回 SPA HTML），只能被 clone / 被 git-mount CDN 挂载。源树 <code class="inline">assets-raw</code> 现已含
       <b>2,476 个皮肤文件</b>（经 git-mount 层以 <code class="inline">coverage:full</code> 提供），但本镜像默认仍排除皮肤，且不写进
-      <code class="inline">origins.json</code>。
+      <code class="inline">origins.json</code>。运行时取字节用<b>同族数据集</b>（<code class="inline">ms-dataset</code>）经
+      <b>ms-edge 边缘层</b>——那是 ms-edge 的默认 302 目标；本分支本身始终是 git-only。
     </p>
     <div class="cards">
       <a class="card" href="./modelscope-mirror">
@@ -570,13 +571,15 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   <section class="section" id="ms-edge">
     <div class="section-heading">
       <div><div class="eyebrow">EDGE REDIRECT · MS-EDGE</div><h2>边缘分流源：ms-edge</h2></div>
-      <span class="section-status">容器 302 边缘层，字节不经容器，当前停用</span>
+      <span class="section-status">容器 302 边缘层，字节不经容器，已上线（2026-10-11 晚）</span>
     </div>
     <p class="section-note" style="margin-bottom:14px">
       和前三个「镜像」不同，ms-edge <b>不是素材树的又一份拷贝</b>，而是站在字节源前面的<b>分流边缘层</b>：跑在创空间容器
       <code class="inline">:7860</code> 里，把 <code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code>
       <b>302 跳转</b>到真实字节源（当前指向自建 ModelScope 数据集镜像），<b>字节不经容器</b>；其余路径由容器里的游戏服务器回答。
-      因创空间需人工「重新部署」才重建镜像，<b>当前默认 <code class="inline">enabled:false</code></b>，验收通过后去掉停靠即转为候选源。
+      <b>已上线</b>（2026-10-11 晚验收）：分流判定在游戏进程内（<code class="inline">asset-jump.js</code>），三个镜像经边缘实测可达
+      （默认 → 数据集、<code class="inline">?sp_source=r2</code> → weishucdn、<code class="inline">?sp_source=openi</code> → OpenI）；
+      CDN 仓已把 ms-edge 从 <code class="inline">enabled:false</code> 与 <code class="inline">disabled</code> 两处移出。
     </p>
     <div class="cards">
       <a class="card" href="./ms-edge">
@@ -584,7 +587,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>架构 / 接入配置 / 状态词 / 验收命令</span></div>
         <div class="card__stats">
           <span>形态 <b>302 边缘</b></span>
-          <span>现状 <b>停用待上线</b></span>
+          <span>现状 <b>已上线</b></span>
         </div>
       </a>
       <a class="card" href="./docs/ms-edge.md">

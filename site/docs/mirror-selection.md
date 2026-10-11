@@ -13,7 +13,7 @@
   - **客户端（Android re-apk）** 用内嵌的 Java 逻辑（`ArtSource`/`ArtCdn`，见 §五）**自己**挑源——**不读 `pick.js`**。
 - 资格过滤：客户端逐条排除 `coverage:"partial"`（git 挂载源，源里没装全素材树）、`assetEligible:false`、
   `proxied:true`、以及 `enabled:false`（`origins.json` 的 `disabled` 软开关）四类源；当前线上 `disabled`
-  列表共 **四项**：`jsdelivr`、`jsdelivr-assets`、`openi`、`ms-edge`，其余是写死在客户端的防御性安全闸。
+  列表共 **三项**：`jsdelivr`、`jsdelivr-assets`、`openi`（`ms-edge` 已于 2026-10-11 晚从停靠移除），其余是写死在客户端的防御性安全闸。
 - 客户端：每台设备**自己**挑源，小文件类与大文件类**分开选**，6 小时 TTL，跨启动缓存；任何失败都回落到编译期常量
   （旧行为），**不会把设备指向清单没列的主机**（fail-closed 白名单）。
 
@@ -58,12 +58,12 @@
 
 | 排除条件 | 含义 | 当前线上是否真的有 |
 |---|---|---|
-| `enabled == false` | 发布方软开关关掉（来自 `origins.json` 的 `disabled`） | **真实存在**：`jsdelivr` / `jsdelivr-assets`（2026-10-10 止血，实测在真实素材上最慢且会超时），OpenI（CORS 不可用），ms-edge（容器未重建、暂不作为运行时源）—— 与 `disabled` 列表四项一致 |
+| `enabled == false` | 发布方软开关关掉（来自 `origins.json` 的 `disabled`） | **真实存在**：`jsdelivr` / `jsdelivr-assets`（2026-10-10 止血，实测在真实素材上最慢且会超时），OpenI（CORS 不可用）—— 与 `disabled` 列表三项一致；ms-edge 曾同样停靠，2026-10-11 晚边缘层上线后已从停靠移除 |
 | `assetEligible == false` | 发布方显式声明「此源不适合给素材」 | **防御性**：当前没有任何源设这个值，默认当 `true` |
 | `coverage == "partial"` | 源里没装全素材树，测了也是 404 | **真实存在**：git 挂载源（`@main` 分支）会带这个标记 |
 | `proxied == true` | 每字节都过 Worker 中转，免费计划预算付不起 | **防御性**：当前没有任何源设这个值，默认 `false` |
 
-> 当前线上真正被过滤掉的，是 `enabled:false` 的 jsDelivr 两条 + OpenI + ms-edge（共四项，与 `origins.json` 的 `disabled` 列表一致）+ `coverage:"partial"` 的 git 挂载源（`@main`）。
+> 当前线上真正被过滤掉的，是 `enabled:false` 的 jsDelivr 两条 + OpenI（共三项，与 `origins.json` 的 `disabled` 列表一致）+ `coverage:"partial"` 的 git 挂载源（`@main`）。
 > 其余两条是**写死在客户端的安全闸**——万一将来某源声明自己不胜任，客户端不会把它选上，不需要改客户端或发版。
 >
 > 注意一个细节：`src/origins.mjs` 里 git 源的 `base` 指向 `<root>/`，`coverage` 默认 `"partial"`。

@@ -11,7 +11,7 @@
 - 素材树（**14,741 文件 / ~2.14 GiB，含 2,476 个皮肤文件**）已幂等同步到 OpenI 仓库
   `jingjiangze/Stronghold-Protocol` 的 **`assets-raw`** 孤儿分支（远端当前 `19506266` = 本地 `assets-raw` tip），
   由 `.github/workflows/openi-mirror.yml` 每天四次（`cron: '47 0,6,12,18 * * *'`）推送。
-- 它**默认停用**：`origins.json` 里 `id: "openi"` 带 `enabled: false`，且同时写进 `disabled` 数组。
+- 它**默认不做直连源**：`origins.json` 里 `id: "openi"` 带 `enabled: false`，且同时写进 `disabled` 数组；但可从 **ms-edge 边缘层点名**（`?sp_source=openi`，边缘只回 302，字节仍直出 OpenI）。
   原因只有一个——**CORS 硬伤**（见 §四），不足以当玩家运行时源；现在只当**冷备 / 直链下载**。
 - 实测它**快**：直连 TTFB ~0.28 s，对比本桶 R2 主源直连 0.64 s，约 2.5×。
   ⚠️ 早期写的「0.25 s vs 1.1–8.1 s ≈ 快一个数量级」是**走 Clash 代理**测的，已作废；直连才是玩家真实路径。
@@ -113,7 +113,7 @@ fatal: the remote end hung up unexpectedly
 
 - `BASELINE`：OpenI 仓库 `jingjiangze/Stronghold-Protocol`（`assets-raw` 分支）、`src/openi-mirror.mjs`、
   `.github/workflows/openi-mirror.yml`、`origins.json` 的 `openi` 条目（`enabled:false` + `disabled` 双写）。
-- `IMPLEMENTED`：素材树已幂等同步到 OpenI（`assets-raw` 分支，远端 `19506266` = 本地 tip）；字节逐字节一致；入 `origins.json` 默认停用；
+- `IMPLEMENTED`：素材树已幂等同步到 OpenI（`assets-raw` 分支，远端 `19506266` = 本地 tip）；字节逐字节一致；入 `origins.json` 停靠（CORS）；可从 ms-edge 边缘层点名 `?sp_source=openi`；
   413 分批推送已修（budget=200 MiB/批，沿 commit 链重放）。所有改动已在 `origin/main`。
 - `IMPLEMENTED（CORS 已解）`：OpenI 裸 URL 不能当浏览器源（写死第三方 ACAO + 忽略 Range），但已通过自有 Worker
   `gitcdn.jiangjiangze.icu`（sp-git-mount-relay）**服务端回源 OpenI + 重写 `ACAO:*` + `Accept-Ranges`** 接进运行时。

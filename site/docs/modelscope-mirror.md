@@ -3,7 +3,7 @@
 > 续《镜像站》《第二镜像：OpenI》。前两篇讲「有哪些源、客户端怎么挑」与「OpenI 为什么默认停用」；
 > 本篇记**第三镜像 ModelScope 创空间**——它和 OpenI 一样是「第二份素材树的存放地」，但定位不同：
 > **它是我自己 `assets-raw` 树的一次幂等 git 镜像**（不是别人 fork 的树、也不是运行时源）。
-> 它**不做玩家运行时源**，因为创空间不提供文件直链；它存在的意义是「树可被 clone / 被 git-mount CDN 挂载」。
+> 它**不做直连运行时源**，因为创空间不提供文件直链；运行时取字节用**同族数据集**（`ms-dataset`）经 **ms-edge 边缘层**（ms-edge 的默认 302 目标）；本分支的意义是「树可被 clone / 被 git-mount CDN 挂载」。
 > 事实来自 `feat/modelscope-mirror` 分支的 `tools/push-modelscope.mjs` 与 `.github/workflows/mirror-modelscope.yml`，不是估算（2026-10-11）。
 
 ---

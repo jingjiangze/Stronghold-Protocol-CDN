@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
-  <meta name="description" content="边缘分流源 ms-edge：创空间容器里的 nginx 把 /assets/** 与 /fonts/** 302 到真实字节源（自建 ModelScope 数据集镜像），字节不经容器。当前默认停用，待容器重建上线（非官方同人作品）" />
+  <meta name="description" content="边缘分流源 ms-edge：创空间容器把 /assets/** 与 /fonts/** 302 到真实字节源（默认自建 ModelScope 数据集镜像），字节不经容器。已上线（2026-10-11 晚验收）：分流判定在游戏进程内，三个镜像经边缘实测可达（非官方同人作品）" />
   <title>边缘分流源 ms-edge · 卫戍协议 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
@@ -47,7 +47,7 @@
     <div class="quick-stats">
       <span>形态 <strong>302 边缘</strong></span>
       <span>字节 <strong>不经容器</strong></span>
-      <span>现状 <strong>停用待上线</strong></span>
+      <span>现状 <strong>已上线</strong></span>
     </div>
   </section>
 
@@ -56,22 +56,25 @@
     <div class="block__head">
       <span class="block__num">1</span>
       <span class="block__title">结论先行</span>
-      <span class="block__who">分流边缘层，不是镜像；当前默认停用（2026-10-11）</span>
+      <span class="block__who">分流边缘层，不是镜像；已上线（2026-10-11 晚验收）</span>
     </div>
     <p class="block__lead">
-      容器地址 <code class="inline">https://jingjiangze-stronghold-protocol.ms.show</code>，nginx 占
-      <code class="inline">:7860</code> 做分流：<code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code>
-      → Node sidecar（内部 <code class="inline">:3130</code>）返回 <b>302</b> 跳到真实字节源；其余 → 游戏服务器（内部
-      <code class="inline">:3120</code>）。<b>本站不持有任何美术字节</b>，只做「把请求指到正确的源」这一件事。
+      容器地址 <code class="inline">https://jingjiangze-stronghold-protocol.ms.show</code>：<code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code>
+      <b>302</b> 跳到真实字节源；其余路径（页面 / data / js / ws / healthz）→ 游戏本体。<b>本站不持有任何美术字节</b>，
+      只做「把请求指到正确的源」这一件事——<b>线上素材全走 CDN，字节不经服务器</b>。<br />
+      <b>实现形态（2026-10-11 晚，已上线）：</b>分流判定跑在<b>游戏进程内</b>（<code class="inline">server/http/asset-jump.js</code>），
+      与容器侧 sidecar 共用同一份 <code class="inline">sources.json</code> 与同一组纯函数——nginx 形态在创空间用不上
+      （平台不执行我们的 CMD），进程内 302 覆盖同一职责。
     </p>
     <div class="notice">
       <span><b>为什么是 302 而不是反代：</b>字节直接 302 出网，容器只承担一次重定向的极轻开销，不被几百 MB 素材流量拖垮；
       且平台对容器有单实例端口与流量约束，让字节绕开容器最稳。</span>
     </div>
     <div class="notice">
-      <span><b>当前默认 <code class="inline">enabled:false</code>：</b>创空间容器需要人工在设置页「重新部署」才会重建镜像，
-      平台对 Running 态的容器拒绝重建。在那之前这个源的 <code class="inline">/assets/**</code> 是 404，所以先停着——验收通过后再去掉
-      <code class="inline">enabled:false</code> 与 <code class="inline">disabled</code> 列表里的条目。</span>
+      <span><b>已上线（2026-10-11 晚）：</b><code class="inline">/assets/**</code> 302 实测通过（默认 → 数据集镜像、
+      <code class="inline">?sp_source=r2</code> → weishucdn、<code class="inline">?sp_source=openi</code> → OpenI），游戏页面仍由容器回答。
+      CDN 仓的 <code class="inline">origins.json</code> 已把 ms-edge 从 <code class="inline">enabled:false</code> 与
+      <code class="inline">disabled</code> 两处移除（同批接口重发）。</span>
     </div>
   </section>
 
@@ -79,21 +82,21 @@
   <section class="section" id="arch">
     <div class="section-heading">
       <div><div class="eyebrow">ARCHITECTURE</div><h2>容器内分流架构</h2></div>
-      <span class="section-status">nginx :7860 + Node sidecar :3130 + 游戏 :3120</span>
+      <span class="section-status">游戏进程内 302 + 同一份 sources.json（nginx 形态保留在仓库）</span>
     </div>
     <div class="two-col">
       <div class="mini">
         <h4>请求怎么走</h4>
         <ul>
-          <li><code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code> → nginx 转给 Node sidecar（<code class="inline">:3130</code>），sidecar 回 <b>302</b> 到真实字节源。</li>
-          <li>其余（<code class="inline">/</code>、<code class="inline">/data/</code>、<code class="inline">/js/</code>、<code class="inline">/ws/</code>、<code class="inline">/healthz</code>）→ 游戏服务器（<code class="inline">:3120</code>）。</li>
-          <li>sidecar 挂掉时，nginx <b>兜底 <code class="inline">return 302</code></b> 主源，不把玩家卡在 502。</li>
+          <li><code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code> → 游戏进程内的分流判定回 <b>302</b> 到真实字节源（与 sidecar 同一份规则与源表）。</li>
+          <li>其余（<code class="inline">/</code>、<code class="inline">/data/</code>、<code class="inline">/js/</code>、<code class="inline">/ws/</code>、<code class="inline">/healthz</code>）→ 游戏本体回答，与素材无关。</li>
+          <li>源表读不到时分流自动关闭（只记日志）——素材层故障不会把游戏拖下水。</li>
         </ul>
       </div>
       <div class="mini">
         <h4>实现取舍</h4>
         <ul>
-          <li><b>弃用 Lua：</b>原 nginx+lua 方案改为普通 nginx + Node sidecar——lua 在容器镜像里装配成本高、调试难，sidecar 用 JS 写更直观。</li>
+          <li><b>弃用 Lua、也不靠 nginx：</b>先由 nginx+lua 改为普通 nginx + Node sidecar（lua 装配成本高、调试难），上线时又确认平台不执行我们的 CMD → 判定搬进游戏进程（<code class="inline">asset-jump.js</code>），与 sidecar 共用纯函数；两条路都能用，规则只有一处。</li>
           <li>真实字节源当前指向<b>自建 ModelScope 数据集镜像</b>（本仓 <code class="inline">assets-raw</code> 树的同源存放，非创空间页面本身）。</li>
           <li>容器地址由创空间<b>强制端口 <code class="inline">:7860</code></b>，外部只能访问这个端口。</li>
         </ul>
@@ -117,21 +120,21 @@
       由 <code class="inline">src/origins.mjs</code> 透传 <code class="inline">probe</code> 与 <code class="inline">coverage</code>。
       仓库约定：parking 需条目级 <code class="inline">enabled:false</code> 与 <code class="inline">disabled</code> 列表<b>双写</b>。
     </p>
-    <pre class="code"><i>// origins.json —— extraOrigins</i>
+    <pre class="code"><i>// origins.json —— extraOrigins（2026-10-11 晚起：不再停靠）</i>
 {
   "id": "ms-edge",
   "kind": "cdn",
   "root": "https://jingjiangze-stronghold-protocol.ms.show",
   "probe": "/assets/char/avatar/char_003_kalts.png",
-  "coverage": "full",
-  "enabled": false
+  "coverage": "full"
 }
 
-<i>// origins.json —— disabled 列表（与条目级 enabled:false 双写）</i>
-"disabled": [ "jsdelivr", "jsdelivr-assets", "openi", "ms-edge" ]</pre>
+<i>// origins.json —— disabled（ms-edge 已移出；openi 保留：浏览器 CORS 不可用，只作边缘点名通道）</i>
+"disabled": [ "jsdelivr", "jsdelivr-assets", "openi" ]</pre>
     <div class="notice">
-      <span><b>启用待办（验收通过后）：</b>去掉条目里的 <code class="inline">enabled:false</code> <b>且</b>从
-      <code class="inline">disabled</code> 列表移除 <code class="inline">"ms-edge"</code>——两处必须同步改，否则会被另一条发布分支悄悄复活 / 悄悄忽略。</span>
+      <span><b>启用已完成：</b>条目里的 <code class="inline">enabled:false</code> 与 <code class="inline">disabled</code> 列表里的
+      <code class="inline">"ms-edge"</code> 两处已同步移除；客户端源表随 <code class="inline">sync --interface-only</code> 重发。
+      以后新增停靠（parking）仍须两处双写。</span>
     </div>
   </section>
 
@@ -139,15 +142,15 @@
   <section class="section" id="status">
     <div class="section-heading">
       <div><div class="eyebrow">STATUS</div><h2>状态词与边界</h2></div>
-      <span class="section-status">代码已落地，容器未重建，默认停用</span>
+      <span class="section-status">已上线并验收（2026-10-11 晚）</span>
     </div>
     <div class="table-wrap">
       <table>
         <thead><tr><th>项</th><th>状态</th></tr></thead>
         <tbody>
           <tr><td class="mono">origins.json / src/origins.mjs</td><td><b>IMPLEMENTED</b>：ms-edge 条目 + probe/coverage/enabled 透传 + 测试</td></tr>
-          <tr><td class="mono">容器重建</td><td><b>PENDING</b>：ModelScope 需人工在设置页「重新部署」才重建镜像；部署仓已推 commit <code class="inline">8456a42</code>（gh 与 ms 一致）但容器未重建</td></tr>
-          <tr><td class="mono">线上生效</td><td><b>PENDING</b>：<code class="inline">enabled:false</code> 期间 /assets/** 是 404；验收通过后去掉停靠才转为运行时候选</td></tr>
+          <tr><td class="mono">容器重建</td><td><b>DONE</b>：<code class="inline">PUT …/reset_restart</code> 即可让平台按当前提交重建并部署（约 2–4 分钟，触发前确认空场）；线上跑 <code class="inline">ImageId=…-6f2d2941-…</code></td></tr>
+          <tr><td class="mono">线上生效</td><td><b>PASS</b>：/assets/** 302 实测（默认 → 数据集、?sp_source=r2 → weishucdn、?sp_source=openi → OpenI）；清单 gzip TTFB 0.43s、整链 0.82s</td></tr>
           <tr><td class="mono">镜像源 apk</td><td><b>已实现</b>：仅用于 Docker build 期换 alpine 源（<code class="inline">dl-cdn.alpinelinux.org → mirrors.aliyun.com</code>），与运行时 302 目标无关</td></tr>
         </tbody>
       </table>
@@ -167,7 +170,11 @@ curl -sI https://jingjiangze-stronghold-protocol.ms.show/assets/char/avatar/char
 <i># 2. 游戏页面仍由容器回答（不应被 302 到外部）</i>
 curl -sI https://jingjiangze-stronghold-protocol.ms.show/ | grep -iE '^HTTP'
 
-<i># 3. 验收通过后：去掉 origins.json 的 enabled:false 与 disabled 列表里的 ms-edge，重发接口</i>
+<i># 3. 三个镜像经边缘的可达性（?sp_source 点名）</i>
+curl -sI "…/assets/char/avatar/char_003_kalts.png?sp_source=r2"     | grep -i '^location'
+curl -sI "…/assets/char/avatar/char_003_kalts.png?sp_source=openi"  | grep -i '^location'
+
+<i># 4. 接口重发（本次同步已做）</i>
 node src/sync.mjs --interface-only      # 秒级重发 mirrors.json + art.json</pre>
   </section>
 
