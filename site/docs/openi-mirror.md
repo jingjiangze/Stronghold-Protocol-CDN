@@ -8,9 +8,9 @@
 
 ## 一、一句话结论
 
-- 素材树（**14,000+ 文件 / ~1.7 GiB**）已幂等同步到 OpenI 仓库
-  `jingjiangze/Stronghold-Protocol` 的 **`assets-raw`** 孤儿分支，由 `.github/workflows/openi-mirror.yml`
-  每天四次（`cron: '47 0,6,12,18 * * *'`）推送。
+- 素材树（**14,741 文件 / ~2.14 GiB**）已幂等同步到 OpenI 仓库
+  `jingjiangze/Stronghold-Protocol` 的 **`assets-raw`** 孤儿分支（远端当前 `19506266` = 本地 `assets-raw` tip），
+  由 `.github/workflows/openi-mirror.yml` 每天四次（`cron: '47 0,6,12,18 * * *'`）推送。
 - 它**默认停用**：`origins.json` 里 `id: "openi"` 带 `enabled: false`，且同时写进 `disabled` 数组。
   原因只有一个——**CORS 硬伤**（见 §四），不足以当玩家运行时源；现在只当**冷备 / 直链下载**。
 - 实测它**快**：直连 TTFB ~0.28 s，对比本桶 R2 主源直连 0.64 s，约 2.5×。
@@ -50,7 +50,7 @@
 ## 三、同步机制（openi-mirror）
 
 - `src/openi-mirror.mjs`：**幂等推送器**。它解出本地 `assets-raw` 的 commit sha、与远端比对，
-  **相同就直接退出、不重传那 915 MiB**；只有当天美术真变了（每天四次里通常零次）才推。
+  **相同就直接退出、不重传那 ~2.14 GiB**；只有当天美术真变了（每天四次里通常零次）才推。
 - 字节取自 **git 自己**（就是当初发布所依据的 `assets-raw` 孤儿分支），**不回读 CDN**——
   避免把 CDN 抖动当成内容发布。
 - 凭据走 **环境变量 `OPENI_TOKEN`**，用完即写进远端 URL、不落 `.git/config`（`git remote set-url`
@@ -104,6 +104,7 @@ fatal: the remote end hung up unexpectedly
 预算用完停在下边界并报 `partial`，下次定时继续。部分推进优于一次 413 让远端落后 1 GiB。
 
 ≈1.2 GiB 剩余按 200 MiB/批约 **6 批**。幂等快路径（commit sha 相同即退出）保证无变更时 0 字节。
+本会话已把远端从 `4e8f29784c` 一路追平到 `1950626623`（2 批：199.4 + 21.8 MiB），远端现已与本地 tip 完全一致。
 代码见 `src/openi-mirror.mjs` 的 `planBatches` / `commitsSince` / `commitAddedBytes`。
 
 ---
@@ -112,7 +113,7 @@ fatal: the remote end hung up unexpectedly
 
 - `BASELINE`：OpenI 仓库 `jingjiangze/Stronghold-Protocol`（`assets-raw` 分支）、`src/openi-mirror.mjs`、
   `.github/workflows/openi-mirror.yml`、`origins.json` 的 `openi` 条目（`enabled:false` + `disabled` 双写）。
-- `IMPLEMENTED`：素材树已幂等同步到 OpenI（`assets-raw` 分支）；字节逐字节一致；入 `origins.json` 默认停用；
+- `IMPLEMENTED`：素材树已幂等同步到 OpenI（`assets-raw` 分支，远端 `19506266` = 本地 tip）；字节逐字节一致；入 `origins.json` 默认停用；
   413 分批推送已修（budget=200 MiB/批，沿 commit 链重放）。所有改动已在 `origin/main`。
 - `PASS`：平台能力实测（匿名 clone / SSH 推送 / raw 挂载 / 字节保真 / 直连 TTFB ~0.28 s）；
   `tests/openi-mirror.test.mjs` 与 `tests/origins.test.mjs` 全绿（15 + 4 用例）。
@@ -121,7 +122,7 @@ fatal: the remote end hung up unexpectedly
     审计结论「**不上转发**」——中继一跳把 0.28s 抬到 ~0.7s（与 R2 持平），付了请求数+出网却无收益；
     且本仓无非浏览器素材通道（见 `docs/audit/openi-cors-bypass.md` 的方案 C 修正）。
   - **CI 凭据**：`OPENI_TOKEN` 已配（仓库 secret）；未配时定时任务在 `git ls-remote` 处失败（失败安全，不会误发）。
-  - **增量同步进度**：远端 `assets-raw` 历史随素材更新而增长，自动同步按 200 MiB/批续推；无变更时幂等退出 0 字节。
+  - **增量同步进度**：远端 `assets-raw` 已追平本地 tip（`19506266`，14,741 文件 / 2.14 GiB）；无变更时幂等退出 0 字节，有新增素材时按 200 MiB/批续推。
 
 ---
 
