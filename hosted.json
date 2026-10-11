@@ -8707,8 +8707,8 @@
       "what": "Stardust 干员皮肤（ModelScope 公开数据集 Stardust/arknight-assets）",
       "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1855,
-      "bytes": 1213838217,
+      "files": 1856,
+      "bytes": 1214661985,
       "keys": [
         [
           "assets/skins/char_003_kalts_boc_6/avatar.png",
@@ -14149,6 +14149,10 @@
         [
           "assets/skins/char_4080_lin_littlePony_1/back/char_4080_lin_littlePony_1.png",
           206420
+        ],
+        [
+          "assets/skins/char_4080_lin_littlePony_1/back/char_4080_lin_littlePony_1.skel",
+          823768
         ],
         [
           "assets/skins/char_4080_lin_littlePony_1/front/char_4080_lin_littlePony_1.atlas",
