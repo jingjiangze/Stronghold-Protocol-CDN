@@ -1,0 +1,31 @@
+name: rank
+
+# 源排名（cdn/v1/rank.json）：客户端测速前/测不了速时按它取源。
+# 频率：一天四次（与 sync 的 17 */6 错开 6 分钟，避免同一时刻两个 job 抢 R2）。
+# 依据：内地实测（network.json）变化是小时级；分钟级变化由客户端自己的探针覆盖。
+on:
+  schedule:
+    - cron: '23 1,7,13,19 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rank
+
+jobs:
+  rank:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: publish rank
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: node src/rank.mjs --write
