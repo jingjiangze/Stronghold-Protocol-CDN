@@ -63,8 +63,8 @@
     <div class="notice">
       <span><b>资格过滤：</b>客户端逐条排除 <code class="inline">coverage:"partial"</code>（git 挂载源，源里没装全素材树）、
       <code class="inline">assetEligible:false</code>、<code class="inline">proxied:true</code>、以及 <code class="inline">enabled:false</code>
-      （<code class="inline">origins.json</code> 的 <code class="inline">disabled</code> 软开关）四类源；后三类当前线上只有
-      jsDelivr 两条进了 <code class="inline">disabled</code>，其余是写死在客户端的防御性安全闸。</span>
+      （<code class="inline">origins.json</code> 的 <code class="inline">disabled</code> 软开关）四类源；当前线上 <code class="inline">disabled</code>
+      列表共 <b>四项</b>：<code class="inline">jsdelivr</code>、<code class="inline">jsdelivr-assets</code>、<code class="inline">openi</code>、<code class="inline">ms-edge</code>，其余是写死在客户端的防御性安全闸。</span>
     </div>
   </section>
 
@@ -122,8 +122,8 @@
       </div>
     </div>
     <div class="notice" style="margin-top:16px">
-      <span><b>⚠️ 站点侧 <code class="inline">pick.js</code> 仍是旧逻辑（<code class="inline">src/pick.js</code> 未改）：</b>上面这套「32 KiB 探针 + 取最快」是 commit <code class="inline">6e38598a</code>
-      之前的行为，而<b>它正是把 <code class="inline">jsdelivr-assets</code> 误判成最快的元凶</b>（详见仓库 <code class="inline">docs/audit/asset-slowness-root-cause.md</code>）。
+      <span><b>⚠️ 站点侧 <code class="inline">pick.js</code> 仍是旧逻辑（<code class="inline">src/pick.js</code> 未改）：</b>上面这套「32 KiB 探针 + 取最快」正是把
+      <code class="inline">jsdelivr-assets</code> 误判成最快的元凶。
       F1/F2/F3 只落在了 Java 客户端；站点页面与任何 JS 消费方仍按旧排序。当前 jsDelivr 两条已 <code class="inline">disabled</code>，
       所以即便旧逻辑也不会把设备指到最慢源。把它也改成「真实路径 + 优于原站余量」是下一个待办。</span>
     </div>

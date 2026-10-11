@@ -60,9 +60,10 @@ gh 取上游 latest release（或 --tag 指定）
 
 ## 第三镜像：ModelScope 创空间
 
-素材树（我自己的 `assets-raw`）另有一份幂等 git 镜像，由 `tools/push-modelscope.mjs` 推送到
+素材树（我自己的 `assets-raw`）另有一份幂等 git 镜像方案，由 `tools/push-modelscope.mjs` 推送到
 [ModelScope 创空间](https://www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git) 的 `cdn` 分支，
-`.github/workflows/mirror-modelscope.yml` 每天四次（`23 */6`）调用。它是 `assets-raw` 的一次
+`.github/workflows/mirror-modelscope.yml` 意图每天四次（`23 */6`）调用。但该 workflow 与工具**仅存在于
+`feat/modelscope-mirror` 分支，尚未合入 main**，所以目前**不运行**（cron 休眠）。它是 `assets-raw` 的一次
 `git archive` 直推（字节保真，`.gitattributes` 随树带走），树未变时比对 `assets.summary.json` 的 `treeHash`
 直接退出、不重传那 ~650 MiB。
 
@@ -72,7 +73,7 @@ gh 取上游 latest release（或 --tag 指定）
 但本镜像推送**默认仍排除 `assets/skins/**`**（`--include-skins` 开启才带），ModelScope 侧暂不含皮肤；
 而 R2 / Pages（实测 weishucdn 与 assets-raw 字节一致）**同样含皮肤**——上游现已把 `assets/skins/**` 一并打出。
 
-与 `docs/audit/modelscope-openi-hanabi-sources.md` 区分开：那篇审的是 **Stardust fork 的 `Stardust/arknight-assets`**
+与 Stardust fork 的素材源区分开：那篇审计（仓库未留存）审的是 **Stardust fork 的 `Stardust/arknight-assets`**
 （对音频 0% 覆盖、只补皮肤有价值）；本镜像是我**自己树**的第三份存放。
 
 细节见 [`site/docs/modelscope-mirror.md`](site/docs/modelscope-mirror.md)。

@@ -19,7 +19,7 @@
   经 git-mount 层（jsdelivr-assets / ghfast-assets / gitcdn-own→OpenI）以 `coverage:full` 提供给玩家；
   但本镜像推送**默认排除 `assets/skins/**`**（`--include-skins` 开启才带），所以 ModelScope 侧暂不含皮肤；
   R2/Pages 则**同样含皮肤**（上游 release 包现已打入 `assets/skins/**`，实测与 assets-raw 字节一致）。
-- 它和仓库里另一篇审计 `docs/audit/modelscope-openi-hanabi-sources.md` **不是一回事**：那篇审的是
+- 它和 Stardust fork 的素材源审计**不是一回事**：那篇审的是
   **Stardust fork 的 `Stardust/arknight-assets`**（对音频 0% 覆盖、只补皮肤有价值、不接运行时）；本篇是我**自己树**的镜像。
 
 ---

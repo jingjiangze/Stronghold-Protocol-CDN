@@ -12,8 +12,8 @@
   - **站点**用 `pick.js`（ES 模块）给每个镜像**测速**、选最快、再 `rebaseManifest()` 换源。
   - **客户端（Android re-apk）** 用内嵌的 Java 逻辑（`ArtSource`/`ArtCdn`，见 §五）**自己**挑源——**不读 `pick.js`**。
 - 资格过滤：客户端逐条排除 `coverage:"partial"`（git 挂载源，源里没装全素材树）、`assetEligible:false`、
-  `proxied:true`、以及 `enabled:false`（`origins.json` 的 `disabled` 软开关）四类源；后三类当前线上只有
-  jsDelivr 两条进了 `disabled`，其余是写死在客户端的防御性安全闸。
+  `proxied:true`、以及 `enabled:false`（`origins.json` 的 `disabled` 软开关）四类源；当前线上 `disabled`
+  列表共 **四项**：`jsdelivr`、`jsdelivr-assets`、`openi`、`ms-edge`，其余是写死在客户端的防御性安全闸。
 - 客户端：每台设备**自己**挑源，小文件类与大文件类**分开选**，6 小时 TTL，跨启动缓存；任何失败都回落到编译期常量
   （旧行为），**不会把设备指向清单没列的主机**（fail-closed 白名单）。
 
@@ -44,9 +44,8 @@
 
 `rebaseManifest(text, { from, to })`：把清单文本里主源基址**整体替换**成选中源的基址（一次字符串替换，不含逐文件改写）。
 
-> ⚠️ **`pick.js` 仍是旧逻辑（`src/pick.js` 本轮未改）**：上面这套「32 KiB 探针 + 按 `mirror.probe` 取最快」是
-> commit `6e38598a` 之前的行为，而**它正是把 `jsdelivr-assets` 误判成最快的元凶**（详见
-> `docs/audit/asset-slowness-root-cause.md`）。**F1/F2/F3 只落在了 Java 客户端**（§五）；站点页面与任何 JS 消费方
+> ⚠️ **`pick.js` 仍是旧逻辑（`src/pick.js` 本轮未改）**：上面这套「32 KiB 探针 + 按 `mirror.probe` 取最快」**正是把
+> `jsdelivr-assets` 误判成最快的元凶**。**F1/F2/F3 只落在了 Java 客户端**（§五）；站点页面与任何 JS 消费方
 > 仍按旧的「探针吞吐」排序，`cdn/v1/pick.js` 是已上线的旧实现。把它也改成「真实路径 + 必须优于原站的余量」是下一个
 > 待办（见 §七 `PENDING`）。当前 `jsdelivr` / `jsdelivr-assets` 已被 `disabled` 软开关剔除（§四），所以站点侧即便
 > 用旧逻辑也不会再把设备指到最慢源。

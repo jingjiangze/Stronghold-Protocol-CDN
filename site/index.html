@@ -163,7 +163,7 @@
           <tr><td>找不到部署目录</td><td>启动脚本会告诉你三种摆放位置；或显式设 <code class="inline">SP_DEPLOY_DIR</code></td></tr>
           <tr><td>页面白块 / 控制台报 CORS</td><td>CDN 响应缺 <code class="inline">Access-Control-Allow-Origin</code>；把浏览器控制台的报错发出来</td></tr>
           <tr><td>端口被占用</td><td><code class="inline">PORT=8080</code> 再启动（内部端口自动跟着变）</td></tr>
-          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；缺什么补什么，清单是唯一真源</td></tr>
+          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；清单只是索引，桶里 <code class="inline">HEAD</code> 实测才是「有没有」的权威（详见《素材 CDN 对账》）</td></tr>
         </tbody>
       </table>
     </div>
