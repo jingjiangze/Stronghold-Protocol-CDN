@@ -33,6 +33,18 @@ export function readExtraOrigins(root) {
         kind: String(entry.kind || 'cdn'),
         root: root_,
         base: `${root_}/assets/`,
+        // A flat origin used to mean "an R2-shaped tree, probe it wherever you like". A redirect
+        // edge is flat in *shape* but not in probing: it relays `/assets/**` onward and answers
+        // everything else from the game server behind it, so a caller's default probe path
+        // measures the game page and reports it as the mirror. Naming the probe is what keeps
+        // that measurement honest — and since an unset `coverage` defaults to `partial`, which
+        // clients filter out, a full source has to say so out loud.
+        ...(entry.probe ? { probe: String(entry.probe) } : {}),
+        ...(entry.coverage ? { coverage: String(entry.coverage) } : {}),
+        // Read here as well as in the `disabled` list, for the same reason the git origins do it:
+        // the two publishing branches read the flag differently, and dropping one spelling would
+        // let a parked origin quietly come back enabled.
+        ...(entry.enabled === false ? { enabled: false } : {}),
         ...(entry.note ? { note: String(entry.note) } : {}),
       });
     } catch {

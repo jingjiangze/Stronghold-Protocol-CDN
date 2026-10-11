@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { readGitOrigins, readDisabledOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
+import { readExtraOrigins, readGitOrigins, readDisabledOrigins, GIT_PROBE_PATH } from '../src/origins.mjs';
 import { carryForwardOrigins } from '../src/sync.mjs';
 
 function withOriginsJson(doc, fn) {
@@ -166,4 +166,47 @@ test('the shipped origins.json parks openi and keeps it listed', () => {
   assert.equal(openi.enabled, false);
   const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
   assert.ok(disabled.includes('openi'));
+});
+
+// A redirect edge (the 创空间 container) is flat in shape but answers `/assets/**` by relaying it
+// onward, and everything else from the game server behind it. Without a named probe, a caller's
+// default path measures the game page and reports it as the mirror; without `coverage: full`, an
+// unset value defaults to `partial` and the clients drop the origin entirely.
+test('a flat origin may name its own probe and coverage, and a plain one stays unprobed', () => {
+  const out = withOriginsJson(
+    {
+      extraOrigins: [
+        { id: 'r2-alt', root: 'https://weishucdn2.example.com' },
+        {
+          id: 'ms-edge',
+          root: 'https://edge.example.com/',
+          probe: '/assets/char/avatar/x.png',
+          coverage: 'full',
+          note: 'n',
+        },
+      ],
+    },
+    readExtraOrigins,
+  );
+  assert.equal(out.length, 2);
+  // unchanged default: a plain flat origin keeps the derived base and carries neither field
+  assert.equal(out[0].base, 'https://weishucdn2.example.com/assets/');
+  assert.equal(out[0].probe, undefined);
+  assert.equal(out[0].coverage, undefined);
+  // the edge: the trailing slash must not survive, and both named fields come through
+  assert.equal(out[1].base, 'https://edge.example.com/assets/');
+  assert.equal(out[1].probe, '/assets/char/avatar/x.png');
+  assert.equal(out[1].coverage, 'full');
+});
+
+test('the shipped origins.json ships ms-edge parked, because the container is not live yet', () => {
+  const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
+  const edge = origins.find((o) => o.id === 'ms-edge');
+  assert.ok(edge, 'ms-edge must be listed so the site can show it once it is verified');
+  assert.equal(edge.enabled, false);
+  assert.equal(edge.coverage, 'full');
+  // The probe has to be a real asset path: the container answers /robots.txt from the game server.
+  assert.match(edge.probe, /^\/assets\//);
+  const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
+  assert.ok(disabled.includes('ms-edge'));
 });

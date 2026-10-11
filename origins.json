@@ -12,6 +12,15 @@
       "kind": "r2",
       "root": "https://weishucdn2.jiangjiangze.icu",
       "note": "同一个桶 stronghold-assets 的第二个自定义域名：零额外存储、不占额度，只多一个入口。行为与 weishucdn 逐头核对一致（200/206、ACAO *、expose Content-Length/Content-Range/ETag、immutable），因为 zone 那条 CORS 改写规则的表达式已同时覆盖两个 host。"
+    },
+    {
+      "id": "ms-edge",
+      "kind": "cdn",
+      "root": "https://jingjiangze-stronghold-protocol.ms.show",
+      "probe": "/assets/char/avatar/char_003_kalts.png",
+      "coverage": "full",
+      "enabled": false,
+      "note": "创空间容器里的分流边缘层：本站不持字节，/assets/** 与 /fonts/** 由容器内的 nginx+lua 302 出去（当前指向自建 ModelScope 数据集镜像），其余路径由容器里的游戏服务器回答。probe 必须点名一个真实素材路径——默认的 /robots.txt 会落到游戏服务器上，量到的是游戏页面而不是镜像。默认 enabled:false：容器里的边缘层还没上线（平台要求人工在设置页重新部署才重建镜像），在那之前这个源的 /assets/** 是 404。边缘层验收通过后把这里的 enabled 与 disabled 列表里的条目一起去掉即可。"
     }
   ],
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 618 MiB art tree lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
@@ -75,6 +84,7 @@
   "disabled": [
     "jsdelivr",
     "jsdelivr-assets",
-    "openi"
+    "openi",
+    "ms-edge"
   ]
 }
