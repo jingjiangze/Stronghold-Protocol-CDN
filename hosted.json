@@ -8707,8 +8707,8 @@
       "what": "Stardust 干员皮肤（ModelScope 公开数据集 Stardust/arknight-assets）",
       "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 74,
-      "bytes": 50948658,
+      "files": 100,
+      "bytes": 64017106,
       "keys": [
         [
           "assets/skins/char_003_kalts_boc_6/avatar.png",
@@ -8999,8 +8999,112 @@
           6399
         ],
         [
+          "assets/skins/char_1028_texas2_epoque_36/back/char_1028_texas2_epoque_36.png",
+          116370
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/back/char_1028_texas2_epoque_36.skel",
+          252780
+        ],
+        [
           "assets/skins/char_1028_texas2_epoque_36/front/char_1028_texas2_epoque_36.atlas",
           11932
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/front/char_1028_texas2_epoque_36.png",
+          143576
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/front/char_1028_texas2_epoque_36.skel",
+          465696
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/illustration.png",
+          4751284
+        ],
+        [
+          "assets/skins/char_1028_texas2_epoque_36/portrait.png",
+          86212
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/avatar.png",
+          47821
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/back/char_1028_texas2_iteration_1.atlas",
+          4730
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/back/char_1028_texas2_iteration_1.png",
+          81852
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/back/char_1028_texas2_iteration_1.skel",
+          201988
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/front/char_1028_texas2_iteration_1.atlas",
+          9010
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/front/char_1028_texas2_iteration_1.png",
+          85632
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/front/char_1028_texas2_iteration_1.skel",
+          323179
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/illustration.png",
+          3737293
+        ],
+        [
+          "assets/skins/char_1028_texas2_iteration_1/portrait.png",
+          116514
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/avatar.png",
+          34230
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/back/char_102_texas_epoque_7.atlas",
+          11545
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/back/char_102_texas_epoque_7.png",
+          98292
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/back/char_102_texas_epoque_7.skel",
+          278119
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/front/char_102_texas_epoque_7.atlas",
+          11545
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/front/char_102_texas_epoque_7.png",
+          98292
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/front/char_102_texas_epoque_7.skel",
+          372057
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/illustration.png",
+          1641591
+        ],
+        [
+          "assets/skins/char_102_texas_epoque_7/portrait.png",
+          60732
+        ],
+        [
+          "assets/skins/char_102_texas_winter_1/avatar.png",
+          34549
+        ],
+        [
+          "assets/skins/char_102_texas_winter_1/back/char_102_texas_winter_1.atlas",
+          3559
         ],
         [
           "assets/skins/char_103_angel_wild_1/avatar.png",
