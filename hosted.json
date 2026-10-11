@@ -8704,16 +8704,12 @@
     },
     {
       "id": "stardust-skins",
-      "what": "桶一致性探针",
+      "what": "Stardust 干员皮肤（ModelScope 公开数据集 Stardust/arknight-assets）",
       "addedAt": "2026-10-11",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1857,
-      "bytes": 1214663128,
+      "files": 1856,
+      "bytes": 1214661985,
       "keys": [
-        [
-          "assets/local/probe-bucket-test.txt",
-          1143
-        ],
         [
           "assets/skins/char_003_kalts_boc_6/avatar.png",
           40672
