@@ -210,3 +210,21 @@ test('the shipped origins.json ships ms-edge parked, because the container is no
   const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
   assert.ok(disabled.includes('ms-edge'));
 });
+
+// The dataset mirror is the one source measured to satisfy all three requirements at once
+// (ACAO usable, Range 206, and ~3x the TTFB of the current primary direct), which is what the
+// OpenI audit left as PENDING-E. Unlike ms-edge it ships enabled: it is not awaiting a deploy.
+test('the shipped origins.json carries the ModelScope dataset as a selectable full source', () => {
+  const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
+  const ds = origins.find((o) => o.id === 'ms-dataset');
+  assert.ok(ds, 'the dataset mirror must be listed');
+  assert.equal(ds.coverage, 'full');
+  assert.notEqual(ds.enabled, false, 'a verified source must not ship parked');
+  assert.match(ds.root, /^https:\/\/modelscope\.cn\/datasets\/.+\/resolve\/.+\/releases\//);
+  // The derived base must land on the mirror's own asset tree, not the resolve root: the tree lives
+  // under releases/v1-trial/assets/, and `<root>/assets/` is exactly that.
+  assert.equal(ds.base, `${ds.root}/assets/`);
+  assert.match(ds.probe, /^\/assets\//);
+  const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
+  assert.ok(!disabled.includes('ms-dataset'), 'the dataset mirror is verified, not parked');
+});
