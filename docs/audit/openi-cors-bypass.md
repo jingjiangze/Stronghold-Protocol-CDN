@@ -157,21 +157,34 @@ fatal: the remote end hung up unexpectedly
 所以 `http.postBuffer` 和 `pack.packSizeLimit` **都帮不上** —— 前者调的是 curl 缓冲区，
 后者只影响 packfile 落盘分片，两者都不拆那个 POST。
 
-**已知边界**：915 MiB 通过，1,807 MiB → 413。阈值在中间，但那是别人的配置，不去探。
+**第一次假设错了**：以为预算 700 MiB 能过（"915 曾通过"）。实测打脸 —— 见 §8.1。
 
 ### 修法：按 commit 链分批增量推送
 
 `assets-raw` 有 78 个 batch commit，远端 `7663627cb6` 是其中的祖先，中间隔 **59 个 commit**。
 沿 `rev-list --reverse` 重放，每批只发差量 —— wire 上是多个小 pack，不是一个 1.8 GiB POST。
 
-真实仓库实测（budget 700 MiB/批）：
-```
-pending: 59 commits | total added: 1221.1 MiB
-batches: 2  →  1: 10 commits, 640.9 MiB   2: 49 commits, 580.3 MiB
-```
-
 预算用完就**停在下边界**并如实报 `partial`，下次定时继续。部分推进优于一次 413
 让远端落后 1 GiB、然后整天重试同一个不可能的 POST。
+
+### 8.1 413 真实阈值（本机 HTTPS token 直推实测，不是估算）
+
+| 增量体积 | commit 数 | 结果 |
+|---|---|---|
+| 51.8 MiB | 1 | **OK**（远端前进） |
+| 232 MiB | 4 | **OK**（远端前进） |
+| 640.9 MiB | 10 | **HTTP 413** |
+
+→ 边界在 **232–641 MiB**。第一次写的 budget=700 正是撞在 641 那批上，
+所以"700 安全"是假象。最终取 **200 MiB**（<232 已知通过），留安全余量，
+不再用 16 分钟失败去探边界。
+
+⚠️ **`commitAddedBytes` 算的是差量字节，不等于 git 实际发送的包大小** —— pack 有对象头、
+树/提交对象、delta 基线等开销，但方向一致：体积越大越接近 413。200 MiB 预算留的 32 MiB
+余量，覆盖这些固定开销足够。
+
+⚠️ 本机 `assets-raw` 历史因 Clash 对 github.com 443 抖动而 fetch 不全，无法在本地做完整增量探测；
+上面三组数据是**本机带 HTTPS token 直连 OpenI 远端**的真实推送结果，不是 workflow runner 的。
 
 ### 两个坑（改的时候踩到）
 
@@ -184,7 +197,8 @@ batches: 2  →  1: 10 commits, 640.9 MiB   2: 49 commits, 580.3 MiB
 2. **必须带 `--root`。** 否则孤儿分支的**首个 commit** 显示为空，整批体积逃出预算。
 
 ### 耗时约束
-1.8 GiB 全量约 17 分钟；改成分批后每批 ≤700 MiB。四次/天最坏仍可能数小时，
+1.8 GiB 全量约 17 分钟；改成分批后每批 ≤200 MiB（实测 232 通过、641 413，取 200 留余量）。
+按 200 MiB/批，剩余 ~1.2 GiB 约 **6 批**。四次/天最坏仍可能数小时，
 但**幂等快路径**（commit sha 相同即退出）保证没变更时 0 字节 —— 成本控制靠这个，不靠限速。
 
 Related: [[openi-mirror]]
