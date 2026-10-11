@@ -22,10 +22,11 @@
     if (note) { note.textContent = text; note.className = 'section-note err'; }
   }
   window.addEventListener('error', (event) => {
-    failBanner(`后台脚本出错：${String(event.message || event.error || '未知错误').slice(0, 120)}（多半是接口没上线，联系维护）`);
+    // 只报事实，不猜原因：写死「接口没上线」会把网络抖动、脚本错误都误导成部署问题。
+    failBanner(`后台脚本出错：${String(event.message || event.error || '未知错误').slice(0, 120)}`);
   });
   window.addEventListener('unhandledrejection', (event) => {
-    failBanner(`后台请求失败：${String(event.reason && event.reason.message || event.reason || '未知').slice(0, 120)}（多半是接口没上线，联系维护）`);
+    failBanner(`后台请求失败：${String(event.reason && event.reason.message || event.reason || '未知').slice(0, 120)}`);
   });
 
   const KEY_STORE = 'sp.cdnAdminKey';
@@ -343,7 +344,16 @@
   }
 
   async function refresh() {
-    const { status, doc } = await api('/api/cdn/upload/status');
+    // 每 2 分钟的 setInterval 也调这里。fetch 的网络失败会变成未捕获的 Promise 拒绝
+    // （2026-10-12 实测：断网时整页弹错、按钮看着像失效），所以要在这里收住。
+    let status, doc;
+    try {
+      ({ status, doc } = await api('/api/cdn/upload/status'));
+    } catch (error) {
+      setNav('读不到状态');
+      line(`读状态失败：网络请求没成功（${String(error.message || error).slice(0, 60)}）—— 重试一次或检查网络，后台接口本身可能是好的`, 'err');
+      return;
+    }
     if (status === 401) {
       $('gate-msg').textContent = doc && doc.error ? doc.error : '口令不对';
       sessionStorage.removeItem(KEY_STORE);
