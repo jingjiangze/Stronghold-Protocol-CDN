@@ -21125,6 +21125,20 @@
           367232
         ]
       ]
+    },
+    {
+      "id": "ark-mod-assets",
+      "what": "Ark 工坊包素材（ave-mujica / rimbilliton / columbia）——pack.json.art 引用的头像/立绘/骨架/语音，来源 workshop/<pack>/assets",
+      "addedAt": "2026-10-11",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 41520,
+      "keys": [
+        [
+          "packs/ave-mujica/band/band_wuyouyoumeng.png",
+          41520
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
