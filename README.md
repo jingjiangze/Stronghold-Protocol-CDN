@@ -75,6 +75,20 @@ gh 取上游 latest release（或 --tag 指定）
 
 细节见 [`site/docs/modelscope-mirror.md`](site/docs/modelscope-mirror.md)。
 
+## 边缘分流源：ms-edge（Docker 动态跳转）
+
+与上面三个「镜像」不同，ms-edge **不是素材树的又一份拷贝**，而是站在字节源前面的**分流边缘层**：跑在
+[ModelScope 创空间](https://www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git) 的容器里
+（`https://jingjiangze-stronghold-protocol.ms.show`，平台强制端口 `:7860`），由 nginx 把 `/assets/**`、`/fonts/**`
+**302 跳转**到真实字节源（当前指向自建 ModelScope 数据集镜像），**字节不经容器**；其余路径（页面 / data / js / ws）
+由容器里的游戏服务器回答。原 nginx+lua 方案已改为普通 nginx + Node sidecar，sidecar 挂掉时 nginx 兜底 `return 302` 主源。
+
+它作为一条 `extraOrigin` 进入 `art.json` / `mirrors.json`（`src/origins.mjs` 透传 `probe` 与 `coverage`）。
+**当前默认 `enabled:false` 并写入 `disabled` 列表**：创空间容器需要人工在设置页「重新部署」才会重建镜像，在那之前
+`/assets/**` 是 404。验收通过后去掉条目级 `enabled:false` 与 `disabled` 里的 `ms-edge` 两处即可转为运行时候选。
+
+细节见 [`site/docs/ms-edge.md`](site/docs/ms-edge.md)。
+
 ## 接口
 
 基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`

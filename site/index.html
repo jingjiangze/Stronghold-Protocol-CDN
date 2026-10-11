@@ -34,6 +34,7 @@
       <a href="#mirror-selection">多源自动选源</a>
       <a href="#openi">第二镜像 OpenI</a>
       <a href="#modelscope">第三镜像 ModelScope</a>
+      <a href="#ms-edge">边缘分流 ms-edge</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -558,6 +559,37 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
           <span>含 <b>三处踩坑</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="ms-edge">
+    <div class="section-heading">
+      <div><div class="eyebrow">EDGE REDIRECT · MS-EDGE</div><h2>边缘分流源：ms-edge</h2></div>
+      <span class="section-status">容器 302 边缘层，字节不经容器，当前停用</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      和前三个「镜像」不同，ms-edge <b>不是素材树的又一份拷贝</b>，而是站在字节源前面的<b>分流边缘层</b>：跑在创空间容器
+      <code class="inline">:7860</code> 里，把 <code class="inline">/assets/**</code>、<code class="inline">/fonts/**</code>
+      <b>302 跳转</b>到真实字节源（当前指向自建 ModelScope 数据集镜像），<b>字节不经容器</b>；其余路径由容器里的游戏服务器回答。
+      因创空间需人工「重新部署」才重建镜像，<b>当前默认 <code class="inline">enabled:false</code></b>，验收通过后去掉停靠即转为候选源。
+    </p>
+    <div class="cards">
+      <a class="card" href="./ms-edge">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>架构 / 接入配置 / 状态词 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>形态 <b>302 边缘</b></span>
+          <span>现状 <b>停用待上线</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/ms-edge.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>接入配置样例</b></span>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>

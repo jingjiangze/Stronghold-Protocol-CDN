@@ -81,6 +81,15 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
+# Same shape: Pages 308s /ms-edge.html to /ms-edge, so both need naming.
+/ms-edge.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+/ms-edge
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
 # Same shape: the agent upload console is an operator surface, not public content.
 /admin.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
