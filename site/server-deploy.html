@@ -24,6 +24,7 @@
       <a href="#topology">架构</a>
       <a href="#studio">创建创空间</a>
       <a href="#config">默认配置</a>
+      <a href="#naked">零叠加层方案</a>
       <a href="#push">推送部署</a>
       <a href="#verify">验证</a>
     </nav>
@@ -37,15 +38,16 @@
       <h1>服务器部署文档</h1>
       <p class="hero-description">
         把卫戍协议游戏服从零部署到 <b>ModelScope 创空间</b>（一个 Docker 容器）。文档写清了：部署前
-        要准备什么信息、怎么创建创空间、默认配置是什么、怎么推送并触发重新部署、怎么验收。
+        要准备什么信息、怎么创建创空间、默认配置是什么、怎么推送并触发重新部署、怎么验收，
+        外加一套<b>不绑自有域名、也不用任何叠加层</b>的最简部署方案。
         所有默认配置都随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上、逐字可用。
-        全部来自仓库源码与平台实测（2026-10-11）。
+        全部来自仓库源码与线上实测（2026-10-11，线上 build <code class="inline">5061a4e4</code> / app <code class="inline">0.2.3</code>）。
       </p>
     </div>
     <div class="quick-stats">
       <span>端口 <strong>7860 锁死</strong></span>
-      <span>源码 <strong>已内置</strong></span>
-      <span>字节 <strong>不过容器</strong></span>
+      <span>最简 <strong>零叠加层</strong></span>
+      <span>素材 <strong>直指 weishucdn</strong></span>
     </div>
   </section>
 
@@ -58,9 +60,10 @@
     </div>
     <p class="block__lead">
       游戏服跑在 ModelScope 创空间的 Docker 容器里，对外只暴露一个端口 <b>7860</b>（平台写死，不可改）。
-      容器内部三个进程共用这个口：<b>nginx</b> 占 7860 做分流，<b>edge-sidecar</b>（:3130）只把素材请求 302 到 CDN，
-      <b>游戏</b>（:3120）跑页面 / WebSocket / 数据。素材字节<b>从不经过容器</b>——玩家浏览器拿到的是 302，
-      自己去 CDN 取。默认配置已写好，复制即用，不用自己猜参数。
+      最省事的部署是<b>零叠加层</b>：容器里只跑游戏进程，监听 7860；素材由清单里的绝对
+      <code class="inline">https://weishucdn.jiangjiangze.icu/…</code> 地址直接指到 CDN，浏览器自己取，字节不过容器。
+      配套仓库另带一套 <b>nginx + sidecar 302 边缘层</b>（边缘注入 / 多源兜底用），但线上清单已自带绝对 CDN 地址，
+      所以那层对 weishucdn 部署是<b>可选、且已审计出局</b>的——下面「零域名 · 零叠加层方案」就是最简路径。默认配置已写好，复制即用。
     </p>
     <div class="notice">
       <span><b>这是服务端部署，不是素材 CDN：</b>本页讲「游戏服怎么跑起来」。素材本身由
@@ -82,11 +85,11 @@
           <tr><td>ModelScope 账号</td><td class="mono">✅</td><td>当前用 <code class="inline">jingjiangze</code>。没有先注册。</td></tr>
           <tr><td>ModelScope Access Token</td><td class="mono">✅</td><td>形如 <code class="inline">ms-xxxx-xxxx</code>。做 git 远程鉴权与「重新部署」，不要用主密码。</td></tr>
           <tr><td>游戏服务端代码</td><td class="mono">✅</td><td>上游 <code class="inline">sganggs/Stronghold-Protocol</code> 的 fork，或配套仓库（其 <code class="inline">Dockerfile</code> 假定 <code class="inline">server/ public/ data/ tools/</code> 在同目录）。</td></tr>
-          <tr><td>素材 CDN 源</td><td class="mono">⚠️ 默认已给</td><td>容器不存素材字节，只 302。默认两个源：<code class="inline">modelscope</code>（数据集镜像，公开）+ <code class="inline">r2</code>（<code class="inline">weishucdn.jiangjiangze.icu</code>）。</td></tr>
+          <tr><td>素材 CDN 源</td><td class="mono">⚠️ 默认已给</td><td>线上清单已写死绝对 <code class="inline">weishucdn.jiangjiangze.icu</code> 地址，浏览器直取，容器不存素材字节。配套仓库还多给 <code class="inline">modelscope</code> 数据集镜像作 302 兜底源（边缘层用）。</td></tr>
           <tr><td>基础镜像</td><td class="mono">⚠️</td><td><code class="inline">node:22-alpine</code>。本项目是 Node 应用，不需要 torch 镜像。</td></tr>
           <tr><td>硬件规格</td><td class="mono">⚠️</td><td><code class="inline">platform/2v-cpu-8g-mem</code>（免费 CPU，2 vCPU / 8 GB）。</td></tr>
           <tr><td>对外端口</td><td class="mono">⚠️</td><td><b>7860，硬锁</b>（<code class="inline">deploy_schema.json</code> 的 <code class="inline">port.const</code>；8080 已被平台占用）。</td></tr>
-          <tr><td>对外域名</td><td class="mono">⚠️</td><td>平台分配 <code class="inline">https://jingjiangze-stronghold-protocol.ms.show/</code>，不能自定义（自有域名需走 Cloudflare Worker 代理）。</td></tr>
+          <tr><td>对外域名</td><td class="mono">⚠️</td><td>平台分配 <code class="inline">https://jingjiangze-stronghold-protocol.ms.show/</code>，不能自定义。<b>最简方案就直接用这个域名</b>（无需 Cloudflare Worker / 自有域名）；要塞进自有站点用 <code class="inline">iframe referrerpolicy="no-referrer"</code> 即可过 WAF（见零域名方案）。</td></tr>
           <tr><td>实例数</td><td class="mono">建议</td><td><code class="inline">1</code>（免费档默认）。</td></tr>
         </tbody>
       </table>
@@ -152,9 +155,11 @@
       <span class="section-status">复制即用，逐字可用</span>
     </div>
     <p class="section-note" style="margin-bottom:14px">
-      配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 已把边缘层 5 个文件放在
+      <b>下面这套是可选的「边缘层」</b>（素材 302 / 多源兜底 / 边缘注入）。配套仓库
+      <code class="inline">Stronghold-Protocol-Server-Deploy</code> 把它的 5 个文件放在
       <code class="inline">deploy/stardust/ms-edge/</code>，整目录复制进你的服务端代码即可（路径不变，根
-      <code class="inline">Dockerfile</code> 按这个路径 <code class="inline">COPY</code>）：
+      <code class="inline">Dockerfile</code> 按这个路径 <code class="inline">COPY</code>）。
+      <b>若走「零域名 · 零叠加层方案」（下一节），这 5 个文件一个都不用复制</b>——游戏直接监听 7860，素材靠清单里的绝对 weishucdn 地址。
     </p>
     <div class="table-wrap">
       <table>
@@ -199,6 +204,96 @@
     </div>
   </section>
 
+  <!-- ===================== 零域名 · 零叠加层方案 ===================== -->
+  <section class="section" id="naked">
+    <div class="section-heading">
+      <div><div class="eyebrow">NAKED PLAN</div><h2>零域名 · 零叠加层方案（最简）</h2></div>
+      <span class="section-status">不绑自有域名，不装 nginx+sidecar</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      这是给「只想让游戏服跑起来、不折腾代理」的人。它<b>不申请自有域名、不套 Cloudflare Worker、也不装边缘层</b>，
+      直接用平台分配的 <code class="inline">*.ms.show</code> 域名，容器里只跑游戏进程。前提：清单里的素材地址已经是
+      绝对 <code class="inline">https://weishucdn.jiangjiangze.icu/…</code>（线上就是）。<b>不是「不绑 CDN」，而是不绑自有域名</b>——
+      素材依旧走 weishucdn，只是不经过任何叠在游戏前面的代理。
+    </p>
+
+    <h3 class="subsection-title">为什么可行</h3>
+    <div class="two-col">
+      <div class="mini">
+        <h4>素材不过容器，靠清单绝对地址</h4>
+        <p>玩家浏览器读 <code class="inline">/data/assets.json</code> 拿到的是完整 <code class="inline">https://weishucdn.jiangjiangze.icu/…</code> URL，
+        自己直连 CDN 取字节。容器既不用存素材，也不用 302 转发——边缘层的存在理由被清单直接抹掉了。</p>
+      </div>
+      <div class="mini">
+        <h4><code class="inline">*.ms.show</code> 域名能直接进游戏</h4>
+        <p>平台 WAF 对浏览器 UA 放行 7860；但要塞进自有站点必须用
+        <code class="inline">&lt;iframe referrerpolicy="no-referrer"&gt;</code>（直链会 302 到门户）。自定义 SNI / 自有域名在 WAF 层是默认证书，
+        接不通——所以本方案干脆不绑。</p>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">部署步骤</h3>
+    <ol class="steps">
+      <li class="step">
+        <span class="step__n">1</span>
+        <div class="step__body">
+          <div class="step__title">准备一个只跑游戏的容器</div>
+          <div class="step__note">把服务端代码（<code class="inline">server/ public/ data/ tools/</code>）和下面这个极简 <code class="inline">Dockerfile</code> 放进创空间仓库即可，<b>不要</b>复制 <code class="inline">deploy/stardust/ms-edge/</code>。</div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">2</span>
+        <div class="step__body">
+          <div class="step__title">极简 Dockerfile</div>
+          <div class="step__note">游戏直接监听 7860（平台锁死的口），不再经 nginx 分流。环境里把端口暴露出来：</div>
+          <pre class="code">FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY server public data tools ./
+ENV NODE_ENV=production \
+    PORT=7860 HOST=0.0.0.0
+EXPOSE 7860
+CMD ["node", "server/index.js"]</pre>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">3</span>
+        <div class="step__body">
+          <div class="step__title">确认素材地址是绝对 weishucdn URL</div>
+          <div class="step__note">部署前一行命令核对清单：<code class="inline">curl -fsS https://你的域名/data/assets.json | grep -c "https://weishucdn.jiangjiangze.icu"</code>。
+          若清单里是相对路径（旧版），要么把游戏配成带 <code class="inline">SP_ASSET_CDN</code> 基址，要么退回上面的边缘层——否则玩家会 404。</div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">4</span>
+        <div class="step__body">
+          <div class="step__title">推送并点「重新部署」</div>
+          <div class="step__note">同「第三步」：<code class="inline">git push ms HEAD:master</code> 后，在创空间控制台点「重新部署」才会重新 build。</div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">5</span>
+        <div class="step__body">
+          <div class="step__title">把游戏塞进你的站点（不绑域名的关键）</div>
+          <div class="step__note">在自己的页面里用如下 iframe 内嵌，<b>必须带 <code class="inline">referrerpolicy="no-referrer"</code></b>，否则 WAF 把直链 302 到 ModelScope 门户：
+          <pre class="code">&lt;iframe
+  src="https://jingjiangze-stronghold-protocol.ms.show/"
+  referrerpolicy="no-referrer"
+  allow="autoplay; fullscreen"
+  style="width:100%;height:80vh;border:0"&gt;&lt;/iframe&gt;</pre>
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="notice" style="margin-top:16px">
+      <span><b>取舍：</b>零叠加层省掉了 nginx + sidecar 两个进程和一套源表，部署面更小、出问题的点更少；
+      代价是你不能做边缘注入 / 多源实时兜底（这些要靠清单本身带绝对地址）。<b>自己搭的私有服没有这份 weishucdn 清单</b>时，
+      还是得用边缘层或另配 <code class="inline">SP_ASSET_CDN</code>。本方案专为「用现成 weishucdn 清单」的场景。</span>
+    </div>
+  </section>
+
   <!-- ===================== 推送部署 ===================== -->
   <section class="section" id="push">
     <div class="section-heading">
@@ -225,14 +320,17 @@ git push ms HEAD:master
   <section class="section" id="verify">
     <div class="section-heading">
       <div><div class="eyebrow">VERIFY</div><h2>第四步：验收</h2></div>
-      <span class="section-status">healthz / 302 / WebSocket</span>
+      <span class="section-status">healthz / 素材地址 / WebSocket</span>
     </div>
-    <pre class="code"><i># 1. 健康检查（探的是对外口 7860，由 nginx 代理到游戏）</i>
+    <pre class="code"><i># 1. 健康检查（零叠加层：直连 7860；边缘层：经 nginx 代理）</i>
 curl -fsS https://jingjiangze-stronghold-protocol.ms.show/healthz
 
-<i># 2. 素材请求应拿到 302 到某个源（字节不经过容器）</i>
-curl -fsS -o /dev/null -w '%{http_code} -> %{redirect_url}\n' \
-  https://jingjiangze-stronghold-protocol.ms.show/assets/char/avatar/char_1016_agoat2.png
+<i># 2. 清单里的素材地址必须是绝对 weishucdn URL（零叠加层不依赖 302）</i>
+curl -fsS https://jingjiangze-stronghold-protocol.ms.show/data/assets.json \
+  | grep -c "https://weishucdn.jiangjiangze.icu"
+<i>#   → 若用边缘层（302 方案），则改成看 302：</i>
+<i># curl -fsS -o /dev/null -w '%{http_code} -> %{redirect_url}\n' \</i>
+<i>#   https://…ms.show/assets/char/avatar/char_1016_agoat2.png</i>
 
 <i># 3. WebSocket（联机用）</i>
 wss://jingjiangze-stronghold-protocol.ms.show/ws</pre>
@@ -240,9 +338,9 @@ wss://jingjiangze-stronghold-protocol.ms.show/ws</pre>
       <table>
         <thead><tr><th>现象</th><th>原因 / 处理</th></tr></thead>
         <tbody>
-          <tr><td>构建失败，<code class="inline">nginx -t</code> 错</td><td><code class="inline">sources.json</code> 渲染不出 <code class="inline">sources-nginx.conf</code>，或 <code class="inline">nginx.conf</code> 语法错。本地先复现。</td></tr>
-          <tr><td>素材 404</td><td>命中 <code class="inline">exceptions</code> 没覆盖的被审核拒收路径，或 <code class="inline">order</code> 里的源挂了。</td></tr>
-          <tr><td>连不上自有域名</td><td>平台 WAF 拦了：用 <code class="inline">*.ms.show</code> 域名 + <code class="inline">iframe no-referrer</code>，或 Cloudflare Worker 代理。</td></tr>
+          <tr><td>构建失败，<code class="inline">nginx -t</code> 错</td><td>只在用边缘层时出现：<code class="inline">sources.json</code> 渲染不出 <code class="inline">sources-nginx.conf</code>，或 <code class="inline">nginx.conf</code> 语法错。零叠加层没有 nginx。</td></tr>
+          <tr><td>素材 404</td><td>零叠加层：清单地址不是绝对 weishucdn URL（旧版相对路径），或 weishucdn 挂了；边缘层：命中 <code class="inline">exceptions</code> 没覆盖的被审核拒收路径，或 <code class="inline">order</code> 里的源挂了。</td></tr>
+          <tr><td>直链打开跳到 ModelScope 门户</td><td>WAF 把裸 <code class="inline">*.ms.show</code> 直链 302 到门户。塞进自有站点必须 <code class="inline">iframe referrerpolicy="no-referrer"</code>；自定义域名在 WAF 层是默认证书，接不通。</td></tr>
           <tr><td>push 成功但没生效</td><td>忘了点「重新部署」。</td></tr>
         </tbody>
       </table>
