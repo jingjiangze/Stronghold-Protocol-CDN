@@ -39,7 +39,7 @@
 `disabled` 数组（双写防静默启用——两条发布链读的位置不同，主链读条目自身 `enabled`，多源链读 `disabled` 列表）：
 
 ```json
-"disabled": [ "jsdelivr", "jsdelivr-assets", "openi" ]
+"disabled": [ "jsdelivr", "jsdelivr-assets", "openi", "ms-edge" ]
 ```
 
 > 双写是必要的：`disabled` 列表与条目 `enabled:false` 是两处来源；只写一处，下一次由另一条链发布的

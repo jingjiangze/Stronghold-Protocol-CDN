@@ -44,8 +44,8 @@
     <div class="quick-stats">
       <span>首载提速 <strong>316×</strong></span>
       <span>稳态人均 <strong>2,048 B/s</strong></span>
-      <span>压缩后 <strong>~160 B/s</strong></span>
-      <span>10 Mbps <strong>~7,000 人</strong></span>
+      <span>压缩后 <strong>505 B/s</strong></span>
+      <span>10 Mbps <strong>2,475 人</strong></span>
     </div>
   </section>
 
@@ -54,13 +54,12 @@
     <div class="block__head">
       <span class="block__num">1</span>
       <span class="block__title">结论先行</span>
-      <span class="block__who">首载要压 · 稳态更要压</span>
+      <span class="block__who">首载要压 · 稳态更要压（2026-10-10 修正）</span>
     </div>
     <p class="block__lead">
       两件事分开看：<b>首载</b>是「新玩家第一次进场吃掉几百 MiB」，<b>稳态</b>是「一个席位对局中持续的上行」。
       首载靠把素材挪走解决；<b>稳态实测人均 2,048 B/s，几乎全是 <code class="inline">m.public</code></b>
-      （早前那句「只要 60 B/s」漏了它）。压掉它之后人均降到 <b>~160 B/s</b>，
-      10 Mbps 从 610 人抬到 <b>~7,000 人</b>。
+      （早前那句「只要 60 B/s」漏了它）。压掉它之后人均降到 <b>505 B/s</b>，10 Mbps 从 610 人抬到 <b>2,475 人</b>。
     </p>
 
     <div class="table-wrap" style="margin-top:16px">
@@ -68,24 +67,21 @@
         <thead><tr><th></th><th>稳态（默认配置）</th><th>首次进场（新玩家）</th></tr></thead>
         <tbody>
           <tr><td>优化前人均上行</td><td class="num">≈2,048 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
-          <tr><td>优化后人均上行</td><td class="num"><b>≈160 B/s</b>（压缩后，真机实测）</td><td class="num"><b>1.48 MiB</b></td></tr>
-          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>~7,000 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
+          <tr><td>优化后人均上行</td><td class="num"><b>≈505 B/s</b>（压缩后）</td><td class="num"><b>1.48 MiB</b></td></tr>
+          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>2,475 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="notice">
       <span><b>取舍：</b>把素材和代码挪走消掉的是<b>首载</b>（几百 MiB → 1.48 MiB，几百倍）；
-      压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → ~160 B/s，压到约 1/13），
-      而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。
-      <br />⚠️ 稳态压缩是<b>逐步迭代</b>到的：最早一版配置（窗口 12 + 无上下文接管）实测是 505 B/s / 2,475 人，
-      后来把阈值降到 64、窗口提到 15、并保留上下文接管，才到文档里的 <b>~160 B/s / ~7,000 人</b>（在线字节 −54.8%）。
-      当前线上跑的就是后者。</span>
+      压 <code class="inline">m.public</code> 消掉的是<b>稳态</b>（2,048 → 505 B/s，约 4×），
+      而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。</span>
     </div>
     <p class="section-note" style="margin-top:14px">
       WS 链路这块单独拆成了两份文档：
       <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
-      （白名单 + 窗口 15 + 保留上下文、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
+      （白名单 + 窗口 12、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
       <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是待执行的三步
       （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。
       本页是给站点访客的自包含摘要。
@@ -192,28 +188,19 @@
       </div>
 
       <div class="mini">
-        <h4>措施 4 · permessage-deflate（战斗帧与 m.public 两套参数）</h4>
-        <p class="download__meta">收益：<b>m.public 真机 ~160 B/s</b>（在线字节 −54.8%）；战斗帧 4.2×</p>
-        <p class="download__meta" style="margin-top:8px">
-          两条流用两套参数，分别针对各自的帧大小：
-        </p>
-        <pre class="code"><i>// m.public（~4.6 KB 公开状态广播）—— 当前线上</i>
-serverMaxWindowBits: 15,         <i>// 32 KiB 滑动窗口</i>
-threshold: 64,                   <i>// 小帧不压</i>
-<i>// 不设 serverNoContextTakeover / clientNoContextTakeover —— 保留上下文接管</i>
-concurrencyLimit: 8,
-zlibDeflateOptions: { level: 6, memLevel: 5 }
-
-<i>// b.snap（~250 B 战斗帧，仅非默认路径）</i>
-serverMaxWindowBits: 9,          <i>// 512 B 窗口对小帧更省</i>
-serverNoContextTakeover: true,
+        <h4>措施 4 · permessage-deflate 窗口 12 → 9（仅战斗帧口径）</h4>
+        <p class="download__meta">收益：<b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b></p>
+        <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）</i>
+serverNoContextTakeover: true,   <i>// 保内存上界</i>
 clientNoContextTakeover: true,
-threshold: 512,</pre>
-        <ul style="margin-top:10px">
-          <li><code class="inline">m.public</code> 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块，所以这条流用<b>窗口 15</b>；
-            且<b>保留上下文接管</b>让跨帧的重复块只付一次代价，交错流从 3.76× 跳到 <b>26.59×</b>。</li>
-          <li>战斗帧（<code class="inline">b.snap</code>）恰好相反：~250 B 的小帧用<b>窗口 9 + 无上下文接管</b>更省（35.8% vs 36.5%）。</li>
-          <li>⚠️ <b>战斗帧这条几乎用不到</b>：<code class="inline">clientCombat</code> 默认 on，战斗跑在玩家浏览器里，服务端只在 AI / 接管 / <code class="inline">SP_COMBAT=server</code> 时才发 <code class="inline">b.snap</code>。真正的稳态大头是 <code class="inline">m.public</code>。</li>
+threshold: 512,                  <i>// 小帧不压</i>
+concurrencyLimit: 8,
+zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
+        <ul>
+          <li>小窗口用更便宜的距离码，实测<b>反而更省</b>：35.8% vs 36.5%、28.8% vs 30.0%。</li>
+          <li>⚠️ <b>默认路径几乎用不到它</b>：<code class="inline">clientCombat</code> 默认 on，战斗跑在玩家浏览器里，
+          服务端只在 AI / 接管 / <code class="inline">SP_COMBAT=server</code> 时才发 <code class="inline">b.snap</code>。</li>
+          <li>注意：<code class="inline">m.public</code> 用的是 <b>窗口 12</b>（见下节），不是这里的 9。</li>
         </ul>
       </div>
 
@@ -223,26 +210,20 @@ threshold: 512,</pre>
         <p>战斗逻辑在各端浏览器跑，服务端不广播快照。</p>
         <div class="table-wrap" style="margin-top:10px">
           <table>
-            <thead><tr><th></th><th class="num">单帧</th><th class="num">15 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
+            <thead><tr><th></th><th class="num">单帧</th><th class="num">10 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
             <tbody>
-              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">15.5 KiB/s</td><td class="num"><b>78 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
-              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">3.7 KiB/s</td><td class="num"><b>330 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
+              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">10.3 KiB/s</td><td class="num"><b>118 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
+              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">2.5 KiB/s</td><td class="num"><b>496 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
             </tbody>
           </table>
         </div>
-        <p class="section-note" style="margin-top:8px">
-          口径：每秒字节 = 单帧 × 帧率（15 Hz = 60 tick/s ÷ <code class="inline">SNAPSHOT_EVERY = 4</code>），
-          容纳 = ⌊1,250,000 ÷ 每秒字节⌋（未压 1,058 × 15 = 15,870 → 78 人；w9 252 × 15 = 3,780 → 330 人）。
-          20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）两格不变；相对旧 10 Hz 口径，默认档恰好 ×1.5（只作用于这一条流）。
-        </p>
         <p style="margin-top:10px">
           压完是 4 倍差距，但<b>只要 <code class="inline">clientCombat</code> 退成 off，这两种都比默认路径贵 100 倍以上</b>。
           这是本轮唯一有数量级意义的风险点。
         </p>
         <div class="notice">
-          <span><b>两档并存的说明：</b>快照率不再是从前的固定 30 Hz、也不再是上一轮的 10 Hz：默认 <b>15 Hz（<code class="inline">SNAPSHOT_EVERY = 4</code>，60 tick/s ÷ 4）</b>，
-          链路抖动时<b>按 watcher（每条连接）</b>自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
-          两档由每个 watcher 自己的流逝 tick 计数独立驱动，15 Hz 与 20 Hz 互不嵌套（4 与 3 不整除，也没有"慢 tick 必须是快 tick 的子集"这种要求）。
+          <span><b>两档并存的说明：</b>快照率已从原来的固定 30 Hz 降到 <b>10 Hz（默认，<code class="inline">SNAPSHOT_EVERY = 6</code>）</b>，
+          并在链路抖动时**按连接**自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
           所以"30 Hz"那一栏是历史口径：按它算出的 <b>39 / 160 人</b> 只能当特定压力场景的算例，
           <b>不是当前默认配置下的容量</b>。本表两档都列出，请按实际档位读。</span>
         </div>
@@ -295,21 +276,15 @@ threshold: 512,</pre>
           <tr>
             <td><b>B. 对局中</b><br /><span class="section-note">默认 <code class="inline">clientCombat</code></span></td>
             <td class="num">≈2,048 B/s</td><td class="num">≈16 kbps</td><td class="num"><b>610 人</b></td>
-            <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）</td>
+            <td>实测；几乎全是 <code class="inline">m.public</code>（见下节）。压缩后 505 B/s → <b>2,475 人</b></td>
           </tr>
           <tr>
-            <td><b>B′. 对局中（m.public 压缩后）</b></td>
-            <td class="num"><b>~160 B/s</b></td><td class="num">≈1.3 kbps</td>
-            <td class="num"><b>~7,000 人</b></td>
-            <td>真机实测（阈值 64 + 窗口 15 + 保留上下文），在线字节 −54.8%</td>
+            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">10,580 B/s</td><td class="num">85 kbps</td><td class="num"><b>118 人</b></td>
+            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>10 Hz</b></td>
           </tr>
           <tr>
-            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">15,870 B/s</td><td class="num">≈127 kbps</td><td class="num"><b>78 人</b></td>
-            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>15 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 4</code>）</td>
-          </tr>
-          <tr>
-            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">3,780 B/s</td><td class="num">≈30 kbps</td><td class="num"><b>330 人</b></td>
-            <td>同上，开启压缩（战斗帧口径）</td>
+            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">2,520 B/s</td><td class="num">20 kbps</td><td class="num"><b>496 人</b></td>
+            <td>同上，开启压缩</td>
           </tr>
           <tr>
             <td>C′ / D′. 同上，但链路抖动升到 <b>20 Hz</b></td><td class="num">21,160 / 5,040 B/s</td><td class="num">169 / 40 kbps</td><td class="num"><b>59 / 248 人</b></td>
@@ -321,15 +296,10 @@ threshold: 512,</pre>
 
     <div class="notice">
       <span><b>怎么读这张表：</b>A / B 的数字大到没有意义 —— 现实中会先撞 CPU、每进程 fd 上限、<code class="inline">maxConnections</code>。
-      也就是说<b>默认配置下稳态上行根本不构成限制</b>，2 万人只用来说明余量有多大。<br />
-      <b>B → B′ 的 610 → ~7,000 人</b>才是本轮压缩的真实价值，且它落在<b>默认路径</b>上（<code class="inline">clientCombat=on</code> 不发 <code class="inline">b.snap</code>，<code class="inline">m.public</code> 照发）。<br />
-      C → D 的 78 → 330 人是战斗帧压缩（4.2×），但只在非默认路径上成立。<br />
-      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>15 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 4</code>），
-      抖动链路按 watcher 自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
-      口径：人均 B/s = 单帧 × 帧率，容纳 = ⌊1,250,000 ÷ 人均 B/s⌋ —— 未压 1,058 × 15 = 15,870 → 78 人；
-      w9 252 × 15 = 3,780 → 330 人；20 Hz 两格（21,160 / 5,040 B/s → 59 / 248 人）未变。
-      基准档 10 → 15 Hz 只影响 <code class="inline">b.snap</code>，服务端跑战斗这两行较旧口径恰好 ×1.5（+50%）——
-      实测佐证（4 人 + 2 观战整场）：<code class="inline">b.snap</code> 14,377 帧 / 3,277.2 KiB（均 233 B），旧 10 Hz 时是它的 2/3。
+      也就是说<b>默认配置下上行根本不构成限制</b>，2 万人只用来说明余量有多大。<br />
+      <b>C → D 的 118 → 496 人</b>才是压缩的真实价值（约 4.2×），但它只在非默认路径上成立。<br />
+      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>10 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 6</code>），
+      抖动链路按连接自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
       早期版本的 30 Hz 口径（31,744 B/s → 39 人 / 160 人）<b>只是历史压力算例，不是当前容量</b>。<br />
       另注：这只算 <code class="inline">b.snap</code> 一种消息 —— 同频的 <code class="inline">b.ev</code> 与
       <code class="inline">m.field</code> 也会占用上行，单帧 × 帧率不等于完整 ws 流量。</span>
@@ -342,9 +312,10 @@ threshold: 512,</pre>
         优化后，首载吞吐 <b>0.81 人/s</b>，复访为 <b>0</b>。
       </p>
       <p class="download__meta" style="margin-top:8px">
-        ⚠️ <b>稳态容量由 <code class="inline">m.public</code> 决定，不是 CPU</b>：实测稳态人均 <b>2,048 B/s</b>，
-        10 Mbps 只能带 <b>~610 人</b>；开了 <code class="inline">m.public</code> 压缩（当前配置）真机 <b>~7,000 人</b>，
-        2000 人已是「很宽裕」（余量约 50%）。详见下一节。
+        ⚠️ <b>2026-10-10 修正</b>：稳态容量<b>不是</b>「由 CPU 决定（万级）」—— 那个数字建立在漏了
+        <code class="inline">m.public</code> 的 60 B/s 建模值上。实测稳态人均 <b>2,048 B/s</b>，
+        10 Mbps 只能带 <b>~610 人</b>；开了 <code class="inline">m.public</code> 压缩后 <b>~2,475 人</b>。
+        详见下一节。
       </p>
     </div>
   </section>
@@ -352,15 +323,12 @@ threshold: 512,</pre>
   <!-- ===================== m.public / 2000 人 ===================== -->
   <section class="section" id="mpub">
     <div class="section-heading">
-      <div><div class="eyebrow">ANALYSIS · THE REAL STEADY STREAM</div><h2>m.public 才是稳态的全部</h2></div>
+      <div><div class="eyebrow">ANALYSIS · THE REAL STEADY STREAM</div><h2>m.public 才是稳态的全部（2026-10-10）</h2></div>
       <span class="section-status">一个席位收到的字节里 98% 是它</span>
     </div>
 
     <p class="section-note" style="margin-bottom:14px">
-      快照率本轮从 10 Hz 调成 <b>15 Hz 基准 / 20 Hz 动态</b> —— 但<b>默认路径（<code class="inline">clientCombat=on</code>）根本不发 <code class="inline">b.snap</code></b>，
-      调频只动这一条流，所以<b>本页的每席位 / 压缩后数字（~160 B/s、~7,000 人）不受本轮调频影响</b>。
-      复测为证（生产默认、拦截每一帧出站消息）：每席位每场共 600.0 KiB、稳态 4,651.4 B/s（未压）；
-      按类型拆分 <code class="inline">m.public</code> 147.44 KiB、<code class="inline">m.ticker</code> 2.54 KiB、<code class="inline">b.pool</code> 0.03 KiB —— 里面没有一帧 <code class="inline">b.snap</code>。
+      上一轮把 <code class="inline">b.snap</code> 压到 10 Hz —— 但<b>默认路径（<code class="inline">clientCombat=on</code>）根本不发 <code class="inline">b.snap</code></b>。
       真正占满上行的是另一条流：<b><code class="inline">m.public</code></b>（对局的公开状态广播）。
       用生产 <code class="inline">Match</code> 引擎跑真实 4 人对局、拦截每一帧出站消息：
     </p>
@@ -397,29 +365,27 @@ threshold: 512,</pre>
         </p>
       </div>
       <div class="mini">
-        <h4>窗口 15 + 保留上下文（当前线上）</h4>
+        <h4>窗口 9 → 12（这次为 m.public 调的）</h4>
         <div class="table-wrap" style="margin-top:8px">
           <table>
             <thead><tr><th><code class="inline">serverMaxWindowBits</code></th><th class="num"><code class="inline">m.public</code> 压缩后</th></tr></thead>
             <tbody>
-              <tr><td>9（给 ~250 B 战斗帧调的）</td><td class="num">29.8%（<b>3.36×</b>）</td></tr>
-              <tr><td>12 + 无上下文接管（早期配置）</td><td class="num">20.3%（<b>4.94×</b>）</td></tr>
-              <tr><td><b>15 + 保留上下文（当前）</b></td><td class="num"><b>在线字节 −54.8%（26.59×）</b></td></tr>
+              <tr><td>9（上一轮为 ~250 B 战斗帧调的）</td><td class="num">29.8%（<b>3.36×</b>）</td></tr>
+              <tr><td><b>12</b></td><td class="num"><b>20.3%（4.94×）</b></td></tr>
             </tbody>
           </table>
         </div>
         <p class="download__meta" style="margin-top:8px">
           <code class="inline">m.public</code> 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块。
-          当前配置把窗口提到 <b>15</b>、并<b>保留上下文接管</b>，交错流从 3.76× 跳到 <b>26.59×</b>，单座位 ~960 → <b>~160 B/s</b>。
           浏览器 WebSocket 自动解压，<b>对客户端完全透明</b>。
         </p>
       </div>
     </div>
 
     <div class="notice" style="margin-top:18px">
-      <span><b>观战 / AI 节流：</b>不是本场球员的 watcher <b>按自己的档位</b>每 2 帧才收一次 <code class="inline">b.snap</code>（即它自己的间隔翻倍），本场球员照收每一帧。
+      <span><b>观战 / AI 节流：</b>不是本场球员的观战者每 2 帧才收一次 <code class="inline">b.snap</code>，本场球员照收每一帧。
       覆盖两类 —— <b>纯观战者</b>（被淘汰队友、观战席）与 <b>没人打的场</b>（全 AI 场，watcher 全是非球员）。
-      <code class="inline">b.ev</code> 永不丢。于是纯观战 / 全 AI 场的 watcher 拿到：基准 <b>7.5 Hz</b> / 动态 <b>10 Hz</b>（旧口径是 5 / 10）。</span>
+      <code class="inline">b.ev</code> 永不丢。它与「链路自适应速率」合成：非球员拿到的是该场当前发射速率的一半。</span>
     </div>
 
     <h3 style="margin-top:26px">10 Mbps 到底能不能带 2000 人</h3>
@@ -428,14 +394,14 @@ threshold: 512,</pre>
         <thead><tr><th></th><th class="num">每席位上行</th><th class="num">10 Mbps 容纳</th><th>2000 人</th></tr></thead>
         <tbody>
           <tr><td>未压</td><td class="num">2,048 B/s</td><td class="num"><b>610 人</b></td><td>✗ 差 3.3×</td></tr>
-          <tr><td><b>压缩后（当前配置）</b></td><td class="num"><b>~160 B/s</b></td><td class="num"><b>~7,000 人</b></td><td>✓ 余量 ~50%</td></tr>
+          <tr><td><b>压缩后（本轮）</b></td><td class="num"><b>505 B/s</b>（24.7%）</td><td class="num"><b>2,475 人</b></td><td>✓ 余量 ~24%</td></tr>
         </tbody>
       </table>
     </div>
     <div class="notice" style="margin-top:12px">
-      <span><b>结论：当前配置下 10 Mbps 能带 ~7,000 人，2000 人已「很宽裕」</b>（余量约 50%）。
-      早期一版配置（窗口 12 + 无上下文接管）是 505 B/s / 2,475 人（余量 ~24%，刚好够），
-      并非当前线上值。<br />
+      <span><b>结论：本轮之前，10 Mbps 只能带 ~610 人，远达不到 2000；开上 <code class="inline">m.public</code> 压缩后是 ~2,475 人，
+      2000 人「能」跑，但余量只有约 24%</b> —— 是「刚好够」，不是「宽裕」。
+      （留 20% 余量的习惯口径下安全值 ≈1,980 人，正好卡在 2000 线上。）<br />
       ⚠️ 前提：<code class="inline">SP_WS_COMPRESSION=on</code> 必须真的在<b>生效槽</b>上。盒子更新器会重写槽脚本、抹掉手工加的那行 ——
       已修 <code class="inline">tools/box/sp_update_zip.ps1</code> 让它每次都写；否则切槽后压缩静默失效，容量掉回 610。</span>
     </div>
@@ -456,7 +422,7 @@ threshold: 512,</pre>
       </table>
     </div>
     <p class="section-note" style="margin-top:10px">
-      delta 叠在已 ~160 B/s 之上，每席位可望进一步降到 <b>~100 B/s 量级</b> → 10 Mbps 容纳 <b>~10,000+ 人</b>，2000 人变得极宽裕。
+      delta 之后每席位可望降到 <b>~130–170 B/s</b> → 10 Mbps 容纳 <b>~7,000–9,000 人</b>，2000 人变得很宽裕。
       代价：要同时改<b>客户端合并逻辑</b>，风险高于本轮，建议单开一轮 + golden 验收。
     </p>
 
@@ -490,10 +456,9 @@ threshold: 512,</pre>
       （<code class="inline">lastRound</code> / <code class="inline">modeId</code> / <code class="inline">difficulty</code> /
       <code class="inline">stageId</code> / <code class="inline">factions</code> / <code class="inline">disabledBonds</code> /
       <code class="inline">drawnDisabledBonds</code> / <code class="inline">bannedChess</code> /
-      <code class="inline">bossId</code> / <code class="inline">hiddenBossId</code>）。
-      在<b>每帧独立压</b>的窗口下，<b>帧里任何常量都要在每一帧付出它的压缩后大小</b> —— 这是把它们搬走的理由；
-      保留上下文的窗口下，单条流的常量不再逐帧付代价，但这套「常量请出热帧」仍能降低 delta 的基线、并让跨连接第一帧更省。
-      所以这套改造在两种配置下都成立。
+      <code class="inline">bossId</code> / <code class="inline">hiddenBossId</code>）。而 permessage-deflate 用的是
+      <b><code class="inline">serverNoContextTakeover</code>（每帧独立压）</b> ——
+      <b>帧里任何常量，都要在每一帧付出它的压缩后大小</b>。这就是它们值得搬走的全部理由。
     </p>
 
     <div class="table-wrap">
@@ -520,16 +485,14 @@ threshold: 512,</pre>
         </ul>
       </div>
       <div class="mini">
-        <h4>兜底（照抄 15Hz↔20Hz 那套）</h4>
+        <h4>兜底（照抄 10Hz↔20Hz 那套）</h4>
         <ul>
           <li>能力位<b>每 socket</b>声明（<code class="inline">hello.pub</code>），<b>每次 hello 重新求值</b>；</li>
           <li><b>未声明的一律发完整帧</b> —— 老客户端、第三方客户端、部署前打开还在跑旧 JS 的页面，
               行为与今天完全一致；</li>
           <li><code class="inline">hello.version</code> 仍<b>强校验</b>，所以能力位是<b>新增的可选字段</b>，不是版本号；</li>
-          <li>基线一定先到（<code class="inline">start()</code> 与 <code class="inline">_resync()</code> 都发）——
-              这<b>不是</b>快照率的对照物：快照率已改为每个 watcher <b>自己的流逝 tick 计数</b>，15 Hz 与 20 Hz
-              <b>互不嵌套</b>（4 与 3 不整除），没有"慢 tick 必须是快 tick 的子集"这种要求。
-              基线先到是<b>合并式接收端自身</b>的需要：漏帧 / 重连 / 中途加入的客户端必须先拿到一份权威全量帧才能自愈。</li>
+          <li>基线一定先到（<code class="inline">start()</code> 与 <code class="inline">_resync()</code> 都发），
+              对应快照率那条"慢 tick 必须是快 tick 的子集"的守恒。</li>
         </ul>
       </div>
     </div>
@@ -561,9 +524,9 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$( \
   curl -s https://weishu.jiangjiangze.icu/healthz | grep -o '"build":"[^"]*"' | cut -d'"' -f4)" \
   | grep -i cache-control        <i># 期望 max-age=31536000, immutable</i>
 
-<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=15，且无 *_no_context_takeover）</i>
+<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=12）</i>
 curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
-    </section>
+  </section>
 
   <footer class="footer">
     <div class="container">

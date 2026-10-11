@@ -14,9 +14,7 @@
 | 目标 | 2000 人同时在线 |
 | 因此每席位可花 | **625 B/s** |
 
-**结论（已达成并再优化）**：优化前 2,048 B/s/人（10 Mbps 只够 **610 人**）；
-第一轮压缩（白名单 + 窗口 12 + 广播修 bug）后 **505 B/s/人（2,475 人）**；
-第二轮（阈值 64 + 保留上下文 + 窗口 15，见 §3.2）真机实测单座位 **~160 B/s**，**10 Mbps 约 7,000 人** —— 2000 人从「余量 24%」变成「很宽裕」。
+**结论（已达成）**：优化前 2,048 B/s/人（10 Mbps 只够 **610 人**）；压缩后 **505 B/s/人（2,475 人）** → 2000 人**能跑，余量约 24%**。
 
 ---
 
@@ -31,19 +29,17 @@
 | `b.snap` / `b.ev` | **0** | — | 默认 `clientCombat` 无观战者时不发 |
 | WS ping（心跳） | ~0 | 2 B | 30 s / 次 |
 
-所以「WS 压缩」= **压 `m.public`**。`b.snap` 那条只在服务端跑战斗（接管 / `SP_COMBAT=server`）时才活；
-本轮把它的基准率从 10 Hz 调到 **15 Hz（抖动 20 Hz）**，只影响这条非默认路径，**不改变本节的每席位 / 容量数字**。
+所以「WS 压缩」= **压 `m.public`**。`b.snap` 那条只在服务端跑战斗（接管 / `SP_COMBAT=server`）时才活。
 
 ---
 
-## 三、手段 1 — permessage-deflate，白名单 + 窗口 15（已迭代两轮）
+## 三、手段 1 — permessage-deflate，白名单 + 窗口 12
 
-`server/wsCompression.js`：`threshold 64`、`serverMaxWindowBits 15`、`level 6 / memLevel 5`。
-**不再设 `serverNoContextTakeover` / `clientNoContextTakeover`**（回到 permessage-deflate 协商默认，即**保留上下文**）。
+`server/wsCompression.js`：`threshold 512`、`serverNoContextTakeover`、`serverMaxWindowBits 12`、`level 6 / memLevel 5`。
 
 - **白名单**：`b.snap` / `b.ev` / `m.field` / `m.public` / `m.private` / `m.result`。
-- **窗口为什么是 15（不是 12）**：`m.public` 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块 ——
-  实测 **wb9 = 3.36×、wb12 = 4.94×、wb15 = 5.x×**（窗口越大 LZ77 历史越长、重复吃得越干净；§3.2 有真机数字）。
+- **窗口为什么是 12**：`m.public` 有 ~4.6 KB，512 B 窗口够不到它重复的羁绊 / 状态块 ——
+  实测 **wb9 = 3.36×、wb12 = 4.94×**。（小窗口对 ~250 B 的战斗帧更省，那是旧口径。）
 - **浏览器自动解压**，对客户端完全透明：不改客户端、不改协议、老版本客户端一样有效。
 
 ### 3.1 顺手修掉的真 bug：广播路径从来没压过
@@ -56,51 +52,24 @@
 ⚠️ **前提**：`SP_WS_COMPRESSION=on` 必须真的在**生效槽**上。盒子更新器会重写槽脚本、抹掉手工加的那行 ——
 已修 `tools/box/sp_update_zip.ps1` 让它每次都写；否则切槽后压缩静默失效，容量掉回 610。
 
-### 3.2 第二轮迭代（审计 `sess_15ef42a3`）：阈值 64 + 保留上下文 + 窗口 15
-
-第一轮定的那几个值（`threshold 512`、`serverNoContextTakeover: true`、`serverMaxWindowBits 12`）是**保守起点**，
-审计又压了一轮，三个改动各有实测依据：
-
-| 改动 | 旧 | 新 | 实测依据 |
-|---|---|---|---|
-| `threshold` | 512 | **64** | 整局单座位 36,835 → 31,855 B（**−13.5%**），`m.public` delta 重放 40,220 → 34,222 B（**−14.9%**），净 2.43× → 2.86×；CPU 代价 ~0.1%。改 `test/ws-compression.test.js` 的硬编码断言 512 → 64 |
-| `serverNoContextTakeover` | `true`（每帧独立压） | **删掉**（保留上下文） | 交错流 3.76× → **26.59×**；单座位 ~960 → **~160 B/s**；10 Mbps ~1,250 → **~7,000 人**；端到端 CPU 36 → 28 ms |
-| `serverMaxWindowBits` | 12 | **15** | 与保留上下文叠加，LZ77 历史更长、重复块更省（wb12 = 4.94× → wb15 更高） |
-
-**真机 A/B（build `a697834a6599`，AI 托管实跑）**：
-
-| 档 | 应用层配置 | 在线字节 | 净倍数 |
-|---|---|---|---|
-| `on`（新：保留上下文 + wb15） | — | **13,146 B** | **3.67×** |
-| `safe`（旧：no_context + wb12） | — | **29,094 B** | 1.76× |
-
-→ 在线字节减少 **54.8%**；剔除控制帧后热流压缩 2.14× → 11.2×（5.2 倍）。
-
-⚠️ **保留上下文让爆炸半径变大**：单个连接一旦 desync，历史窗口作废，最坏是这条连接解压失败。
-但客户端 `public/js/net.js` 有**指数退避重连**，desync 后果是「断线后重连恢复」而非「永久坏」——
-所以风险可接受，不需回退到 no_context。
-
-⚠️ 早期 `threshold 512` 的取舍说明留在 `server/wsCompression.js` 注释里（"Why 64 and not 512"），改值已文档化。
-
 ---
 
 ## 四、手段 2 — 观战 / AI 节流
 
-`server/match/fields.js` 的 `_emit`：**不是本场球员的 watcher** 在**自己的档位**上每 2 帧才收一次 `b.snap`（即它自己的间隔翻倍），本场球员照收每一帧。
+`server/match/fields.js` 的 `_emit`：**不是本场球员的观战者**每 2 帧才收一次 `b.snap`，本场球员照收每一帧。
 覆盖两类，都是「全速位置更新买不到任何东西」的场合：
 
 - **纯观战者** —— 被淘汰的队友、观战席，其客户端本来就在快照之间插值；
 - **没人打的场** —— 每个球员都是 AI 的场，它的 watcher 全是非球员。
 
-`b.ev` **永不丢**（它带的是伤害数字 / 阵亡）。这一层与 `snapRate.js` 的**链路自适应速率**（15 Hz ↔ 20 Hz，
-按 watcher 的 RTT 抖动升降、有滞后与刹车；每个 watcher 有自己的流逝 tick 计数，两档互不嵌套）**合成**：
-非球员拿到的是**它自己档位的一半** —— 纯观战者 / 全 AI 场：基准 **7.5 Hz**、动态 **10 Hz**（旧模型是 5 / 10）。
+`b.ev` **永不丢**（它带的是伤害数字 / 阵亡）。这一层与 `snapRate.js` 的**链路自适应速率**（10 Hz ↔ 20 Hz，
+按连接的 RTT 抖动升降、有滞后与刹车）**合成**：非球员拿到的是"该场当前发射速率的一半"。
 
 ---
 
 ## 五、手段 3 — 热帧去掉「整场不变的字段」（PR #157，待合并）
 
-在**保留上下文**的压缩下，常量仍然会被塞进每一帧的编码起点（基线帧带全量、热帧本可省略），所以把开局即定的字段搬出热帧仍有意义 —— 而且这一步是 §七 delta 落地的**门**（客户端合并语义）。
+因为 `serverNoContextTakeover` **每帧独立压**，帧里任何常量都要在**每一帧**付出它的压缩后大小。
 十个字段开局即定、之后不再变（`lastRound` / `modeId` / `difficulty` / `stageId` / `factions` /
 `disabledBonds` / `drawnDisabledBonds` / `bannedChess` / `bossId` / `hiddenBossId`；五个 case 实测 distinct 全为 1）。
 
@@ -120,14 +89,14 @@
   紧凑帧再也擦不掉基线给的常量。
 - **结算屏重放**保留完整帧，否则重连后会被重放一帧没有 `difficulty` 的视图。
 
-### 5.2 兜底（照抄 15 Hz↔20 Hz 那套的六要素）
+### 5.2 兜底（照抄 10 Hz↔20 Hz 那套的六要素）
 
 | 快照率（`snapRate.js`）的要素 | 本方案的对应物 |
 |---|---|
 | `SP_SNAP_RATE=auto/slow/fast` pin | 能力位**每 socket**（`hello.pub`） |
-| 每连接决策（每个 watcher 独立计数） | 每次 hello **重新求值**（重连换了新旧客户端不会被上次答案污染） |
-| 快照两档互不嵌套（15 / 20 Hz，无子集要求；旧「守恒守卫」已随按 watcher 独立计数作废） | **基线一定先到**：`start()` 与 `_resync()` 都发 —— 理由不同：漏帧 / 重连的合并端需要一份权威全量帧 |
-| 无链路源 → plain 15 Hz | **未声明能力 → 一律发完整帧** |
+| 每连接决策 | 每次 hello **重新求值**（重连换了新旧客户端不会被上次答案污染） |
+| 守恒守卫（慢 tick ⊂ 快 tick） | **基线一定先到**：`start()` 与 `_resync()` 都发 |
+| 无链路源 → plain 10 Hz | **未声明能力 → 一律发完整帧** |
 
 **`hello.version` 仍强校验**，所以能力位是**新增的可选字段**。老客户端 / 第三方客户端 / 部署前打开还在跑旧 JS
 的页面 → 行为与今天**完全一致**。
@@ -137,7 +106,7 @@
 ## 六、验收（三条命令）
 
 ```bash
-# 1. 真实 WS Upgrade 握手，读协商出的扩展参数（期望 server_max_window_bits=15，且**无** *_no_context_takeover）
+# 1. 真实 WS Upgrade 握手，读协商出的扩展参数（期望 server_max_window_bits=12）
 #    ⚠️ 不要用 `curl -sI <站点>/ | grep sec-websocket` —— 那是普通 HEAD，不是 Upgrade 握手，验不了压缩。
 #    生效槽在盒子上是 127.0.0.1:3001 / :3002，从盒子本机（或经隧道）直连做握手：
 node -e '
@@ -147,10 +116,8 @@ const n=require("net"),s=n.connect(PORT,"HOST",()=>s.write(
  "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n\r\n"));
 let b="";s.on("data",d=>{b+=d;if(b.includes("\r\n\r\n")){
  console.log(b.split("\r\n").filter(l=>/^(HTTP|Sec-WebSocket-Extensions)/i.test(l)).join("\n"));s.destroy();}});'
-# 期望：Sec-WebSocket-Extensions: permessage-deflate; server_max_window_bits=15
-#      （不再带 server_no_context_takeover / client_no_context_takeover —— 即保留上下文）
-# 注意：客户端若只 offer `client_max_window_bits` 而不 offer `client_no_context_takeover`，
-#       服务端按 permessage-deflate 默认 = 双方都保留上下文，正是我们要的。
+# 期望：Sec-WebSocket-Extensions: permessage-deflate; server_no_context_takeover;
+#       client_no_context_takeover; server_max_window_bits=12
 
 # 2. 生效槽的脚本里有压缩开关（否则切槽后静默失效）
 #    盒子上：update/sp_slot_<port>.cmd 应含 set SP_WS_COMPRESSION=on
@@ -166,9 +133,7 @@ node tools/box/verify-service.mjs --expect=<新 buildTag>
 
 ---
 
-## 七、已上线 & 下一轮 → 见《WS 链路压缩（下一轮）》
+## 七、还没做 → 见《WS 链路压缩（下一轮）》
 
-**已落地（本轮 + 第二轮审计）**：白名单 + 广播修 bug（505 B/s / 2,475 人）→ 阈值 64 + 保留上下文 + 窗口 15（真机 **~160 B/s / ~7,000 人**，在线字节 −54.8%）。
-
-**还没做**：`players[].bonds` 按收件人定制（≈24% wire）、delta（合计 2.05×）、上游 PR #91 的只读接口。
+`players[].bonds` 按收件人定制（≈24% wire）、delta（合计 2.05×）、上游 PR #91 的只读接口。
 数字与方法都写在 **`ws-link-compression-next.md`**（同一目录）。

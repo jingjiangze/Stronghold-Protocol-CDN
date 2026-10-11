@@ -157,13 +157,13 @@
           <tr>
             <td class="mono">enabled == false</td>
             <td>发布方软开关关掉（来自 <code class="inline">origins.json</code> 的 <code class="inline">disabled</code>）</td>
-            <td><b>真实存在</b>：jsDelivr 两条（<code class="inline">jsdelivr</code> / <code class="inline">jsdelivr-assets</code>，实测在真实素材上最慢且会超时）；OpenI 也在此列（CORS 不可用）</td>
+            <td><b>真实存在</b>：jsDelivr 两条（<code class="inline">jsdelivr</code> / <code class="inline">jsdelivr-assets</code>，实测在真实素材上最慢且会超时）；OpenI 也在此列（CORS 不可用）；ms-edge 同样 <code class="inline">enabled:false</code> 并写入 <code class="inline">disabled</code>（容器未重建，暂不作为运行时源）</td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="notice" style="margin-top:16px">
-      <span><b>当前线上真正被过滤掉的，是 <code class="inline">enabled:false</code> 的 jsDelivr 两条 + OpenI，以及 <code class="inline">coverage:"partial"</code> 的 git 挂载源（<code class="inline">@main</code>）</b>；其余是写死在客户端的安全闸——
+      <span><b>当前线上真正被过滤掉的，是 <code class="inline">enabled:false</code> 的 jsDelivr 两条 + OpenI + ms-edge（共四项，与 <code class="inline">origins.json</code> 的 <code class="inline">disabled</code> 列表一致），以及 <code class="inline">coverage:"partial"</code> 的 git 挂载源（<code class="inline">@main</code>）</b>；其余是写死在客户端的安全闸——
       万一将来某源声明自己不胜任，客户端不会把它选上，不需要改客户端或发版。
       素材树已于 2026-10-09 提交到本仓 <code class="inline">assets-raw</code> 孤儿分支，所以指向那个分支的 git 源可以是全量；
       而 <code class="inline">root</code> 仍落在 <code class="inline">@main</code> 的那条仍是 <code class="inline">partial</code>。

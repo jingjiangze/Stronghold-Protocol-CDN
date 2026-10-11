@@ -59,12 +59,12 @@
 
 | 排除条件 | 含义 | 当前线上是否真的有 |
 |---|---|---|
-| `enabled == false` | 发布方软开关关掉（来自 `origins.json` 的 `disabled`） | **真实存在**：`jsdelivr` / `jsdelivr-assets`（2026-10-10 止血，实测在真实素材上最慢且会超时） |
+| `enabled == false` | 发布方软开关关掉（来自 `origins.json` 的 `disabled`） | **真实存在**：`jsdelivr` / `jsdelivr-assets`（2026-10-10 止血，实测在真实素材上最慢且会超时），OpenI（CORS 不可用），ms-edge（容器未重建、暂不作为运行时源）—— 与 `disabled` 列表四项一致 |
 | `assetEligible == false` | 发布方显式声明「此源不适合给素材」 | **防御性**：当前没有任何源设这个值，默认当 `true` |
 | `coverage == "partial"` | 源里没装全素材树，测了也是 404 | **真实存在**：git 挂载源（`@main` 分支）会带这个标记 |
 | `proxied == true` | 每字节都过 Worker 中转，免费计划预算付不起 | **防御性**：当前没有任何源设这个值，默认 `false` |
 
-> 当前线上真正被过滤掉的，是 `enabled:false` 的 jsDelivr 两条 + `coverage:"partial"` 的 git 挂载源（`@main`）。
+> 当前线上真正被过滤掉的，是 `enabled:false` 的 jsDelivr 两条 + OpenI + ms-edge（共四项，与 `origins.json` 的 `disabled` 列表一致）+ `coverage:"partial"` 的 git 挂载源（`@main`）。
 > 其余两条是**写死在客户端的安全闸**——万一将来某源声明自己不胜任，客户端不会把它选上，不需要改客户端或发版。
 >
 > 注意一个细节：`src/origins.mjs` 里 git 源的 `base` 指向 `<root>/`，`coverage` 默认 `"partial"`。
