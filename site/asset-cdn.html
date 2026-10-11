@@ -161,15 +161,6 @@
           <li><b>分流头</b>：响应 <code class="inline">X-Asset-CDN: &lt;cdn 条数&gt;cdn/&lt;local 条数&gt;local</code>。</li>
         </ul>
       </div>
-      <div class="mini">
-        <h4>⚠️ 代码尚未入仓</h4>
-        <p class="download__meta">HEAD-reconcile 版 <code class="inline">static.js</code> 只在远程盒子
-          <code class="inline">D:\stronghold\sp_current\server\http\static.js</code> 跑（生产 PID 96676）。</p>
-        <p><code class="inline">_sp-wt</code> 与 <code class="inline">C:\DDDD\game\servers</code> 仍是旧的
-          「三清单路径改写 + 302」版本（commit <code class="inline">05d57654</code>）。</p>
-        <p>下次盒子自动更新（<code class="inline">sp_update_zip.ps1</code>）会覆盖它 —— 代码回仓前应保留
-          <code class="inline">update\PAUSE_AUTOUPDATE</code>，并尽快把改动合回主线。</p>
-      </div>
     </div>
     <div class="notice" style="margin-top:16px">
       <span><b>客户端拿清单的两个入口：</b><code class="inline">data/assets.json</code>（主清单，改写

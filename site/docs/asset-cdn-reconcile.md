@@ -66,10 +66,6 @@ spine 的 `atlas` 按相对路径找同目录 `png`。若「同一 spine 目录�
    后台核对异步回填，逐步收敛到真值。
 4. **分流头**：响应 `X-Asset-CDN: <cdn 条数>cdn/<local 条数>local`，便于线上验收。
 
-> ⚠️ **HEAD-reconcile 版 `static.js` 尚未提交回 `master-play`**：它只在远程盒子
-> `D:\stronghold\sp_current\server\http\static.js` 跑。`_sp-wt` 与 `C:\DDDD\game\servers` 仍是旧的
-> 「三清单路径改写 + `/assets`、`/fonts` 302」版本（commit `05d57654`）。下次盒子自动更新
-> （`sp_update_zip.ps1`）会覆盖掉这套改写——代码回仓前应保留 `update\PAUSE_AUTOUPDATE`，并尽快把改动合回主线。
 > 客户端拿清单的两个入口：`data/assets.json`（主清单，改写 `/assets|fonts/` 绝对 URL，随 ETag 缓存）与
 > `data/local-assets.json`（本地客户端美术覆盖，同上）；`emotes.json` 同机制。
 
