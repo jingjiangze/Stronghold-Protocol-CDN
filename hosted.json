@@ -21678,11 +21678,11 @@
     },
     {
       "id": "sp-ausevaywstr-0.2.1",
-      "what": "干员语音 —— 上游 0.2.1 发布包内的 assets/audio/voice，我们发布树 public/ 逐字节相同",
+      "what": "皮肤头像（换装用）—— 我们发布树 public/assets/char/skin_avatar，与线上包内一致",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 13,
-      "bytes": 288203,
+      "files": 17,
+      "bytes": 347813,
       "keys": [
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_019.mp3",
@@ -21735,6 +21735,22 @@
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_032.mp3",
           22378
+        ],
+        [
+          "assets/char/skin_avatar/char_003_kalts_boc_6.webp",
+          13832
+        ],
+        [
+          "assets/char/skin_avatar/char_003_kalts_sale_14.webp",
+          16388
+        ],
+        [
+          "assets/char/skin_avatar/char_010_chen_nian_2.webp",
+          17302
+        ],
+        [
+          "assets/char/skin_avatar/char_010_chen_sale_10.webp",
+          12088
         ]
       ]
     }
