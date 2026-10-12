@@ -25,7 +25,8 @@ name: promote-uploads
 
 on:
   schedule:
-    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '9,39 * * * *'）
+    - cron: '1 1,7,13,19 * * *' # # 2026-10-13 链式错峰：同日 4 窗（1,7,13,19 UTC）内序 promote:01→git-art:06→sync:17→openi:37→prune:43→rank:51；快镜像族先吃新字节，rank 收尾重测
+    #   链首：后台积压先落 R2 并把 hosted.json 提交回 main——git-art-sync(:06) 读的就是这份登记
   workflow_dispatch:
     inputs:
       dry:

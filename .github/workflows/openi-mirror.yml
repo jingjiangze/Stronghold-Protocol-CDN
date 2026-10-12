@@ -16,9 +16,10 @@ name: openi-mirror
 # would leave the token sitting in .git/config for later steps to leak.
 on:
   schedule:
-    # Four times a day, offset from the existing sync (which runs at :17 past every 6th hour) so
-    # the two never contend: this one reads a commit the sync may be in the middle of publishing.
-    - cron: '47 0,6,12,18 * * *'
+    # Four times a day, chained after git-art-sync (:06, lands the assets-raw commit in ~20 min)
+    # and after sync (:17, ~12 min typical) so neither is mid-publish when this one pushes.
+    - cron: '37 1,7,13,19 * * *' # # 2026-10-13 链式错峰：同日 4 窗（1,7,13,19 UTC）内序 promote:01→git-art:06→sync:17→openi:37→prune:43→rank:51；快镜像族先吃新字节，rank 收尾重测
+    #   原 '47 0,6,12,18'（相对旧 sync 0:17 的偏移）：sync 挪窗后该偏移已失效，改为链内位置
   workflow_dispatch:
     inputs:
       write:

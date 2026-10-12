@@ -5,12 +5,13 @@ name: git-art-sync
 # 登记 5,246 个键，只有 1,856 个在 assets-raw 里，缺 3,390 个（约 932 MiB）。本作业补这个缺口。
 #
 # 频率：一天四次，与 sync（:17 每 6 小时）和 openi-mirror（:47 每 6 小时）错开，避免相互争抢。
-# openi-mirror 推的就是 assets-raw 的提交，所以本作业比它早一小时同一小时段，让新字节先入库再被镜像。
+# openi-mirror(:37) 推的就是本作业(:06)刚入库的 assets-raw 提交——同窗内先入库再被镜像，留 31 分钟余量。
 #
 # 预算：首轮积压 932 MiB，按 700 MiB/轮排，两轮排干，之后每轮几秒（没有新内容就直接退出）。
 on:
   schedule:
-    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '7 1,7,13,19 * * *'）
+    - cron: '6 1,7,13,19 * * *' # # 2026-10-13 链式错峰：同日 4 窗（1,7,13,19 UTC）内序 promote:01→git-art:06→sync:17→openi:37→prune:43→rank:51；快镜像族先吃新字节，rank 收尾重测
+    #   紧随 promote(:01)：新字节入 assets-raw → jsdelivr/gitcdn/ghfast 三个拉取式快源即刻可见（实测每轮 14–22 分钟，:28 前完成）
   workflow_dispatch:
     inputs:
       write:

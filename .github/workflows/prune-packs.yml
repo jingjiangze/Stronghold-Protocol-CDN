@@ -10,7 +10,8 @@ name: prune-packs
 
 on:
   schedule:
-    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '37 5 * * *'）
+    - cron: '43 1,7,13,19 * * *' # # 2026-10-13 链式错峰：同日 4 窗（1,7,13,19 UTC）内序 promote:01→git-art:06→sync:17→openi:37→prune:43→rank:51；快镜像族先吃新字节，rank 收尾重测
+    #   排在 sync(:17) 之后：pack 面只有发布完成才有可回收的孤儿
   workflow_dispatch:
     inputs:
       mode:
