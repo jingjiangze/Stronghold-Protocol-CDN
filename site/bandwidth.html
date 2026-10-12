@@ -554,7 +554,7 @@
     <div class="notice" style="margin-top:16px">
       <span><b>还没做（按顺序）：</b>
       ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
-      ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（合计 <b>2.98× deflate / raw 6.05×</b>，见下一轮文档）；
+      ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（建模合计 <b>2.05×</b>；本行的 <b>2.98× deflate / raw 6.05×</b> 是整局逐字节<b>实测</b>的压缩比，两者不是同一个量，区别见《带宽与最大压缩》§10.4「还没做」）；
       ③ 上游 <b>PR #91</b> 的只读状态接口（给外部观察者，<b>不动</b>对局内广播）。<br />
       落地：re-apk 线 <b>PR #157</b>（<code class="inline">perf/ws-public-compact</code>）。</span>
     </div>
