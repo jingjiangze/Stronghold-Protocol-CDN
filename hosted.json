@@ -24680,11 +24680,11 @@
     },
     {
       "id": "sp-four-emotes",
-      "what": "New four-server chat sticker, stable ID, original animated GIF and small preview",
+      "what": "Chat sticker update; stable IDs, animated originals and small previews",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 68,
-      "bytes": 20788014,
+      "files": 71,
+      "bytes": 20915119,
       "keys": [
         [
           "assets/local/sp-four-emotes/02cb46135457832da391.jpg",
@@ -24819,6 +24819,10 @@
           3064
         ],
         [
+          "assets/local/sp-four-emotes/7e47a3877db181d77679.preview.webp",
+          1640
+        ],
+        [
           "assets/local/sp-four-emotes/82566f43b5c86fc526ea.jpg",
           138702
         ],
@@ -24861,6 +24865,10 @@
         [
           "assets/local/sp-four-emotes/ab36d30847389923f61f.jpg",
           118079
+        ],
+        [
+          "assets/local/sp-four-emotes/af01aa9ebef1c9edee92.jpg",
+          29248
         ],
         [
           "assets/local/sp-four-emotes/b23b8ed23e3fac88a361.gif",
@@ -24913,6 +24921,10 @@
         [
           "assets/local/sp-four-emotes/dfef0b682274b9bbe692.preview.webp",
           2926
+        ],
+        [
+          "assets/local/sp-four-emotes/e1d5ec4a0ff04b98227e.jpg",
+          96217
         ],
         [
           "assets/local/sp-four-emotes/e31a90bac70995f7bcb4.jpg",
