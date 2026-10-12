@@ -34791,6 +34791,20 @@
           140
         ]
       ]
+    },
+    {
+      "id": "stronghold-zhajing-mod",
+      "what": "炸惊模组素材补齐（诊断）",
+      "addedAt": "2026-10-12",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 36565,
+      "keys": [
+        [
+          "assets/audio/sfx/custom/xielage-freeze.mp3",
+          36565
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
