@@ -325,13 +325,21 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </table>
       </div>
       <div class="notice">
-        <span><b>关于「部分覆盖」这个标记：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
+        <span><b>关于「部分覆盖」这个标记（2026-10-12 更新）：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
         所以 git 挂载源只能给出本仓几十 KB 的工具文件，请求素材只会得到 404。这<b>不是不稳定，是源里当时就没有</b>。
         <b>现在已解决</b>：素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，2026-10-11 又补入 <b>2,476 个皮肤文件</b>，各源现在都能给出全部素材；
         抽样 40 条路径 × 3 个源（jsDelivr / ghfast / gh-proxy）逐字节 sha256 校验一致，MIME、CORS 与 Range 206 均已实测。
         注意：皮肤已随上游发布包一并进入 R2 / Pages（实测与 assets-raw 字节一致），同时 git 挂载层也以 <code class="inline">coverage:full</code> 提供。
         <b>唯一例外是 docs/</b>（官方文档）：它只发布到 R2 / Pages，不在本仓里，所以 git 挂载源对它 404 ——
-        表格最后一列按实际标注。</span>
+        表格最后一列按实际标注。<br />
+        <b>2026-10-12 逐源复核口径已修正，这里同步更正：</b>本页面的逐源覆盖率实测（30 个探针，只从上游集合
+        <code class="inline">index.json</code> 取样）结论是 —— <b>openi / ghfast / jsDelivr 三个 git 挂载源均 28/30，
+        缺的只有 <code class="inline">docs/</code>；r2 / r2-alt / pages 30/30</b>。
+        <b>pages 是「慢」而不是「缺」</b>：重试 + <code class="inline">HEAD</code> + <code class="inline">Range</code> 交叉验证后，
+        那几个看似超时的路径全部 200 且字节相符（中位 7 s、p90 93 s，854 KB 的音频取到过 612 s）。
+        另：<code class="inline">fonts/</code> <b>在</b> git 挂载源里（早期「docs / fonts 只在 R2 / Pages」的说法，
+        <code class="inline">fonts</code> 那半句已被实测推翻）。详见
+        <a href="./docs/per-source-asset-inventory.md">逐源素材清单</a>。</span>
       </div>
     </div>
 
