@@ -308,11 +308,11 @@
     },
     {
       "id": "sp-fusion-mod-assets",
-      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材（续传）",
-      "addedAt": "2026-10-10",
+      "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
+      "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 602,
-      "bytes": 45435901,
+      "files": 614,
+      "bytes": 50652122,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -469,6 +469,10 @@
         [
           "assets/audio/voice/cn/char_456_ash/cn_032.mp3",
           7959
+        ],
+        [
+          "assets/audio/voice/jp/char_3001_doloris/cn_023.mp3",
+          21960
         ],
         [
           "assets/audio/voice/jp/char_4123_ela/cn_019.mp3",
@@ -771,6 +775,10 @@
           59546
         ],
         [
+          "assets/char/avatar/char_3001_doloris.png",
+          52054
+        ],
+        [
           "assets/char/avatar/char_4071_peper.png",
           60308
         ],
@@ -943,6 +951,14 @@
           118414
         ],
         [
+          "assets/char/portrait/char_3001_doloris.png",
+          125690
+        ],
+        [
+          "assets/char/portrait/char_3001_doloris_2.png",
+          149739
+        ],
+        [
           "assets/char/portrait/char_4071_peper_1.png",
           120427
         ],
@@ -1093,6 +1109,10 @@
         [
           "assets/char/skin_avatar/char_459_tachak_rainbow6_1.png",
           49114
+        ],
+        [
+          "assets/char/skin_portrait_shop/char_4217_makoto_p3r_1.png",
+          298451
         ],
         [
           "assets/item/rogue_5_relic_return_29.png",
@@ -2379,6 +2399,10 @@
           143762
         ],
         [
+          "assets/spine/op/char_3001_doloris/front/char_3001_doloris.skel",
+          228694
+        ],
+        [
           "assets/spine/op/char_4071_peper/back/char_4071_peper.atlas",
           5608
         ],
@@ -2569,6 +2593,30 @@
         [
           "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.skel",
           1071707
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/back/char_4217_makoto_p3r_1.atlas",
+          23851
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/back/char_4217_makoto_p3r_1.png",
+          572130
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/back/char_4217_makoto_p3r_1.skel",
+          679650
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/front/char_4217_makoto_p3r_1.atlas",
+          33494
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/front/char_4217_makoto_p3r_1.png",
+          653049
+        ],
+        [
+          "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/front/char_4217_makoto_p3r_1.skel",
+          2377459
         ],
         [
           "assets/spine/op/char_4224_turdus/back/char_4224_turdus.atlas",
