@@ -376,17 +376,20 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <p class="section-note" style="margin-bottom:14px">
       如果你的部署机上行很小（家用宽带、4G 路由、小水管 VPS），这一份是为你写的。两件事要分开看：
       <b>首载</b>是「新玩家第一次进场吃掉几百 MiB」（优化前 <b>467.9 MiB</b>，10 Mbps 上占死 6.5 分钟），
-      靠把素材挪到 CDN 解决；<b>稳态</b>实测人均 <b>2,048 B/s</b>，几乎全是 <code class="inline">m.public</code>，
-      压完 <b>505 B/s</b> —— 稳态正是 <b>10 Mbps 带 2000 人</b>的天花板所在（610 → 2,475 人）。
+      靠把素材挪到 CDN 解决，优化后 <b>1.48 MiB</b>（<b>316×</b>）；
+      <b>稳态</b>整局实测人均 <b>57.5 B/s</b>，10 Mbps 约 <b>21,000 人</b>——
+      2000 人不再是「刚好够」，而是有约 10 倍余量。
+      <b>真正的瓶颈已经换了</b>：不是 WS 帧，是新玩家冷启动那 <b>5.4 MB</b> 客户端代码
+      （<b>1,573 B/s</b>，比稳态贵 <b>27×</b>）。
     </p>
     <div class="cards">
       <a class="card" href="./bandwidth">
         <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / m.public 与 2000 人 / 验收命令</span></div>
+        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / 冷启动才是真瓶颈 / 验收命令</span></div>
         <div class="card__stats">
           <span>首载提速 <b>316×</b></span>
-          <span>稳态人均 <b>2,048 B/s</b></span>
-          <span>10 Mbps 带 <b>2,475 人</b></span>
+          <span>稳态人均 <b>57.5 B/s</b></span>
+          <span>10 Mbps 带 <b>≈21,000 人</b></span>
         </div>
       </a>
       <a class="card" href="./docs/bandwidth-max-compression.md">
@@ -423,16 +426,18 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </a>
     </div>
     <div class="notice" style="margin-top:16px">
-      <span><b>直接套用这套优化（低风险层，客户端零改动）：</b>
-      <a href="https://github.com/jingjiangze/Stronghold-Protocol/releases/download/ws-link-as-built/ws-link-AS-BUILT.zip" target="_blank" rel="noopener"><b>下载 ws-link-AS-BUILT.zip</b></a>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
-      来自 master-play <code class="inline">c587705f</code>；页面同款在 <a href="./files/ws-link-as-built.zip">/files/</a>）——
-      5 个文件：压缩模块 + <code class="inline">broadcastRoom</code>/重放接入 + 观战节流 + 更新器保开关 + 同步门禁。
-      <b>合并说明（含 diff 要点、开关、握手验收、回退、兼容边界）：<a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a></b>。
-      覆盖完跑 <code class="inline">node tools/ws-link-gate.mjs</code> 应 10/10；下一步 <code class="inline">SP_WS_COMPRESSION=on</code> 并做真实 Upgrade 握手验收。
-      热帧去常量（PR #157，未合并）<b>不在</b>本包 —— 那要服务端与客户端成对发布。
-      ⚠️ <b>本包是 2026-10-10 的旧配置</b>（阈值 512 / 关上下文接管 / 窗口 pin 12）—— 现行配置见
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>，零依赖库在
-      <a href="https://github.com/jingjiangze/stronghold-ws-compression" target="_blank" rel="noopener">stronghold-ws-compression</a>。</span>
+      <span><b>要落地这套压缩，用零依赖库，不要用旧的 as-built 包：</b>
+      现行实现在
+      <a href="https://github.com/jingjiangze/stronghold-ws-compression" target="_blank" rel="noopener"><b>stronghold-ws-compression</b></a>
+      （MIT·零依赖·<b>28 项测试</b>），用法与写包格式见
+      <a href="./docs/ws-compression-library-and-pack.md">《独立库与工坊兼容包》</a>；
+      线上配置（三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>）见
+      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>。
+      <br />⚠️ 曾有一个 <code class="inline">ws-link-AS-BUILT.zip</code>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
+      来自 master-play <code class="inline">c587705f</code>）引导下载，<b>已移除</b>：它是 2026-10-10 的旧配置
+      （阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
+      照它合并会装回一套与线上不一致的配置。需要 diff 细节时看
+      <a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a>（按旧配置写的，仅作历史参考）。</span>
     </div>
   </section>
 
@@ -552,10 +557,17 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <span class="section-status">基址 <span data-base>https://weishucdn.jiangjiangze.icu</span></span>
     </div>
     <div class="notice">
-      <span><b>接口只有一个域名：<span data-base>https://weishucdn.jiangjiangze.icu</span></b>。
+      <span><b>接口域名：<span data-base>https://weishucdn.jiangjiangze.icu</span></b>
+      （同一批接口文件另有一个等价入口 <b>https://speedcdn.jiangjiangze.icu</b> ——
+      它与本域名指向<b>同一个桶、同一份字节</b>，实测 <code class="inline">/cdn/v1/api.json</code>
+      sha256 完全相同；<code class="inline">mirrors.json</code> / <code class="inline">index.json</code> /
+      <code class="inline">tree.json</code> / <code class="inline">data/assets.json</code> 均 200）。
       上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
       <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
-      所以：<b>接口一律从这个域名取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。</span>
+      所以：<b>接口从这两个域名里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
+      <br />⚠️ 机器可读的那份权威声明是 <code class="inline">/cdn/v1/api.json</code> 的
+      <code class="inline">base</code> 字段（当前值 <code class="inline">https://weishucdn.jiangjiangze.icu</code>）——
+      以它为准，本页文字不另立权威。</span>
     </div>
     <div class="table-wrap">
       <table>
