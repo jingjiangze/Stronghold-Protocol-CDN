@@ -34581,6 +34581,24 @@
           80
         ]
       ]
+    },
+    {
+      "id": "sp-scenes-025",
+      "what": "Stronghold Protocol v0.2.5 official battlefield scenes (scene.json/bin, lightmaps, textures) for the 3D board",
+      "addedAt": "2026-10-12",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 2408026,
+      "keys": [
+        [
+          "assets/local/sp-scenes-025/act1autochess_m01/lm0.webp",
+          299910
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m01/scene.bin",
+          2108116
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
