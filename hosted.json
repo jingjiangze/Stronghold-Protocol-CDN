@@ -16056,11 +16056,11 @@
     },
     {
       "id": "sp-four-emotes",
-      "what": "Four-server chat stickers and previews; stable IDs; original GIF animations",
-      "addedAt": "2026-10-11",
+      "what": "New four-server chat sticker, stable ID, original animated GIF and small preview",
+      "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 66,
-      "bytes": 18879071,
+      "files": 68,
+      "bytes": 20788014,
       "keys": [
         [
           "assets/local/sp-four-emotes/02cb46135457832da391.jpg",
@@ -16105,6 +16105,10 @@
         [
           "assets/local/sp-four-emotes/373418a76c574bb49dd6.preview.webp",
           1394
+        ],
+        [
+          "assets/local/sp-four-emotes/38672de83effec16688b.preview.webp",
+          1596
         ],
         [
           "assets/local/sp-four-emotes/3d16c9ba8acd0ec577bc.preview.webp",
@@ -16321,6 +16325,10 @@
         [
           "assets/local/sp-four-emotes/f98154e870a2ff26af1b.gif",
           2046306
+        ],
+        [
+          "assets/local/sp-four-emotes/fb3c56acc087beed3699.gif",
+          1907347
         ],
         [
           "assets/local/sp-four-emotes/fbf0e40aae456a380288.jpg",
@@ -21681,8 +21689,8 @@
       "what": "干员战斗骨骼（.skel/.atlas/图集）—— 上游 0.2.1 发布包内的 assets/spine/op，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 966,
-      "bytes": 55252140,
+      "files": 1038,
+      "bytes": 59283902,
       "keys": [
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_019.mp3",
@@ -22713,6 +22721,10 @@
           41392
         ],
         [
+          "assets/char/skin_avatar/char_426_billro_summer_8.webp",
+          40418
+        ],
+        [
           "assets/char/skin_avatar/char_427_vigil_epoque_27.webp",
           40430
         ],
@@ -22757,6 +22769,10 @@
           39314
         ],
         [
+          "assets/char/skin_avatar/char_474_glady_epoque_33.webp",
+          40596
+        ],
+        [
           "assets/char/skin_avatar/char_479_sleach_epoque_14.webp",
           11594
         ],
@@ -22797,6 +22813,10 @@
           17180
         ],
         [
+          "assets/spine/enemy/enemy_10018_sgrobh/enemy_10018_sgrobh.webp",
+          16508
+        ],
+        [
           "assets/spine/enemy/enemy_1001_bigbo/enemy_1001_bigbo.webp",
           36148
         ],
@@ -22815,6 +22835,10 @@
         [
           "assets/spine/enemy/enemy_10031_cnvsld/enemy_10031_cnvsld.webp",
           23444
+        ],
+        [
+          "assets/spine/enemy/enemy_10034_cnvsax/enemy_10034_cnvsax.webp",
+          30426
         ],
         [
           "assets/spine/enemy/enemy_10040_cnvbln/enemy_10040_cnvbln.webp",
@@ -22887,6 +22911,10 @@
         [
           "assets/spine/enemy/enemy_10094_crstf/enemy_10094_crstf.webp",
           43912
+        ],
+        [
+          "assets/spine/enemy/enemy_10097_crshd/enemy_10097_crshd.webp",
+          58358
         ],
         [
           "assets/spine/enemy/enemy_10098_crhro/enemy_10098_crhro.webp",
@@ -22965,6 +22993,10 @@
           26404
         ],
         [
+          "assets/spine/enemy/enemy_1025_reveng/enemy_1025_reveng.webp",
+          25074
+        ],
+        [
           "assets/spine/enemy/enemy_1026_aghost/enemy_1026_aghost.webp",
           17408
         ],
@@ -23007,6 +23039,10 @@
         [
           "assets/spine/enemy/enemy_1067_snslime/enemy_1067_snslime.webp",
           15530
+        ],
+        [
+          "assets/spine/enemy/enemy_1069_icebrk_2/enemy_1069_icebrk_2.webp",
+          28302
         ],
         [
           "assets/spine/enemy/enemy_1071_dftman/enemy_1071_dftman.webp",
@@ -23153,8 +23189,20 @@
           20332
         ],
         [
+          "assets/spine/enemy/enemy_1204_msfhu/enemy_1204_msfhu.webp",
+          588
+        ],
+        [
           "assets/spine/enemy/enemy_1207_sfji/enemy_1207_sfji.webp",
           47020
+        ],
+        [
+          "assets/spine/enemy/enemy_1207_sfji_2/enemy_1207_sfji_2.webp",
+          50950
+        ],
+        [
+          "assets/spine/enemy/enemy_1208_msfji_2/enemy_1208_msfji_2.webp",
+          830
         ],
         [
           "assets/spine/enemy/enemy_1209_sfden_2/enemy_1209_sfden_2.webp",
@@ -23183,6 +23231,10 @@
         [
           "assets/spine/enemy/enemy_1254_lypa_2/enemy_1254_lypa_2.webp",
           24894
+        ],
+        [
+          "assets/spine/enemy/enemy_1267_nhpbr_2/enemy_1267_nhpbr_2.webp",
+          32470
         ],
         [
           "assets/spine/enemy/enemy_1269_nhfly/enemy_1269_nhfly.webp",
@@ -23217,8 +23269,16 @@
           29782
         ],
         [
+          "assets/spine/enemy/enemy_1283_sgkill_2/enemy_1283_sgkill_2.webp",
+          31926
+        ],
+        [
           "assets/spine/enemy/enemy_1288_duskls/enemy_1288_duskls.webp",
           35202
+        ],
+        [
+          "assets/spine/enemy/enemy_1288_duskls_2/enemy_1288_duskls_2.webp",
+          37134
         ],
         [
           "assets/spine/enemy/enemy_1292_duskld/enemy_1292_duskld.webp",
@@ -23247,6 +23307,10 @@
         [
           "assets/spine/enemy/enemy_1329_cbshld_2/enemy_1329_cbshld_2.webp",
           26582
+        ],
+        [
+          "assets/spine/enemy/enemy_1355_mrfly/enemy_1355_mrfly.webp",
+          8858
         ],
         [
           "assets/spine/enemy/enemy_1355_mrfly_2/enemy_1355_mrfly_2.webp",
@@ -23317,6 +23381,10 @@
           85632
         ],
         [
+          "assets/spine/enemy/enemy_1512_mcmstr/enemy_1512_mcmstr.webp",
+          94234
+        ],
+        [
           "assets/spine/enemy/enemy_1513_dekght/enemy_1513_dekght.webp",
           60574
         ],
@@ -23363,6 +23431,14 @@
         [
           "assets/spine/enemy/enemy_2010_csdcr/enemy_2010_csdcr.webp",
           24984
+        ],
+        [
+          "assets/spine/enemy/enemy_2016_csphtm/enemy_2016_csphtm.webp",
+          115042
+        ],
+        [
+          "assets/spine/enemy/enemy_2017_csphts/enemy_2017_csphts.webp",
+          23884
         ],
         [
           "assets/spine/enemy/enemy_2021_syfish/enemy_2021_syfish.webp",
@@ -23437,6 +23513,10 @@
           144958
         ],
         [
+          "assets/spine/enemy/enemy_9023_acdums/enemy_9023_acdums.webp",
+          23220
+        ],
+        [
           "assets/spine/enemy/enemy_9032_aclionk/enemy_1559_vtlionk.webp",
           78988
         ],
@@ -23453,8 +23533,16 @@
           40020
         ],
         [
+          "assets/spine/op/char_010_chen/back/char_010_chen.webp",
+          22736
+        ],
+        [
           "assets/spine/op/char_017_huang/front/char_017_huang.webp",
           44310
+        ],
+        [
+          "assets/spine/op/char_1012_skadi2/char_1012_skadi2_boc_4/front/char_1012_skadi2_boc_4.atlas",
+          14146
         ],
         [
           "assets/spine/op/char_1012_skadi2/char_1012_skadi2_boc_4/front/char_1012_skadi2_boc_4.skel",
@@ -23521,6 +23609,10 @@
           127286
         ],
         [
+          "assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.webp",
+          66274
+        ],
+        [
           "assets/spine/op/char_1019_siege2/back/char_1019_siege2.webp",
           77796
         ],
@@ -23539,6 +23631,10 @@
         [
           "assets/spine/op/char_1020_reed2/char_1020_reed2_epoque_30/back/char_1020_reed2_epoque_30.webp",
           93412
+        ],
+        [
+          "assets/spine/op/char_1020_reed2/char_1020_reed2_epoque_30/front/char_1020_reed2_epoque_30.webp",
+          106054
         ],
         [
           "assets/spine/op/char_1020_reed2/char_1020_reed2_snow_8/back/char_1020_reed2_snow_8.webp",
@@ -23595,6 +23691,10 @@
         [
           "assets/spine/op/char_102_texas/char_102_texas_winter_1/front/char_102_texas_winter_1.webp",
           36784
+        ],
+        [
+          "assets/spine/op/char_102_texas/front/char_102_texas.webp",
+          30910
         ],
         [
           "assets/spine/op/char_1031_slent2/front/char_1031_slent2.webp",
@@ -23661,6 +23761,10 @@
           77932
         ],
         [
+          "assets/spine/op/char_1039_thorn2/back/char_1039_thorn2.webp",
+          74590
+        ],
+        [
           "assets/spine/op/char_1039_thorn2/front/char_1039_thorn2.webp",
           87194
         ],
@@ -23681,6 +23785,10 @@
           24356
         ],
         [
+          "assets/spine/op/char_103_angel/char_103_angel_sale_8/front/char_103_angel_sale_8.webp",
+          33878
+        ],
+        [
           "assets/spine/op/char_103_angel/char_103_angel_wild_1/back/char_103_angel_wild_1.webp",
           23098
         ],
@@ -23691,6 +23799,10 @@
         [
           "assets/spine/op/char_103_angel/front/char_103_angel.webp",
           25438
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/back/char_1040_blaze2.webp",
+          99564
         ],
         [
           "assets/spine/op/char_1040_blaze2/char_1040_blaze2_winter_5/back/char_1040_blaze2_winter_5.webp",
@@ -23813,6 +23925,10 @@
           39306
         ],
         [
+          "assets/spine/op/char_108_silent/char_108_silent_winter_2/front/char_108_silent_winter_2.webp",
+          39232
+        ],
+        [
           "assets/spine/op/char_108_silent/front/char_108_silent.webp",
           36612
         ],
@@ -23859,6 +23975,10 @@
         [
           "assets/spine/op/char_128_plosis/char_128_plosis_epoque_3/back/char_128_plosis_epoque_3.webp",
           34930
+        ],
+        [
+          "assets/spine/op/char_128_plosis/char_128_plosis_epoque_3/front/char_128_plosis_epoque_3.webp",
+          43018
         ],
         [
           "assets/spine/op/char_128_plosis/char_128_plosis_yun_4/back/char_128_plosis_yun_4.webp",
@@ -23913,6 +24033,10 @@
           37260
         ],
         [
+          "assets/spine/op/char_143_ghost/char_143_ghost_winter_1/back/char_143_ghost_winter_1.webp",
+          48552
+        ],
+        [
           "assets/spine/op/char_143_ghost/char_143_ghost_winter_1/front/char_143_ghost_winter_1.webp",
           63332
         ],
@@ -23923,6 +24047,10 @@
         [
           "assets/spine/op/char_145_prove/char_145_prove_wild_5/back/char_145_prove_wild_5.webp",
           42456
+        ],
+        [
+          "assets/spine/op/char_145_prove/char_145_prove_wild_5/front/char_145_prove_wild_5.webp",
+          57402
         ],
         [
           "assets/spine/op/char_145_prove/front/char_145_prove.webp",
@@ -23985,6 +24113,10 @@
           26260
         ],
         [
+          "assets/spine/op/char_172_svrash/char_172_svrash_ambienceSynesthesia_4/front/char_172_svrash_ambienceSynesthesia_4.webp",
+          66152
+        ],
+        [
           "assets/spine/op/char_172_svrash/char_172_svrash_snow_1/back/char_172_svrash_snow_1.webp",
           41648
         ],
@@ -24003,6 +24135,10 @@
         [
           "assets/spine/op/char_172_svrash/front/char_172_svrash.webp",
           34634
+        ],
+        [
+          "assets/spine/op/char_173_slchan/back/char_173_slchan.webp",
+          22862
         ],
         [
           "assets/spine/op/char_173_slchan/char_173_slchan_wild_1/front/char_173_slchan_wild_1.webp",
@@ -24053,12 +24189,20 @@
           34370
         ],
         [
+          "assets/spine/op/char_183_skgoat/back/char_183_skgoat.webp",
+          23684
+        ],
+        [
           "assets/spine/op/char_183_skgoat/char_183_skgoat_epoque_30/front/char_183_skgoat_epoque_30.webp",
           60834
         ],
         [
           "assets/spine/op/char_183_skgoat/front/char_183_skgoat.webp",
           30316
+        ],
+        [
+          "assets/spine/op/char_188_helage/back/char_188_helage.webp",
+          32630
         ],
         [
           "assets/spine/op/char_196_sunbr/back/char_196_sunbr.webp",
@@ -24075,6 +24219,10 @@
         [
           "assets/spine/op/char_196_sunbr/front/char_196_sunbr.webp",
           42316
+        ],
+        [
+          "assets/spine/op/char_197_poca/front/char_197_poca.webp",
+          54566
         ],
         [
           "assets/spine/op/char_199_yak/back/char_199_yak.webp",
@@ -24109,6 +24257,10 @@
           59574
         ],
         [
+          "assets/spine/op/char_2014_nian/front/char_2014_nian.webp",
+          70918
+        ],
+        [
           "assets/spine/op/char_2015_dusk/back/char_2015_dusk.webp",
           38222
         ],
@@ -24131,6 +24283,10 @@
         [
           "assets/spine/op/char_2015_dusk/front/char_2015_dusk.webp",
           48218
+        ],
+        [
+          "assets/spine/op/char_2023_ling/back/char_2023_ling.webp",
+          48142
         ],
         [
           "assets/spine/op/char_2024_chyue/back/char_2024_chyue.webp",
@@ -24161,6 +24317,10 @@
           164394
         ],
         [
+          "assets/spine/op/char_2027_wang/back/char_2027_wang.webp",
+          76330
+        ],
+        [
           "assets/spine/op/char_202_demkni/back/char_202_demkni.webp",
           34534
         ],
@@ -24171,6 +24331,10 @@
         [
           "assets/spine/op/char_202_demkni/char_202_demkni_ambienceSynesthesia_7/front/char_202_demkni_ambienceSynesthesia_7.webp",
           99012
+        ],
+        [
+          "assets/spine/op/char_202_demkni/char_202_demkni_boc_1/front/char_202_demkni_boc_1.webp",
+          78514
         ],
         [
           "assets/spine/op/char_202_demkni/char_202_demkni_test_1/back/char_202_demkni_test_1.webp",
@@ -24189,6 +24353,10 @@
           48152
         ],
         [
+          "assets/spine/op/char_206_gnosis/front/char_206_gnosis.webp",
+          52098
+        ],
+        [
           "assets/spine/op/char_213_mostma/back/char_213_mostma.webp",
           33846
         ],
@@ -24199,6 +24367,10 @@
         [
           "assets/spine/op/char_213_mostma/char_213_mostma_ambienceSynesthesia_6/front/char_213_mostma_ambienceSynesthesia_6.webp",
           135340
+        ],
+        [
+          "assets/spine/op/char_213_mostma/char_213_mostma_epoque_5/back/char_213_mostma_epoque_5.webp",
+          46814
         ],
         [
           "assets/spine/op/char_213_mostma/char_213_mostma_epoque_5/front/char_213_mostma_epoque_5.webp",
@@ -24217,12 +24389,20 @@
           42742
         ],
         [
+          "assets/spine/op/char_222_bpipe/char_222_bpipe_epoque_40/front/char_222_bpipe_epoque_40.webp",
+          75490
+        ],
+        [
           "assets/spine/op/char_222_bpipe/char_222_bpipe_race_1/back/char_222_bpipe_race_1.webp",
           86562
         ],
         [
           "assets/spine/op/char_222_bpipe/front/char_222_bpipe.webp",
           42054
+        ],
+        [
+          "assets/spine/op/char_225_haak/back/char_225_haak.webp",
+          23380
         ],
         [
           "assets/spine/op/char_237_gravel/back/char_237_gravel.webp",
@@ -24257,8 +24437,20 @@
           28556
         ],
         [
+          "assets/spine/op/char_248_mgllan/front/char_248_mgllan.webp",
+          39750
+        ],
+        [
           "assets/spine/op/char_249_mlyss/back/char_249_mlyss.webp",
           34384
+        ],
+        [
+          "assets/spine/op/char_249_mlyss/char_249_mlyss_ambienceSynesthesia_6/back/char_249_mlyss_ambienceSynesthesia_6.webp",
+          102296
+        ],
+        [
+          "assets/spine/op/char_249_mlyss/char_249_mlyss_ambienceSynesthesia_6/front/char_249_mlyss_ambienceSynesthesia_6.webp",
+          117256
         ],
         [
           "assets/spine/op/char_249_mlyss/char_249_mlyss_boc_8/back/char_249_mlyss_boc_8.webp",
@@ -24287,6 +24479,10 @@
         [
           "assets/spine/op/char_253_greyy/char_253_greyy_epoque_8/front/char_253_greyy_epoque_8.webp",
           46232
+        ],
+        [
+          "assets/spine/op/char_253_greyy/front/char_253_greyy.webp",
+          39532
         ],
         [
           "assets/spine/op/char_254_vodfox/back/char_254_vodfox.webp",
@@ -24473,6 +24669,10 @@
           42090
         ],
         [
+          "assets/spine/op/char_340_shwaz/back/char_340_shwaz.webp",
+          52038
+        ],
+        [
           "assets/spine/op/char_341_sntlla/back/char_341_sntlla.webp",
           39394
         ],
@@ -24483,6 +24683,10 @@
         [
           "assets/spine/op/char_341_sntlla/char_341_sntlla_summer_15/front/char_341_sntlla_summer_15.webp",
           81222
+        ],
+        [
+          "assets/spine/op/char_341_sntlla/front/char_341_sntlla.webp",
+          51732
         ],
         [
           "assets/spine/op/char_344_beewax/back/char_344_beewax.webp",
@@ -24577,6 +24781,10 @@
           32808
         ],
         [
+          "assets/spine/op/char_377_gdglow/front/char_377_gdglow.webp",
+          45604
+        ],
+        [
           "assets/spine/op/char_381_bubble/char_381_bubble_marthe_11/back/char_381_bubble_marthe_11.webp",
           80796
         ],
@@ -24599,6 +24807,10 @@
         [
           "assets/spine/op/char_388_mint/char_388_mint_epoque_30/back/char_388_mint_epoque_30.webp",
           68170
+        ],
+        [
+          "assets/spine/op/char_391_rosmon/back/char_391_rosmon.webp",
+          79324
         ],
         [
           "assets/spine/op/char_391_rosmon/char_391_rosmon_epoque_17/back/char_391_rosmon_epoque_17.webp",
@@ -24639,6 +24851,10 @@
         [
           "assets/spine/op/char_4010_etlchi/front/char_4010_etlchi.webp",
           173672
+        ],
+        [
+          "assets/spine/op/char_4011_lessng/front/char_4011_lessng.webp",
+          34112
         ],
         [
           "assets/spine/op/char_4013_kjera/back/char_4013_kjera.webp",
@@ -24689,6 +24905,10 @@
           56122
         ],
         [
+          "assets/spine/op/char_4036_forcer/front/char_4036_forcer.webp",
+          53502
+        ],
+        [
           "assets/spine/op/char_4037_demetr/back/char_4037_demetr.webp",
           82812
         ],
@@ -24707,6 +24927,10 @@
         [
           "assets/spine/op/char_4039_horn/char_4039_horn_epoque_24/front/char_4039_horn_epoque_24.webp",
           66054
+        ],
+        [
+          "assets/spine/op/char_4039_horn/front/char_4039_horn.webp",
+          58200
         ],
         [
           "assets/spine/op/char_4040_rockr/back/char_4040_rockr.webp",
@@ -24801,6 +25025,10 @@
           33416
         ],
         [
+          "assets/spine/op/char_4064_mlynar/char_4064_mlynar_epoque_28/back/char_4064_mlynar_epoque_28.webp",
+          41058
+        ],
+        [
           "assets/spine/op/char_4064_mlynar/char_4064_mlynar_epoque_28/front/char_4064_mlynar_epoque_28.webp",
           56234
         ],
@@ -24819,6 +25047,14 @@
         [
           "assets/spine/op/char_4072_ironmn/front/char_4072_ironmn.webp",
           38112
+        ],
+        [
+          "assets/spine/op/char_4079_haini/char_4079_haini_epoque_45/back/char_4079_haini_epoque_45.webp",
+          98916
+        ],
+        [
+          "assets/spine/op/char_4080_lin/back/char_4080_lin.webp",
+          79538
         ],
         [
           "assets/spine/op/char_4080_lin/front/char_4080_lin.webp",
@@ -24851,6 +25087,10 @@
         [
           "assets/spine/op/char_4087_ines/char_4087_ines_boc_8/front/char_4087_ines_boc_8.webp",
           139442
+        ],
+        [
+          "assets/spine/op/char_4087_ines/front/char_4087_ines.webp",
+          65156
         ],
         [
           "assets/spine/op/char_4088_hodrer/back/char_4088_hodrer.webp",
@@ -24897,6 +25137,10 @@
           183202
         ],
         [
+          "assets/spine/op/char_4116_blkkgt/front/char_4116_blkkgt.webp",
+          156316
+        ],
+        [
           "assets/spine/op/char_4117_ray/front/char_4117_ray.webp",
           47470
         ],
@@ -24935,6 +25179,10 @@
         [
           "assets/spine/op/char_4133_logos/back/char_4133_logos.webp",
           34532
+        ],
+        [
+          "assets/spine/op/char_4134_cetsyr/char_4134_cetsyr_epoque_50/front/char_4134_cetsyr_epoque_50.webp",
+          263694
         ],
         [
           "assets/spine/op/char_4134_cetsyr/front/char_4134_cetsyr.webp",
@@ -25019,6 +25267,10 @@
         [
           "assets/spine/op/char_4148_philae/front/char_4148_philae.webp",
           122190
+        ],
+        [
+          "assets/spine/op/char_4151_tinman/back/char_4151_tinman.webp",
+          82716
         ],
         [
           "assets/spine/op/char_4151_tinman/char_4151_tinman_sale_11/back/char_4151_tinman_sale_11.webp",
@@ -25109,6 +25361,10 @@
           108154
         ],
         [
+          "assets/spine/op/char_4196_reckpr/front/char_4196_reckpr.webp",
+          66288
+        ],
+        [
           "assets/spine/op/char_4202_haruka/back/char_4202_haruka.webp",
           60576
         ],
@@ -25157,8 +25413,16 @@
           34888
         ],
         [
+          "assets/spine/op/char_423_blemsh/back/char_423_blemsh.webp",
+          50180
+        ],
+        [
           "assets/spine/op/char_423_blemsh/char_423_blemsh_littlePony_1/front/char_423_blemsh_littlePony_1.webp",
           117122
+        ],
+        [
+          "assets/spine/op/char_423_blemsh/char_423_blemsh_witch_2/back/char_423_blemsh_witch_2.webp",
+          57482
         ],
         [
           "assets/spine/op/char_423_blemsh/char_423_blemsh_witch_2/front/char_423_blemsh_witch_2.webp",
@@ -25167,6 +25431,10 @@
         [
           "assets/spine/op/char_423_blemsh/front/char_423_blemsh.webp",
           65842
+        ],
+        [
+          "assets/spine/op/char_426_billro/char_426_billro_snow_3/back/char_426_billro_snow_3.webp",
+          33824
         ],
         [
           "assets/spine/op/char_426_billro/char_426_billro_snow_3/front/char_426_billro_snow_3.webp",
@@ -25189,6 +25457,10 @@
           74344
         ],
         [
+          "assets/spine/op/char_427_vigil/char_427_vigil_epoque_27/front/char_427_vigil_epoque_27.webp",
+          74344
+        ],
+        [
           "assets/spine/op/char_427_vigil/front/char_427_vigil.webp",
           420282
         ],
@@ -25207,6 +25479,10 @@
         [
           "assets/spine/op/char_431_ashlok/char_431_ashlok_epoque_28/back/char_431_ashlok_epoque_28.webp",
           104118
+        ],
+        [
+          "assets/spine/op/char_431_ashlok/char_431_ashlok_epoque_28/front/char_431_ashlok_epoque_28.webp",
+          104888
         ],
         [
           "assets/spine/op/char_431_ashlok/front/char_431_ashlok.webp",
@@ -25305,6 +25581,10 @@
           67874
         ],
         [
+          "assets/spine/op/char_474_glady/char_474_glady_epoque_33/back/char_474_glady_epoque_33.webp",
+          98248
+        ],
+        [
           "assets/spine/op/char_474_glady/char_474_glady_epoque_33/front/char_474_glady_epoque_33.webp",
           133388
         ],
@@ -25343,6 +25623,10 @@
         [
           "assets/spine/op/char_494_vendla/char_494_vendla_game_10/front/char_494_vendla_game_10.webp",
           93760
+        ],
+        [
+          "assets/spine/op/char_496_wildmn/char_496_wildmn_epoque_16/back/char_496_wildmn_epoque_16.webp",
+          42962
         ],
         [
           "assets/spine/op/char_496_wildmn/char_496_wildmn_epoque_16/front/char_496_wildmn_epoque_16.webp",
@@ -25399,6 +25683,10 @@
         [
           "assets/spine/op/char_603_csnipe/front/char_603_csnipe.webp",
           46288
+        ],
+        [
+          "assets/spine/op/char_604_ccast/back/char_604_ccast.webp",
+          33960
         ],
         [
           "assets/spine/op/char_604_ccast/front/char_604_ccast.webp",
@@ -25481,6 +25769,10 @@
           37078
         ],
         [
+          "assets/spine/op/char_616_pithst/front/char_616_pithst.webp",
+          41842
+        ],
+        [
           "assets/spine/op/char_617_sharp2/back/char_617_sharp2.webp",
           48748
         ],
@@ -25535,6 +25827,10 @@
         [
           "assets/spine/token/token_10064_wang_stone1/token_10064_wang_stone1.webp",
           5076
+        ],
+        [
+          "assets/ui/bandChoose/team_icon_frame.webp",
+          250
         ],
         [
           "assets/ui/battleUi/slider_hp_fill.webp",
