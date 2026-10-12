@@ -34587,8 +34587,8 @@
       "what": "Stronghold Protocol v0.2.5 official battlefield scenes (scene.json/bin, lightmaps, textures) for the 3D board",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 7,
-      "bytes": 4916778,
+      "files": 13,
+      "bytes": 10016404,
       "keys": [
         [
           "assets/local/sp-scenes-025/act1autochess_m01/lm0.webp",
@@ -34617,6 +34617,30 @@
         [
           "assets/local/sp-scenes-025/act1autochess_m03/scene.json",
           13394
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m04/lm0.webp",
+          326812
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m04/scene.bin",
+          2095084
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m04/scene.json",
+          13566
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m05/lm0.webp",
+          348570
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m05/scene.bin",
+          2298124
+        ],
+        [
+          "assets/local/sp-scenes-025/act1autochess_m05/scene.json",
+          17470
         ]
       ]
     }
