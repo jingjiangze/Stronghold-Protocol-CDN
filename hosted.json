@@ -311,8 +311,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2681,
-      "bytes": 203984137,
+      "files": 2758,
+      "bytes": 211203096,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -591,6 +591,10 @@
           18826
         ],
         [
+          "assets/audio/voice/jp/char_3003_timoris/cn_021.mp3",
+          3361
+        ],
+        [
           "assets/audio/voice/jp/char_3003_timoris/cn_022.mp3",
           7332
         ],
@@ -617,6 +621,10 @@
         [
           "assets/audio/voice/jp/char_3003_timoris/cn_028.mp3",
           6914
+        ],
+        [
+          "assets/audio/voice/jp/char_3003_timoris/cn_029.mp3",
+          23005
         ],
         [
           "assets/audio/voice/jp/char_3003_timoris/cn_030.mp3",
@@ -749,6 +757,10 @@
         [
           "assets/audio/voice/jp/char_4183_mortis/cn_020.mp3",
           15691
+        ],
+        [
+          "assets/audio/voice/jp/char_4183_mortis/cn_021.mp3",
+          14855
         ],
         [
           "assets/audio/voice/jp/char_4183_mortis/cn_022.mp3",
@@ -1555,6 +1567,10 @@
           42984
         ],
         [
+          "assets/enemy/icon/enemy_10087_hlchgr_2.png",
+          41971
+        ],
+        [
           "assets/enemy/icon/enemy_10088_hlsnip.png",
           43544
         ],
@@ -1645,6 +1661,10 @@
         [
           "assets/enemy/icon/enemy_1013_airdrp_2.png",
           43216
+        ],
+        [
+          "assets/enemy/icon/enemy_10140_xdbird.png",
+          38885
         ],
         [
           "assets/enemy/icon/enemy_10140_xdbird_2.png",
@@ -1753,6 +1773,10 @@
         [
           "assets/enemy/icon/enemy_1047_sagent_2.png",
           44134
+        ],
+        [
+          "assets/enemy/icon/enemy_1048_hirman.png",
+          42330
         ],
         [
           "assets/enemy/icon/enemy_1048_hirman_2.png",
@@ -2067,6 +2091,10 @@
           43590
         ],
         [
+          "assets/enemy/icon/enemy_1159_swfmob.png",
+          40937
+        ],
+        [
           "assets/enemy/icon/enemy_1159_swfmob_2.png",
           43335
         ],
@@ -2235,6 +2263,10 @@
           43572
         ],
         [
+          "assets/enemy/icon/enemy_1215_ptrarc_2.png",
+          43572
+        ],
+        [
           "assets/enemy/icon/enemy_1216_cansld.png",
           43383
         ],
@@ -2257,6 +2289,10 @@
         [
           "assets/enemy/icon/enemy_1222_dpvt.png",
           46492
+        ],
+        [
+          "assets/enemy/icon/enemy_1222_dpvt_2.png",
+          45238
         ],
         [
           "assets/enemy/icon/enemy_1230_dsbudr.png",
@@ -2315,6 +2351,10 @@
           43511
         ],
         [
+          "assets/enemy/icon/enemy_1262_durplc.png",
+          44634
+        ],
+        [
           "assets/enemy/icon/enemy_1263_durbus_2.png",
           44447
         ],
@@ -2329,6 +2369,10 @@
         [
           "assets/enemy/icon/enemy_1274_stmram.png",
           44004
+        ],
+        [
+          "assets/enemy/icon/enemy_1275_dwlock.png",
+          43108
         ],
         [
           "assets/enemy/icon/enemy_1276_telex.png",
@@ -2407,6 +2451,10 @@
           46815
         ],
         [
+          "assets/enemy/icon/enemy_1297_ymflag_2.png",
+          46352
+        ],
+        [
           "assets/enemy/icon/enemy_1298_ymmonk.png",
           46052
         ],
@@ -2465,6 +2513,10 @@
         [
           "assets/enemy/icon/enemy_1337_bhrknf.png",
           45578
+        ],
+        [
+          "assets/enemy/icon/enemy_1338_bhrjst_2.png",
+          43804
         ],
         [
           "assets/enemy/icon/enemy_1339_bhrgrd_2.png",
@@ -2643,12 +2695,20 @@
           44509
         ],
         [
+          "assets/enemy/icon/enemy_1413_mmstck_2.png",
+          44642
+        ],
+        [
           "assets/enemy/icon/enemy_1414_mmleak.png",
           44667
         ],
         [
           "assets/enemy/icon/enemy_1414_mmleak_2.png",
           46136
+        ],
+        [
+          "assets/enemy/icon/enemy_1415_mmkabi.png",
+          44677
         ],
         [
           "assets/enemy/icon/enemy_1416_mmfarm.png",
@@ -2681,6 +2741,10 @@
         [
           "assets/enemy/icon/enemy_1434_dsshel.png",
           43307
+        ],
+        [
+          "assets/enemy/icon/enemy_1435_dsflys.png",
+          45989
         ],
         [
           "assets/enemy/icon/enemy_1435_dsflys_2.png",
@@ -2727,6 +2791,10 @@
           44262
         ],
         [
+          "assets/enemy/icon/enemy_1522_captan.png",
+          34758
+        ],
+        [
           "assets/enemy/icon/enemy_1523_mandra.png",
           44687
         ],
@@ -2769,6 +2837,10 @@
         [
           "assets/enemy/icon/enemy_1538_ymmons.png",
           49413
+        ],
+        [
+          "assets/enemy/icon/enemy_1540_wdncr.png",
+          45523
         ],
         [
           "assets/enemy/icon/enemy_1541_wdslms.png",
@@ -2943,6 +3015,10 @@
           42218
         ],
         [
+          "assets/enemy/icon/enemy_2013_csbot.png",
+          48231
+        ],
+        [
           "assets/enemy/icon/enemy_2014_csicer.png",
           48234
         ],
@@ -2961,6 +3037,10 @@
         [
           "assets/enemy/icon/enemy_2020_cswrtr.png",
           45517
+        ],
+        [
+          "assets/enemy/icon/enemy_2022_syzeni.png",
+          45110
         ],
         [
           "assets/enemy/icon/enemy_2023_sypult.png",
@@ -3235,6 +3315,10 @@
           44961
         ],
         [
+          "assets/enemy/icon/enemy_3006_tersia.png",
+          45015
+        ],
+        [
           "assets/enemy/icon/enemy_3010_mcreep.png",
           41510
         ],
@@ -3277,6 +3361,10 @@
         [
           "assets/enemy/icon/enemy_7004_xbdeer_2.png",
           41894
+        ],
+        [
+          "assets/enemy/icon/enemy_7005_xbbull.png",
+          42649
         ],
         [
           "assets/enemy/icon/enemy_7005_xbbull_2.png",
@@ -3859,6 +3947,10 @@
           31839
         ],
         [
+          "assets/skill/skchr_am_doloris_1.png",
+          30406
+        ],
+        [
           "assets/skill/skchr_am_doloris_2.png",
           32918
         ],
@@ -4213,6 +4305,10 @@
         [
           "assets/spine/enemy/enemy_10043_sailor_2/enemy_10043_sailor_2.skel",
           64511
+        ],
+        [
+          "assets/spine/enemy/enemy_10044_wintun_2/enemy_10044_wintun_2.atlas",
+          3030
         ],
         [
           "assets/spine/enemy/enemy_10044_wintun_2/enemy_10044_wintun_2.png",
@@ -4631,6 +4727,10 @@
           231765
         ],
         [
+          "assets/spine/enemy/enemy_1013_airdrp/enemy_1013_airdrp.atlas",
+          3106
+        ],
+        [
           "assets/spine/enemy/enemy_1013_airdrp/enemy_1013_airdrp.png",
           42637
         ],
@@ -4723,6 +4823,10 @@
           123185
         ],
         [
+          "assets/spine/enemy/enemy_10145_xdrock/enemy_10145_xdrock.atlas",
+          1378
+        ],
+        [
           "assets/spine/enemy/enemy_10145_xdrock/enemy_10145_xdrock.png",
           87480
         ],
@@ -4767,6 +4871,10 @@
           78781
         ],
         [
+          "assets/spine/enemy/enemy_10212_klhz/enemy_10212_klhz.atlas",
+          1504
+        ],
+        [
           "assets/spine/enemy/enemy_10212_klhz/enemy_10212_klhz.png",
           31566
         ],
@@ -4781,6 +4889,10 @@
         [
           "assets/spine/enemy/enemy_10213_klbm/enemy_10213_klbm.png",
           22343
+        ],
+        [
+          "assets/spine/enemy/enemy_10213_klbm/enemy_10213_klbm.skel",
+          29563
         ],
         [
           "assets/spine/enemy/enemy_10213_klbm_2/enemy_10213_klbm_2.atlas",
@@ -4817,6 +4929,14 @@
         [
           "assets/spine/enemy/enemy_10214_klgn_2/enemy_10214_klgn_2.skel",
           29409
+        ],
+        [
+          "assets/spine/enemy/enemy_10215_klhjd/enemy_10215_klhjd.atlas",
+          2263
+        ],
+        [
+          "assets/spine/enemy/enemy_10215_klhjd/enemy_10215_klhjd.png",
+          85776
         ],
         [
           "assets/spine/enemy/enemy_10215_klhjd/enemy_10215_klhjd.skel",
@@ -4903,6 +5023,10 @@
           58464
         ],
         [
+          "assets/spine/enemy/enemy_1022_dmage/enemy_1022_dmage.skel",
+          64858
+        ],
+        [
           "assets/spine/enemy/enemy_1025_reveng_2/enemy_1025_reveng_2.atlas",
           2796
         ],
@@ -4921,6 +5045,10 @@
         [
           "assets/spine/enemy/enemy_1034_laxe/enemy_1034_laxe.png",
           65410
+        ],
+        [
+          "assets/spine/enemy/enemy_1034_laxe/enemy_1034_laxe.skel",
+          36793
         ],
         [
           "assets/spine/enemy/enemy_1046_agent_2/enemy_1046_agent_2.atlas",
@@ -4949,6 +5077,10 @@
         [
           "assets/spine/enemy/enemy_1047_sagent_2/enemy_1047_sagent_2.atlas",
           3067
+        ],
+        [
+          "assets/spine/enemy/enemy_1047_sagent_2/enemy_1047_sagent_2.png",
+          43621
         ],
         [
           "assets/spine/enemy/enemy_1047_sagent_2/enemy_1047_sagent_2.skel",
@@ -5059,6 +5191,10 @@
           22154
         ],
         [
+          "assets/spine/enemy/enemy_1053_norgst/enemy_1053_norgst.skel",
+          12966
+        ],
+        [
           "assets/spine/enemy/enemy_1053_norgst_2/enemy_1053_norgst_2.atlas",
           1436
         ],
@@ -5077,6 +5213,10 @@
         [
           "assets/spine/enemy/enemy_1054_norshd/enemy_1054_norshd.png",
           46002
+        ],
+        [
+          "assets/spine/enemy/enemy_1054_norshd/enemy_1054_norshd.skel",
+          45606
         ],
         [
           "assets/spine/enemy/enemy_1054_norshd_2/enemy_1054_norshd_2.atlas",
@@ -5255,6 +5395,10 @@
           39877
         ],
         [
+          "assets/spine/enemy/enemy_1078_sotisc_2/enemy_1078_sotisc_2.skel",
+          41480
+        ],
+        [
           "assets/spine/enemy/enemy_1079_sotisp/enemy_1079_sotisp.atlas",
           2869
         ],
@@ -5305,6 +5449,10 @@
         [
           "assets/spine/enemy/enemy_1094_ccspm/enemy_1094_ccspm.atlas",
           2789
+        ],
+        [
+          "assets/spine/enemy/enemy_1094_ccspm/enemy_1094_ccspm.png",
+          73213
         ],
         [
           "assets/spine/enemy/enemy_1094_ccspm/enemy_1094_ccspm.skel",
@@ -5483,6 +5631,10 @@
           2812
         ],
         [
+          "assets/spine/enemy/enemy_1101_plkght_2/enemy_1101_plkght_2.png",
+          69369
+        ],
+        [
           "assets/spine/enemy/enemy_1101_plkght_2/enemy_1101_plkght_2.skel",
           114959
         ],
@@ -5507,6 +5659,10 @@
           85793
         ],
         [
+          "assets/spine/enemy/enemy_1102_sdkght_2/enemy_1102_sdkght_2.skel",
+          82454
+        ],
+        [
           "assets/spine/enemy/enemy_1103_wdkght/enemy_1103_wdkght.atlas",
           4623
         ],
@@ -5517,6 +5673,10 @@
         [
           "assets/spine/enemy/enemy_1103_wdkght/enemy_1103_wdkght.skel",
           130843
+        ],
+        [
+          "assets/spine/enemy/enemy_1104_lfkght/enemy_1104_lfkght.atlas",
+          4584
         ],
         [
           "assets/spine/enemy/enemy_1104_lfkght/enemy_1104_lfkght.png",
@@ -5651,6 +5811,10 @@
           1050
         ],
         [
+          "assets/spine/enemy/enemy_1125_spshld/enemy_1125_spshld.png",
+          61230
+        ],
+        [
           "assets/spine/enemy/enemy_1125_spshld/enemy_1125_spshld.skel",
           27358
         ],
@@ -5669,6 +5833,10 @@
         [
           "assets/spine/enemy/enemy_1132_sarchn/enemy_1132_sarchn.atlas",
           1355
+        ],
+        [
+          "assets/spine/enemy/enemy_1132_sarchn/enemy_1132_sarchn.png",
+          24317
         ],
         [
           "assets/spine/enemy/enemy_1132_sarchn/enemy_1132_sarchn.skel",
@@ -5715,12 +5883,20 @@
           3118
         ],
         [
+          "assets/spine/enemy/enemy_1136_redace_2/enemy_1136_redace_2.png",
+          64914
+        ],
+        [
           "assets/spine/enemy/enemy_1136_redace_2/enemy_1136_redace_2.skel",
           65333
         ],
         [
           "assets/spine/enemy/enemy_1147_dshond/enemy_1147_dshond.atlas",
           2172
+        ],
+        [
+          "assets/spine/enemy/enemy_1147_dshond/enemy_1147_dshond.png",
+          28206
         ],
         [
           "assets/spine/enemy/enemy_1147_dshond/enemy_1147_dshond.skel",
@@ -6067,6 +6243,10 @@
           4594
         ],
         [
+          "assets/spine/enemy/enemy_1182_flasrt_3/enemy_1182_flasrt_3.png",
+          72733
+        ],
+        [
           "assets/spine/enemy/enemy_1182_flasrt_3/enemy_1182_flasrt_3.skel",
           88142
         ],
@@ -6101,6 +6281,10 @@
         [
           "assets/spine/enemy/enemy_1185_nmekgt_2/enemy_1185_nmekgt_2.png",
           74084
+        ],
+        [
+          "assets/spine/enemy/enemy_1185_nmekgt_2/enemy_1185_nmekgt_2.skel",
+          60326
         ],
         [
           "assets/spine/enemy/enemy_1186_bldbld/enemy_1186_bldbld.atlas",
@@ -6161,6 +6345,10 @@
         [
           "assets/spine/enemy/enemy_1188_krgdrn_2/enemy_1188_krgdrn_2.skel",
           15370
+        ],
+        [
+          "assets/spine/enemy/enemy_1189_krgaxe/enemy_1189_krgaxe.atlas",
+          2543
         ],
         [
           "assets/spine/enemy/enemy_1189_krgaxe/enemy_1189_krgaxe.png",
@@ -6263,6 +6451,10 @@
           66187
         ],
         [
+          "assets/spine/enemy/enemy_1193_krgbsk/enemy_1193_krgbsk.skel",
+          51106
+        ],
+        [
           "assets/spine/enemy/enemy_1194_krgmtr/enemy_1194_krgmtr.atlas",
           3309
         ],
@@ -6313,6 +6505,10 @@
         [
           "assets/spine/enemy/enemy_1213_mtrsnp_2/enemy_1213_mtrsnp_2.atlas",
           4803
+        ],
+        [
+          "assets/spine/enemy/enemy_1213_mtrsnp_2/enemy_1213_mtrsnp_2.png",
+          65129
         ],
         [
           "assets/spine/enemy/enemy_1213_mtrsnp_2/enemy_1213_mtrsnp_2.skel",
@@ -6567,6 +6763,14 @@
           36726
         ],
         [
+          "assets/spine/enemy/enemy_1249_lysdb/enemy_1249_lysdb.skel",
+          34409
+        ],
+        [
+          "assets/spine/enemy/enemy_1250_lyengs/enemy_1250_lyengs.atlas",
+          2810
+        ],
+        [
           "assets/spine/enemy/enemy_1250_lyengs/enemy_1250_lyengs.png",
           38784
         ],
@@ -6609,6 +6813,10 @@
         [
           "assets/spine/enemy/enemy_1256_lyacpa_2/enemy_1256_lyacpa_2.skel",
           71418
+        ],
+        [
+          "assets/spine/enemy/enemy_1262_durplc/enemy_1262_durplc.atlas",
+          2196
         ],
         [
           "assets/spine/enemy/enemy_1262_durplc/enemy_1262_durplc.png",
@@ -6681,6 +6889,10 @@
         [
           "assets/spine/enemy/enemy_1276_telex/enemy_1276_telex.atlas",
           4821
+        ],
+        [
+          "assets/spine/enemy/enemy_1276_telex/enemy_1276_telex.png",
+          99554
         ],
         [
           "assets/spine/enemy/enemy_1276_telex/enemy_1276_telex.skel",
@@ -6757,6 +6969,10 @@
         [
           "assets/spine/enemy/enemy_1279_sgbdg_2/enemy_1279_sgbdg_2.skel",
           78933
+        ],
+        [
+          "assets/spine/enemy/enemy_1280_sgmag/enemy_1280_sgmag.atlas",
+          2730
         ],
         [
           "assets/spine/enemy/enemy_1280_sgmag/enemy_1280_sgmag.png",
@@ -7019,6 +7235,10 @@
           51253
         ],
         [
+          "assets/spine/enemy/enemy_1332_cbterm_2/enemy_1332_cbterm_2.atlas",
+          3000
+        ],
+        [
           "assets/spine/enemy/enemy_1332_cbterm_2/enemy_1332_cbterm_2.png",
           57763
         ],
@@ -7215,6 +7435,10 @@
           51473
         ],
         [
+          "assets/spine/enemy/enemy_1346_ynshp_2/enemy_1346_ynshp_2.skel",
+          148518
+        ],
+        [
           "assets/spine/enemy/enemy_1347_fyshp/enemy_1347_fyshp.atlas",
           3832
         ],
@@ -7325,6 +7549,10 @@
         [
           "assets/spine/enemy/enemy_1395_dhxts/enemy_1395_dhxts.atlas",
           1657
+        ],
+        [
+          "assets/spine/enemy/enemy_1395_dhxts/enemy_1395_dhxts.png",
+          16857
         ],
         [
           "assets/spine/enemy/enemy_1395_dhxts/enemy_1395_dhxts.skel",
@@ -7453,6 +7681,10 @@
         [
           "assets/spine/enemy/enemy_1403_gunsho_2/enemy_1403_gunsho_2.atlas",
           2853
+        ],
+        [
+          "assets/spine/enemy/enemy_1403_gunsho_2/enemy_1403_gunsho_2.png",
+          40924
         ],
         [
           "assets/spine/enemy/enemy_1403_gunsho_2/enemy_1403_gunsho_2.skel",
@@ -7759,6 +7991,14 @@
           15144
         ],
         [
+          "assets/spine/enemy/enemy_1435_dsflys/enemy_1435_dsflys.atlas",
+          470
+        ],
+        [
+          "assets/spine/enemy/enemy_1435_dsflys/enemy_1435_dsflys.png",
+          18213
+        ],
+        [
           "assets/spine/enemy/enemy_1435_dsflys/enemy_1435_dsflys.skel",
           35597
         ],
@@ -7773,6 +8013,10 @@
         [
           "assets/spine/enemy/enemy_1435_dsflys_2/enemy_1435_dsflys_2.skel",
           35597
+        ],
+        [
+          "assets/spine/enemy/enemy_1503_talula/enemy_1503_talula.atlas",
+          5582
         ],
         [
           "assets/spine/enemy/enemy_1503_talula/enemy_1503_talula.png",
@@ -8287,6 +8531,10 @@
           615771
         ],
         [
+          "assets/spine/enemy/enemy_1569_ldevil/enemy_1569_ldevil.atlas",
+          11517
+        ],
+        [
           "assets/spine/enemy/enemy_1569_ldevil/enemy_1569_ldevil.png",
           187840
         ],
@@ -8339,8 +8587,16 @@
           1404310
         ],
         [
+          "assets/spine/enemy/enemy_1573_pyczog/enemy_1573_pyczog.skel",
+          2980688
+        ],
+        [
           "assets/spine/enemy/enemy_1574_xdagt/enemy_1574_xdagt.atlas",
           7759
+        ],
+        [
+          "assets/spine/enemy/enemy_1574_xdagt/enemy_1574_xdagt.png",
+          93181
         ],
         [
           "assets/spine/enemy/enemy_1574_xdagt/enemy_1574_xdagt.skel",
@@ -8399,6 +8655,10 @@
           1648
         ],
         [
+          "assets/spine/enemy/enemy_1583_suizzh/enemy_1583_suizzh.png",
+          585705
+        ],
+        [
           "assets/spine/enemy/enemy_1583_suizzh/enemy_1583_suizzh.skel",
           253634
         ],
@@ -8409,6 +8669,10 @@
         [
           "assets/spine/enemy/enemy_1584_suiyzh/enemy_1584_suiyzh.png",
           478954
+        ],
+        [
+          "assets/spine/enemy/enemy_1584_suiyzh/enemy_1584_suiyzh.skel",
+          274393
         ],
         [
           "assets/spine/enemy/enemy_1585_suiwei/enemy_1585_suiwei.atlas",
@@ -8449,6 +8713,10 @@
         [
           "assets/spine/enemy/enemy_1590_muama/enemy_1590_muama.atlas",
           1292
+        ],
+        [
+          "assets/spine/enemy/enemy_1590_muama/enemy_1590_muama.png",
+          106098
         ],
         [
           "assets/spine/enemy/enemy_1590_muama/enemy_1590_muama.skel",
@@ -8723,6 +8991,10 @@
           6339
         ],
         [
+          "assets/spine/enemy/enemy_2038_sydonq/enemy_2038_sydonq.png",
+          217106
+        ],
+        [
           "assets/spine/enemy/enemy_2038_sydonq/enemy_2038_sydonq.skel",
           271685
         ],
@@ -8907,6 +9179,10 @@
           478945
         ],
         [
+          "assets/spine/enemy/enemy_2081_skztxs/enemy_2081_skztxs.atlas",
+          7834
+        ],
+        [
           "assets/spine/enemy/enemy_2081_skztxs/enemy_2081_skztxs.png",
           185773
         ],
@@ -8925,6 +9201,14 @@
         [
           "assets/spine/enemy/enemy_2082_skzdd/enemy_2082_skzdd.skel",
           596237
+        ],
+        [
+          "assets/spine/enemy/enemy_2084_skzcan/enemy_2084_skzcan.atlas",
+          4792
+        ],
+        [
+          "assets/spine/enemy/enemy_2084_skzcan/enemy_2084_skzcan.png",
+          96075
         ],
         [
           "assets/spine/enemy/enemy_2084_skzcan/enemy_2084_skzcan.skel",
@@ -9065,6 +9349,10 @@
         [
           "assets/spine/enemy/enemy_2114_dylbgg/enemy_2114_dylbgg.atlas",
           8515
+        ],
+        [
+          "assets/spine/enemy/enemy_2114_dylbgg/enemy_2114_dylbgg.png",
+          223992
         ],
         [
           "assets/spine/enemy/enemy_2114_dylbgg/enemy_2114_dylbgg.skel",
@@ -9411,6 +9699,10 @@
           3339
         ],
         [
+          "assets/spine/enemy/enemy_3010_mcreep/enemy_3010_mcreep.png",
+          52817
+        ],
+        [
           "assets/spine/enemy/enemy_3010_mcreep/enemy_3010_mcreep.skel",
           93583
         ],
@@ -9543,6 +9835,10 @@
           43087
         ],
         [
+          "assets/spine/enemy/enemy_7005_xbbull/enemy_7005_xbbull.skel",
+          32229
+        ],
+        [
           "assets/spine/enemy/enemy_7005_xbbull_2/enemy_7005_xbbull_2.atlas",
           1710
         ],
@@ -9601,6 +9897,10 @@
         [
           "assets/spine/enemy/enemy_7009_mtmoun/enemy_7009_mtmoun.skel",
           152159
+        ],
+        [
+          "assets/spine/enemy/enemy_7010_bldrgn/enemy_7010_bldrgn.atlas",
+          6097
         ],
         [
           "assets/spine/enemy/enemy_7010_bldrgn/enemy_7010_bldrgn.png",
@@ -9675,6 +9975,10 @@
           3620
         ],
         [
+          "assets/spine/enemy/enemy_7022_gatgod/enemy_7022_gatgod.png",
+          132791
+        ],
+        [
           "assets/spine/enemy/enemy_7022_gatgod/enemy_7022_gatgod.skel",
           85810
         ],
@@ -9741,6 +10045,10 @@
         [
           "assets/spine/enemy/enemy_7030_skodo/enemy_7030_skodo.atlas",
           3584
+        ],
+        [
+          "assets/spine/enemy/enemy_7030_skodo/enemy_7030_skodo.png",
+          87261
         ],
         [
           "assets/spine/enemy/enemy_7030_skodo/enemy_7030_skodo.skel",
