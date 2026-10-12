@@ -311,8 +311,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 614,
-      "bytes": 50652122,
+      "files": 709,
+      "bytes": 58893415,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -475,6 +475,14 @@
           21960
         ],
         [
+          "assets/audio/voice/jp/char_3002_amoris/cn_023.mp3",
+          10258
+        ],
+        [
+          "assets/audio/voice/jp/char_3003_timoris/cn_023.mp3",
+          8795
+        ],
+        [
           "assets/audio/voice/jp/char_4123_ela/cn_019.mp3",
           11929
         ],
@@ -585,6 +593,10 @@
         [
           "assets/audio/voice/jp/char_4182_oblvns/cn_032.mp3",
           18826
+        ],
+        [
+          "assets/audio/voice/jp/char_4183_mortis/cn_023.mp3",
+          17363
         ],
         [
           "assets/audio/voice/jp/char_456_ash/cn_019.mp3",
@@ -735,6 +747,14 @@
           58014
         ],
         [
+          "assets/char/avatar/char_115_headbr.png",
+          44810
+        ],
+        [
+          "assets/char/avatar/char_115_headbr_2.png",
+          44027
+        ],
+        [
           "assets/char/avatar/char_120_hibisc.png",
           53866
         ],
@@ -759,6 +779,22 @@
           75465
         ],
         [
+          "assets/char/avatar/char_194_leto.png",
+          49063
+        ],
+        [
+          "assets/char/avatar/char_194_leto_2.png",
+          64729
+        ],
+        [
+          "assets/char/avatar/char_195_glassb.png",
+          44597
+        ],
+        [
+          "assets/char/avatar/char_195_glassb_2.png",
+          56665
+        ],
+        [
           "assets/char/avatar/char_219_meteo.png",
           55585
         ],
@@ -777,6 +813,22 @@
         [
           "assets/char/avatar/char_3001_doloris.png",
           52054
+        ],
+        [
+          "assets/char/avatar/char_3002_amoris.png",
+          58617
+        ],
+        [
+          "assets/char/avatar/char_3003_timoris.png",
+          53452
+        ],
+        [
+          "assets/char/avatar/char_405_absin.png",
+          47441
+        ],
+        [
+          "assets/char/avatar/char_405_absin_2.png",
+          56346
         ],
         [
           "assets/char/avatar/char_4071_peper.png",
@@ -825,6 +877,14 @@
         [
           "assets/char/avatar/char_4182_oblvns_2.png",
           67747
+        ],
+        [
+          "assets/char/avatar/char_4183_mortis.png",
+          48143
+        ],
+        [
+          "assets/char/avatar/char_4183_mortis_2.png",
+          64344
         ],
         [
           "assets/char/avatar/char_4224_turdus.png",
@@ -911,6 +971,14 @@
           116921
         ],
         [
+          "assets/char/portrait/char_115_headbr_1.png",
+          100643
+        ],
+        [
+          "assets/char/portrait/char_115_headbr_2.png",
+          92087
+        ],
+        [
           "assets/char/portrait/char_120_hibisc_1.png",
           115425
         ],
@@ -935,6 +1003,22 @@
           145121
         ],
         [
+          "assets/char/portrait/char_194_leto_1.png",
+          109981
+        ],
+        [
+          "assets/char/portrait/char_194_leto_2.png",
+          118151
+        ],
+        [
+          "assets/char/portrait/char_195_glassb_1.png",
+          98433
+        ],
+        [
+          "assets/char/portrait/char_195_glassb_2.png",
+          117319
+        ],
+        [
           "assets/char/portrait/char_219_meteo_1.png",
           113498
         ],
@@ -957,6 +1041,30 @@
         [
           "assets/char/portrait/char_3001_doloris_2.png",
           149739
+        ],
+        [
+          "assets/char/portrait/char_3002_amoris.png",
+          122551
+        ],
+        [
+          "assets/char/portrait/char_3002_amoris_2.png",
+          144400
+        ],
+        [
+          "assets/char/portrait/char_3003_timoris.png",
+          118167
+        ],
+        [
+          "assets/char/portrait/char_3003_timoris_2.png",
+          174359
+        ],
+        [
+          "assets/char/portrait/char_405_absin_1.png",
+          100584
+        ],
+        [
+          "assets/char/portrait/char_405_absin_2.png",
+          112051
         ],
         [
           "assets/char/portrait/char_4071_peper_1.png",
@@ -1005,6 +1113,14 @@
         [
           "assets/char/portrait/char_4182_oblvns_2.png",
           127540
+        ],
+        [
+          "assets/char/portrait/char_4183_mortis_1.png",
+          108377
+        ],
+        [
+          "assets/char/portrait/char_4183_mortis_2.png",
+          130558
         ],
         [
           "assets/char/portrait/char_4224_turdus_1.png",
@@ -1113,6 +1229,26 @@
         [
           "assets/char/skin_portrait_shop/char_4217_makoto_p3r_1.png",
           298451
+        ],
+        [
+          "assets/enemy/icon/enemy_1000_gopro.png",
+          40329
+        ],
+        [
+          "assets/enemy/icon/enemy_1001_bigbo_2.png",
+          45875
+        ],
+        [
+          "assets/enemy/icon/enemy_10022_vtskny.png",
+          47273
+        ],
+        [
+          "assets/enemy/icon/enemy_10022_vtskny_2.png",
+          47156
+        ],
+        [
+          "assets/enemy/icon/enemy_10025_vtmstr_2.png",
+          46749
         ],
         [
           "assets/item/rogue_5_relic_return_29.png",
@@ -1727,6 +1863,74 @@
           25584
         ],
         [
+          "assets/spine/enemy/enemy_1000_gopro/enemy_1000_gopro.atlas",
+          2581
+        ],
+        [
+          "assets/spine/enemy/enemy_1000_gopro/enemy_1000_gopro.png",
+          29534
+        ],
+        [
+          "assets/spine/enemy/enemy_1000_gopro/enemy_1000_gopro.skel",
+          101737
+        ],
+        [
+          "assets/spine/enemy/enemy_1001_bigbo_2/enemy_1001_bigbo_2.atlas",
+          2490
+        ],
+        [
+          "assets/spine/enemy/enemy_1001_bigbo_2/enemy_1001_bigbo_2.png",
+          67202
+        ],
+        [
+          "assets/spine/enemy/enemy_1001_bigbo_2/enemy_1001_bigbo_2.skel",
+          54802
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny/enemy_10022_vtskny.atlas",
+          2989
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny/enemy_10022_vtskny.png",
+          56299
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny/enemy_10022_vtskny.skel",
+          54797
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny_2/enemy_10022_vtskny_2.atlas",
+          2987
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny_2/enemy_10022_vtskny_2.png",
+          53694
+        ],
+        [
+          "assets/spine/enemy/enemy_10022_vtskny_2/enemy_10022_vtskny_2.skel",
+          54797
+        ],
+        [
+          "assets/spine/enemy/enemy_10025_vtmstr_2/enemy_10025_vtmstr_2.atlas",
+          3594
+        ],
+        [
+          "assets/spine/enemy/enemy_10025_vtmstr_2/enemy_10025_vtmstr_2.png",
+          88140
+        ],
+        [
+          "assets/spine/enemy/enemy_10025_vtmstr_2/enemy_10025_vtmstr_2.skel",
+          59840
+        ],
+        [
+          "assets/spine/enemy/enemy_10026_vtzepl/enemy_10026_vtzepl.atlas",
+          2860
+        ],
+        [
+          "assets/spine/enemy/enemy_10026_vtzepl/enemy_10026_vtzepl.skel",
+          26351
+        ],
+        [
           "assets/spine/op/char_002_amiya/back/char_002_amiya.atlas",
           3052
         ],
@@ -2123,6 +2327,30 @@
           242821
         ],
         [
+          "assets/spine/op/char_115_headbr/back/char_115_headbr.atlas",
+          3228
+        ],
+        [
+          "assets/spine/op/char_115_headbr/back/char_115_headbr.png",
+          36744
+        ],
+        [
+          "assets/spine/op/char_115_headbr/back/char_115_headbr.skel",
+          35841
+        ],
+        [
+          "assets/spine/op/char_115_headbr/front/char_115_headbr.atlas",
+          5483
+        ],
+        [
+          "assets/spine/op/char_115_headbr/front/char_115_headbr.png",
+          56935
+        ],
+        [
+          "assets/spine/op/char_115_headbr/front/char_115_headbr.skel",
+          60919
+        ],
+        [
           "assets/spine/op/char_120_hibisc/back/char_120_hibisc.atlas",
           2479
         ],
@@ -2351,6 +2579,54 @@
           288214
         ],
         [
+          "assets/spine/op/char_194_leto/back/char_194_leto.atlas",
+          5780
+        ],
+        [
+          "assets/spine/op/char_194_leto/back/char_194_leto.png",
+          83753
+        ],
+        [
+          "assets/spine/op/char_194_leto/back/char_194_leto.skel",
+          107736
+        ],
+        [
+          "assets/spine/op/char_194_leto/front/char_194_leto.atlas",
+          9273
+        ],
+        [
+          "assets/spine/op/char_194_leto/front/char_194_leto.png",
+          94163
+        ],
+        [
+          "assets/spine/op/char_194_leto/front/char_194_leto.skel",
+          252428
+        ],
+        [
+          "assets/spine/op/char_195_glassb/back/char_195_glassb.atlas",
+          4832
+        ],
+        [
+          "assets/spine/op/char_195_glassb/back/char_195_glassb.png",
+          53916
+        ],
+        [
+          "assets/spine/op/char_195_glassb/back/char_195_glassb.skel",
+          63935
+        ],
+        [
+          "assets/spine/op/char_195_glassb/front/char_195_glassb.atlas",
+          7479
+        ],
+        [
+          "assets/spine/op/char_195_glassb/front/char_195_glassb.png",
+          71281
+        ],
+        [
+          "assets/spine/op/char_195_glassb/front/char_195_glassb.skel",
+          117064
+        ],
+        [
           "assets/spine/op/char_219_meteo/back/char_219_meteo.atlas",
           2988
         ],
@@ -2399,8 +2675,88 @@
           143762
         ],
         [
+          "assets/spine/op/char_3001_doloris/front/char_3001_doloris.atlas",
+          11002
+        ],
+        [
+          "assets/spine/op/char_3001_doloris/front/char_3001_doloris.png",
+          129587
+        ],
+        [
           "assets/spine/op/char_3001_doloris/front/char_3001_doloris.skel",
           228694
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/back/char_3002_amoris.atlas",
+          12589
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/back/char_3002_amoris.png",
+          542356
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/back/char_3002_amoris.skel",
+          260691
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/front/char_3002_amoris.atlas",
+          16846
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/front/char_3002_amoris.png",
+          557729
+        ],
+        [
+          "assets/spine/op/char_3002_amoris/front/char_3002_amoris.skel",
+          308759
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/back/char_3003_timoris.atlas",
+          4684
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/back/char_3003_timoris.png",
+          82165
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/back/char_3003_timoris.skel",
+          138257
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/front/char_3003_timoris.atlas",
+          7817
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/front/char_3003_timoris.png",
+          105026
+        ],
+        [
+          "assets/spine/op/char_3003_timoris/front/char_3003_timoris.skel",
+          208277
+        ],
+        [
+          "assets/spine/op/char_405_absin/back/char_405_absin.atlas",
+          4439
+        ],
+        [
+          "assets/spine/op/char_405_absin/back/char_405_absin.png",
+          42334
+        ],
+        [
+          "assets/spine/op/char_405_absin/back/char_405_absin.skel",
+          91358
+        ],
+        [
+          "assets/spine/op/char_405_absin/front/char_405_absin.atlas",
+          7817
+        ],
+        [
+          "assets/spine/op/char_405_absin/front/char_405_absin.png",
+          66359
+        ],
+        [
+          "assets/spine/op/char_405_absin/front/char_405_absin.skel",
+          156536
         ],
         [
           "assets/spine/op/char_4071_peper/back/char_4071_peper.atlas",
@@ -2593,6 +2949,30 @@
         [
           "assets/spine/op/char_4182_oblvns/front/char_4182_oblvns.skel",
           1071707
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/back/char_4183_mortis.atlas",
+          14662
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/back/char_4183_mortis.png",
+          229162
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/back/char_4183_mortis.skel",
+          319847
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/front/char_4183_mortis.atlas",
+          14662
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/front/char_4183_mortis.png",
+          229162
+        ],
+        [
+          "assets/spine/op/char_4183_mortis/front/char_4183_mortis.skel",
+          399993
         ],
         [
           "assets/spine/op/char_4217_makoto/char_4217_makoto_p3r_1/back/char_4217_makoto_p3r_1.atlas",
