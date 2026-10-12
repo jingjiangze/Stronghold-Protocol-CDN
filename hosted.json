@@ -24683,8 +24683,8 @@
       "what": "Chat sticker update; stable IDs, animated originals and small previews",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 94,
-      "bytes": 26493630,
+      "files": 96,
+      "bytes": 26506496,
       "keys": [
         [
           "assets/local/sp-four-emotes/011b78a293456c47b7c0.preview.webp",
@@ -24749,6 +24749,10 @@
         [
           "assets/local/sp-four-emotes/2e51fe46c043295502c2.preview.webp",
           2248
+        ],
+        [
+          "assets/local/sp-four-emotes/36c30744a526ad7ad6f0.preview.webp",
+          1898
         ],
         [
           "assets/local/sp-four-emotes/373418a76c574bb49dd6.preview.webp",
@@ -24885,6 +24889,10 @@
         [
           "assets/local/sp-four-emotes/922c3319362a7dfac552.preview.webp",
           1202
+        ],
+        [
+          "assets/local/sp-four-emotes/9310e5f49c1305f60426.jpg",
+          10968
         ],
         [
           "assets/local/sp-four-emotes/9385384c3869e743837b.preview.webp",
