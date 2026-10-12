@@ -21675,6 +21675,24 @@
           25304
         ]
       ]
+    },
+    {
+      "id": "sp-ausevaywstr-0.2.1",
+      "what": "干员语音 —— 上游 0.2.1 发布包内的 assets/audio/voice，我们发布树 public/ 逐字节相同",
+      "addedAt": "2026-10-12",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 24695,
+      "keys": [
+        [
+          "assets/audio/voice/jp/char_4217_makoto/cn_021.mp3",
+          8586
+        ],
+        [
+          "assets/audio/voice/jp/char_4217_makoto/cn_020.mp3",
+          16109
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
