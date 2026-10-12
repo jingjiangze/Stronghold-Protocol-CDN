@@ -1,8 +1,0 @@
-openi            12/19 直接 200
-    404   char           304ms    assets/char/avatar/char_002_amiya.png 
-    404   docs           551ms    assets/docs/img/band-draft.jpg 
-    404   icons          164ms    assets/icons/app-192.png 
-    404   item           179ms    assets/item/rogue_5_relic_return_29.png 
-    404   pack           227ms    assets/pack/bond_kazdelShip.png 
-    404   packs          288ms    assets/packs/audio.bgm-4.zip 
-    404   relics         315ms    assets/relics/relic_001.png 

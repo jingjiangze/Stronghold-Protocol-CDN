@@ -1,8 +1,0 @@
-docs(upload): 字节现已补进 git assets-raw，更正"只进 R2"的旧结论
-
-上传链路文档原先写「素材字节不经过 git 源仓库」，这在 git-art-sync 上线后已不成立：
-字节仍以 R2 为当场权威副本，但随后由 git-art-sync 一天四次补进 assets-raw 孤儿分支，
-git 挂载镜像（ghfast / gitcdn / OpenI raw）才拉得到。git 侧最多滞后约 6 小时。
-
-同步更新 site/admin.html 的「上传完会同步到哪」与 site/docs/agent-upload.md 的同一节，
-并补上为什么这一环不可省（实测缺 3,390 个键 / 约 932 MiB）与它的排干方式。
