@@ -67,16 +67,16 @@
       <table>
         <thead><tr><th></th><th>稳态（默认配置）</th><th>首次进场（新玩家）</th></tr></thead>
         <tbody>
-          <tr><td>优化前人均上行</td><td class="num">≈2,048 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
+          <tr><td>优化前人均上行</td><td class="num">≈105 B/s</td><td class="num"><b>467.9 MiB</b></td></tr>
           <tr><td>优化后人均上行</td><td class="num"><b>≈57.5 B/s</b>（2026-10-12 实测）</td><td class="num"><b>1.48 MiB</b></td></tr>
-          <tr><td>10 Mbps 下的容量</td><td>610 人 → <b>≈21,000 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
+          <tr><td>10 Mbps 下的容量</td><td>≈11,900 人 → <b>≈21,000 人</b></td><td>从「1 人 6.5 分钟」变「1 人 1.2 秒」</td></tr>
         </tbody>
       </table>
     </div>
 
     <div class="notice">
       <span><b>取舍：</b>把素材和代码挪走消掉的是<b>首载</b>（几百 MiB → 1.48 MiB，几百倍）；
-      压掉稳态之后（2,048 → <b>57.5 B/s</b>）10 Mbps 带 2000 人已有约 10 倍余量；
+      压掉稳态之后（105 → <b>57.5 B/s</b>）10 Mbps 带 2000 人已有约 10 倍余量；
       ⚠️ 但<b>新玩家冷启动的 5.4 MB 走盒子上行</b>（CF 实测 <code class="inline">MISS</code>）
       摊到 60 分钟是 1,573 B/s，比稳态贵 <b>27 倍</b> —— <b>那才是现在的天花板</b>。两块都要做。</span>
     </div>
@@ -197,19 +197,18 @@
       </div>
 
       <div class="mini">
-        <h4>措施 4 · permessage-deflate 窗口 12 → 9（仅战斗帧口径）</h4>
-        <p class="download__meta">收益：<b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b></p>
-        <pre class="code">serverMaxWindowBits: 9,          <i>// 512 B（原 12 = 4 KiB）</i>
-serverNoContextTakeover: true,   <i>// 保内存上界</i>
-clientNoContextTakeover: true,
-threshold: 512,                  <i>// 小帧不压</i>
-concurrencyLimit: 8,
-zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
+        <h4>措施 4 · permessage-deflate（<b>本节已作废 2026-10-12</b>）</h4>
+        <p class="download__meta">⚠️ 下面这组参数<b>不再使用，不要照抄</b>；现行配置见
+          <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a> §三</p>
         <ul>
-          <li>小窗口用更便宜的距离码，实测<b>反而更省</b>：35.8% vs 36.5%、28.8% vs 30.0%。</li>
-          <li>⚠️ <b>默认路径几乎用不到它</b>：<code class="inline">clientCombat</code> 默认 on，战斗跑在玩家浏览器里，
-          服务端只在 AI / 接管 / <code class="inline">SP_COMBAT=server</code> 时才发 <code class="inline">b.snap</code>。</li>
-          <li>注意：<code class="inline">m.public</code> 用的是 <b>窗口 12</b>（见下节），不是这里的 9。</li>
+          <li>本节原本追一部<b>被删参数的调优史</b>（窗口 12 → 9 → 12）。现行答案是<b>「故意不声明」</b>：
+          <code class="inline">server_max_window_bits</code> 在 <code class="inline">on</code> 档会 pin 住窗口、
+          实测致 400 断连；<code class="inline">threshold</code> 在 <code class="inline">on</code> 档是死参数。</li>
+          <li>仍然成立的洞察：<b>小窗口用更便宜的距离码，对 ~250 B 的战斗帧反而更省</b> —— 实测
+          35.8% vs 36.5%、28.8% vs 30.0%。收益 <b>单帧约 4.2×</b>（1,058 → 252 B），但<b>只在非默认路径上成立</b>
+          （<code class="inline">clientCombat</code> 默认 on，服务端只在 AI / 接管 / <code class="inline">SP_COMBAT=server</code> 时才发 <code class="inline">b.snap</code>）。</li>
+          <li>该洞察<b>没有落成这个参数</b>的原因：窗口 ≤ 512 B 够不到 <code class="inline">m.public</code> 里
+          重复的羁绊 / 状态块 —— 而 <code class="inline">m.public</code> 在整局实测里只占 <b>3%</b>，不再是主战场。</li>
         </ul>
       </div>
 
@@ -419,8 +418,7 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       <table>
         <thead><tr><th></th><th class="num">每席位上行</th><th class="num">10 Mbps 容纳</th><th>2000 人</th></tr></thead>
         <tbody>
-          <tr><td>未压</td><td class="num">2,048 B/s</td><td class="num"><b>610 人</b></td><td>✗ 差 3.3×</td></tr>
-          <tr><td>只压热帧（旧口径）</td><td class="num">505 B/s</td><td class="num">2,475 人</td><td>△ 旧测量，已被推翻</td></tr>
+          <tr><td>未压</td><td class="num">105 B/s</td><td class="num"><b>≈11,900 人</b></td><td>✗ 差 2.1×</td></tr>
           <tr><td><b>现在（含 b.start）</b></td><td class="num"><b>57.5 B/s</b></td><td class="num"><b>≈21,000 人</b></td><td>✓ 余量约 10×</td></tr>
         </tbody>
       </table>
@@ -488,9 +486,15 @@ zlibDeflateOptions: { level: 6, memLevel: 5 }</pre>
       （<code class="inline">lastRound</code> / <code class="inline">modeId</code> / <code class="inline">difficulty</code> /
       <code class="inline">stageId</code> / <code class="inline">factions</code> / <code class="inline">disabledBonds</code> /
       <code class="inline">drawnDisabledBonds</code> / <code class="inline">bannedChess</code> /
-      <code class="inline">bossId</code> / <code class="inline">hiddenBossId</code>）。而 permessage-deflate 用的是
-      <b><code class="inline">serverNoContextTakeover</code>（每帧独立压）</b> ——
-      <b>帧里任何常量，都要在每一帧付出它的压缩后大小</b>。这就是它们值得搬走的全部理由。
+      <code class="inline">bossId</code> / <code class="inline">hiddenBossId</code>）。
+      <b>注意（2026-10-12 更正）：</b>线上 <code class="inline">on</code> 档<b>不声明</b>
+      <code class="inline">serverNoContextTakeover</code>，即<b>保留上下文接管</b>
+      （<code class="inline">m.private</code> 实测 4.07× → <b>43.55×</b>）。
+      所以「每帧独立压、常量每帧都要付一次」这个旧前提<b>已不成立</b> ——
+      本节的定位要相应下调：<code class="inline">m.public</code> 在整局实测里只占 <b>3%</b>
+      （<code class="inline">b.start</code> 69% / <code class="inline">m.private</code> 22%），
+      搬走常量是一步<b>边际优化</b>，不再是主战场。下面的收益数字仍成立，
+      但别按旧前提去理解它的量级。
     </p>
 
     <div class="table-wrap">
@@ -556,8 +560,21 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$( \
   curl -s https://weishu.jiangjiangze.icu/healthz | grep -o '"build":"[^"]*"' | cut -d'"' -f4)" \
   | grep -i cache-control        <i># 期望 max-age=31536000, immutable</i>
 
-<i># 4. WS 压缩确实在生效槽上（期望 server_max_window_bits=12）</i>
-curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
+<i># 4. WS 压缩确实在生效槽上
+#    ⚠️ 不要用 `curl -sI <站点>/ | grep sec-websocket` —— 那是普通 HEAD，
+#       不是 Upgrade 握手，验不了压缩（会什么也拿不到，读成「没开」）。
+#    直连生效槽做真实握手：
+node -e '
+const t=require("tls"),s=t.connect({host:"HOST",port:PORT,servername:"HOST",rejectUnauthorized:false},()=>s.write(
+ "GET /ws HTTP/1.1\r\nHost: HOST:PORT\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"+
+ "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\n"+
+ "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits\r\n\r\n"));
+let b="";s.on("data",d=>{b+=d;if(b.includes("\r\n\r\n")){
+ console.log(b.split("\r\n").filter(l=>/^HTTP|Sec-Websocket-Extensions/i.test(l)).join("\n"));s.destroy();}});'
+
+<i># 期望（on 档）：HTTP/1.1 101 + permessage-deflate; client_no_context_takeover
+# 判据：有 permessage-deflate，且【没有】server_no_context_takeover、【没有】server_max_window_bits
+#       —— 出现这两项说明跑的不是 on 档（旧包的 window pin 12 就是这么来的，且会致 400）</i></pre>
   </section>
 
   <footer class="footer">
@@ -571,7 +588,6 @@ curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
         <a href="./docs/ws-link-compression.md">WS 压缩（已上线）</a>
         <a href="./docs/ws-link-compression-next.md">WS 压缩（下一轮）</a>
         <a href="./docs/ws-compression-library-and-pack.md">独立库与工坊包</a>
-        <a href="./docs/ws-link-merge.md">合并说明（旧 as-built 包）</a>
         <a href="./docs/bandwidth-max-compression.md">原始 Markdown</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>

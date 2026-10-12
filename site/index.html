@@ -434,10 +434,9 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       线上配置（三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>）见
       <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>。
       <br />⚠️ 曾有一个 <code class="inline">ws-link-AS-BUILT.zip</code>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
-      来自 master-play <code class="inline">c587705f</code>）引导下载，<b>已移除</b>：它是 2026-10-10 的旧配置
-      （阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
-      照它合并会装回一套与线上不一致的配置。需要 diff 细节时看
-      <a href="./docs/ws-link-merge.md">《WS 链路压缩 · 合并说明》</a>（按旧配置写的，仅作历史参考）。</span>
+      来自 master-play <code class="inline">c587705f</code>）随本站点分发，<b>已于 2026-10-12 废弃并从站点删除</b>：
+      它是 2026-10-10 的旧配置（阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
+      照它合并会装回一套与线上不一致的配置。旧的安装说明页也一并删除了，用上面的独立库。</span>
     </div>
   </section>
 

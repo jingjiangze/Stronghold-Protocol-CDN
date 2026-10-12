@@ -6,8 +6,8 @@
 > 与旧容量（2,048 → 505 B/s、610 → 2,475 人）—— **那套参数已经不在跑，那组容量已被整局实测推翻。**
 > 现在的配置与数字见下文，全部来自线上握手与整局逐字节实测。
 > 配套：[《WS 链路压缩（下一轮）》](./ws-link-compression-next.md) ·
-> [《独立库与工坊包》](./ws-compression-library-and-pack.md) ·
-> [《合并说明（旧 as-built 包）》](./ws-link-merge.md)
+> [《独立库与工坊包》](./ws-compression-library-and-pack.md)
+> ⛔ 旧的 `ws-link-AS-BUILT.zip`（45,580 B）与其安装说明页已于 2026-10-12 废弃删除，勿再按它合并。
 
 ---
 

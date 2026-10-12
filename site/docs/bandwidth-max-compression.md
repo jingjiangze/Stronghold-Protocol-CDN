@@ -94,24 +94,19 @@ SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/
 
 > 为什么 `js` / `css` 故意不进 `LONG_CACHE_DIRS`：靠 `?v=` 走 immutable（一年）比靠 1 天 + 304 更彻底 —— 304 也是一次往返，也占上行。
 
-### 措施 4 — permessage-deflate `serverMaxWindowBits` 12 → 9 → **回到 12**（2026-10-10）
+### 措施 4 — permessage-deflate（**本节已作废，2026-10-12**）
 
-`server/wsCompression.js`：
-
-```js
-serverMaxWindowBits: 12,         // 4 KiB 滑动窗口（本轮定稿）
-serverNoContextTakeover: true,   // 保内存上界
-clientNoContextTakeover: true,
-threshold: 512,                  // 小帧不压
-concurrencyLimit: 8,
-zlibDeflateOptions: { level: 6, memLevel: 5 },
-```
-
-- 上一轮把它从 12 调到 9（小窗口用更便宜的距离码，对 ~250 B 的战斗帧实测**反而更省**：35.8% vs 36.5%）。
-- **2026-10-10 调回 12**：因为真正的大头是 `m.public`（~4.6 KB），512 B 窗口够不到它重复的羁绊 / 状态块 ——
-  实测 **wb9 = 3.36×、wb12 = 4.94×**（见 §9.3）。
-- ⚠️ **这个功能默认 `off`**：只有 `SP_WS_COMPRESSION=on` 时才压。默认路径（`clientCombat=on`）不发 `b.snap`，
-  但 `m.public` **每次都发** —— 所以它现在才是这个开关的主战场（见 §九）。
+> ⛔ **这一节记录的参数已全部不再使用**，不要照抄。它在追一部被删参数的调优史
+> （窗口 12 → 9 → 12），而现行答案是「**故意不声明**」：`on` 档下 `server_max_window_bits`
+> 会 pin 住窗口、且实测会致 400 断连；`threshold` 在 `on` 档下是死参数。
+> 线上握手实测（见 §九）也证明那套参数从来没有在跑。
+>
+> **现行配置与三个档位（`off` / `on` / `safe`）、两个「故意不声明」的参数、
+> 白名单与 `b.start` 的处理，一律见 [《WS 链路压缩（当前已上线）》](./ws-link-compression.md) §三。**
+>
+> 下面这条洞察仍然成立、但不再落在这个参数上：**小窗口用更便宜的距离码，对 ~250 B 的战斗帧
+> 反而更省**（实测 35.8% vs 36.5%）。它之所以没被采纳，是因为窗口 ≤ 512 B 够不到
+> `m.public` 里重复的羁绊 / 状态块 —— 而 `m.public` 在整局实测里只占 **3%**，不再是主战场。
 
 ### 措施 5 — `clientCombat: on`（别退回去）
 
@@ -193,9 +188,17 @@ C/D 两行按**当前**快照率算：默认 **10 Hz**（`SNAPSHOT_EVERY = 6`）
 | 方案 | 实测结论 | 为何不采用 |
 |---|---|---|
 | **brotli 静态压缩** | 再省 295 KiB（1.475 → 1.187 MiB，−19.5%），但压缩耗时 **92,138 ms vs 2,083 ms = 44.2×** | 一次性收益 20%，代价是构建慢 44 倍 + 全站缓存策略改动。**用户已决定保持 gzip l6** |
-| **上下文接管（context takeover）** | 实测 4.1% vs 24.6% —— 收益显著 | 内存上界不可控（每连接保留 LZ77 历史）。**内存测量三次结果互相矛盾，本轮不下结论**，要定需重测 |
 | **把 5 MB 代码挂 git 镜像源**（jsDelivr / Statically / ghfast） | `public/vendor/` 在 `.gitignore` 第 6 行，`git ls-files public/vendor/` = **0** —— 54% 的载荷根本不在 git 里；且所有 raw 类镜像返回 `text/plain` + `nosniff`，ES module 直接被浏览器拒绝 | 一票否决：源不存在 + MIME 致命 |
 | **走 CF 隧道承载静态资源** | 隧道只中继连接，**字节仍从盒子网卡出去**，上行瓶颈原地不动 | 不解决目标问题 |
+
+### 已从「否决」改判的东西：上下文接管（context takeover）
+
+> ⚠️ **2026-10-12 改判。** 这一条原本在上表里，理由是「内存上界不可控、内存测量三次结果互相矛盾，
+> 本轮不下结论」。**那次测量连同当时的收益数字（4.1% vs 24.6%）都属于已被作废的那轮口径。**
+>
+> 现行 `on` 档**故意不声明** `serverNoContextTakeover` —— 即**保留上下文接管**，并重测到
+> `m.private` 4.07× → **43.55×**。所以它现在是**线上在用**的配置，不再是「否决项」。
+> 参数现状与两个「故意不声明」项见 [《WS 链路压缩（当前已上线）》](./ws-link-compression.md) §三。
 
 ---
 
@@ -233,6 +236,19 @@ curl -sI "https://weishu.jiangjiangze.icu/js/main.js?v=$(curl -s https://weishu.
 **长连接中按速率排前 10% 的那 151 条，占全部 ws 上行的 90.5%**（618.2 / 682.8 MiB）。
 口径：分母是**全部 `/ws` 请求的上行字节**（682.8 MiB，其中长连接占 682.7 MiB），分位取自同一集合；
 早期版本并列的 97.9% 与 88.8% 是两套不同分母，已统一为这一个。
+
+> 🔗 **与 §九 的桥梁（2026-10-12 补，别把两组数字当成互相打脸）。**
+> 本节的 p90 = **1,352.7 B/s → 约 900 人**，与 §九 的 **57.5 B/s → 约 21,000 人** 相差 23×。
+> 两者不冲突，差在三件事，读完再引用任何一个：
+>
+> 1. **采集窗口早于修复**。本节数据取自 `04 Oct → 09 Oct` 的 nginx 日志，而上面 §7.1.1 末尾那张
+>    P0 表（快照率 20 Hz→10 Hz、`SP_WS_COMPRESSION=on`）的两项都标注为「✅ 已落地」。
+>    所以这组分位数是**修复前的基线**，不是今天的吞吐。
+> 2. **口径不同**。这里算的是**每条连接的平均速率再取分位**，样本里混着大量 45 分钟 ~ 3 小时的超长连接；
+>    §九 的 57.5 B/s 是**整局逐字节（人类座位真实会话）**的均值，两者不可互换。
+> 3. **它仍然有用**：p90/p99 说明的是**头部用户吃掉了 90.5% 的上行**（151 / 1,503 条），
+>    即容量从来由少数长连接决定，而不是由中位数决定。这个**教训保留**，连同 §7.1.1 的 20 Hz 根因。
+>    ⚠️ 只是其中的 2,048 / 505 B/s 与「98% 是 `m.public`」已被整局实测推翻，见 [§九](#九稳态口径本节点名的旧数字全部作废2026-10-12)。
 
 ### 7.1.1 根因已查明：服务端跑的战斗场以 20 Hz 推 `b.snap`
 
@@ -392,8 +408,8 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 | `test/match/combat.test.js` | 帧率断言改为从 `TICK`/`GAME_SPEED`/`SNAPSHOT_EVERY` 派生 | ✅ 7/7 pass |
 | `update/sp_slot_3001.cmd`（盒） | 加 `set SP_WS_COMPRESSION=on` | ✅ 已落盘，已重启生效 |
 | `update/sp_slot_3002.cmd`（盒） | 同上 | ✅ 已落盘，待该槽下次重启 |
-| `server/wsCompression.js` | `serverMaxWindowBits` 12 → 9 | ✅ 已改，5/5 测试通过（**2026-10-10 又调回 12，见 §9.8**） |
-| `test/ws-compression.test.js` | 同步断言为 9 | ✅ 5/5 pass（**同上，已改回 12**） |
+| `server/wsCompression.js` | `serverMaxWindowBits` 12 → 9 → 12 → **不再声明** | ⛔ **已作废**：追这部参数史没有意义，见 [§九](#九稳态口径本节点名的旧数字全部作废2026-10-12) |
+| `test/ws-compression.test.js` | 跟着改窗口断言（9 → 12 → 不声明） | ⛔ **同上已作废** |
 | `server/http/static.js` | 新增 `versionIndexHtml()` + `serveVersionedIndex()`，接线 `index.html` | ✅ 已改 |
 | `test/index-version.test.js` | 新增 4 项（25/25 覆盖、幂等、线上 buildTag 一致、immutable 分支） | ✅ 4/4 pass |
 | `server/http/files.js` | 仅注释：说明 `js`/`css` 为什么不进 `LONG_CACHE_DIRS` | ✅ 已改 |
@@ -402,7 +418,8 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 
 **验证口径**：`SNAPSHOT_EVERY` 改动拿 `public/dev/perf` 四类真实 spec 跑 `Battle`，
 逐帧比较「每 3 tick 采样」与「每 6 tick 采样」—— 上行 49.8%~50.0%，单位位移最大 0.841 格（阈值 2.5）。
-`SP_WS_COMPRESSION=on` 拿真实进程做 ws 握手，确认协商出有界 `permessage-deflate`。
+`SP_WS_COMPRESSION=on` 拿真实进程做 ws 握手，确认协商出有界 `permessage-deflate`
+（现行判据与 Node 片段见 `ws-link-compression.md` §八）。
 自适应快照率拿**真实 `interp.js`** 喂抖动到达时刻定阈值（§7.1.2 的表），
 再用 `test/match/snap-rate.test.js` 在真实 match 上实测「抖动连接 20 Hz、安静连接 10 Hz、慢速 watcher 事件不丢」。
 
@@ -450,10 +467,18 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
 
 ## 十、把「整场不变的字段」请出热帧（2026-10-10，re-apk 线 / PR #157）
 
-§九 之后 `m.public` 仍是唯一的大头。它内部有一批**开局即定、之后不再变**的字段（`lastRound` / `modeId` /
+> ⚠️ **2026-10-12 更正本节的前提。** 原文依据「`m.public` 是唯一的大头」与「permessage-deflate
+> 用的是 `serverNoContextTakeover`（每帧独立压）」，这两条**都已不成立**：
+> - 整局实测里 `m.public` 只占 **3%**（`b.start` 69% / `m.private` 22%，见 §九）；
+> - 线上 `on` 档**故意不声明** `serverNoContextTakeover`，即**保留上下文接管**
+>   （`m.private` 实测 4.07× → 43.55×，见 `ws-link-compression.md` §三）。
+>
+> 所以本节要从「主战场」下调为**一步边际优化**。下面的收益数字仍然成立，
+> 但它的量级应按新的占比理解，不要按旧前提去外推。
+
+它内部有一批**开局即定、之后不再变**的字段（`lastRound` / `modeId` /
 `difficulty` / `stageId` / `factions` / `disabledBonds` / `drawnDisabledBonds` / `bannedChess` / `bossId` /
-`hiddenBossId`），而 permessage-deflate 用的是 **`serverNoContextTakeover`（每帧独立压）** ——
-**帧里任何常量都要在每一帧付出它的压缩后大小**。这就是它们值得搬走的全部理由。
+`hiddenBossId`）—— 把它们从热帧里请出去，是热帧去常量那一步的具体落点。
 
 ### 10.1 实测
 
