@@ -1,0 +1,8 @@
+openi            跟随后 12/19 可取到字节
+   缺: char           404   404 assets/char/avatar/char_002_amiya.png
+   缺: docs           404   404 assets/docs/img/band-draft.jpg
+   缺: icons          404   404 assets/icons/app-192.png
+   缺: item           404   404 assets/item/rogue_5_relic_return_29.png
+   缺: pack           404   404 assets/pack/bond_kazdelShip.png
+   缺: packs          404   404 assets/packs/audio.bgm-4.zip
+   缺: relics         404   404 assets/relics/relic_001.png

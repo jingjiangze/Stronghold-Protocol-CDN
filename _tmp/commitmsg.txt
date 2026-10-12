@@ -1,0 +1,40 @@
+删除 CDN 站点过时描述：废弃 as-built 压缩包、旧 merge 说明页、旧容量口径
+
+用户要求：删掉当前 cdn 站的所有过时描述，只保留最新。审计后执行。
+
+删除：
+- site/files/ws-link-as-built.zip（45,580 B，sha256 cc50666a…a75afa）
+  2026-10-10 的旧配置（阈值 512 / 关上下文接管 / 窗口 pin 12），
+  线上握手实测证明那套参数已不在跑，照它合并会装回与线上不一致的配置。
+- site/docs/ws-link-merge.md（旧安装说明页），连同 _headers 里 /files/* 的
+  短缓存块（已无文件可缓存）一并移除。
+
+更正（只保留最新口径）：
+- bandwidth.html / bandwidth-max-compression.md 的稳态容量统一为
+  57.5 B/s / ≈21,000 人；删除 2,048 B/s / 505 B/s / 610 人 / 2,475 人的旧口径。
+  根因：旧值量在机器人座位上，机器人收不到单播，样本里没有 m.private 与
+  b.start，「98% 是 m.public」是残缺集合里的百分比。
+- 措施 4（permessage-deflate 参数史）整节作废，指向 ws-link-compression.md §三。
+- 上下文接管从「已评估但否决」表移出，改为 2026-10-12 改判记录：
+  on 档故意不声明 serverNoContextTakeover，即保留上下文接管，
+  m.private 实测 4.07× → 43.55×。
+- §七 补与 §九 的桥梁说明：p90 1,352.7 B/s → ~900 人 与 57.5 B/s → ~21,000 人
+  相差 23× 是因为采集窗口早于 P0 修复、且口径不同（连接均速分位 vs 整局均值）；
+  保留的教训是「容量由少数长连接决定，不由中位数决定」。
+- 删除重复的措施 5 标题；§八 里 wsCompression 的参数史行改为作废。
+
+新增/重写：
+- site/docs/per-source-asset-inventory.md 按正确口径重写。
+  首轮覆盖率结论有误：从 tree.json 取样混进了 7,547 个 hosted（mod=1），
+  而 hosted 不在任何 git 分支上。改为只从 index.json（12,583 个上游键）取样，
+  每类 2 个代表文件共 30 探针。结论：openi / ghfast-assets / jsdelivr-assets
+  均 28/30，唯一缺口是 docs/；r2 / r2-alt / pages 30/30。
+  pages 从「缺 8 类」改判为「慢」：重试 + HEAD + Range 验证后三路径全部 200
+  且字节相符（band_justin.png 64,563 B、cf-cache-status HIT），
+  中位 7 s / p90 93 s / 854 KB mp3 取到 612 s。
+  ms-dataset / ms-edge 26/30（2 docs + 2 个具体 local 文件，非整类缺失）。
+  gitcdn-own 17/30 全因 30 s 超时，成功者字节全对 —— 记「慢」不记「缺」。
+- ws-compression-library-and-pack.md 顶部加「取代 ws-link-merge.md」声明，
+  并补 threshold 在 on 档是死参数（ws 8.22.0 sender.js 不看它）。
+
+验证：node --test "tests/*.test.mjs" → 226/226 pass。

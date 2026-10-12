@@ -218,10 +218,10 @@
         <p>战斗逻辑在各端浏览器跑，服务端不广播快照。</p>
         <div class="table-wrap" style="margin-top:10px">
           <table>
-            <thead><tr><th></th><th class="num">单帧</th><th class="num">10 Hz（默认）</th><th class="num">10 Mbps 容纳</th><th class="num">20 Hz（抖动链路）</th><th class="num">10 Mbps 容纳</th></tr></thead>
+            <thead><tr><th></th><th class="num">单帧</th><th class="num">球员 20 Hz</th><th class="num">10 Mbps 容纳</th><th class="num">旁观 5 Hz</th><th class="num">10 Mbps 容纳</th></tr></thead>
             <tbody>
-              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">10.3 KiB/s</td><td class="num"><b>118 人</b></td><td class="num">20.7 KiB/s</td><td class="num"><b>59 人</b></td></tr>
-              <tr><td>deflate w9</td><td class="num">252 B</td><td class="num">2.5 KiB/s</td><td class="num"><b>496 人</b></td><td class="num">4.9 KiB/s</td><td class="num"><b>248 人</b></td></tr>
+              <tr><td>未压</td><td class="num">1,058 B</td><td class="num">21,160 B/s</td><td class="num"><b>59 人</b></td><td class="num">5,290 B/s</td><td class="num"><b>236 人</b></td></tr>
+              <tr><td>deflate</td><td class="num">252 B</td><td class="num">5,040 B/s</td><td class="num"><b>248 人</b></td><td class="num">1,260 B/s</td><td class="num"><b>992 人</b></td></tr>
             </tbody>
           </table>
         </div>
@@ -230,10 +230,17 @@
           这是本轮唯一有数量级意义的风险点。
         </p>
         <div class="notice">
-          <span><b>两档并存的说明：</b>快照率已从原来的固定 30 Hz 降到 <b>10 Hz（默认，<code class="inline">SNAPSHOT_EVERY = 6</code>）</b>，
-          并在链路抖动时**按连接**自动升到 <b>20 Hz（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）</b>。
-          所以"30 Hz"那一栏是历史口径：按它算出的 <b>39 / 160 人</b> 只能当特定压力场景的算例，
-          <b>不是当前默认配置下的容量</b>。本表两档都列出，请按实际档位读。</span>
+          <span><b>现行快照率（2026-10-12 按盒子源码核实）：</b>只有两档，按<b>收件人身份</b>分，不按链路质量分 ——
+          <b>驱动该场地的球员 20 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 3</code>，2× 真实时间下 60 tick/s ÷ 3），
+          <b>只观看</b>的旁观者 / 被淘汰队友 / 全 AI 场 <b>5 Hz</b>（<code class="inline">SNAPSHOT_EVERY_IDLE = 12</code>）。<br />
+          ⚠️ <b>自适应那一档已经取消</b>：早期「默认 10 Hz、链路抖动时逐连接升到 20 Hz」的两档制
+          （<code class="inline">SNAPSHOT_EVERY = 6</code> + <code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）在
+          <code class="inline">server/sim/constants.js</code> 里已改成
+          <code class="inline">SNAPSHOT_EVERY_FAST = SNAPSHOT_EVERY</code>（两个值相等 = 没有第二档）。
+          20 Hz 本身已高于插值缓冲的成本底线，客户端 100 ms 插值缓冲已能覆盖到达抖动，
+          再按链路升档只会重复买到同一件事。<br />
+          所以本表两列分别是<b>球员</b>与<b>旁观者</b>，<b>不是</b>「安静 / 抖动」两档。
+          「30 Hz → 39 / 160 人」与「10 Hz 默认 → 118 / 496 人」都只是历史压力算例，<b>不是当前容量</b>。</span>
         </div>
       </div>
 
@@ -287,16 +294,16 @@
             <td><b>2026-10-12 整局实测</b>（旧值 2,048 B/s / 610 人已作废）。大头曾是 <code class="inline">b.start</code>（69%），见下节</td>
           </tr>
           <tr>
-            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">10,580 B/s</td><td class="num">85 kbps</td><td class="num"><b>118 人</b></td>
-            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，默认 <b>10 Hz</b></td>
+            <td>C. 对局中（服务端模拟，<b>未压</b>）</td><td class="num">21,160 B/s</td><td class="num">169 kbps</td><td class="num"><b>59 人</b></td>
+            <td><code class="inline">SP_COMBAT=server</code> / AI 接管，球员档 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 3</code>）</td>
           </tr>
           <tr>
-            <td>D. 对局中（服务端模拟，<b>deflate w9</b>）</td><td class="num">2,520 B/s</td><td class="num">20 kbps</td><td class="num"><b>496 人</b></td>
+            <td>D. 对局中（服务端模拟，<b>deflate</b>）</td><td class="num">5,040 B/s</td><td class="num">40 kbps</td><td class="num"><b>248 人</b></td>
             <td>同上，开启压缩</td>
           </tr>
           <tr>
-            <td>C′ / D′. 同上，但链路抖动升到 <b>20 Hz</b></td><td class="num">21,160 / 5,040 B/s</td><td class="num">169 / 40 kbps</td><td class="num"><b>59 / 248 人</b></td>
-            <td>按连接自适应升档（仅抖动链路）</td>
+            <td>C′ / D′. 同上，但收件人是<b>旁观者</b></td><td class="num">5,290 / 1,260 B/s</td><td class="num">42 / 10 kbps</td><td class="num"><b>236 / 992 人</b></td>
+            <td>旁观档 <b>5 Hz</b>（<code class="inline">SNAPSHOT_EVERY_IDLE = 12</code>）</td>
           </tr>
         </tbody>
       </table>
@@ -308,10 +315,15 @@
       <b>B 行现在是 57.5 B/s</b>（2026-10-12 整局实测，含 <code class="inline">b.start</code> 压缩）；
       旧版写「2,048 B / 610 人」是在<b>机器人座位</b>上量的 —— 机器人收不到单播，样本缺了
       <code class="inline">m.private</code> 与 <code class="inline">b.start</code>。<br />
-      <b>C → D 的 118 → 496 人</b>是服务端跑战斗那条支路（非默认路径）的压缩价值（约 4.2×）。<br />
-      ⚠️ 这张表按<b>当前</b>快照率算：默认 <b>10 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 6</code>），
-      抖动链路按连接自适应升到 <b>20 Hz</b>（<code class="inline">SNAPSHOT_EVERY_FAST = 3</code>）。
-      早期版本的 30 Hz 口径（31,744 B/s → 39 人 / 160 人）<b>只是历史压力算例，不是当前容量</b>。<br />
+      <b>C → D 的 59 → 248 人</b>是服务端跑战斗那条支路（非默认路径）的压缩价值（约 4.2×）。<br />
+      ⚠️ 这张表按<b>盒子源码现行</b>快照率算：<b>球员 20 Hz</b>（<code class="inline">SNAPSHOT_EVERY = 3</code>）、
+      <b>旁观者 5 Hz</b>（<code class="inline">SNAPSHOT_EVERY_IDLE = 12</code>），两档按<b>收件人身份</b>分，
+      <b>没有</b>按链路质量的自适应档（<code class="inline">SNAPSHOT_EVERY_FAST</code> 已等于 <code class="inline">SNAPSHOT_EVERY</code>）。
+      口径：人均 B/s = 单帧 × 帧率，容纳 = ⌊1,250,000 ÷ 人均 B/s⌋ ——
+      未压 1,058 × 20 = 21,160 → 59 人；deflate 252 × 20 = 5,040 → 248 人；
+      旁观档 1,058 × 5 = 5,290 → 236 人、252 × 5 = 1,260 → 992 人。<br />
+      早期版本的 30 Hz 口径（31,744 B/s → 39 人 / 160 人）、「10 Hz 默认 + 抖动升 20 Hz」口径
+      （10,580 B/s → 118 人）与「15 Hz 基准」口径（15,870 B/s → 78 人）<b>都只是历史压力算例，不是当前容量</b>。<br />
       另注：这只算 <code class="inline">b.snap</code> 一种消息 —— 同频的 <code class="inline">b.ev</code> 与
       <code class="inline">m.field</code> 也会占用上行，单帧 × 帧率不等于完整 ws 流量。</span>
     </div>
@@ -401,9 +413,15 @@
     </div>
 
     <div class="notice" style="margin-top:18px">
-      <span><b>观战 / AI 节流：</b>不是本场球员的观战者每 2 帧才收一次 <code class="inline">b.snap</code>，本场球员照收每一帧。
-      覆盖两类 —— <b>纯观战者</b>（被淘汰队友、观战席）与 <b>没人打的场</b>（全 AI 场，watcher 全是非球员）。
-      <code class="inline">b.ev</code> 永不丢。它与「链路自适应速率」合成：非球员拿到的是该场当前发射速率的一半。</span>
+      <span><b>观战 / AI 节流：</b>快照率按<b>收件人身份</b>分两档 —— <b>驱动该场地的球员 20 Hz</b>
+      （<code class="inline">SNAPSHOT_EVERY = 3</code>），<b>只观看的人 5 Hz</b>
+      （<code class="inline">SNAPSHOT_EVERY_IDLE = 12</code>）。后者覆盖<b>纯观战者</b>（被淘汰队友、观战席）
+      与<b>没人打的场</b>（全 AI 场，watcher 全是非球员）。<br />
+      <code class="inline">b.ev</code> 永不丢：没到期的收件人会把这几 tick 的事件<b>暂存</b>，随它自己的下一帧一起发出
+      （<code class="inline">fields.js</code> 的 <code class="inline">evPending</code>）—— 所以节流压的是快照帧，不是事件。<br />
+      ⚠️ 旧说法「非球员拿到的是该场当前发射速率的一半」是<b>球员 15 Hz 那代</b>的等价关系
+      （15 → 7.5）。现在两档是<b>各自独立的常量</b>（20 Hz 与 5 Hz = 4 倍），<b>不再有倍数耦合</b>：
+      调球员档不会连带改动旁观档的成本。</span>
     </div>
     <div class="notice" style="margin-top:12px">
       <span><b>把 <code class="inline">b.start</code> 也压掉（真机 A/B）：</b>人均 <b>125.3 → 57.5 B/s（−54.1%）</b>；
@@ -521,7 +539,7 @@
         </ul>
       </div>
       <div class="mini">
-        <h4>兜底（照抄 10Hz↔20Hz 那套）</h4>
+        <h4>兜底（照抄快照率那套的六要素）</h4>
         <ul>
           <li>能力位<b>每 socket</b>声明（<code class="inline">hello.pub</code>），<b>每次 hello 重新求值</b>；</li>
           <li><b>未声明的一律发完整帧</b> —— 老客户端、第三方客户端、部署前打开还在跑旧 JS 的页面，
@@ -536,7 +554,7 @@
     <div class="notice" style="margin-top:16px">
       <span><b>还没做（按顺序）：</b>
       ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
-      ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（合计 2.05×）；
+      ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（建模合计 <b>2.05×</b>；本行的 <b>2.98× deflate / raw 6.05×</b> 是整局逐字节<b>实测</b>的压缩比，两者不是同一个量，区别见《带宽与最大压缩》§10.4「还没做」）；
       ③ 上游 <b>PR #91</b> 的只读状态接口（给外部观察者，<b>不动</b>对局内广播）。<br />
       落地：re-apk 线 <b>PR #157</b>（<code class="inline">perf/ws-public-compact</code>）。</span>
     </div>

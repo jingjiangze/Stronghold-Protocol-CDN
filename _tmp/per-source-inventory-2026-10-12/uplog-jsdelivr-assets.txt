@@ -1,0 +1,3 @@
+jsdelivr-assets  200:28/30  字节与 index.json 完全相符:28/30
+   缺: 404   docs       docs/DEPLOY.md
+   缺: 404   docs       docs/research/05-enemies.json

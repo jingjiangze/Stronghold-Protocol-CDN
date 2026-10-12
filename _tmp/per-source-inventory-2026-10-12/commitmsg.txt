@@ -1,0 +1,29 @@
+feat(git-art-sync): 把后台上传的素材字节补进 git assets-raw 分支
+
+## 缺口（审计实测）
+
+git 挂载镜像（ghfast / gitcdn / OpenI raw ...）拉的是本仓库 assets-raw 孤儿分支，不是 R2。
+后台上传的字节只落 R2，登记只进 main 的 hosted.json，于是这些源对后台上传的那部分素材 404。
+
+实测：hosted.json 登记 5246 个键，assets-raw 上只有 1856 个路径，缺 3390 个（约 932 MiB）。
+也就是说「git 挂载层 coverage:full」名不副实，缺的正是我们自己上传的那一批。
+
+## 做法
+
+索引平面操作，不检出工作树（assets-raw 是 14k 文件 / 2 GiB）：
+read-tree 进临时索引 -> hash-object -w 写新 blob -> update-index --index-info
+-> write-tree -> commit-tree -p <head>，只追加提交，绝不 force push。
+
+- 每个字节先与 cdn/v1/hosted-index.json 的 sha256 比对，不一致就跳过。
+  索引操作写错一个 blob sha 会静默发布空内容树而 push 仍报成功，宁可少提交。
+- 按字节预算（默认 700 MiB）与份数先停，剩余下轮继续；积压排干后一轮几秒退出。
+- 一天四次（cron 7 1,7,13,19），与 sync(:17) / openi-mirror(:47) 错开，
+  且早于 openi-mirror 一小时，让新字节先入库再被镜像。
+- scheduled 运行没有 inputs，所以显式判定 event_name 才加 --write，
+  否则 cron 一天四次只打印 dry 报告、什么都不同步。
+
+## 附带
+
+tests/docs-index.test.mjs：子进程 git commit 继承全局 commit.gpgsign=true，
+本机没有签名代理时直接报 "Couldn't get agent socket?" 而失败，与被测逻辑无关。
+加 -c commit.gpgsign=false 让断言只受提交日期影响。

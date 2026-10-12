@@ -1,0 +1,97 @@
+[
+ {
+  "cat": "audio",
+  "path": "assets/audio/bgm/m_bat_abyssalhunters_intro.mp3",
+  "size": 854143
+ },
+ {
+  "cat": "band",
+  "path": "assets/band/band_amedic.png",
+  "size": 67231
+ },
+ {
+  "cat": "bond",
+  "path": "assets/bond/arcaneShip.png",
+  "size": 4114
+ },
+ {
+  "cat": "char",
+  "path": "assets/char/avatar/char_002_amiya.png",
+  "size": 56957
+ },
+ {
+  "cat": "docs",
+  "path": "assets/docs/img/band-draft.jpg",
+  "size": 243022
+ },
+ {
+  "cat": "enemy",
+  "path": "assets/enemy/icon/enemy_10001_trslim.png",
+  "size": 37134
+ },
+ {
+  "cat": "icons",
+  "path": "assets/icons/app-192.png",
+  "size": 884
+ },
+ {
+  "cat": "item",
+  "path": "assets/item/rogue_5_relic_return_29.png",
+  "size": 45434
+ },
+ {
+  "cat": "local",
+  "path": "assets/local/emoticon/basic/pic_cooperate_battle.png",
+  "size": 24764
+ },
+ {
+  "cat": "module",
+  "path": "assets/module/aft-d.png",
+  "size": 1899
+ },
+ {
+  "cat": "pack",
+  "path": "assets/pack/bond_kazdelShip.png",
+  "size": 79754
+ },
+ {
+  "cat": "packs",
+  "path": "assets/packs/audio.bgm-4.zip",
+  "size": 28202035
+ },
+ {
+  "cat": "prof",
+  "path": "assets/prof/battlecard_caster.png",
+  "size": 1429
+ },
+ {
+  "cat": "relics",
+  "path": "assets/relics/relic_001.png",
+  "size": 37157
+ },
+ {
+  "cat": "skill",
+  "path": "assets/skill/skchr_accast_1.png",
+  "size": 21515
+ },
+ {
+  "cat": "skins",
+  "path": "assets/skins/char_003_kalts_boc_6/avatar.png",
+  "size": 40672
+ },
+ {
+  "cat": "spine",
+  "path": "assets/spine/enemy/enemy_10001_trslim/enemy_10001_trslim.atlas",
+  "size": 814
+ },
+ {
+  "cat": "token",
+  "path": "assets/token/avatar/token_10000_silent_healrb.png",
+  "size": 27452
+ },
+ {
+  "cat": "ui",
+  "path": "assets/ui/bandChoose/btn_comfirm_check.png",
+  "size": 556
+ }
+]

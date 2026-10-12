@@ -1,0 +1,152 @@
+[
+ {
+  "cat": "audio",
+  "path": "assets/audio/bgm/m_bat_abyssalhunters_intro.mp3",
+  "size": 854143
+ },
+ {
+  "cat": "audio",
+  "path": "assets/audio/voice/cn/char_4191_tippi/cn_021.mp3",
+  "size": 20707
+ },
+ {
+  "cat": "band",
+  "path": "assets/band/band_amedic.png",
+  "size": 67231
+ },
+ {
+  "cat": "band",
+  "path": "assets/band/band_justin.png",
+  "size": 64563
+ },
+ {
+  "cat": "bond",
+  "path": "assets/bond/arcaneShip.png",
+  "size": 4114
+ },
+ {
+  "cat": "bond",
+  "path": "assets/bond/preciShip.png",
+  "size": 4872
+ },
+ {
+  "cat": "char",
+  "path": "assets/char/avatar/char_003_kalts.png",
+  "size": 56617
+ },
+ {
+  "cat": "char",
+  "path": "assets/char/portrait/char_003_kalts_1.png",
+  "size": 115421
+ },
+ {
+  "cat": "docs",
+  "path": "docs/DEPLOY.md",
+  "size": 33646
+ },
+ {
+  "cat": "docs",
+  "path": "docs/research/05-enemies.json",
+  "size": 420112
+ },
+ {
+  "cat": "enemy",
+  "path": "assets/enemy/icon/enemy_10001_trslim.png",
+  "size": 37134
+ },
+ {
+  "cat": "enemy",
+  "path": "assets/enemy/icon/enemy_1207_sfji_2.png",
+  "size": 47449
+ },
+ {
+  "cat": "fonts",
+  "path": "fonts/bender-light.ttf",
+  "size": 68256
+ },
+ {
+  "cat": "fonts",
+  "path": "fonts/bender-regular.woff2",
+  "size": 22540
+ },
+ {
+  "cat": "item",
+  "path": "assets/item/trap_1040_acarm040.png",
+  "size": 14863
+ },
+ {
+  "cat": "item",
+  "path": "assets/item/trap_1069_acarm069.png",
+  "size": 30855
+ },
+ {
+  "cat": "local",
+  "path": "assets/local/emoticon/basic/pic_cooperate_battle.png",
+  "size": 24764
+ },
+ {
+  "cat": "local",
+  "path": "assets/local/ui/common/icon_bldsk.png",
+  "size": 61317
+ },
+ {
+  "cat": "module",
+  "path": "assets/module/aft-d.png",
+  "size": 1899
+ },
+ {
+  "cat": "module",
+  "path": "assets/module/lib-x.png",
+  "size": 1586
+ },
+ {
+  "cat": "prof",
+  "path": "assets/prof/battlecard_caster.png",
+  "size": 1429
+ },
+ {
+  "cat": "prof",
+  "path": "assets/prof/sub/fastshot.png",
+  "size": 1807
+ },
+ {
+  "cat": "skill",
+  "path": "assets/skill/skchr_accast_1.png",
+  "size": 21515
+ },
+ {
+  "cat": "skill",
+  "path": "assets/skill/skchr_lisa_1.png",
+  "size": 13356
+ },
+ {
+  "cat": "spine",
+  "path": "assets/spine/enemy/enemy_10001_trslim/enemy_10001_trslim.atlas",
+  "size": 814
+ },
+ {
+  "cat": "spine",
+  "path": "assets/spine/op/char_1502_crosly/back/char_1502_crosly.atlas",
+  "size": 5886
+ },
+ {
+  "cat": "token",
+  "path": "assets/token/avatar/token_10000_silent_healrb.png",
+  "size": 27452
+ },
+ {
+  "cat": "token",
+  "path": "assets/token/avatar/token_10029_slent2_protrb.png",
+  "size": 24438
+ },
+ {
+  "cat": "ui",
+  "path": "assets/ui/bandChoose/btn_comfirm_check.png",
+  "size": 556
+ },
+ {
+  "cat": "ui",
+  "path": "assets/ui/hudPanel/white_sprite.png",
+  "size": 122
+ }
+]

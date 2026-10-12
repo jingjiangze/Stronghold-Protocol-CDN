@@ -1,0 +1,9 @@
+pages            跟随后 11/19 可取到字节
+   缺: char           404   ERR assets/char/avatar/char_002_amiya.png
+   缺: docs           404   404 assets/docs/img/band-draft.jpg
+   缺: icons          ERR   404 assets/icons/app-192.png
+   缺: item           404   404 assets/item/rogue_5_relic_return_29.png
+   缺: pack           404   404 assets/pack/bond_kazdelShip.png
+   缺: packs          ERR   404 assets/packs/audio.bgm-4.zip
+   缺: relics         ERR   404 assets/relics/relic_001.png
+   缺: skins          404   404 assets/skins/char_003_kalts_boc_6/avatar.png

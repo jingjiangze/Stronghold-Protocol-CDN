@@ -1,0 +1,20 @@
+ms-dataset       0/19 直接 200
+    302   audio          254ms    assets/audio/bgm/m_bat_abyssalhunters_intro.mp3 → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/c3/05/69ed3f403c0e
+    302   band           184ms    assets/band/band_amedic.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/6c/76/53e36c004618
+    302   bond           191ms    assets/bond/arcaneShip.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/88/6e/97d0309d42c4
+    404   char           185ms    assets/char/avatar/char_002_amiya.png 
+    404   docs           203ms    assets/docs/img/band-draft.jpg 
+    302   enemy          235ms    assets/enemy/icon/enemy_10001_trslim.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/81/58/938509c23b3a
+    404   icons          199ms    assets/icons/app-192.png 
+    404   item           68ms     assets/item/rogue_5_relic_return_29.png 
+    404   local          55ms     assets/local/emoticon/basic/pic_cooperate_battle.png 
+    302   module         65ms     assets/module/aft-d.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/99/5d/9765b06aee87
+    404   pack           47ms     assets/pack/bond_kazdelShip.png 
+    404   packs          202ms    assets/packs/audio.bgm-4.zip 
+    302   prof           71ms     assets/prof/battlecard_caster.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/6e/65/dbeb066a3e4f
+    404   relics         67ms     assets/relics/relic_001.png 
+    302   skill          103ms    assets/skill/skchr_accast_1.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/ad/f2/e4cef9f24be5
+    302   skins          68ms     assets/skins/char_003_kalts_boc_6/avatar.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/bf/c0/7192eab6f0d5
+    302   spine          77ms     assets/spine/enemy/enemy_10001_trslim/enemy_10001_trslim.atlas → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/c8/bb/a3c34e821c66
+    302   token          87ms     assets/token/avatar/token_10000_silent_healrb.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/67/a1/1eac90c1aebc
+    302   ui             76ms     assets/ui/bandChoose/btn_comfirm_check.png → https://cdn-lfs-cn-1.modelscope.cn/prod/lfs-objects/55/34/91d8f75695c3

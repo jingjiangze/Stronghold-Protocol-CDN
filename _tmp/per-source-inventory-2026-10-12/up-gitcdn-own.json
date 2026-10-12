@@ -1,0 +1,254 @@
+[
+ {
+  "cat": "audio",
+  "path": "assets/audio/bgm/m_bat_abyssalhunters_intro.mp3",
+  "expect": 854143,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 472655,
+  "err": "TypeError"
+ },
+ {
+  "cat": "audio",
+  "path": "assets/audio/voice/cn/char_4191_tippi/cn_021.mp3",
+  "expect": 20707,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10563,
+  "err": "TypeError"
+ },
+ {
+  "cat": "band",
+  "path": "assets/band/band_amedic.png",
+  "expect": 67231,
+  "code": 200,
+  "bytes": 67231,
+  "ms": 13472
+ },
+ {
+  "cat": "band",
+  "path": "assets/band/band_justin.png",
+  "expect": 64563,
+  "code": 200,
+  "bytes": 64563,
+  "ms": 12293
+ },
+ {
+  "cat": "bond",
+  "path": "assets/bond/arcaneShip.png",
+  "expect": 4114,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10559,
+  "err": "TypeError"
+ },
+ {
+  "cat": "bond",
+  "path": "assets/bond/preciShip.png",
+  "expect": 4872,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10588,
+  "err": "TypeError"
+ },
+ {
+  "cat": "char",
+  "path": "assets/char/avatar/char_003_kalts.png",
+  "expect": 56617,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10584,
+  "err": "TypeError"
+ },
+ {
+  "cat": "char",
+  "path": "assets/char/portrait/char_003_kalts_1.png",
+  "expect": 115421,
+  "code": 200,
+  "bytes": 115421,
+  "ms": 11134
+ },
+ {
+  "cat": "docs",
+  "path": "docs/DEPLOY.md",
+  "expect": 33646,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 30005,
+  "err": "AbortError"
+ },
+ {
+  "cat": "docs",
+  "path": "docs/research/05-enemies.json",
+  "expect": 420112,
+  "code": 502,
+  "bytes": 145,
+  "ms": 3650
+ },
+ {
+  "cat": "enemy",
+  "path": "assets/enemy/icon/enemy_10001_trslim.png",
+  "expect": 37134,
+  "code": 200,
+  "bytes": 37134,
+  "ms": 4725
+ },
+ {
+  "cat": "enemy",
+  "path": "assets/enemy/icon/enemy_1207_sfji_2.png",
+  "expect": 47449,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 30005,
+  "err": "AbortError"
+ },
+ {
+  "cat": "fonts",
+  "path": "fonts/bender-light.ttf",
+  "expect": 68256,
+  "code": 200,
+  "bytes": 68256,
+  "ms": 7489
+ },
+ {
+  "cat": "fonts",
+  "path": "fonts/bender-regular.woff2",
+  "expect": 22540,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10179,
+  "err": "TypeError"
+ },
+ {
+  "cat": "item",
+  "path": "assets/item/trap_1040_acarm040.png",
+  "expect": 14863,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10179,
+  "err": "TypeError"
+ },
+ {
+  "cat": "item",
+  "path": "assets/item/trap_1069_acarm069.png",
+  "expect": 30855,
+  "code": 200,
+  "bytes": 30855,
+  "ms": 9306
+ },
+ {
+  "cat": "local",
+  "path": "assets/local/emoticon/basic/pic_cooperate_battle.png",
+  "expect": 24764,
+  "code": 200,
+  "bytes": 24764,
+  "ms": 2576
+ },
+ {
+  "cat": "local",
+  "path": "assets/local/ui/common/icon_bldsk.png",
+  "expect": 61317,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10276,
+  "err": "TypeError"
+ },
+ {
+  "cat": "module",
+  "path": "assets/module/aft-d.png",
+  "expect": 1899,
+  "code": 200,
+  "bytes": 1899,
+  "ms": 5003
+ },
+ {
+  "cat": "module",
+  "path": "assets/module/lib-x.png",
+  "expect": 1586,
+  "code": 200,
+  "bytes": 1586,
+  "ms": 23064
+ },
+ {
+  "cat": "prof",
+  "path": "assets/prof/battlecard_caster.png",
+  "expect": 1429,
+  "code": 200,
+  "bytes": 1429,
+  "ms": 19525
+ },
+ {
+  "cat": "prof",
+  "path": "assets/prof/sub/fastshot.png",
+  "expect": 1807,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 10526,
+  "err": "TypeError"
+ },
+ {
+  "cat": "skill",
+  "path": "assets/skill/skchr_accast_1.png",
+  "expect": 21515,
+  "code": 200,
+  "bytes": 21515,
+  "ms": 369539
+ },
+ {
+  "cat": "skill",
+  "path": "assets/skill/skchr_lisa_1.png",
+  "expect": 13356,
+  "code": 200,
+  "bytes": 13356,
+  "ms": 4037
+ },
+ {
+  "cat": "spine",
+  "path": "assets/spine/enemy/enemy_10001_trslim/enemy_10001_trslim.atlas",
+  "expect": 814,
+  "code": "ERR",
+  "bytes": 0,
+  "ms": 30005,
+  "err": "AbortError"
+ },
+ {
+  "cat": "spine",
+  "path": "assets/spine/op/char_1502_crosly/back/char_1502_crosly.atlas",
+  "expect": 5886,
+  "code": 200,
+  "bytes": 5886,
+  "ms": 10042
+ },
+ {
+  "cat": "token",
+  "path": "assets/token/avatar/token_10000_silent_healrb.png",
+  "expect": 27452,
+  "code": 200,
+  "bytes": 27452,
+  "ms": 8231
+ },
+ {
+  "cat": "token",
+  "path": "assets/token/avatar/token_10029_slent2_protrb.png",
+  "expect": 24438,
+  "code": 200,
+  "bytes": 24438,
+  "ms": 15708
+ },
+ {
+  "cat": "ui",
+  "path": "assets/ui/bandChoose/btn_comfirm_check.png",
+  "expect": 556,
+  "code": 200,
+  "bytes": 556,
+  "ms": 3452
+ },
+ {
+  "cat": "ui",
+  "path": "assets/ui/hudPanel/white_sprite.png",
+  "expect": 122,
+  "code": 200,
+  "bytes": 122,
+  "ms": 9892
+ }
+]

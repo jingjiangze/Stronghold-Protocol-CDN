@@ -1,0 +1,128 @@
+{
+  "schema": 1,
+  "_how": "站点文档的索引，部署时重新生成（所以「最新」是算出来的，不是记在代码里的路径）。updatedAt 来自 git 的提交时间，不是文件系统 mtime —— 后者在一次全新 checkout 之后会让所有文件看起来一样新。agentDoc 是所有文档里提到 /api/cdn/upload/ 的最新一份：既保证是最新的，也不会因为某篇无关文档写得晚而把它当成接入说明。",
+  "generatedAt": "2026-10-12T05:42:35.015Z",
+  "dating": "ok",
+  "_dating_note": "每条文档的 updatedAt 来自它最后一次被提交的时间，可以据此判断新旧。",
+  "docs": [
+    {
+      "path": "docs/per-source-asset-inventory.md",
+      "title": "逐源素材清单（每个源实际有什么）",
+      "bytes": 14383,
+      "sha256": "baeb19223876eb026ce9b137af8cc21dacc99491740ccc11da19ae3deb238107",
+      "updatedAt": "2026-10-12T13:37:48+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/bandwidth-max-compression.md",
+      "title": "WS 压缩与上行带宽最大化",
+      "bytes": 31856,
+      "sha256": "a5076623534d6e0278e4e260ed1283ccbbf746dad080436249d709489276be6d",
+      "updatedAt": "2026-10-12T12:34:40+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/ws-link-merge.md",
+      "title": "WS 链路压缩 · 合并说明（ws-link-as-built）",
+      "bytes": 6405,
+      "sha256": "cce0f01e3a2ece165463649c52671717ee6c7d02444d9f6ed5adf959a5686b81",
+      "updatedAt": "2026-10-12T12:34:40+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/agent-upload.md",
+      "title": "agent 接入 · 上传静态素材（只新增，按原结构分类）",
+      "bytes": 10058,
+      "sha256": "6950175bc1e7f16bc0eab53274f61b92b864527b3b89ea90b8850983acb610a4",
+      "updatedAt": "2026-10-12T03:30:56+08:00",
+      "datedBy": "git",
+      "agent": true
+    },
+    {
+      "path": "docs/ws-compression-library-and-pack.md",
+      "title": "WS 压缩：独立库与工坊兼容包",
+      "bytes": 6763,
+      "sha256": "828c1aa246afa4af066914630c2d66d94d06c20995b8c2a2556b49f6b40731c1",
+      "updatedAt": "2026-10-12T03:13:08+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/ws-link-compression-next.md",
+      "title": "WS 链路压缩（下一轮 · 待执行）",
+      "bytes": 6392,
+      "sha256": "f29a187ad3acb71b112115b92e23345b3f6f90e0546cfacfec6a10aafd79f7fc",
+      "updatedAt": "2026-10-12T03:13:08+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/ws-link-compression.md",
+      "title": "WS 链路压缩（当前已上线 · 2026-10-12 版）",
+      "bytes": 12694,
+      "sha256": "03b090ed6780fc1c5fe5184ae51828a3b7603fcbf06cfcaad790d281dacab734",
+      "updatedAt": "2026-10-12T03:13:08+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/mirror-selection.md",
+      "title": "多源自动选源：客户端按自身链路挑最快镜像（2026-10-10，2026-10-10 更新）",
+      "bytes": 14328,
+      "sha256": "c4fa19238c75360b095ca07849024666f92f7c4cb053b63e7a468bba4ad55127",
+      "updatedAt": "2026-10-12T02:54:40+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/modelscope-mirror.md",
+      "title": "第三镜像：ModelScope 创空间（git 镜像，非运行时源）",
+      "bytes": 6298,
+      "sha256": "0c6090dad436401543c946a99b20e95939eec65737b7e4045e385e9068d2f0bd",
+      "updatedAt": "2026-10-11T22:23:55+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/ms-edge.md",
+      "title": "边缘分流源 ms-edge（Docker 动态跳转 / 创空间容器 302 边缘层）",
+      "bytes": 5752,
+      "sha256": "8ac23cbe30cba5a7433db09d6e3e2c5c61188df1de6140498d1e83354c470de2",
+      "updatedAt": "2026-10-11T22:23:55+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/openi-mirror.md",
+      "title": "第二镜像：OpenI（启智）素材树（2026-10-11）",
+      "bytes": 9418,
+      "sha256": "58148e90b4425c559113bc9535a452812fd1bd88d71723391b31c52ae0d8fa06",
+      "updatedAt": "2026-10-11T22:23:55+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/多源自动选源.md",
+      "title": "多源自动选源：客户端按自身链路挑最快镜像（2026-10-10，2026-10-10 更新）",
+      "bytes": 11619,
+      "sha256": "86378e2edbb0983c439f9c4d88c4f470824e1a4c302becd57906b8277cdaca30",
+      "updatedAt": "2026-10-11T21:56:39+08:00",
+      "datedBy": "git",
+      "agent": false
+    },
+    {
+      "path": "docs/asset-cdn-reconcile.md",
+      "title": "素材 CDN 对账：索引滞后、tree.json 漏目录、HEAD 实测反查（2026-10-10）",
+      "bytes": 4898,
+      "sha256": "088054f4447321114558c9c0d4072d04bb1f1c30f9a22705463d062838fd6a89",
+      "updatedAt": "2026-10-11T21:15:11+08:00",
+      "datedBy": "git",
+      "agent": false
+    }
+  ],
+  "agentDoc": "docs/agent-upload.md",
+  "agentDocWhy": "所有文档里提到 /api/cdn/upload/ 的最新一份（2026-10-12T03:30:56+08:00）"
+}
