@@ -21681,8 +21681,8 @@
       "what": "干员语音 —— 上游 0.2.1 发布包内的 assets/audio/voice，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 7,
-      "bytes": 66579,
+      "files": 10,
+      "bytes": 155030,
       "keys": [
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_019.mp3",
@@ -21711,6 +21711,18 @@
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_026.mp3",
           3570
+        ],
+        [
+          "assets/audio/voice/jp/char_4217_makoto/cn_027.mp3",
+          9213
+        ],
+        [
+          "assets/audio/voice/jp/char_4217_makoto/cn_028.mp3",
+          15482
+        ],
+        [
+          "assets/audio/voice/jp/char_4217_makoto/cn_029.mp3",
+          63756
         ]
       ]
     }
