@@ -10,8 +10,16 @@
   Cache-Control: public, max-age=31536000, immutable
 
 # The snapshot is regenerated on every deploy; keep it short so a redeploy is visible at once.
+# 2026-10-13: CORS added — clients fetch /data/*.json cross-origin.
 /data/*
   Cache-Control: public, max-age=300
+  Access-Control-Allow-Origin: *
+
+# 2026-10-13: manifests served same-origin (written at deploy time by src/site-data.mjs).
+/cdn/v1/*
+  Cache-Control: public, max-age=300
+  Access-Control-Allow-Origin: *
+
 
 /*.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600

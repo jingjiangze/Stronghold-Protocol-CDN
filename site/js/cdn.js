@@ -7,6 +7,14 @@
 
 const CDN = (document.body.dataset.cdnBase || '').replace(/\/+$/, '');
 const SNAPSHOT = './data/snapshot.json';
+// 2026-10-13：清单优先读同源（随 Pages 部署落进 ./cdn/v1/），取不到再回 CDN 基址（R2）。
+// 动机：R2 上这些 JSON 不缓存（DYNAMIC），每次访客都实打实读一次 R2；同源由 Pages 边缘直接服务。
+const MANIFEST_BASE = (document.body.dataset.manifestBase || '').replace(/\/+$/, '');
+async function getManifest(path, timeoutMs = 8000) {
+  if (MANIFEST_BASE) return getJson(`${MANIFEST_BASE}${path}`, timeoutMs);
+  try { return await getJson(`.${path}`, timeoutMs); }
+  catch { return await getJson(`${CDN}${path}`, timeoutMs); }
+}
 
 const $ = (id) => document.getElementById(id);
 const setText = (id, text) => { const el = $(id); if (el) el.textContent = text; };
@@ -348,7 +356,7 @@ async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
   let doc = treePromise ? await treePromise : null;
   if (!doc?.dirs) {
     try {
-      doc = await getJson(`${CDN}/cdn/v1/tree.json`, 20000);
+      doc = await getManifest('/cdn/v1/tree.json', 20000);
     } catch {
       /* fall through to the snapshot */
     }
@@ -747,9 +755,9 @@ async function main() {
   // table comes from it (aggregating 1.3 MB of index on every visit is not worth it), and it is
   // the fallback when the interface is unreachable.
   const [live, snap, contract] = await Promise.all([
-    Promise.all([getJson(`${CDN}/cdn/v1/art.json`), getJson(`${CDN}/cdn/v1/mirrors.json`)]).catch(() => null),
+    Promise.all([getManifest('/cdn/v1/art.json'), getManifest('/cdn/v1/mirrors.json')]).catch(() => null),
     getJson(SNAPSHOT).catch(() => null),
-    getJson(`${CDN}/cdn/v1/api.json`).catch(() => null),
+    getManifest('/cdn/v1/api.json').catch(() => null),
   ]);
   snapshot = snap;
   renderApi(contract);
@@ -770,7 +778,7 @@ async function main() {
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
   // One fetch of the 85 KiB tree feeds both the directory browser and the docs list; neither may
   // hold up the rest of the page, so the promise is handed to each and awaited inside.
-  const treePromise = getJson(`${CDN}/cdn/v1/tree.json`, 20000).catch(() => null);
+  const treePromise = getManifest('/cdn/v1/tree.json', 20000).catch(() => null);
   renderDocs(treePromise).catch(() => {});
   renderTree(snapshot?.dirs || [], snapshot?.totals || null, treePromise).catch(() => {});
   renderDownloads(snapshot);

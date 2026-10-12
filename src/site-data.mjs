@@ -172,6 +172,23 @@ export async function buildSnapshot({ base, out, log = console.log }) {
       `drop-in ${dropin ? dropin.name : 'unresolved'} → ${out}`,
   );
 
+  // 2026-10-13：清单也随部署落进站点同源目录（cdn/v1/*.json）。站点从此优先读同源，不再每次回源
+  // R2（R2 上这些 JSON 是 cf-cache-status: DYNAMIC，等于每访客每文件一次 R2 读）。R2 那份保留作接口兜底。
+  const manifestDir = path.join(path.dirname(out), '..', 'cdn', 'v1');
+  await fsp.mkdir(manifestDir, { recursive: true });
+  const manifests = { 'art.json': art, 'mirrors.json': mirrors, 'index.json': index };
+  for (const name of ['api.json', 'network.json', 'tree.json']) {
+    try { manifests[name] = await getJson(`${root}/cdn/v1/${name}`); }
+    catch (error) { log(`site manifest: ${name} 跳过（${error.message}）`); }
+  }
+  let copied = 0;
+  for (const [name, value] of Object.entries(manifests)) {
+    if (!value) continue;
+    await fsp.writeFile(path.join(manifestDir, name), `${JSON.stringify(value)}\n`, 'utf8');
+    copied += 1;
+  }
+  log(`site manifest: 同源清单 ${copied} 份 → ${path.relative(process.cwd(), manifestDir)}`);
+
   // The docs index is rebuilt on every deploy, which is what makes "the newest document" a fact
   // rather than a path somebody has to remember to update. It is written beside the snapshot so the
   // admin page (and any agent) can read it from the same origin without a key.
