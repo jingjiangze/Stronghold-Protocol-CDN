@@ -21681,8 +21681,8 @@
       "what": "皮肤头像（换装用）—— 我们发布树 public/assets/char/skin_avatar，与线上包内一致",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 17,
-      "bytes": 347813,
+      "files": 25,
+      "bytes": 598095,
       "keys": [
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_019.mp3",
@@ -21751,6 +21751,38 @@
         [
           "assets/char/skin_avatar/char_010_chen_sale_10.webp",
           12088
+        ],
+        [
+          "assets/char/skin_avatar/char_017_huang_as_1.webp",
+          18538
+        ],
+        [
+          "assets/char/skin_avatar/char_017_huang_witch_5.webp",
+          18074
+        ],
+        [
+          "assets/char/skin_avatar/char_1012_skadi2_boc_4.webp",
+          44968
+        ],
+        [
+          "assets/char/skin_avatar/char_1012_skadi2_iteration_2.webp",
+          44722
+        ],
+        [
+          "assets/char/skin_avatar/char_1013_chen2_boc_6.webp",
+          16376
+        ],
+        [
+          "assets/char/skin_avatar/char_1013_chen2_summer_20.webp",
+          18376
+        ],
+        [
+          "assets/char/skin_avatar/char_1014_nearl2_epoque_17.webp",
+          43556
+        ],
+        [
+          "assets/char/skin_avatar/char_1016_agoat2_epoque_34.webp",
+          45672
         ]
       ]
     }
