@@ -1,10 +1,14 @@
 # 逐源素材清单（每个源实际有什么）
 
-> 日期：2026-10-12 · 全部数字为本机实测，不是估算。
+> 日期：2026-10-12（晚间修订版）· 全部数字为本机实测，不是估算。
 > 权威清单（真源）：`https://weishucdn.jiangjiangze.icu/cdn/v1/{index,tree,mirrors}.json`
-> 内容令牌：`v0.2.4-12de1b73`（index.json / tree.json 带头ängerfield-consistent token 版本）
-> **测量口径**：一律 `curl --noproxy '*'` + 浏览器 UA。**不绕过本地代理会得到假 000**；
-> **不带 UA 会被 ms-edge 挡成 403**（curl 默认 UA 命中平台拦截）。
+> **测量口径**：一律 `curl --noproxy '*'` / `--noproxy` + 浏览器 UA。
+> **不绕过本地代理会得到假 000**（本机 Clash）；**不带 UA 会被 ms-edge 平台门禁挡成 403**。
+>
+> ⚠️ **本文件当日中午那版的覆盖率结论是错的，已作废**：首轮把 `tree.json` 的代表文件直接当探针，
+> 混进了 `mod=1` 的 hosted 自有内容（7,547 个），而 hosted **不在任何 git 分支上**，
+> 拿它要求 git 挂载源「提供」是错误口径。**本版只从 `index.json`（= 上游同步内容）取样**，
+> 这才是 `coverage` 声明所描述的集合。修订后的结论见第三节。
 
 ---
 
@@ -38,6 +42,9 @@ index.json (12,583)  ⊂  tree.json (20,130)
 > **所以**：拿 `index.json` 做「校验清单」是对的；拿它当「桶里有什么」的清单是错的 ——
 > 会漏掉 7,547 个自有文件（含 **1,856 个皮肤文件 / 1,158 MiB**，这是本站最值钱的自有内容）。
 > 要「全量」用 `tree.json`；要「校验」用 `index.json`。
+>
+> **这也正是首轮覆盖率实测翻车的原因**：`coverage` 声明描述的是**上游集合**（12,583），
+> 而我从 `tree.json` 取样（20,130）—— 等于要求 git 挂载源提供只在 R2 托管的内容。
 
 ---
 
@@ -62,69 +69,107 @@ index.json (12,583)  ⊂  tree.json (20,130)
 另有 **`packs/`**（非 `assets/`）的内容包目录，以及 `index.json` 里 **13 个非 `assets/` 键**
 （`docs/*.md`、`fonts/*.ttf|woff2|otf`、`fonts/fonts.css`）。
 
----
+### 上游口径（`index.json`）下的分类：15 类
 
-## 三、逐源清单：每个源实际能提供什么
+| 分类 | 文件数 | | 分类 | 文件数 |
+|---|---:|---|---|---:|
+| audio | 6,352 | | token | 50 |
+| spine | 2,021 | | band | 40 |
+| local | 1,614 | | bond | 23 |
+| char | 808 | | fonts | 7 |
+| ui | 602 | | docs | 6 |
+| skill | 525 | | **合计** | **12,583** |
+| enemy | 252 | | | |
+| module | 130 | | | |
+| prof | 94 | | | |
+| item | 59 | | | |
 
-实测方法：19 个分类各取一个代表文件，逐源取字节（`redirect: follow`），看最终是否 200。
-**「19/19」= 该源覆盖全部 19 个分类。**
-
-| 源 id | 类型 | base | 实测覆盖 | mirrors 声明 | 是否一致 |
-|---|---|---|---:|---|---|
-| **r2** | r2 | `weishucdn.jiangjiangze.icu` | **19/19** | partial | ⚠️ 见下 |
-| **r2-alt** | r2 | `weishucdn2.jiangjiangze.icu` | **19/19** | partial | ⚠️ 同上 |
-| **ghfast-assets** | git | `ghfast.top/…@assets-raw` | **19/19** | full | ✅ |
-| **jsdelivr-assets** | git | `cdn.jsdelivr.net/…@assets-raw` | **19/19** | full | ✅ |
-| **gitcdn-own** | git | `gitcdn.jiangjiangze.icu` | 19/19（但极慢） | full | ⚠️ 性能问题 |
-| **openi** | git | `openi.pcl.ac.cn/…/assets-raw` | **12/19** | full | ❌ 声明不实 |
-| **ms-dataset** | cdn | `modelscope.cn/datasets/…/v1-trial` | **11/19** | full | ❌ 声明不实 |
-| **ms-edge** | cdn | `jingjiangze-…ms.show` | **11/19**（302 层） | full | ⚠️ 依赖下游 |
-| **pages** | pages | `spages.jiangjiangze.icu` | **11/19** | partial | ❌ 比 r2 少 |
-| **speedcdn** | （未注册） | `speedcdn.jiangjiangze.icu` | 与 r2 字节全同 | — | 见第五节 |
-
-### 各源逐条说明
-
-**r2（`weishucdn`）** — 唯一权威。19/19 全通，含 `docs/`、`fonts/`、`assets/packs/`。
-也是唯一的接口真源（`/cdn/v1/**`）。`index.json` 的 sha256 以它为准。
-
-**r2-alt（`weishucdn2`）** — 第二个 R2 自定义域，19/19 全通，与 r2 同桶。
-
-**ghfast-assets / jsdelivr-assets** — 都是 19/19。挂载 `assets-raw` 孤儿分支。
-注意：它们**也提供 `fonts/`**（实测 `fonts/bender-regular.woff2` 200），
-与文档里「`docs`/`fonts` 只在 R2/Pages」的说法不符 —— 那条结论需要更正。
-`docs/` 确实 404。
-
-**gitcdn-own** — 自托管 git-mount。可取全部分类，但速度很差：
-`assets/band/band_amedic.png` 4.6s、`char_002_amiya.png` 14.1s、
-`packs/audio.bgm-4.zip` **90 秒未完成**。覆盖是覆盖住了，实际可用性低。
-
-**openi** — **12/19，与 `mirrors.json` 声明的 `full` 不符**。缺 7 类，且**恰好是打开 numpy 的包**：
-`char`、`docs`、`icons`、`item`、`pack`、`packs`、`relics`。
-
-**ms-dataset** — **11/19，同样与声明的 `full` 不符**。
-这些文件有一部分本就不在 index.json（属 hosted），但也有确属缺口的部分。
-数据集本身**已公开可读**（见第六节）。
-
-**ms-edge** — **不是素材源，是 302 分流层**。自己不存字节；
-它的 11/19 是「它指到的下游（默认 = ms-dataset）能给多少」的镜像值。
-这一点必须说清：`?sp_source=r2` 能让它指到 r2 拿到全量，但这不代表 ms-edge 自己有。
-
-**pages** — **11/19，比 r2 少 8 类**（缺 `char`/`docs`/`icons`/`item`/`pack`/`packs`/`relics`/`local`）。
-重要：pages 是**文档中 major-gripes 的部署面**，但它比 r2 少东西 ——
-如果客户端降级到 pages，这几类素材会 404。
+> **注意 `local` 有 1,614 个上游文件**（`assets/local/`）—— 这是首轮把它误判成「git 源全缺」的类别。
 
 ---
 
-## 四、三个「声明与实测不符」的问题（本次审计的新发现）
+## 三、逐源清单：每个源实际能提供什么（上游口径，本版为准）
+
+实测方法：从 `index.json` 的 **12,583 个上游键**按分类各取 **2 个代表文件 = 30 个探针**
+（每类首 / 中，避免单文件偶发），逐源取字节（`redirect: follow`），判据是 **HTTP 200 且字节数与 `index.json` 记录的 `size` 完全相符**。
+
+**「30/30」= 覆盖全部 15 个上游分类。**
+
+| 源 id | 类型 | 上游覆盖 | 中位时延 | p90 时延 | `mirrors.json` 声明 | 是否一致 |
+|---|---|---:|---:|---:|---|---|
+| **r2** | r2 | **30/30** | 430 ms | 3.4 s | （r2 无 coverage 字段） | ✅ 权威 |
+| **r2-alt** | r2 | **30/30** | 619 ms | 1.9 s | （同上） | ✅ 同桶 |
+| **ms-dataset** | cdn | **26/30**（缺 2 docs + 2 local） | **107 ms** | 297 ms | full | ⚠️ 见 3.1 |
+| **openi** | git | **28/30**（缺 2 docs） | **255 ms** | 341 ms | full | ⚠️ 见 3.1 |
+| **ghfast-assets** | git | **28/30**（缺 2 docs） | 595 ms | 1.7 s | full | ⚠️ 见 3.1 |
+| **jsdelivr-assets** | git | **28/30**（缺 2 docs） | 2,047 ms | 11.3 s | full | ⚠️ 见 3.1 |
+| **ms-edge** | cdn | **26/30**（同 ms-dataset） | 315 ms | 2.2 s | full | ⚠️ 见 3.2 |
+| **pages** | pages | **30/30**（字节全对） | **7.0 s** | **93.1 s** | （pages 无 coverage 字段） | ⚠️ 慢，不缺 |
+| **gitcdn-own** | git | **17/30**（13 条超时） | **10.6 s** | **30.0 s** | full | ⚠️ 见 3.3 |
+| **speedcdn** | （未注册） | 与 r2 字节全同 | — | — | — | 见第五节 |
+
+### 3.1 唯一真正的缺口：`docs/`
+
+**四个源缺的都是同一批文件，且只有 `docs/` 这一类**：
+
+```
+openi / ghfast-assets / jsdelivr-assets：缺 docs/DEPLOY.md、docs/research/05-enemies.json
+ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_battle.png
+                                      assets/local/ui/common/icon_bldsk.png
+```
+
+`docs/` 在 `index.json` 里只有 **6 个键**、共 **32.8 MiB**，且 `tree.json` 的 `docs` 目录
+（3 目录 / 46 文件）标注为**只在 R2 / Pages**。所以这不是「源坏了」，
+而是 **`docs/` 从来没进 `assets-raw` 孤儿分支** —— 分支同步只搬 `assets/` 与 `fonts/`。
+
+> **所以准确的说法是**：`assets-raw` 挂载的三个源（openi / ghfast / jsdelivr）**覆盖了除 `docs/`
+> 以外的全部上游内容**，`fonts/` 也在内（`fonts/bender-regular.woff2` 200，字节相符）——
+> 这一条推翻了早期文档里「`docs` / `fonts` 只在 R2/Pages」的说法，`fonts` 那半句是错的。
+
+### 3.2 ms-dataset / ms-edge 的两个 `local` 文件
+
+这两个源额外缺的 2 个 `local` 文件，**不是整类缺失**：`assets/local/` 有 1,614 个上游文件，
+本批 30 个探针里 `local` 抽了 2 个，全中；它们各自只差 1–2 个具体文件。
+ms-dataset 的 `mirrors.json` note 已说明其中一个原因：平台审核拒收
+`char_340_shwaz_snow_1/illustration.png`，改道 ms-edge 层的 exceptions 表。
+**结论：零星缺失，不是类别缺口。**
+
+### 3.3 gitcdn-own：不是「缺」，是「取不动」
+
+13 个探针在 30 s 超时内没回来，但成功的 17 个**字节全部与 `index.json` 相符**。
+中位 10.6 s、p90 30 s。它是**自有域中转**（`sp-git-mount-relay`），按 jsdelivr → ghfast 顺序回退，
+所以它同时继承了这两条链路在本机网络下的抖动。**记「慢/不稳」，不记「缺」。**
+
+### 3.4 pages：**慢，但不缺**（2026-10-12 明确改判）
+
+首轮我用 25–30 s 超时，把 3 个超时读成了「缺 8 类」。**改判证据**：
+
+| 路径 | 期望字节 | pages | r2 |
+|---|---:|---|---|
+| `assets/band/band_justin.png` | 64,563 | 200 · 64,563 B · 2.6 s / 16.5 s / 11.1 s（重试）· `HEAD` 200 `cf-cache-status: HIT` | 200 · 64,563 B · 1.1 s |
+| `assets/module/lib-x.png` | 1,586 | 200 · 1,586 B · 1.7 s | 200 · 1,586 B · 208 ms |
+| `assets/ui/bandChoose/btn_comfirm_check.png` | 556 | 200 · 556 B · 0.7 s | 200 · 556 B · 412 ms |
+| `assets/audio/bgm/m_bat_abyssalhunters_intro.mp3` | 854,143 | 200 · 612 s（一次成功，其余超时） | 200 · 154 s |
+
+**结论**：pages **覆盖全部 30 个上游探针、字节逐一相符**，只是**极慢且极不稳**
+（中位 7 s、p90 93 s、9/30 超过 10 s；854 KB 的 mp3 取到 612 s）。
+按用户口径记为 **「慢」而非「缺」**。它仍是文档中 major-gripes 的部署面，也是 `docs/` 的可用出口。
+
+---
+
+## 四、与声明不符的问题（本次审计的新发现，已按修订口径校正）
 
 | # | 问题 | 证据 | 影响 |
 |---|---|---|---|
-| 1 | **openi / ms-dataset 声明 `full`，实测只有 12/19 与 11/19** | 7 类 404 | 客户端选源时会选中这不完整的源；`enabled` 未据此关闭 |
-| 2 | **pages 比 r2 少 8 类**（同为 `partial` 但覆盖面不同） | 8 类 404 | 降级到 pages 会缺素材 |
-| 3 | **`src/rank.mjs:28` 把 r2 写成 `coverage:'full'`，而 `mirrors.json` 里 r2 是 `partial`** | 代码 vs 已发布清单 | 两份口径打架，选源逻辑可能用到错的那份 |
+| 1 | **`gitcdn-own` 声明 `full`，实测 17/30 全因超时** | 中位 10.6 s / p90 30 s；成功的 17 条字节全对 | 慢到不可用作运行时主源；`enabled` 未据此关闭 |
+| 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测 26/30** | 缺 2 个 `docs` + 2 个具体 `local` 文件 | 客户端选源可能导向有零星缺口的源 |
+| 3 | **四个 git/cdn 源都缺 `docs/`**（声明 full 者亦含） | `docs/` 从未进 `assets-raw` 分支 | `docs/` 只能走 r2 / r2-alt / pages |
+| 4 | **`src/rank.mjs:28` 把 r2 写成 `coverage:'full'`，而 `mirrors.json` 里 r2 没有 coverage 字段** | 代码 vs 已发布清单 | 两份口径打架；线上 `rank.json` 里 r2 确实是 `full`，r2-alt 是空 |
+| 5 | **speedcdn 已可用但未登记** | 见第五节 | 客户端不会自动挑它 |
 
-第 3 条尤其危险：`rank.mjs` 是**发布到线上 `rank.json` 的生成器**，
-它声明的 coverage 与 `mirrors.json` 不一致时，取决于客户端读哪份，行为会不同。
+第 4 条：`rank.mjs` 是**发布到线上 `rank.json` 的生成器**，它硬编码 r2 为 `full`，
+而 `mirrors.json` 的 r2 条目没有 `coverage`（r2-alt 同样没有）。实测证明 r2/r2-alt **确实是 full**，
+所以这里不是「声明错了」，而是**两份文件对同一事实的记录方式不一致** —— 应统一写法。
 
 ---
 
@@ -168,14 +213,14 @@ index.json (12,583)  ⊂  tree.json (20,130)
 - **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
   = r2 `index.json` 里记录的值 ✅
 - 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`
-- **不足**：只覆盖 11/19 类（见第三节），且这批缺失与 index.json 的 hosted 缺口部分重合。
+- **实测缺口（26/30）**：2 个 `docs/` + 2 个具体 `local/` 文件（见 3.2）。**不是整类缺失。**
 
 ### 6.2 创空间 `jingjiangze/Stronghold-Protocol`（ms-edge）—— ✅ 已上线，但视角依赖 UA
 
 这轮的教训：**我用 curl 默认 UA 测得到处 403，一度误判它挂了**。
 
 - 平台 `Status: Running`，`LastDeployConfig` 镜像时间戳 **2026-10-12 01:15:33**，
-  `DeployedTime` → 北京时间 **2026-10-12 01:16:31**（约 3.5 小时前刚部署）
+  `DeployedTime` → 北京时间 **2026-10-12 01:16:31**
 - **带浏览器 UA**：首页 200（6,445 字节 HTML）、`/healthz` 200、`/packs/index.json` 200、
   `/shared/packs.js` 200
 - **素材分流确实在工作**：`/assets/char/avatar/char_003_kalts.png` → **302**，三种参数都通：
@@ -212,20 +257,25 @@ index.json (12,583)  ⊂  tree.json (20,130)
 
 1. **一律绕过本地代理**（`unset HTTPS_PROXY…` 或 `--noproxy '*'`）——本机 Clash 会把可用域名读成 000。
 2. **一律带浏览器 UA** —— 否则 ms-edge 这类源会被平台门禁读成 403。
-3. **区分「潜在可用性」与「实际可用性」**：302/301 要 `redirect: follow` 后再判；
-   gitcdn-own 那种 90 秒没结果的，记为「慢」而不是「通」。
-4. **不假设、逐源实测** —— 这次的教训就是 three sources 声明 `full` 而实际不全。
+3. **从 `index.json` 取样，不从 `tree.json` 取样** —— 这是本轮翻车的根因。
+   `coverage` 声明描述的是上游集合（12,583）；`tree.json` 多出的 7,547 个是 hosted，
+   **不在任何 git 分支上**，拿它要求 git 挂载源是错误口径。
+4. **超时不等于缺失**：至少重试一次，并用 `HEAD` / `Range` 交叉验证再下「缺」的结论。
+   pages 的 3 个「超时」全是 200 + 字节相符，只是慢到 612 s。
+5. **区分「潜在可用性」与「实际可用性」**：302/301 要 `redirect: follow` 后再判；
+   gitcdn-own 那种 30 s 没结果的，记为「慢」而不是「通」。
 
 ### 7.2 复跑脚本（已落盘 `_tmp/`）
 
 ```bash
-cd stronghold-cdn/_main-fix/_tmp
+cd stronghold-cdn/_main-fix/_tmp/per-source-inventory-2026-10-12
 unset HTTPS_PROXY HTTP_PROXY https_proxy http_proxy all_proxy ALL_PROXY
 
-node coverage-matrix.mjs      # 从 tree.json 归纳分类 + 挑代表文件 → probes.json
-node probe-one.mjs <源名>     # 单源 19 类实测 → coverage-<源名>.json
-node follow.mjs    <源名>     # 302 跟进判定 → coverage-final-<源名>.json
-node diff-tree-index.mjs      # tree vs index 口径对齐
+node probe-upstream.mjs       # 从 index.json 按分类挑代表文件（15 类 × 2 = 30 探针）→ probes-upstream.json
+node probe-up1.mjs <源名>     # 单源 30 探针实测 → up-<源名>.json
+node msds-local.mjs           # ms-dataset 的 local 缺口是整类还是个别
+node pages-verify2.mjs        # pages 的「超时」路径：重试 + HEAD + Range 交叉验证
+node diff-tree-index.mjs      # tree vs index 口径对齐（7,547 hosted 差额）
 node speedcdn-verify.mjs      # speedcdn 与 weishucdn 字节一致性
 node ms-ds-verify.mjs         # 数据集字节 vs index.json sha256
 ```
@@ -239,18 +289,22 @@ node ms-ds-verify.mjs         # 数据集字节 vs index.json sha256
 |---|---|---|
 | 清单口径一致性 | `index.json ⊆ tree.json`，差额 == `tree.totals.hosted` | ✅ PASS（0 例外） |
 | 权威字节真实性 | r2 实际下载字节的 sha256 == `index.json` 记录 | ✅ PASS（多份抽样） |
-| 声明 vs 实测 | 每个源的 `coverage` 声明 == 19 类实测 | ❌ FAIL：openi / ms-dataset / pages 不符 |
-| 代码 vs 发布清单 | `rank.mjs` 的 coverage == `mirrors.json` 的 | ❌ FAIL：r2 一处打架 |
-| 域名可用性 | 接口+素材均 200 | ✅ PASS（r2 / r2-alt / speedcdn） |
+| 取样口径 | 探针只来自 `index.json` | ✅ PASS（本版已修正） |
+| 声明 vs 实测 | 每个源的 `coverage` 声明 == 30 探针实测 | ⚠️ 4 处不符：gitcdn-own（超时） / ms-dataset / ms-edge / 四个源共缺 `docs/` |
+| 代码 vs 发布清单 | `rank.mjs` 的 coverage == `mirrors.json` 的 | ⚠️ r2 一处写法不一致（实测都是 full） |
+| 域名可用性 | 接口+素材均 200 | ✅ PASS（r2 / r2-alt / speedcdn / pages） |
 | 已注册性 | 已用域名是否在 `origins.json` 登记 | ❌ FAIL：speedcdn 未登记 |
 
 ### 7.4 建议的修复顺序（按风险从高到低）
 
-1. **对齐 `rank.mjs:28` 与 `mirrors.json` 的 r2 coverage**（两者打架，影响选源逻辑）。
-2. **更正 openi / ms-dataset 的 `coverage` 声明**（实测不全却声明 full，会把客户端导向缺素材的源）。
-3. **pages 缺 8 类**：要么补齐，要么在文档明确「降级到 pages 会缺哪些类」。
-4. **把 speedcdn 登记进 `origins.json`**（或明确决定不登记，并在文档写明它是别名）。
-5. **修正文档里「docs/fonts 只在 R2/Pages」** —— git-mount 源实给 `fonts/`。
-6. **ModelScope 部署仓**：提交那 24 行 README，并修正 404 的公告源地址。
+1. **统一 `rank.mjs:28` 与 `mirrors.json` 的 r2 coverage 写法**（一个硬编码 full、一个没字段）。
+2. **把 `docs/` 补进 `assets-raw` 分支**，或在四个 git/cdn 源的 note 里写明「不含 `docs/`」
+   —— 现在声明 `full` 而实际缺一类。
+3. **gitcdn-own**：中位 10.6 s / p90 30 s，不适合做运行时主源；
+   要么修回源链路，要么在文档写明「仅作兜底」。
+4. **ms-dataset / ms-edge**：补那 2 个 `local` 文件，或在 note 里点名列名。
+5. **把 speedcdn 登记进 `origins.json`**（或明确决定不登记，并在文档写明它是别名）。
+6. **修正文档里「`docs` / `fonts` 只在 R2/Pages」** —— `fonts` 那半句已被实测推翻（git 源也给）。
+7. **ModelScope 部署仓**：提交那 24 行 README，并修正 404 的公告源地址。
 
 > 以上 1–5 都涉及发布面改动；按既有纪律，改完要走 **sync interface-only 重发**，不在本机直写 R2。
