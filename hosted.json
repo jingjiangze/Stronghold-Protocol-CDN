@@ -21681,8 +21681,8 @@
       "what": "皮肤头像（换装用）—— 我们发布树 public/assets/char/skin_avatar，与线上包内一致",
       "addedAt": "2026-10-12",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 25,
-      "bytes": 598095,
+      "files": 56,
+      "bytes": 1716911,
       "keys": [
         [
           "assets/audio/voice/jp/char_4217_makoto/cn_019.mp3",
@@ -21783,6 +21783,130 @@
         [
           "assets/char/skin_avatar/char_1016_agoat2_epoque_34.webp",
           45672
+        ],
+        [
+          "assets/char/skin_avatar/char_1016_agoat2_epoque_57.webp",
+          41694
+        ],
+        [
+          "assets/char/skin_avatar/char_1019_siege2_epoque_50.webp",
+          50882
+        ],
+        [
+          "assets/char/skin_avatar/char_1020_reed2_epoque_30.webp",
+          44462
+        ],
+        [
+          "assets/char/skin_avatar/char_1020_reed2_snow_8.webp",
+          43740
+        ],
+        [
+          "assets/char/skin_avatar/char_1020_reed2_summer_17.webp",
+          46972
+        ],
+        [
+          "assets/char/skin_avatar/char_1021_kroos2_game_3.webp",
+          44200
+        ],
+        [
+          "assets/char/skin_avatar/char_1021_kroos2_nian_8.webp",
+          38990
+        ],
+        [
+          "assets/char/skin_avatar/char_1023_ghost2_boc_6.webp",
+          42456
+        ],
+        [
+          "assets/char/skin_avatar/char_1026_gvial2_summer_12.webp",
+          45402
+        ],
+        [
+          "assets/char/skin_avatar/char_1028_texas2_epoque_36.webp",
+          42238
+        ],
+        [
+          "assets/char/skin_avatar/char_1028_texas2_iteration_1.webp",
+          35316
+        ],
+        [
+          "assets/char/skin_avatar/char_102_texas_epoque_7.webp",
+          35600
+        ],
+        [
+          "assets/char/skin_avatar/char_102_texas_winter_1.webp",
+          38528
+        ],
+        [
+          "assets/char/skin_avatar/char_1031_slent2_epoque_32.webp",
+          14424
+        ],
+        [
+          "assets/char/skin_avatar/char_1032_excu2_sale_12.webp",
+          41254
+        ],
+        [
+          "assets/char/skin_avatar/char_1032_excu2_sanrio_2.webp",
+          37716
+        ],
+        [
+          "assets/char/skin_avatar/char_1033_swire2_ambienceSynesthesia_4.webp",
+          45346
+        ],
+        [
+          "assets/char/skin_avatar/char_1034_jesca2_cfa_1.webp",
+          12900
+        ],
+        [
+          "assets/char/skin_avatar/char_1035_wisdel_game_9.webp",
+          10996
+        ],
+        [
+          "assets/char/skin_avatar/char_1039_thorn2_marthe_9.webp",
+          34256
+        ],
+        [
+          "assets/char/skin_avatar/char_103_angel_kfc_1.webp",
+          44718
+        ],
+        [
+          "assets/char/skin_avatar/char_103_angel_sale_8.webp",
+          39264
+        ],
+        [
+          "assets/char/skin_avatar/char_103_angel_wild_1.webp",
+          42852
+        ],
+        [
+          "assets/char/skin_avatar/char_1040_blaze2_winter_5.webp",
+          52650
+        ],
+        [
+          "assets/char/skin_avatar/char_1041_angel2_iteration_6.webp",
+          46042
+        ],
+        [
+          "assets/char/skin_avatar/char_1043_leizi2_game_8.webp",
+          19430
+        ],
+        [
+          "assets/char/skin_avatar/char_1044_hsgma2_2.webp",
+          18524
+        ],
+        [
+          "assets/char/skin_avatar/char_1044_hsgma2_whirlwind_11.webp",
+          18204
+        ],
+        [
+          "assets/char/skin_avatar/char_1046_sbell2_ambienceSynesthesia_8.webp",
+          47022
+        ],
+        [
+          "assets/char/skin_avatar/char_1050_chen3_2.webp",
+          10206
+        ],
+        [
+          "assets/char/skin_avatar/char_107_liskam_nian_2.webp",
+          32532
         ]
       ]
     }
