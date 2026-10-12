@@ -97,6 +97,19 @@ async function writeBlob(buf, key) {
   return sha.trim();
 }
 
+// 2026-10-13：素材字节改从公网 CDN 域名取（CF 边缘命中时不再落到 R2，省 Class B 出字节），
+// 取不到（404/未公开/网络异常）再回退 S3 直读。基址沿用仓库惯例 SP_CDN_BASE。
+const CDN_BASE = (process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu').replace(/\/+$/, '');
+
+async function fetchBytes(config, key) {
+  try {
+    const res = await fetch(`${CDN_BASE}/${key}`, { redirect: 'follow' });
+    if (res.ok) return Buffer.from(await res.arrayBuffer());
+    // 非 2xx：这个键没公开或边缘还没缓存 —— 回退 S3
+  } catch { /* 网络问题同样回退 */ }
+  return await toBuffer(await getObject(config, key));
+}
+
 export async function sync({ write = false, maxBytes = 700 * 1024 * 1024, maxFiles = 1500, log = console.log } = {}) {
   const report = { scanned: 0, added: 0, skipped: 0, bytes: 0, mismatched: [], missing: [], pushed: false, commit: null, remaining: 0, dry: !write };
   const head = await fetchBranch();
@@ -121,7 +134,7 @@ export async function sync({ write = false, maxBytes = 700 * 1024 * 1024, maxFil
   // sha256 权威表：不在这里的值只能靠体积兜底，仍然会核对，只是少一道。
   let indexFiles = {};
   try {
-    const raw = await toBuffer(await getObject(config, HOSTED_INDEX_KEY));
+    const raw = await fetchBytes(config, HOSTED_INDEX_KEY);
     if (raw) indexFiles = (JSON.parse(raw.toString('utf8'))).files || {};
   } catch (e) {
     log(`[git-art-sync] 读 ${HOSTED_INDEX_KEY} 失败（${e.message}）—— 仍会按体积核对`);
@@ -138,7 +151,7 @@ export async function sync({ write = false, maxBytes = 700 * 1024 * 1024, maxFil
     if (report.added >= maxFiles || report.bytes >= maxBytes) { report.remaining = todo.length - report.added - report.skipped; log(`[git-art-sync] 达到预算（${MiB(report.bytes)} / ${report.added} 份），剩余 ${report.remaining} 留给下一轮`); break; }
     let buf;
     try {
-      const raw = await toBuffer(await getObject(config, key));
+      const raw = await fetchBytes(config, key);
       if (!raw) { report.missing.push(key); continue; }
       buf = raw;
     } catch (e) {
