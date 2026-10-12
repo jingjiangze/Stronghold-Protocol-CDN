@@ -10,7 +10,7 @@ name: git-art-sync
 # 预算：首轮积压 932 MiB，按 700 MiB/轮排，两轮排干，之后每轮几秒（没有新内容就直接退出）。
 on:
   schedule:
-    - cron: '7 1,7,13,19 * * *'
+    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '7 1,7,13,19 * * *'）
   workflow_dispatch:
     inputs:
       write:

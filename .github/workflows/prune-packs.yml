@@ -10,7 +10,7 @@ name: prune-packs
 
 on:
   schedule:
-    - cron: '37 5 * * *'
+    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '37 5 * * *'）
   workflow_dispatch:
     inputs:
       mode:

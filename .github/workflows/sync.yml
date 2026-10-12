@@ -9,7 +9,7 @@ name: sync
 # Manual runs default to read-only. A red run means the CDN does not match the manifests.
 on:
   schedule:
-    - cron: '17 */6 * * *'
+    - cron: '17 1,7,13,19 * * *' # 2026-10-13 统一节奏（原 '17 */6 * * *'）
   workflow_dispatch:
     inputs:
       tag:
