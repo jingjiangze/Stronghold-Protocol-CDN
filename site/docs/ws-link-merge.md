@@ -1,5 +1,17 @@
 # WS 链路压缩 · 合并说明（ws-link-as-built）
 
+> ⛔ **本页是历史存档，不要照它合并。** 它描述的是 **2026-10-10 的旧配置**
+> （窗口 pin 12 / 阈值 512 B / 关上下文接管），而 2026-10-12 对公网 WS 做真实 Upgrade 握手实测，
+> 服务端返回的是 `permessage-deflate; client_no_context_takeover` ——
+> **既没有 `server_no_context_takeover`、也没有 `server_max_window_bits=12`**，说明那套参数线上根本不在跑。
+> 正文里的收益数字（98% / 2,048 B/s / 505 B/s / 610 / 2,475）同样**已作废**：
+> 那次测量跑在机器人座位上，样本里天然没有 `m.private` 与 `b.start`。
+>
+> **要落地，请用零依赖库**：[`ws-compression-library-and-pack.md`](./ws-compression-library-and-pack.md)
+> （MIT · 28 项测试），线上现行配置见 [`ws-link-compression.md`](./ws-link-compression.md)
+> （三档 `off/on/safe`、两个「故意不声明」的参数、白名单 + `b.start`；现行口径 **57.5 B/s/席 ≈21,000 人**）。
+> 下面保留旧 diff 细节，仅作对照参考。
+
 > 这个包把 **fork 独有的 WS 链路层**装进一份服务器部署。它不改游戏协议、不改 JSON 内容，
 > 客户端零改动（浏览器 WebSocket 自动解压）。适用于：拿上游官方包自建服务器的第三方服主，
 > 或任何要把这套带宽优化应用到现有部署的人。
