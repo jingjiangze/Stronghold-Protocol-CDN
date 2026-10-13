@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：char/portrait/char_4185_amoris.png（122551 B，sha256 226150f7733f…）",
+      "what": "ave-mujica 工坊包自带素材：skill/skchr_am_oblivionis_2.png（34883 B，sha256 f68338b8eab3…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 12,
-      "bytes": 1072686,
+      "files": 16,
+      "bytes": 1308505,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -34879,6 +34879,22 @@
         [
           "assets/char/portrait/char_4186_tmoris.png",
           118167
+        ],
+        [
+          "assets/char/portrait/char_4186_tmoris_2.png",
+          135159
+        ],
+        [
+          "assets/skill/skchr_am_oblivionis_1.png",
+          32740
+        ],
+        [
+          "assets/skill/skchr_am_oblivionis_2.png",
+          34883
+        ],
+        [
+          "assets/skill/skchr_am_oblivionis_3.png",
+          33037
         ]
       ]
     }
