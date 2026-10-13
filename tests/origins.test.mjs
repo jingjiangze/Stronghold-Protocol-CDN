@@ -219,32 +219,30 @@ test('parking still works: openi stays parked in the shipped disabled list (CORS
 
 // The dataset mirror was measured 2026-10-12 as the one source satisfying all three requirements
 // at once (ACAO usable, Range 206, ~3x faster TTFB than the current primary). On 2026-10-13 it was
-// deliberately PARKED: the mirror lost its whole assets/local/ subtree (~1,611 files, 404 through
-// the resolve endpoint, and no automatic pusher owns that tree -- see f1-probe audit), and pick.js
-// selects by probe-path speed with no per-file 404 retry, so leaving it selectable made UI art
-// vanish for players on the fastest path. It ships enabled:false + in `disabled`, at the tail of
-// `order`, so it stays published/visible and becomes a last-resort fallback until the tree is re-fed.
-test('the shipped origins.json carries the ModelScope dataset parked (2026-10-13 local/ regression)', () => {
+// found to be missing its whole assets/local/ subtree (~1,611 files) and was PARKED while the tree
+// was re-fed; the same day the subtree was pushed back through git-lfs (byte-verified), so it ships
+// enabled again and back at the head of `order`.
+test('the shipped origins.json carries the ModelScope dataset as a selectable full source', () => {
   const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
   const ds = origins.find((o) => o.id === 'ms-dataset');
   assert.ok(ds, 'the dataset mirror must be listed');
   assert.equal(ds.coverage, 'full');
-  assert.equal(ds.enabled, false, 'parked until assets/local/ is mirrored again');
+  assert.notEqual(ds.enabled, false, 'assets/local/ was re-fed 2026-10-13, so it is selectable again');
   assert.match(ds.root, /^https:\/\/modelscope\.cn\/datasets\/.+\/resolve\/.+\/releases\//);
   // The derived base must land on the mirror's own asset tree, not the resolve root: the tree lives
   // under releases/v1-trial/assets/, and `<root>/assets/` is exactly that.
   assert.equal(ds.base, `${ds.root}/assets/`);
   assert.match(ds.probe, /^\/assets\//);
   const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
-  assert.ok(disabled.includes('ms-dataset'), 'both spellings must park it (main reads entry.enabled, branch reads the list)');
+  assert.ok(!disabled.includes('ms-dataset'), 'un-parked: it must not be in the disabled list either');
 });
 
 test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
   const order = readPreferredOrder(path.resolve(process.cwd(), '.'));
-  // 2026-10-13: ms-dataset moved to the tail while parked; head is ms-edge then r2-alt.
-  assert.deepEqual(order.slice(0, 2), ['ms-edge', 'r2-alt'], 'parked 后：ms-edge 最快、其次 r2-alt');
+  // 2026-10-13: local/ re-fed, ms-dataset back at the head; then ms-edge.
+  assert.deepEqual(order.slice(0, 2), ['ms-dataset', 'ms-edge'], 'local/ 补齐后：ms-dataset 最快、其次 ms-edge');
   const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'r2-alt' }];
-  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['r2-alt', 'r2', 'ms-dataset', 'ghfast-assets']);
+  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['ms-dataset', 'r2-alt', 'r2', 'ghfast-assets']);
   // 空 order = 原样返回（不改动历史行为）
   assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'r2-alt']);
 });

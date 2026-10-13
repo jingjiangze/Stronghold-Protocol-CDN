@@ -99,11 +99,11 @@ index.json (12,583)  ⊂  tree.json (20,130)
 |---|---|---:|---:|---:|---|---|
 | **r2** | r2 | **30/30** | 430 ms | 3.4 s | （r2 无 coverage 字段） | ✅ 权威 |
 | **r2-alt** | r2 | **30/30** | 619 ms | 1.9 s | （同上） | ✅ 同桶 |
-| **ms-dataset** | cdn | **26/30**（缺 2 docs + **整类 local**） | **107 ms** | 297 ms | full | ⚠️ 见 3.2（已 park） |
+| **ms-dataset** | cdn | **28/30**（缺 2 docs；local/ 2026-10-13 已补传） | **107 ms** | 297 ms | full | ✅ 见 3.2（已恢复） |
 | **openi** | git | **28/30**（缺 2 docs） | **255 ms** | 341 ms | full | ⚠️ 见 3.1 |
 | **ghfast-assets** | git | **28/30**（缺 2 docs） | 595 ms | 1.7 s | full | ⚠️ 见 3.1 |
 | **jsdelivr-assets** | git | **28/30**（缺 2 docs） | 2,047 ms | 11.3 s | full | ⚠️ 见 3.1 |
-| **ms-edge** | cdn | **26/30**（同 ms-dataset；容器已改道 r2） | 315 ms | 2.2 s | full | ⚠️ 见 3.2 |
+| **ms-edge** | cdn | **28/30**（同 ms-dataset） | 315 ms | 2.2 s | full | ✅ 见 3.2 |
 | **pages** | pages | **30/30**（字节全对） | **7.0 s** | **93.1 s** | （pages 无 coverage 字段） | ⚠️ 慢，不缺 |
 | **gitcdn-own** | git | **17/30**（13 条超时） | **10.6 s** | **30.0 s** | full | ⚠️ 见 3.3 |
 | **speedcdn** | （未注册） | 与 r2 字节全同 | — | — | — | 见第五节 |
@@ -152,7 +152,9 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
    这样**客户端 `pickFastest` 会把它判为坏源**，不再选中（见 3.2.1）。
 2. 重发 `rank.json`（排除 ms-dataset）→ ms-edge 容器读 rank 动态重排为 `r2 > modelscope`，
    `/assets/local/**` 改道 r2，实测 200。**两个源都不再吐 404。**
-3. 根治（PENDING）：把 `assets/local/` 补传进数据集（数据集仓 token 实测可读，见第六节）。
+3. **根治（已完成）**：把 `assets/local/` 补传进数据集 —— 1,611 文件 / 72 MB，
+   经 `git-lfs` 推送（`aef2493c..cf52aabb`），逐字节核验通过；随后**摘除 park、移回 order 首位**。
+   现在 `assets/local/**` 在 ms-dataset 上 200，ms-dataset 恢复为可用主源。
 
 #### 3.2.1 为什么「降级」之前一直没生效
 
@@ -189,7 +191,7 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 | # | 问题 | 证据 | 影响 |
 |---|---|---|---|
 | 1 | **`gitcdn-own` 声明 `full`，实测 17/30 全因超时** | 中位 10.6 s / p90 30 s；成功的 17 条字节全对 | 慢到不可用作运行时主源；`enabled` 未据此关闭 |
-| 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测 26/30** | 缺 2 个 `docs` + **整类 `assets/local/`**（1,614 文件） | 客户端选源曾导向整类 404 的源；2026-10-13 已 park |
+| 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测曾 26/30** | 缺 2 个 `docs` + **整类 `assets/local/`**（1,611 文件，从未进数据集） | 客户端选源曾导向整类 404 的源；2026-10-13 已补传 local 并恢复 |
 | 3 | **四个 git/cdn 源都缺 `docs/`**（声明 full 者亦含） | `docs/` 从未进 `assets-raw` 分支 | `docs/` 只能走 r2 / r2-alt / pages |
 | 4 | **`src/rank.mjs:28` 把 r2 写成 `coverage:'full'`，而 `mirrors.json` 里 r2 没有 coverage 字段** | 代码 vs 已发布清单 | 两份口径打架；线上 `rank.json` 里 r2 确实是 `full`，r2-alt 是空 |
 | 5 | **speedcdn 已可用但未登记** | 见第五节 | 客户端不会自动挑它 |
@@ -240,8 +242,8 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 - **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
   = r2 `index.json` 里记录的值 ✅
 - 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`
-- **实测缺口（26/30）**：2 个 `docs/` + **整棵 `assets/local/`（1,614 个文件，从未进数据集）**（见 3.2）。
-  **是整类缺口，不是零星缺失。**（2026-10-13 更正；该源已 park，补传后恢复。）
+- **实测缺口（2026-10-13 更正并已修复）**：曾缺 2 个 `docs/` + **整棵 `assets/local/`（1,611 个文件，从未进数据集）**（见 3.2）。
+  **是整类缺口，不是零星缺失**；当日已用 git-lfs 补传（`aef2493c..cf52aabb`）并恢复选源。现仅缺 2 个 `docs/`（`docs/` 从未进 `assets-raw`）。
 
 ### 6.2 创空间 `jingjiangze/Stronghold-Protocol`（ms-edge）—— ✅ 已上线，但视角依赖 UA
 

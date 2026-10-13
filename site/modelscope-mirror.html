@@ -137,7 +137,7 @@
           <tr><td class="mono">mirror-modelscope.yml</td><td><b>IMPLEMENTED</b>：<code class="inline">cron: '23 */6 * * *'</code>，每天四次</td></tr>
           <tr><td class="mono">分支合入</td><td><b>PENDING</b>：<code class="inline">feat/modelscope-mirror</code> 含 workflow + tool 但 cron 尚未生效；按纪律未直接动 main</td></tr>
           <tr><td class="mono">皮肤补充</td><td><b>PENDING</b>：默认排除 <code class="inline">assets/skins/**</code>，待 <code class="inline">--include-skins</code> 增量追加</td></tr>
-          <tr><td class="mono">运行时源</td><td><b>分支本身否决直连</b>（无文件直链）；运行时＝<b>同族数据集</b> <code class="inline">ms-dataset</code> 接入 <code class="inline">origins.json</code>。<b>⚠️ 2026-10-13 已 park</b>：数据集缺整棵 <code class="inline">assets/local/</code>（1,614 文件，从未进过数据集）；ms-edge 容器改读 <code class="inline">rank.json</code> 后已改道 r2（<code class="inline">/assets/local/**</code> 现 200）。补传 <code class="inline">assets/local/</code> 后从 disabled 摘除即可恢复</td></tr>
+          <tr><td class="mono">运行时源</td><td><b>分支本身否决直连</b>（无文件直链）；运行时＝<b>同族数据集</b> <code class="inline">ms-dataset</code> 接入 <code class="inline">origins.json</code>。<b>✅ 2026-10-13 已补齐</b>：数据集原缺整棵 <code class="inline">assets/local/</code>（1,611 文件，从未进过数据集），当日已用 <code class="inline">git-lfs</code> 补传（<code class="inline">aef2493c..cf52aabb</code>）并逐字节核验；已摘除 park、移回发布顺序首位。<code class="inline">/assets/local/**</code> 现 200</td></tr>
         </tbody>
       </table>
     </div>
