@@ -42,7 +42,7 @@ import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
 import { buildApiDoc } from './api-contract.mjs';
-import { readSources, fetchSourcePackage, extractSourceTree, readSource, applyOverrides, pinSatisfied } from './sources.mjs';
+import { readSources, fetchSourcePackage, extractSourceTree, readSource, readOverrides, readPinnedBytes, applyOverrides } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -571,20 +571,14 @@ async function main() {
       `(${(uploadSize / 1048576).toFixed(1)} MB to upload)`,
   );
 
-  // Deliberate divergences from upstream, declared as pins in sources.json. Applied here — after the
-  // diff above, before the index is serialized — so the cache token, the acceptance gate's
+  // Deliberate divergences from upstream, declared as overrides in sources.json. Applied here — after
+  // the diff above, before the index is serialized — so the cache token, the acceptance gate's
   // expectations, tree.json and the byte sample all describe the bytes we actually serve, while the
-  // pinned path is never uploaded from upstream's own tree (that would undo the pin).
-  const pins = readSources(ROOT).flatMap((source) => source.force);
-  if (pins.length && !opts.sources) {
-    throw new Error(
-      `${pins.length} override(s) are pinned in sources.json but --sources is off: the bytes have to come ` +
-        'from the declaring source package. Nothing was written.',
-    );
-  }
+  // pinned path is never uploaded from upstream's own tree (that would undo the override).
+  const pins = readOverrides(ROOT);
   const overrides = applyOverrides(index, pins);
   for (const o of overrides) {
-    log(`override ${o.path}: ${o.from.size} B upstream → ${o.to.size} B (${o.source}${o.why ? `; ${o.why}` : ''})`);
+    log(`override ${o.path}: ${o.from.size} B upstream → ${o.to.size} B (pin/${o.path}${o.why ? `; ${o.why}` : ''})`);
   }
 
   const indexJson = indexDocument({ release, index });
@@ -654,6 +648,18 @@ async function main() {
     if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
   }
 
+  // The bytes of every declared override, read from this repository and verified against the pin
+  // before anything is written. Uploaded on every run: they are small, and the bucket may still hold
+  // upstream's bytes from an earlier sync (or from the release the override replaces).
+  if (pins.length) {
+    log(`uploading ${pins.length} pinned override(s) …`);
+    for (const pin of pins) {
+      const body = readPinnedBytes(ROOT, pin);
+      await putObject(config, pin.path, body, { contentType: mimeFor(pin.path), cacheControl: IMMUTABLE });
+    }
+    report.overridesUploaded = pins.length;
+  }
+
   if (opts.prune && diff.remove.length) {
     // Objects we host deliberately -- mod art, which upstream will never list -- must survive a
     // prune. Without this, a routine cleanup would delete someone else's content.
@@ -682,27 +688,16 @@ async function main() {
         // uploaded from here. The divergent keys go into the report so "which files does this source
         // disagree about?" is answerable from the run's own artifact.
         const d = diffIndex(sourceIndex, index);
-        const pinnedPaths = source.force.map((pin) => pin.path);
-        for (const pin of source.force) {
-          if (!pinSatisfied(pin, sourceIndex.files)) {
-            const have = sourceIndex.files[pin.path];
-            throw new Error(
-              `override ${pin.path}: source ${source.id} does not ship those bytes — it has ` +
-                `${have ? `${have.size} B / ${have.sha256.slice(0, 8)}` : 'nothing at that path'}, while the pin needs ` +
-                `${pin.size} B / ${pin.sha256.slice(0, 8)}`,
-            );
-          }
-        }
-        const pinnedSet = new Set(pinnedPaths);
+        // A pinned path is already in the index with OUR bytes (applied above), so it surfaces in
+        // d.change; the additive path must not touch it — the override upload owns it.
+        const pinnedSet = new Set(pins.map((pin) => pin.path));
         const divergent = d.change.filter((key) => !pinnedSet.has(key));
         log(
           `source ${source.id}: ${sourceIndex.count} files, ${d.add.length} new, ` +
-            `${divergent.length} divergent from the main tree` +
-            (pinnedPaths.length ? `, ${pinnedPaths.length} pinned override(s)` : ''),
+            `${divergent.length} divergent from the main tree`,
         );
         let uploaded = { done: 0, failed: 0 };
-        const write = [...d.add, ...pinnedPaths];
-        if (write.length) uploaded = await uploadSourceKeys(config, layout.assets, write, sourceIndex.files);
+        if (d.add.length) uploaded = await uploadSourceKeys(config, layout.assets, d.add, sourceIndex.files);
 
         let refs = 0;
         if (manifestText) {
@@ -728,7 +723,6 @@ async function main() {
           // Capped: the artifact is published, and the point is to name the disagreement, not to
           // carry a second copy of the index.
           ...(divergent.length ? { divergentKeys: divergent.slice(0, 200), divergentKeysTruncated: divergent.length > 200 } : {}),
-          ...(pinnedPaths.length ? { pinned: pinnedPaths.length, pinnedKeys: pinnedPaths } : {}),
           uploaded: uploaded.done,
           failed: uploaded.failed,
           refsAddedToGate: refs,
