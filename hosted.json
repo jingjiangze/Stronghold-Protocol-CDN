@@ -35415,6 +35415,20 @@
           12502
         ]
       ]
+    },
+    {
+      "id": "mod-asset-canonical",
+      "what": "mod 素材权威键索引：sha256 → 唯一 canonical 键 + 别名，防重复上传",
+      "addedAt": "2026-10-13",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 330168,
+      "keys": [
+        [
+          "packs/mod-assets/index.json",
+          330168
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
