@@ -121,6 +121,18 @@ export const API_ENDPOINTS = [
     what: '上传后台的上线记录（谁传的、何时、组 id、字节、下线留痕 removedAt）——「这个键为什么在这里」的唯一答案',
   },
   {
+    path: '/packs/mod-assets/index.json',
+    contentType: 'application/json',
+    cache: 'public, max-age=3600',
+    what: 'mod 素材权威键索引：sha256 → 唯一 canonical 键（含 size / 来源 / aliases）。上传前先在这里按哈希查一次，命中就指现有键，别再传第二份；aliases 是历史同字节副本，暂时保留但新包不许指',
+  },
+  {
+    path: '/packs/mod-assets/README.txt',
+    contentType: 'text/plain; charset=utf-8',
+    cache: 'public, max-age=3600',
+    what: '给 mod 作者的说明书（同文源码在本仓 docs/MOD-AUTHORS.md）：路径规则与 ?v= 令牌、唯一能吃绝对 URL 的两个字段、指不过去的字段与行号、上传通道、高清与去重政策、交付闸门。用 .txt 是因为 .md 不在上传白名单里',
+  },
+  {
     path: '/packs/<自定义组>/<文件>',
     contentType: '按扩展名',
     cache: 'public, max-age=31536000, immutable',

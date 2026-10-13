@@ -63,6 +63,12 @@ const ops = await (await fetch(`${CDN}/docs/research/03-operators.json`)).json()
 先说结论，免得白做：**这个引擎里只有两处能接受外部绝对 URL**，其余素材一律必须内嵌在包内。
 判据核于引擎 0.18.3（上游 0.2.5 / MOD API 1），文件与行号都在下面。
 
+> 面向 mod 作者的完整版（含防重复查询流程、上传通道、交付闸门与一页速查）在
+> [`docs/MOD-AUTHORS.md`](MOD-AUTHORS.md)，并已作为纯文本发到 CDN：
+> `<CDN>/packs/mod-assets/README.txt`（`.md` 不在上传白名单里）。
+> 权威键索引：`<CDN>/packs/mod-assets/index.json`。现存的 1,033 个别名键（≈195.8 MiB 同字节副本）
+> **暂时全部保留**，但新包只许指索引里的 canonical 键。
+
 ### 6.1 能吃绝对 URL 的两个字段
 
 **① `pack.json` 的 `voices` / `voiceLangs` 条目 —— 只有音频**
