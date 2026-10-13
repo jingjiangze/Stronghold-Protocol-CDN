@@ -99,11 +99,11 @@ index.json (12,583)  ⊂  tree.json (20,130)
 |---|---|---:|---:|---:|---|---|
 | **r2** | r2 | **30/30** | 430 ms | 3.4 s | （r2 无 coverage 字段） | ✅ 权威 |
 | **r2-alt** | r2 | **30/30** | 619 ms | 1.9 s | （同上） | ✅ 同桶 |
-| **ms-dataset** | cdn | **26/30**（缺 2 docs + 2 local） | **107 ms** | 297 ms | full | ⚠️ 见 3.1 |
+| **ms-dataset** | cdn | **26/30**（缺 2 docs + **整类 local**） | **107 ms** | 297 ms | full | ⚠️ 见 3.2（已 park） |
 | **openi** | git | **28/30**（缺 2 docs） | **255 ms** | 341 ms | full | ⚠️ 见 3.1 |
 | **ghfast-assets** | git | **28/30**（缺 2 docs） | 595 ms | 1.7 s | full | ⚠️ 见 3.1 |
 | **jsdelivr-assets** | git | **28/30**（缺 2 docs） | 2,047 ms | 11.3 s | full | ⚠️ 见 3.1 |
-| **ms-edge** | cdn | **26/30**（同 ms-dataset） | 315 ms | 2.2 s | full | ⚠️ 见 3.2 |
+| **ms-edge** | cdn | **26/30**（同 ms-dataset；容器已改道 r2） | 315 ms | 2.2 s | full | ⚠️ 见 3.2 |
 | **pages** | pages | **30/30**（字节全对） | **7.0 s** | **93.1 s** | （pages 无 coverage 字段） | ⚠️ 慢，不缺 |
 | **gitcdn-own** | git | **17/30**（13 条超时） | **10.6 s** | **30.0 s** | full | ⚠️ 见 3.3 |
 | **speedcdn** | （未注册） | 与 r2 字节全同 | — | — | — | 见第五节 |
@@ -126,13 +126,40 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 > 以外的全部上游内容**，`fonts/` 也在内（`fonts/bender-regular.woff2` 200，字节相符）——
 > 这一条推翻了早期文档里「`docs` / `fonts` 只在 R2/Pages」的说法，`fonts` 那半句是错的。
 
-### 3.2 ms-dataset / ms-edge 的两个 `local` 文件
+### 3.2 ms-dataset / ms-edge：**整棵 `assets/local/` 缺失**（2026-10-13 更正）
 
-这两个源额外缺的 2 个 `local` 文件，**不是整类缺失**：`assets/local/` 有 1,614 个上游文件，
-本批 30 个探针里 `local` 抽了 2 个，全中；它们各自只差 1–2 个具体文件。
-ms-dataset 的 `mirrors.json` note 已说明其中一个原因：平台审核拒收
-`char_340_shwaz_snow_1/illustration.png`，改道 ms-edge 层的 exceptions 表。
-**结论：零星缺失，不是类别缺口。**
+> ⚠️ **本节原结论作废**。原版把探针里 `local` 抽的 2 个文件都 404 读成了「只差这 2 个具体文件」，
+> 实际语义相反：**这两个源对 `assets/local/` 是整类缺失**。
+
+**实测（2026-10-13，本机 `--noproxy` + 浏览器 UA）**：
+
+- 定向探针 22 条 `assets/local/**` 路径（UI/battle/token/spine/module/guide），
+  **ms-dataset 22/22 全部 404**；同批 `assets/char|skins|spine|audio|ui|…` 全部 200。
+- 直接查数据集目录（`/repo/tree?Root=releases/v1-trial/assets`）：顶层 13 个目录
+  **没有 `local`** —— `assets/local/` 从来没进过数据集（10-11 那次快照没带它）。
+- `ms-edge` 继承同一缺口：容器默认 302 到 ms-dataset，所以 `/assets/local/**` 也是 404。
+
+`assets/local/` 在上游口径下有 **1,614 个文件 / 282.7 MiB**（见第二节），是第三大类别。
+**所以这不是「零星缺失」，是一整个类别的缺口。**
+
+另有一个**真·单文件**例外：平台审核拒收 `assets/skins/char_340_shwaz_snow_1/illustration.png`
+（提交被 reverted），ms-edge 的 `sources.json` 例外表把它改道 r2 —— 这一条才是「单文件」。
+
+**处置（已执行 2026-10-13）**：
+
+1. `origins.json` 把 ms-dataset **降级**（`enabled:false` + disabled 名单 + order 队尾），
+   并把它的 probe 从 200 的 char 路径改成实测 404 的 `assets/local/…` 小图 ——
+   这样**客户端 `pickFastest` 会把它判为坏源**，不再选中（见 3.2.1）。
+2. 重发 `rank.json`（排除 ms-dataset）→ ms-edge 容器读 rank 动态重排为 `r2 > modelscope`，
+   `/assets/local/**` 改道 r2，实测 200。**两个源都不再吐 404。**
+3. 根治（PENDING）：把 `assets/local/` 补传进数据集（数据集仓 token 实测可读，见第六节）。
+
+#### 3.2.1 为什么「降级」之前一直没生效
+
+`cdn/v1/pick.js` 的 `pickFastest` **从不读 `enabled`** —— 被 park 的源照样参与测速、照样可能被选中。
+所以只改 `enabled:false` 而不动探针，线上选源器无感。真正的修法是让 `pickFastest` 读 `enabled`
+（2026-10-13 已修并重发，`requireEnabled` 默认 true）。同一缺陷此前也让站点首页选中
+**openi**（ACAO 写死第三方域，浏览器跨域取 WebGL 贴图被拒 → 立绘加载不出来）。
 
 ### 3.3 gitcdn-own：不是「缺」，是「取不动」
 
@@ -162,7 +189,7 @@ ms-dataset 的 `mirrors.json` note 已说明其中一个原因：平台审核拒
 | # | 问题 | 证据 | 影响 |
 |---|---|---|---|
 | 1 | **`gitcdn-own` 声明 `full`，实测 17/30 全因超时** | 中位 10.6 s / p90 30 s；成功的 17 条字节全对 | 慢到不可用作运行时主源；`enabled` 未据此关闭 |
-| 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测 26/30** | 缺 2 个 `docs` + 2 个具体 `local` 文件 | 客户端选源可能导向有零星缺口的源 |
+| 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测 26/30** | 缺 2 个 `docs` + **整类 `assets/local/`**（1,614 文件） | 客户端选源曾导向整类 404 的源；2026-10-13 已 park |
 | 3 | **四个 git/cdn 源都缺 `docs/`**（声明 full 者亦含） | `docs/` 从未进 `assets-raw` 分支 | `docs/` 只能走 r2 / r2-alt / pages |
 | 4 | **`src/rank.mjs:28` 把 r2 写成 `coverage:'full'`，而 `mirrors.json` 里 r2 没有 coverage 字段** | 代码 vs 已发布清单 | 两份口径打架；线上 `rank.json` 里 r2 确实是 `full`，r2-alt 是空 |
 | 5 | **speedcdn 已可用但未登记** | 见第五节 | 客户端不会自动挑它 |
@@ -213,7 +240,8 @@ ms-dataset 的 `mirrors.json` note 已说明其中一个原因：平台审核拒
 - **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
   = r2 `index.json` 里记录的值 ✅
 - 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`
-- **实测缺口（26/30）**：2 个 `docs/` + 2 个具体 `local/` 文件（见 3.2）。**不是整类缺失。**
+- **实测缺口（26/30）**：2 个 `docs/` + **整棵 `assets/local/`（1,614 个文件，从未进数据集）**（见 3.2）。
+  **是整类缺口，不是零星缺失。**（2026-10-13 更正；该源已 park，补传后恢复。）
 
 ### 6.2 创空间 `jingjiangze/Stronghold-Protocol`（ms-edge）—— ✅ 已上线，但视角依赖 UA
 
