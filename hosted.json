@@ -34823,6 +34823,24 @@
           900142
         ]
       ]
+    },
+    {
+      "id": "mod-ave-mujica-20261013",
+      "what": "ave-mujica 工坊包自带素材：char/avatar/char_4184_dolris.png（52054 B，sha256 573315b9b9da…）",
+      "addedAt": "2026-10-13",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 114553,
+      "keys": [
+        [
+          "assets/char/avatar/char_4184_dolris.png",
+          52054
+        ],
+        [
+          "assets/char/avatar/char_4184_dolris_2.png",
+          62499
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
