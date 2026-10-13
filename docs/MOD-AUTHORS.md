@@ -110,6 +110,25 @@ node tools/agent-upload.mjs \
 - 链路是 `begin → presigned PUT → commit → 发布轮逐字节核对 sha256 → 登记 hosted.json（进 git）`。**只增不覆盖、不删别人的东西**；口令 = Pages secret `ADMIN_UPLOAD_KEY`（本机放 `~/.cdn_admin_key`，绝不进 git）。
 - 上线后键名与摘要会进 `<CDN>/cdn/v1/hosted-index.json`，谁传的进 `<CDN>/cdn/v1/upload-log.json`。
 - 上传的是 zip 存档时：zip 里 `pack.json` 必须在**根**（否则站外工具读不到包 id 与作者）；解到工坊根后要长成 `<工坊根>/<包 id>/pack.json`。
+- **默认键是 `packs/<source>/<文件名>`**。以前默认丢进 `assets/local/<文件名>`，10-13 的桶内对账显示这正是一批「整包转储」挤进上游 `local` 命名空间的来源（`assets/local/<组>/**` 共 1,570 键 / 253.2 MiB）。要进素材树就显式写 `--to=assets/…`，并按 §2 先查过哈希。
+
+### 5.1 几百件以上用批量版
+
+```bash
+node tools/agent-upload-batch.mjs --manifest=list.json --source=my-group \
+     --what="说明" --concurrency=8 --resume=ledger.json --kick
+# 或：--dir=stage --to=assets/char/portrait/ --strip=public/
+```
+
+| | 单文件版 | 批量版 |
+|---|---|---|
+| 实测 | **6.3–7.8 秒/件**（≈0.16 件/秒） | **271 件 / 31.4 MiB / 295 秒**（≈0.92 件/秒、107 KB/s） |
+| 管理面 | 每件新建 TLS，且 `fetch` 8 秒不成就 spawn `curl`（每件 2 次） | 一条 keep-alive 连接池复用；`begin/PUT/commit` 平均 1.3 s / 2.0 s / 3.1 s（瓶颈在 Pages Function，不在桶） |
+| 传输 | 一件一进程、串行 | N 路并发流水（默认 6，建议 8），只哈希一次，`--resume` 记账续传 |
+| 发布轮 | 每传一件 dispatch 一次 | 全程只在 `--kick` 时叫一轮 |
+| 撞已有键 | 每件吃一个 409 | **先 HEAD 现网预检再传**：本轮 546 件里 275 件现网已有 ⇒ 37 秒全跳过、0 失败 |
+
+> 预检为什么必须做：`cdn/v1/index.json` 与 `cdn/v1/hosted-index.json` 都**滞后于桶**（别人刚传的、还在暂存区的都不在里面）。只按清单判「缺不缺」，546 件里会误判 275 件。
 
 ## 6. 尺寸与高清政策
 
