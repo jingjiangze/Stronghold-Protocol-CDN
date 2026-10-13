@@ -27,7 +27,8 @@
       "root": "https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial",
       "probe": "/assets/char/avatar/char_003_kalts.png",
       "coverage": "full",
-      "note": "自建 ModelScope **数据集**镜像（15,979 assets + 7 fonts，逐字节校验过）。它是目前测过**唯一同时满足三件事**的源：ACAO 可用（浏览器跨域可取）、Range 返 206（seek 可用）、且比现有主源快——直连实测小文件 TTFB 0.21–0.22s vs weishucdn 0.62–0.69s，855 KB 大文件 0.26s/3.3 MB/s vs 1.6–2.2s/0.4 MB/s。对照 OpenI：一样快（0.21s）但 ACAO 写死第三方域且二进制忽略 Range，所以只能作非浏览器通道；数据集是又快又浏览器可用的那一个。收口 docs/audit/openi-cors-bypass.md §5 的 PENDING-E（「ModelScope dataset 有 ACAO:* 但需另开仓」）。**root 用可变 master 而非 40hex**（2026-10-11 决定：不钉）。镜像还在陆续追加文件，钉死后新素材要等换版才可见；而这里路径本身不变、内容是 LFS 对象，可变 master 不会让同一个路径指向不同内容。Stardust 的 MATERIAL-SOURCES.md 要求钉 40hex，这条是我们的**有意取舍**，不是遗漏。镜像缺一个文件（平台审核拒收 char_340_shwaz_snow_1/illustration.png，改道见 ms-edge 层的 exceptions 表）。与「第三镜像」（创空间 cdn 分支快照，见 site/modelscope-mirror.html）同族：分支是 git-only（创空间不提供文件直链），HTTP 可用形态就是这个数据集；ms-edge 层的默认 302 目标即本条目。"
+      "note": "[已临时降级 2026-10-13：镜像整棵 assets/local/ ~1,611 文件 404（无自动推送方、10-11 手工快照后回归），补传修好后从 disabled 摘除即可恢复。原因与实测见 f1-probe。] 自建 ModelScope **数据集**镜像（15,979 assets + 7 fonts，逐字节校验过）。它是目前测过**唯一同时满足三件事**的源：ACAO 可用（浏览器跨域可取）、Range 返 206（seek 可用）、且比现有主源快——直连实测小文件 TTFB 0.21–0.22s vs weishucdn 0.62–0.69s，855 KB 大文件 0.26s/3.3 MB/s vs 1.6–2.2s/0.4 MB/s。对照 OpenI：一样快（0.21s）但 ACAO 写死第三方域且二进制忽略 Range，所以只能作非浏览器通道；数据集是又快又浏览器可用的那一个。收口 docs/audit/openi-cors-bypass.md §5 的 PENDING-E（「ModelScope dataset 有 ACAO:* 但需另开仓」）。**root 用可变 master 而非 40hex**（2026-10-11 决定：不钉）。镜像还在陆续追加文件，钉死后新素材要等换版才可见；而这里路径本身不变、内容是 LFS 对象，可变 master 不会让同一个路径指向不同内容。Stardust 的 MATERIAL-SOURCES.md 要求钉 40hex，这条是我们的**有意取舍**，不是遗漏。镜像缺一个文件（平台审核拒收 char_340_shwaz_snow_1/illustration.png，改道见 ms-edge 层的 exceptions 表）。与「第三镜像」（创空间 cdn 分支快照，见 site/modelscope-mirror.html）同族：分支是 git-only（创空间不提供文件直链），HTTP 可用形态就是这个数据集；ms-edge 层的默认 302 目标即本条目。",
+      "enabled": false
     }
   ],
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 14,741-file / 2.14 GiB art tree (incl. 2,476 skins) lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Skins are served from this git-mount layer (assets-raw); R2/Pages also carries them now because the upstream release zip bundles assets/skins/** (verified byte-identical on weishucdn vs assets-raw). Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
@@ -88,11 +89,17 @@
     "statically"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
-  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-dataset 0.157s < ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。",
-  "order": ["ms-dataset", "ms-edge", "r2-alt", "r2"],
+  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-dataset 0.157s < ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。2026-10-13：ms-dataset 因 local/ 整类缺失临时降级队尾（见 disabled），补传后移回首位。",
+  "order": [
+    "ms-edge",
+    "r2-alt",
+    "r2",
+    "ms-dataset"
+  ],
   "disabled": [
     "jsdelivr",
     "jsdelivr-assets",
-    "openi"
+    "openi",
+    "ms-dataset"
   ]
 }
