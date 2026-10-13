@@ -8,6 +8,12 @@
   },
   "extraOrigins": [
     {
+      "id": "speedcdn",
+      "kind": "r2",
+      "root": "https://speedcdn.jiangjiangze.icu",
+      "note": "同一个桶 stronghold-assets 的第三个自定义域名：与 weishucdn / weishucdn2 解析到同一 IP、同一份字节（已实测 api.json/mirrors.json/index.json/tree.json 等 7 个文件 sha256 完全相同）。零额外存储、不占额度，只多一个入口。zone 那条 CORS 改写规则的表达式已同时覆盖三个 host，行为逐头核对一致（200/206、ACAO *、expose Content-Length/Content-Range/ETag、immutable）。2026-10-13 登记：此前域名已生效但从未进入源清单，客户端不会自动挑它、rank.json 也不会为它排名 —— 现在补登。"
+    },
+    {
       "id": "r2-alt",
       "kind": "r2",
       "root": "https://weishucdn2.jiangjiangze.icu",
@@ -88,12 +94,13 @@
     "statically"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
-  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-dataset 0.157s < ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。2026-10-13：ms-dataset 的 local/ 整类缺失已补传（git-lfs 1,611 文件），移回首位。",
+  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-dataset 0.157s < ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。2026-10-13：ms-dataset 的 local/ 整类缺失已补传（git-lfs 1,611 文件），移回首位；speedcdn 与 r2 同桶同字节，排在 r2 之后作为等价的第三个 R2 入口。",
   "order": [
     "ms-dataset",
     "ms-edge",
     "r2-alt",
-    "r2"
+    "r2",
+    "speedcdn"
   ],
   "disabled": [
     "jsdelivr",

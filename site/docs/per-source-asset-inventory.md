@@ -126,10 +126,10 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 > 以外的全部上游内容**，`fonts/` 也在内（`fonts/bender-regular.woff2` 200，字节相符）——
 > 这一条推翻了早期文档里「`docs` / `fonts` 只在 R2/Pages」的说法，`fonts` 那半句是错的。
 
-### 3.2 ms-dataset / ms-edge：**整棵 `assets/local/` 缺失**（2026-10-13 更正）
+### 3.2 ms-dataset / ms-edge：**已补齐整棵 `assets/local/`**（2026-10-13 根治）
 
 > ⚠️ **本节原结论作废**。原版把探针里 `local` 抽的 2 个文件都 404 读成了「只差这 2 个具体文件」，
-> 实际语义相反：**这两个源对 `assets/local/` 是整类缺失**。
+> 实际语义相反：**这两个源对 `assets/local/` 是整类缺失**。2026-10-13 已 git-lfs 推送 1,611 个文件，数据集恢复为可用主源。
 
 **实测（2026-10-13，本机 `--noproxy` + 浏览器 UA）**：
 
@@ -202,9 +202,9 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 
 ---
 
-## 五、speedcdn 到底算不算「上线」
+## 五、speedcdn：已登记为发布源（2026-10-13 收口）
 
-**结论：dns/http 层面已完全可用，但没有被登记为发布源。**
+**结论：dns/http 层面完全可用，2026-10-13 已登记进 `origins.json`。**
 
 - **可用**：`speedcdn.jiangjiangze.icu` 与 `weishucdn2` 解析到同一个 IP
   （`2606:4700:3035::6815:5782`）。
@@ -220,13 +220,12 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
   | `/assets/char/avatar/char_002_amiya.png` | 56,957 | `373399462e2210a6` |
   | `/assets/audio/bgm/m_bat_abyssalhunters_intro.mp3` | 854,143 | `c30569ed3f403c0e` |
 
-- **但未注册**：`origins.json` 里 0 命中；`mirrors.json` 的 `flat[]` 里 0 命中；
-  `api.json` 里 0 次提及。仓库里只在两处**文档/注释**出现过
-  （`site/docs/mirror-selection.md:149-151`、`src/rank.mjs:10` 的注释）。
+- **2026-10-13 已登记**：`origins.json` 的 `extraOrigins` 新增 `speedcdn`（kind:r2、root 指向 speedcdn.jiangjiangze.icu），
+  `order` 末位追加 `speedcdn`。重发 `mirrors.json` 后，它会进入 `flat[]`，客户端与站点测速都能看到它；
+  `rank.json` 也会为它排名（与 r2 同桶，实测并列）。**它不是 docker 中转 CDN**，就是同一个桶的第三个门牌。
 
-> **所以准确的说法是**：speedcdn 是一个**已生效但未被登记**的第三个 R2 自定义域。
-> 取字节完全正常，但它不在任何机器可读的源清单里 —— 客户端不会自动挑它，
-> `rank.json` 也不会为它排名。**它不是 docker 中转 CDN**，就是同一个桶的另一个门牌。
+> **此前状态（已更正）**：域名早已生效但从未进源清单，客户端不会自动挑它、`rank.json` 也不会为它排名。
+> 2026-10-13 补登后，三个 R2 入口（weishucdn / weishucdn2 / speedcdn）在清单里并列，客户端按实测任选其一。
 
 ---
 
