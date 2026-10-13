@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "generatedAt": "2026-10-13T08:47:43.525Z",
+  "title": "卫戍协议：盟约 · 逆向 weishu 产物 → Forge 工坊包交接清单",
+  "source": "https://weishuxieyi.icu/_build/f638115c25cd-20/（build f638115c25cd-20 / app 0.2.1）",
+  "engineBaseline": {
+    "appVersion": "0.18.3",
+    "upstream": "0.2.5",
+    "modApiVersion": 1,
+    "validatedWith": "node tools/workshop-validate.mjs（干净 workshop 根，逐包单独装载）"
+  },
+  "publisher": "jingjiangze",
+  "licenseNote": "每个包的 pack.json 自带 license；数据/美术/语音 © Hypergryph / Yostar，含官方素材，仅供非商业学习与个人娱乐，不主张任何权利。",
+  "totalBytes": 194930045,
+  "totalRawBytes": 367671084,
+  "stationSubmissions": {
+    "clemnt-addition": "ba3b3d908414（flagged/，含 .skel/.atlas ⇒ GAME_ASSET blocker，同 ave-mujica 一条路）",
+    "makoto-voice": "9ebe20a7e8f1（normal/）",
+    "i18n-online-gaps": "985545798449（normal/）"
+  },
+  "whyArtIsNotOnTheStation": [
+    "站点入口实测 3–126 KB/s 且单条连接约 60–120 秒被重置；2 MB 能过、4 MB 起断，25.7 MiB 的一片按这条通道传不完。",
+    "引擎没有让包「指向外部 URL」的美术通道：art / skins[].art 的值一律被前缀成 /workshop-assets/<包id>/<路径>（shared/workshop.js:3629），spine 还额外要求 skel 以 / 开头（public/js/assets.js:213 validSpine）。",
+    "唯一能吃绝对 URL 的字段是 voices / voiceLangs 的 {url,sha256,file}（服务端装载时取字节，https，单条 ≤24 MiB）；assets.mirrors 只镜像本包自己的 .spresources 容器，字节仍必须在 zip 里。",
+    "能吐任意 URL 的外观提供者 appearance(ctx) 一进程只许一个，槽位已被上线的 skin-picker 占住（client/picker.js:177），而它也只读合并后的 /workshop-assets/ 地址。"
+  ],
+  "howToIngest": [
+    "逐片 GET 上面的 url（或 urlAlt），比 sha256；",
+    "解到工坊根即 <包id>/pack.json 的目录形状（zip 里是扁平形状：pack.json 在根、素材在 assets/ 下）。装载器只认 <工坊根>/<包id>/pack.json。",
+    "校验：node tools/workshop-validate.mjs --workshop <那个工坊根>，或 node tools/check-packs.mjs --engine <引擎目录>。",
+    "时装那 7 片的包 id 排序都在 skin-catalogue 之前 ⇒ 与它同装时 skin-catalogue 的同 charId|skinId 条目会被 SKIN_COLLISION 跳过（不阻塞加载）。要么并进 skin-catalogue 本体，要么保留本批，别两套并存。"
+  ],
+  "knownGaps": [
+    "克莱门莎驻守特质 effectKey = custom_gar_allied_kills：引擎 0.18.3 全仓 0 命中（data/effects.json 361 条里也没有）⇒ 特质能装载但不产生层数；§28.49 trait.grantsBonds 是固定映射发层，不能替代按击杀计数。",
+    "克莱门莎技能 bb 里 attack@aoe_atk_scale / water_element / max_passenger_cnt / max_passenger_mass / move_speed / physical_atk_scale 通用 kit 不读（12 条 BB_UNKNOWN_KEY）⇒ 要手写 kits/chess_char_4_27_a.js / _b.js。",
+    "bonds 的 members 是数组 ⇒ overrides 覆盖时整块替换；引擎后续往【阿戈尔】【迅捷】【不屈】加成员会被顶掉，需随版本重切。",
+    "chess 256 条 / tokens 6 条 / units 72 条「与线上不同」的方向是引擎多字段（potDown / potBelow / potMin / byModule 完整 stats）⇒ 不投，投上去是把引擎降级。",
+    "choices.pools 的权重差异（线上 45/45/10 ↔ 引擎 10/10/3）投不进去：choices 的 content 通道按 {[id]:record} 并表，而差异在顶层非 id 的 pools.* 路径；config 更是被引擎有意排除（没有通道）。",
+    "四类内容没有包通道、整块投不了：BGM（线上多 audio.bgm.protocol，2.6 MB）、字体 fonts/、局部模式与 autochess 地图（data/local-assets.json + assets/local/ 75 个贴图 17 MB）、emotes/support/tuning。",
+    "i18n 通道只补不覆盖（mergeWorkshopI18n 永不改已有键）⇒ 韩文 293 条、日文 9 条措辞差异改不动；补进去的 53 条英文里多数 msgid（房内聊天/联防投票/伤害统计）引擎本身没有 ⇒ 预置、装上不被引用。",
+    "皮肤 id 上限 32 字符（SKIN_ID_RE）：17 套 ambienceSynesthesia 目录名 38 字符，沿用 skin-catalogue 已定的 ambSyn 缩写。",
+    "char_4182_oblvns_avemujica_1 与已上线 ave-mujica 有一份重复美术（≈1.6 MB，在 cosmetics-06 里）：那个包用的是自建 id avemujica-oblvns 与自建目录 skin/op/…，所以不触发 SKIN_COLLISION，代价是同一套美术两份存在。"
+  ],
+  "pieces": [
+    {
+      "packId": "clemnt-addition",
+      "version": "2.0.0",
+      "file": "clemnt-addition.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/clemnt-addition.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/clemnt-addition.zip",
+      "bytes": 2032322,
+      "sha256": "26e8dec9c52bb8870f9228851dbaa95cd5a1df87e647f6464f008c61d7830530",
+      "rawBytes": 3445910,
+      "entries": 47,
+      "liveHttp": 200,
+      "liveBytes": 2032322,
+      "liveMatches": true,
+      "kind": "数据（content: chess/garrisons/bonds）",
+      "covers": {
+        "records": 2
+      },
+      "engineGate": "0 error(s), 14 warning(s)",
+      "alsoSubmittedToStation": true
+    },
+    {
+      "packId": "makoto-voice",
+      "version": "1.0.0",
+      "file": "makoto-voice.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/makoto-voice.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/makoto-voice.zip",
+      "bytes": 275708,
+      "sha256": "920d2b48ec4a924f759a2950fc67e380f6ea588e6df40f809b3ef5ee14b1d509",
+      "rawBytes": 299738,
+      "entries": 16,
+      "liveHttp": 200,
+      "liveBytes": 275708,
+      "liveMatches": true,
+      "kind": "语音",
+      "covers": {
+        "voiceClips": 14
+      },
+      "engineGate": "0 error(s), 1 warning(s)",
+      "alsoSubmittedToStation": true
+    },
+    {
+      "packId": "i18n-online-gaps",
+      "version": "1.0.0",
+      "file": "i18n-online-gaps.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/i18n-online-gaps.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/i18n-online-gaps.zip",
+      "bytes": 5019,
+      "sha256": "bd919ec735bb4e7ee6531ed4c8edcaf67b4e031aeccec8587f9d5980fbe93186",
+      "rawBytes": 6956,
+      "entries": 6,
+      "liveHttp": 200,
+      "liveBytes": 5019,
+      "liveMatches": true,
+      "kind": "其它",
+      "covers": {},
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": true
+    },
+    {
+      "packId": "cosmetics-01",
+      "version": "1.0.0",
+      "file": "cosmetics-01.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-01.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-01.zip",
+      "bytes": 26910588,
+      "sha256": "7eeae8b4a3cd94cc8f64346fe5be79c7860f8bedc069adb5d07b333974eb86c0",
+      "rawBytes": 54074537,
+      "entries": 290,
+      "liveHttp": 200,
+      "liveBytes": 26910588,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 36,
+        "firstSkin": "char_003_kalts_boc_6",
+        "lastSkin": "char_1040_blaze2_winter_5"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-02",
+      "version": "1.0.0",
+      "file": "cosmetics-02.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-02.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-02.zip",
+      "bytes": 31210656,
+      "sha256": "482fbf6a248de52e7cfa45a9251d1f694bb55c83f43cfbefaea0c9f20cbb67f9",
+      "rawBytes": 54365777,
+      "entries": 426,
+      "liveHttp": 200,
+      "liveBytes": 31210656,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 53,
+        "firstSkin": "char_1041_angel2_iteration_6",
+        "lastSkin": "char_2013_cerber_summer_4"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-03",
+      "version": "1.0.0",
+      "file": "cosmetics-03.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-03.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-03.zip",
+      "bytes": 30346141,
+      "sha256": "d3d2798e237089611d801b59b36a21a63fb1511b62f98b8a94b6c0d7dce1685c",
+      "rawBytes": 54114687,
+      "entries": 388,
+      "liveHttp": 200,
+      "liveBytes": 30346141,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 49,
+        "firstSkin": "char_2013_cerber_whirlwind_2",
+        "lastSkin": "char_300_phenxi_boc_9"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-04",
+      "version": "1.0.0",
+      "file": "cosmetics-04.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-04.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-04.zip",
+      "bytes": 29528636,
+      "sha256": "0a1db8dc3e21b121792516dd388c035c7bf81647ff217de795fbc0c6285b9ea9",
+      "rawBytes": 53498009,
+      "entries": 346,
+      "liveHttp": 200,
+      "liveBytes": 29528636,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 43,
+        "firstSkin": "char_300_phenxi_witch_4",
+        "lastSkin": "char_4016_kazema_witch_3"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-05",
+      "version": "1.0.0",
+      "file": "cosmetics-05.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-05.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-05.zip",
+      "bytes": 27201463,
+      "sha256": "c056bc2f95f733d8de633d0a3f27bb851a452e0670422f78d341066b20c58e18",
+      "rawBytes": 53495938,
+      "entries": 274,
+      "liveHttp": 200,
+      "liveBytes": 27201463,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 34,
+        "firstSkin": "char_4026_vulpis_epoque_55",
+        "lastSkin": "char_4116_blkkgt_witch_5"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-06",
+      "version": "1.0.0",
+      "file": "cosmetics-06.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-06.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-06.zip",
+      "bytes": 26717757,
+      "sha256": "1639fe3a004c6eef6a74cba4a6c01b60dbc6a803a1b754cb7b9b0e233616274d",
+      "rawBytes": 54085376,
+      "entries": 223,
+      "liveHttp": 200,
+      "liveBytes": 26717757,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 28,
+        "firstSkin": "char_4117_ray_shining_2",
+        "lastSkin": "char_4202_haruka_iteration_6"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    },
+    {
+      "packId": "cosmetics-07",
+      "version": "1.0.0",
+      "file": "cosmetics-07.zip",
+      "url": "https://weishucdn.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-07.zip",
+      "urlAlt": "https://weishucdn2.jiangjiangze.icu/packs/sp-forge-2026-10-13/cosmetics-07.zip",
+      "bytes": 20701755,
+      "sha256": "ede2b496d3e439d1b531e926b857af955c5ac4a62a043548b6550895731283c8",
+      "rawBytes": 40284156,
+      "entries": 234,
+      "liveHttp": 200,
+      "liveBytes": 20701755,
+      "liveMatches": true,
+      "kind": "时装美术（skins + 包内 assets/）",
+      "covers": {
+        "skins": 29,
+        "firstSkin": "char_4204_mantra_sightseer_4",
+        "lastSkin": "char_498_inside_summer_22"
+      },
+      "engineGate": "0 error(s), 0 warning(s)",
+      "alsoSubmittedToStation": null
+    }
+  ]
+}
