@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：skin/op/char_4182_oblvns/back/char_4182_oblvns_avemujica_1.skel（712199 B，sha256 478b54b4b346…）",
+      "what": "ave-mujica 工坊包自带素材：skin/op/char_4183_mortis/back/char_4183_mortis_avemujica_1.atlas（21930 B，sha256 6e3ea9de3fcb…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 21,
-      "bytes": 2337258,
+      "files": 26,
+      "bytes": 3762328,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -34915,6 +34915,26 @@
         [
           "assets/skin/op/char_4182_oblvns/front/char_4182_oblvns_avemujica_1.atlas",
           11363
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/front/char_4182_oblvns_avemujica_1.png",
+          267744
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/front/char_4182_oblvns_avemujica_1.skel",
+          935689
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/portrait.png",
+          127111
+        ],
+        [
+          "assets/skin/op/char_4183_mortis/avatar.png",
+          72596
+        ],
+        [
+          "assets/skin/op/char_4183_mortis/back/char_4183_mortis_avemujica_1.atlas",
+          21930
         ]
       ]
     }
