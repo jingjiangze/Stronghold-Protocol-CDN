@@ -35418,12 +35418,16 @@
     },
     {
       "id": "mod-asset-canonical",
-      "what": "mod 素材权威键索引：sha256 → 唯一 canonical 键 + 别名，防重复上传",
+      "what": "mod 作者说明书（路径规则/防重复查询/能指与不能指的字段/交付闸门）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 330168,
+      "files": 2,
+      "bytes": 341708,
       "keys": [
+        [
+          "packs/mod-assets/README.txt",
+          11540
+        ],
         [
           "packs/mod-assets/index.json",
           330168
