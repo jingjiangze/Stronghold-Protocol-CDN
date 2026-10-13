@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：skill/skchr_am_oblivionis_2.png（34883 B，sha256 f68338b8eab3…）",
+      "what": "ave-mujica 工坊包自带素材：skin/op/char_4182_oblvns/back/char_4182_oblvns_avemujica_1.skel（712199 B，sha256 478b54b4b346…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 16,
-      "bytes": 1308505,
+      "files": 21,
+      "bytes": 2337258,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -34895,6 +34895,26 @@
         [
           "assets/skill/skchr_am_oblivionis_3.png",
           33037
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/avatar.png",
+          68635
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/back/char_4182_oblvns_avemujica_1.atlas",
+          8439
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/back/char_4182_oblvns_avemujica_1.png",
+          228117
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/back/char_4182_oblvns_avemujica_1.skel",
+          712199
+        ],
+        [
+          "assets/skin/op/char_4182_oblvns/front/char_4182_oblvns_avemujica_1.atlas",
+          11363
         ]
       ]
     }
