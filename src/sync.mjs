@@ -42,7 +42,7 @@ import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
 import { buildApiDoc } from './api-contract.mjs';
-import { readSources, fetchSourcePackage, extractSourceTree, readSource } from './sources.mjs';
+import { readSources, fetchSourcePackage, extractSourceTree, readSource, applyOverrides, pinSatisfied } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -397,7 +397,7 @@ async function main() {
       const res = await fetch(`${opts.base}/cdn/v1/index.json`, { signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const idx = await res.json();
-      const built = readTree(ROOT, idx.files || idx);
+      const built = readTree(ROOT, idx.files || idx, { token: published.art.token });
       await putObject(config, 'cdn/v1/tree.json', Buffer.from(built.json, 'utf8'), {
         contentType: 'application/json',
         cacheControl: SHORT,
@@ -571,6 +571,22 @@ async function main() {
       `(${(uploadSize / 1048576).toFixed(1)} MB to upload)`,
   );
 
+  // Deliberate divergences from upstream, declared as pins in sources.json. Applied here — after the
+  // diff above, before the index is serialized — so the cache token, the acceptance gate's
+  // expectations, tree.json and the byte sample all describe the bytes we actually serve, while the
+  // pinned path is never uploaded from upstream's own tree (that would undo the pin).
+  const pins = readSources(ROOT).flatMap((source) => source.force);
+  if (pins.length && !opts.sources) {
+    throw new Error(
+      `${pins.length} override(s) are pinned in sources.json but --sources is off: the bytes have to come ` +
+        'from the declaring source package. Nothing was written.',
+    );
+  }
+  const overrides = applyOverrides(index, pins);
+  for (const o of overrides) {
+    log(`override ${o.path}: ${o.from.size} B upstream → ${o.to.size} B (${o.source}${o.why ? `; ${o.why}` : ''})`);
+  }
+
   const indexJson = indexDocument({ release, index });
   // The cache token must change whenever the bytes do, not only when the upstream tag does. A tag
   // alone is not enough: the first population of a tree happens under a tag that was already
@@ -601,6 +617,7 @@ async function main() {
     tree: { files: index.count, bytes: index.bytes },
     diff: { add: diff.add.length, change: diff.change.length, same: diff.same, remove: diff.remove.length, uploadBytes: uploadSize },
     removedSample: diff.remove.slice(0, 50),
+    overrides,
     uploaded: null,
     verification: null,
     pages: null,
@@ -660,14 +677,32 @@ async function main() {
         const { layout, index: sourceIndex, manifestText } = await readSource({ source, root });
 
         // Only paths the main tree lacks are written; a same-path difference is a divergence to
-        // report, never an overwrite of the authoritative upstream bytes.
+        // report, never an overwrite of the authoritative upstream bytes — except for the paths this
+        // source pins, whose bytes the index already carries (applied above) and which are therefore
+        // uploaded from here. The divergent keys go into the report so "which files does this source
+        // disagree about?" is answerable from the run's own artifact.
         const d = diffIndex(sourceIndex, index);
+        const pinnedPaths = source.force.map((pin) => pin.path);
+        for (const pin of source.force) {
+          if (!pinSatisfied(pin, sourceIndex.files)) {
+            const have = sourceIndex.files[pin.path];
+            throw new Error(
+              `override ${pin.path}: source ${source.id} does not ship those bytes — it has ` +
+                `${have ? `${have.size} B / ${have.sha256.slice(0, 8)}` : 'nothing at that path'}, while the pin needs ` +
+                `${pin.size} B / ${pin.sha256.slice(0, 8)}`,
+            );
+          }
+        }
+        const pinnedSet = new Set(pinnedPaths);
+        const divergent = d.change.filter((key) => !pinnedSet.has(key));
         log(
           `source ${source.id}: ${sourceIndex.count} files, ${d.add.length} new, ` +
-            `${d.change.length} divergent from the main tree`,
+            `${divergent.length} divergent from the main tree` +
+            (pinnedPaths.length ? `, ${pinnedPaths.length} pinned override(s)` : ''),
         );
         let uploaded = { done: 0, failed: 0 };
-        if (d.add.length) uploaded = await uploadSourceKeys(config, layout.assets, d.add, sourceIndex.files);
+        const write = [...d.add, ...pinnedPaths];
+        if (write.length) uploaded = await uploadSourceKeys(config, layout.assets, write, sourceIndex.files);
 
         let refs = 0;
         if (manifestText) {
@@ -690,6 +725,10 @@ async function main() {
           bytes: sourceIndex.bytes,
           added: d.add.length,
           divergent: d.change.length,
+          // Capped: the artifact is published, and the point is to name the disagreement, not to
+          // carry a second copy of the index.
+          ...(divergent.length ? { divergentKeys: divergent.slice(0, 200), divergentKeysTruncated: divergent.length > 200 } : {}),
+          ...(pinnedPaths.length ? { pinned: pinnedPaths.length, pinnedKeys: pinnedPaths } : {}),
           uploaded: uploaded.done,
           failed: uploaded.failed,
           refsAddedToGate: refs,
@@ -913,6 +952,7 @@ async function main() {
     release,
     version,
     sources: sourceReports,
+    overrides,
     manifest,
     refs,
     index,
@@ -974,7 +1014,7 @@ async function publishCore(config, { opts, manifests, version, indexJson, indexF
   // hosted files merged in. Built from the same index the assets were published from, so it cannot
   // describe a tree that does not exist. 85 KiB gzipped against index.json's 1.6 MiB, which is the
   // difference between a page that can render a directory list and one that cannot.
-  const { json: treeJson, doc: treeDoc, overlap } = readTree(ROOT, indexFiles);
+  const { json: treeJson, doc: treeDoc, overlap } = readTree(ROOT, indexFiles, { token: version });
   log(`tree: ${treeDoc.totals.files} files in ${treeDoc.totals.dirs} directories (${treeDoc.totals.hosted} hosted on purpose)`);
   // A hosted entry that upstream also ships is stale: the file is upstream content now, so the entry
   // describes nothing and should come out of hosted.json.
@@ -1049,7 +1089,7 @@ export function carryForwardOrigins(current, published, retired = new Set()) {
   return out;
 }
 
-async function publishArt(config, { opts, release, version, sources, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
+async function publishArt(config, { opts, release, version, sources, overrides, manifest, refs, index, probe, origins, packs, mirrorsDoc, byteSample }) {
   const art = {
     schema: ART_SCHEMA,
     upstream: {
@@ -1071,6 +1111,9 @@ async function publishArt(config, { opts, release, version, sources, manifest, r
       sources: (sources || [])
         .filter((s) => !s.error)
         .map((s) => ({ id: s.id, repo: s.repo, ref: s.ref, release: s.release, files: s.files, added: s.added, note: s.note })),
+      // Paths where this CDN knowingly serves bytes upstream does not ship, with both sizes and the
+      // source that supplies them — so a consumer can tell an override from a faithful mirror.
+      ...(overrides?.length ? { overrides } : {}),
       packs: packs.map((pack) => ({
         id: pack.id,
         group: pack.group,

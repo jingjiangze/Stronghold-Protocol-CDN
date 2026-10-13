@@ -1,5 +1,7 @@
 {
   "_comment": "Extra art sources mirrored into the same tree. Each entry names a release package whose public/assets/** is extracted and uploaded ADDITIVELY: only paths the main (upstream) tree does not have are written, so an extra source can never overwrite the authoritative bytes. Data, not code — adding a source is one entry.",
+  "_force": "Per-source pins: `{ path, size, sha256, why }`. A pin means THIS source's bytes win over upstream's at that path — the one deliberate divergence from upstream this pipeline allows, and the only way the CDN can serve something upstream does not ship under the same name. The pin carries the bytes' identity (size + sha256) because the published index.json and the cache token derived from it are built before any package is fetched. The sync verifies the declaring source really ships exactly those bytes and refuses to publish otherwise; pinning a path upstream does not ship is an error (that would be an addition, which the additive path already covers). Filling this in makes EVERY later sync require the bytes, so only pin what the source provably ships.",
+  "_force_pending": "2026-10-13: two files were found where the CDN serves upstream's low-resolution copy while our trees carry a 2.69x larger one — assets/spine/enemy/enemy_10138_xdsnow/enemy_10138_xdsnow.png (upstream 26989 B / ours 72530 B / sha256 195f21429f33f4bbd80908616f936bccbba2a9109c2b456d8bfe77ec81a1d7d4) and the matching .atlas (upstream 1825 B / ours 1853 B / sha256 a38f2b30c8720c44acf9eea8b0bef45db13b5d0c83de944bc16a81f01971841e). NOT pinned yet: no declared source is known to ship those exact bytes (the fusion package's note covers spine/op, this is spine/enemy), and a pin whose source cannot supply it stops every run. Pin them here once a source that carries them is declared. See docs/audit/cdn-upstream-vs-source-consistency.md.",
   "_why": "The fusion branch ships full skins, full voice (including jp) and complete operator spines that upstream does not. Its manifest lists 3,980 paths upstream never references, and they share the same relative paths (assets/…), so hosting them is purely additive.",
   "sources": [
     {
@@ -9,7 +11,8 @@
       "release": "v0.2.1-fusion",
       "package": "Stronghold-Protocol-v0.2.1-Server.zip",
       "manifest": "data/assets.json",
-      "note": "全皮肤（char/skin_avatar）+ 全语音（含 jp）+ 全骨架（spine/op）"
+      "note": "全皮肤（char/skin_avatar）+ 全语音（含 jp）+ 全骨架（spine/op）",
+      "force": []
     }
   ]
 }
