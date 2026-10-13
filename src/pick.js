@@ -16,8 +16,18 @@
  * exactly the bug this used to have: the site's own speed test read `mirror.probe`, this did not.
  *
  * Two attempts per mirror, best time wins, so a cold connection is not the verdict.
+ *
+ * A parked origin is published in the list on purpose (`enabled: false`) so a client can see it
+ * exists and why it is off, but it must never be *chosen*. Not reading the flag here was a real
+ * defect: it routed browsers to the CORS-broken OpenI raw (its ACAO is pinned to a third-party
+ * origin, so WebGL textures fail to load) and to a ModelScope dataset that is missing the whole
+ * `assets/local/` tree. A probe path can stay green on a mirror that 404s the assets a client
+ * actually asks for, so speed alone is not a safe verdict -- the flag is. Pass `requireEnabled:
+ * false` only when you deliberately want to measure every mirror regardless.
  */
-export async function pickFastest(mirrors, { path = '/robots.txt', attempts = 2, timeoutMs = 6000, fetchImpl = fetch } = {}) {
+export async function pickFastest(mirrors, { path = '/robots.txt', attempts = 2, timeoutMs = 6000, fetchImpl = fetch, requireEnabled = true } = {}) {
+  const candidates = requireEnabled ? mirrors.filter((m) => m && m.enabled !== false) : mirrors;
+  if (!candidates.length) throw new Error('no enabled mirror');
   const measure = async (mirror) => {
     // `root` is the origin; `base` is its /assets/ subtree. Probing the subtree would 404.
     const origin = String(mirror.root || mirror.base || '').replace(/\/+$/, '');
@@ -48,7 +58,7 @@ export async function pickFastest(mirrors, { path = '/robots.txt', attempts = 2,
     return { ...mirror, ms: best };
   };
 
-  const settled = await Promise.allSettled(mirrors.map(measure));
+  const settled = await Promise.allSettled(candidates.map(measure));
   const ok = settled
     .filter((entry) => entry.status === 'fulfilled')
     .map((entry) => entry.value)
