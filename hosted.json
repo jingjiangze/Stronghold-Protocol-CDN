@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：voice/jp/char_4185_amoris/cn_028.mp3（7959 B，sha256 6d14a009d881…）",
+      "what": "ave-mujica 工坊包自带素材：voice/jp/char_4186_tmoris/cn_024.mp3（10467 B，sha256 f4cf4f578581…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 124,
-      "bytes": 13508694,
+      "files": 132,
+      "bytes": 13585741,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -35327,6 +35327,38 @@
         [
           "assets/voice/jp/char_4185_amoris/cn_032.mp3",
           36589
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_019.mp3",
+          10467
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_020.mp3",
+          18826
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_021.mp3",
+          3361
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_022.mp3",
+          7332
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_023.mp3",
+          8795
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_024.mp3",
+          10467
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_025.mp3",
+          8168
+        ],
+        [
+          "assets/voice/jp/char_4186_tmoris/cn_026.mp3",
+          9631
         ]
       ]
     }
