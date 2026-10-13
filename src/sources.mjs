@@ -9,15 +9,18 @@
 // upstream bytes stay authoritative — and any same-path difference is reported instead, so a
 // divergence is visible rather than silently resolved.
 //
-// A source may also declare `force`: a list of pins `{ path, size, sha256 }` naming paths where ITS
-// bytes should win over the main tree's (a higher-resolution texture upstream also ships). That is the
-// one deliberate divergence from upstream in this pipeline, so it is not left to a diff at run time:
-// the pin carries the bytes' identity, which lets the published index and the cache token be built
-// before any package is fetched. `applyOverrides` writes them into the index; the sync uploads the
-// pinned bytes from the declaring source and refuses to publish if it cannot produce exactly them.
+// A top-level `overrides` list pins paths where THIS repository deliberately serves bytes upstream does
+// not ship (a higher-resolution texture upstream also ships at lower resolution). That is the one
+// deliberate divergence from upstream in this pipeline, so it is not left to a diff at run time: each
+// entry carries the bytes' identity (`size` + `sha256`), which lets the published index and the cache
+// token be built before anything is fetched, and the bytes themselves live in this repository under
+// `pin/<path>` — so CI already has them and no mirror has to be trusted as the source of truth.
+// `applyOverrides` writes them into the index; the sync uploads them and refuses to publish if the
+// pinned bytes are missing or do not hash to what the entry promises.
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 
 import { assertPublicHttpsUrl } from './upstream.mjs';
@@ -43,17 +46,17 @@ export function readSources(root) {
       package: String(entry.package),
       manifest: String(entry.manifest || 'data/assets.json'),
       ...(entry.note ? { note: String(entry.note) } : {}),
-      force: Array.isArray(entry.force)
-        ? entry.force.map((raw, i) => parsePin(raw, String(entry.id), i))
-        : [],
     });
   }
   return out;
 }
 
-/** A pin is `{ path, size, sha256, why? }`: the identity of the bytes we intend to serve at that path. */
-function parsePin(raw, sourceId, index) {
-  const where = `sources.json: ${sourceId}.force[${index}]`;
+/** Where the pinned bytes live inside this repository. */
+export const PIN_DIR = 'pin';
+
+/** A pin is `{ path, size, sha256, why? }`: the identity of the bytes we serve at an upstream path. */
+function parseOverride(raw, index) {
+  const where = `sources.json: overrides[${index}]`;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error(`${where} must be an object { path, size, sha256 }`);
   }
@@ -65,13 +68,51 @@ function parsePin(raw, sourceId, index) {
   if (!Number.isInteger(size) || size <= 0) throw new Error(`${where}.size must be a positive integer`);
   const sha256 = String(raw.sha256 || '').toLowerCase();
   if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error(`${where}.sha256 must be 64 hex characters`);
-  return { path: p, size, sha256, source: sourceId, ...(raw.why ? { why: String(raw.why) } : {}) };
+  return { path: p, size, sha256, ...(raw.why ? { why: String(raw.why) } : {}) };
 }
 
-/** Does the source's own tree carry exactly the bytes a pin promises? */
-export function pinSatisfied(pin, files) {
-  const have = files?.[pin.path];
-  return Boolean(have) && have.size === pin.size && have.sha256 === pin.sha256;
+/** The declared overrides, validated. A malformed entry is refused here rather than after an upload. */
+export function readOverrides(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'sources.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+  const list = Array.isArray(cfg?.overrides) ? cfg.overrides : [];
+  return list.map((raw, i) => parseOverride(raw, i));
+}
+
+/**
+ * The bytes a pin promises, read from `pin/<path>` in this repository and verified.
+ *
+ * The bytes live here on purpose: a source package would have to ship them (none does), and fetching
+ * them from a mirror would make that mirror the source of truth for the CDN. Reading them from the
+ * checkout keeps the declaration and the bytes in one versioned place, and the hash check means a
+ * mismatch stops the run instead of publishing the wrong bytes.
+ *
+ * @param {string} root repository root
+ * @param {{path:string, size:number, sha256:string}} pin
+ * @returns {Buffer}
+ */
+export function readPinnedBytes(root, pin) {
+  const abs = path.join(root, PIN_DIR, ...pin.path.split('/'));
+  let body;
+  try {
+    body = fs.readFileSync(abs);
+  } catch (error) {
+    throw new Error(`override ${pin.path}: cannot read ${PIN_DIR}/${pin.path} (${error.code || error.message})`);
+  }
+  if (body.length !== pin.size) {
+    throw new Error(`override ${pin.path}: ${PIN_DIR}/${pin.path} is ${body.length} B, the pin says ${pin.size} B`);
+  }
+  const sha256 = createHash('sha256').update(body).digest('hex');
+  if (sha256 !== pin.sha256) {
+    throw new Error(
+      `override ${pin.path}: ${PIN_DIR}/${pin.path} hashes to ${sha256.slice(0, 16)}…, the pin says ${pin.sha256.slice(0, 16)}…`,
+    );
+  }
+  return body;
 }
 
 /**
