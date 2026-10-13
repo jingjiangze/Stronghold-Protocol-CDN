@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：skin/op/char_4185_amoris/front/char_4185_amoris_avemujica_1.atlas（13313 B，sha256 4bbad5b2c9d0…）",
+      "what": "ave-mujica 工坊包自带素材：skin/op/char_4186_tmoris/back/char_4186_tmoris_avemujica_1.png（140987 B，sha256 1548544de8d6…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 46,
-      "bytes": 8705905,
+      "files": 51,
+      "bytes": 9276137,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -35015,6 +35015,26 @@
         [
           "assets/skin/op/char_4186_tmoris/avatar.png",
           62349
+        ],
+        [
+          "assets/skin/op/char_4186_tmoris/back/char_4186_tmoris_avemujica_1.atlas",
+          5736
+        ],
+        [
+          "assets/skin/op/char_4186_tmoris/back/char_4186_tmoris_avemujica_1.png",
+          140987
+        ],
+        [
+          "assets/skin/op/char_4186_tmoris/back/char_4186_tmoris_avemujica_1.skel",
+          260790
+        ],
+        [
+          "assets/skin/op/char_4186_tmoris/front/char_4186_tmoris_avemujica_1.atlas",
+          8842
+        ],
+        [
+          "assets/skin/op/char_4186_tmoris/front/char_4186_tmoris_avemujica_1.png",
+          153877
         ]
       ]
     }
