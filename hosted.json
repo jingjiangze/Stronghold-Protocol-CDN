@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：voice/jp/char_4182_oblvns/cn_031.mp3（9840 B，sha256 444ec425d33a…）",
+      "what": "ave-mujica 工坊包自带素材：voice/jp/char_4183_mortis/cn_027.mp3（16318 B，sha256 8ac7aa53624e…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 88,
-      "bytes": 12812997,
+      "files": 96,
+      "bytes": 12956079,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -35183,6 +35183,38 @@
         [
           "assets/voice/jp/char_4183_mortis/cn_024.mp3",
           14437
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_025.mp3",
+          9213
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_026.mp3",
+          22796
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_027.mp3",
+          16318
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_028.mp3",
+          14437
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_029.mp3",
+          7332
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_030.mp3",
+          26349
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_031.mp3",
+          25304
+        ],
+        [
+          "assets/voice/jp/char_4183_mortis/cn_032.mp3",
+          21333
         ]
       ]
     }
