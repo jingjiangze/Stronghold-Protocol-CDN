@@ -8,6 +8,13 @@
 // Uploads are ADDITIVE. A path the main tree already has is never written from a source — the
 // upstream bytes stay authoritative — and any same-path difference is reported instead, so a
 // divergence is visible rather than silently resolved.
+//
+// A source may also declare `force`: a list of pins `{ path, size, sha256 }` naming paths where ITS
+// bytes should win over the main tree's (a higher-resolution texture upstream also ships). That is the
+// one deliberate divergence from upstream in this pipeline, so it is not left to a diff at run time:
+// the pin carries the bytes' identity, which lets the published index and the cache token be built
+// before any package is fetched. `applyOverrides` writes them into the index; the sync uploads the
+// pinned bytes from the declaring source and refuses to publish if it cannot produce exactly them.
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -36,9 +43,71 @@ export function readSources(root) {
       package: String(entry.package),
       manifest: String(entry.manifest || 'data/assets.json'),
       ...(entry.note ? { note: String(entry.note) } : {}),
+      force: Array.isArray(entry.force)
+        ? entry.force.map((raw, i) => parsePin(raw, String(entry.id), i))
+        : [],
     });
   }
   return out;
+}
+
+/** A pin is `{ path, size, sha256, why? }`: the identity of the bytes we intend to serve at that path. */
+function parsePin(raw, sourceId, index) {
+  const where = `sources.json: ${sourceId}.force[${index}]`;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error(`${where} must be an object { path, size, sha256 }`);
+  }
+  const p = String(raw.path || '');
+  if (!p || p.startsWith('/') || p.includes('..') || p.endsWith('/')) {
+    throw new Error(`${where}.path must be a repo-relative file path (got ${JSON.stringify(raw.path)})`);
+  }
+  const size = Number(raw.size);
+  if (!Number.isInteger(size) || size <= 0) throw new Error(`${where}.size must be a positive integer`);
+  const sha256 = String(raw.sha256 || '').toLowerCase();
+  if (!/^[0-9a-f]{64}$/.test(sha256)) throw new Error(`${where}.sha256 must be 64 hex characters`);
+  return { path: p, size, sha256, source: sourceId, ...(raw.why ? { why: String(raw.why) } : {}) };
+}
+
+/** Does the source's own tree carry exactly the bytes a pin promises? */
+export function pinSatisfied(pin, files) {
+  const have = files?.[pin.path];
+  return Boolean(have) && have.size === pin.size && have.sha256 === pin.sha256;
+}
+
+/**
+ * Replace upstream's entry for every pinned path with the bytes we intend to serve.
+ *
+ * This is the one place the CDN knowingly diverges from upstream, so it is applied to the index
+ * BEFORE it is serialized and hashed: the cache token, the acceptance gate's expectations, tree.json
+ * and the byte sample then all describe what is actually served. It must run AFTER the main diff, or
+ * the pinned path would be uploaded from upstream's own tree and the pin would be undone.
+ *
+ * @param {{files: Record<string, {size:number, sha256:string}>, bytes:number}} index mutated in place
+ * @param {{path:string, size:number, sha256:string, source?:string, why?:string}[]} pins
+ * @returns {{path:string, from:{size:number,sha256:string}, to:{size:number,sha256:string}, source?:string, why?:string}[]} what changed
+ */
+export function applyOverrides(index, pins = []) {
+  const applied = [];
+  for (const pin of pins) {
+    const have = index.files?.[pin.path];
+    if (!have) {
+      throw new Error(
+        `override ${pin.path}: upstream does not ship this path, so there is nothing to override — ` +
+          'a path upstream lacks belongs in the source tree, which is additive',
+      );
+    }
+    if (have.size === pin.size && have.sha256 === pin.sha256) continue; // already serving exactly this
+    applied.push({
+      path: pin.path,
+      from: { size: have.size, sha256: have.sha256 },
+      to: { size: pin.size, sha256: pin.sha256 },
+      ...(pin.source ? { source: pin.source } : {}),
+      ...(pin.why ? { why: pin.why } : {}),
+    });
+    index.bytes += pin.size - have.size;
+    index.files[pin.path] = { size: pin.size, sha256: pin.sha256 };
+  }
+  return applied;
 }
 
 /** The GitHub release page for a source, validated like every other URL we touch. */

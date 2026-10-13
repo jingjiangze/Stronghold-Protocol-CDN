@@ -65,3 +65,12 @@ test('an empty index produces an empty tree rather than throwing', () => {
   assert.equal(doc.totals.files, 0);
   assert.equal(doc.totals.bytes, 0);
 });
+
+// The tree carried no version at all, so a stale listing and a fresh one looked identical — which is
+// how a tree 620 skin paths behind the bucket could be read as "the CDN does not have that asset".
+test('the published tree names the token it was built from', () => {
+  const { doc } = buildTree(idx([['assets/a.png', 1]]), { token: 'v0.2.5-72d6ad63' });
+  assert.equal(doc.token, 'v0.2.5-72d6ad63');
+  // ...and stays out of the document when the caller has no token, rather than publishing an empty one
+  assert.equal('token' in buildTree(idx([['assets/a.png', 1]])).doc, false);
+});

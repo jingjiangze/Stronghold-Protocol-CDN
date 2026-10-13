@@ -21,10 +21,11 @@ export const TREE_SCHEMA = 1;
 
 /**
  * @param {Record<string, {size:number}>} files the flat index, keyed by repo-relative path
- * @param {{sizes?: Map<string, number>}} [hosted] keys hosted on purpose, with their sizes
+ * @param {Map<string, number>} [hosted] keys hosted on purpose, keyed by path, with their sizes
+ * @param {string} [token] the published token this tree was built from (e.g. `v0.2.5-72d6ad63`)
  * @returns {{doc: object, json: string, overlap: string[]}}
  */
-export function buildTree(files, { hosted = new Map() } = {}) {
+export function buildTree(files, { hosted = new Map(), token = '' } = {}) {
   const dirs = {};
   let totalFiles = 0;
   let totalBytes = 0;
@@ -69,6 +70,11 @@ export function buildTree(files, { hosted = new Map() } = {}) {
 
   const doc = {
     schema: TREE_SCHEMA,
+    // The token this tree was built from. Without it a reader cannot tell a fresh tree from a stale
+    // one: the file carried no version at all, so "the CDN does not list this asset" was
+    // indistinguishable from "this listing is older than the bucket" (2026-10-13: it was 620 skin
+    // paths behind). Every other published interface carries a token; this one now does too.
+    ...(token ? { token } : {}),
     _how: 'dirs[<directory>].files is [[name, size, mod?], …]; mod=1 means this repository hosts it on purpose (not upstream content). sha256 lives in /cdn/v1/index.json. Existence and size for a single path: HEAD its URL.',
     totals: { files: totalFiles, bytes: totalBytes, dirs: Object.keys(out).length, hosted: hostedFiles },
     dirs: out,
@@ -77,7 +83,7 @@ export function buildTree(files, { hosted = new Map() } = {}) {
 }
 
 /** Read the flat index and hosted list from a repo root, then build the tree. */
-export function readTree(root, indexFiles) {
+export function readTree(root, indexFiles, { token = '' } = {}) {
   const { sizes } = readHosted(root);
-  return buildTree(indexFiles, { hosted: sizes });
+  return buildTree(indexFiles, { hosted: sizes, token });
 }

@@ -16,7 +16,7 @@ export const API_ENDPOINTS = [
     path: '/cdn/v1/art.json',
     contentType: 'application/json',
     cache: 'public, max-age=300',
-    what: '契约：上游版本、缓存令牌、来源列表、包列表、校验结果',
+    what: '契约：上游版本、缓存令牌、来源列表、包列表、校验结果；art.overrides = 本站有意发非上游字节的路径（含双方尺寸与提供它的源）',
   },
   {
     path: '/cdn/v1/mirrors.json',
