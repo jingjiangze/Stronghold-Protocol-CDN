@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：char/avatar/char_4184_dolris.png（52054 B，sha256 573315b9b9da…）",
+      "what": "ave-mujica 工坊包自带素材：char/avatar/char_4186_tmoris.png（53452 B，sha256 6c3aa8828dd2…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 114553,
+      "files": 6,
+      "bytes": 351039,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -34839,6 +34839,22 @@
         [
           "assets/char/avatar/char_4184_dolris_2.png",
           62499
+        ],
+        [
+          "assets/char/avatar/char_4185_amoris.png",
+          58617
+        ],
+        [
+          "assets/char/avatar/char_4185_amoris_2.png",
+          59919
+        ],
+        [
+          "assets/char/avatar/char_4186_tmoris.png",
+          53452
+        ],
+        [
+          "assets/char/avatar/char_4186_tmoris_2.png",
+          64498
         ]
       ]
     }
