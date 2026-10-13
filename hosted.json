@@ -34805,6 +34805,24 @@
           36565
         ]
       ]
+    },
+    {
+      "id": "sp-ui",
+      "what": "顶栏中框(特调,482174B)",
+      "addedAt": "2026-10-13",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 1382316,
+      "keys": [
+        [
+          "assets/local/sp-ui-20261013/frame_mid_normal.png",
+          482174
+        ],
+        [
+          "assets/local/sp-ui-20261013/bg_rest.png",
+          900142
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
