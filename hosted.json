@@ -35436,19 +35436,67 @@
     },
     {
       "id": "yuan-apk-skins",
-      "what": "鸢 v0.2.5.1 补齐：CDN 上原本没有的皮肤素材",
+      "what": "鸢 v0.2.5.1 补齐：CDN 上原本没有的皮肤素材（273 立绘 + 273 皮肤头像）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 277027,
+      "files": 14,
+      "bytes": 1764912,
       "keys": [
+        [
+          "assets/char/portrait/char_003_kalts_boc_6.png",
+          122177
+        ],
+        [
+          "assets/char/portrait/char_003_kalts_sale_14.png",
+          122508
+        ],
+        [
+          "assets/char/portrait/char_010_chen_nian_2.png",
+          106089
+        ],
+        [
+          "assets/char/portrait/char_010_chen_sale_10.png",
+          111488
+        ],
+        [
+          "assets/char/portrait/char_017_huang_as_1.png",
+          122445
+        ],
+        [
+          "assets/char/portrait/char_017_huang_witch_5.png",
+          139646
+        ],
         [
           "assets/char/portrait/char_1012_skadi2_boc_4.png",
           137381
         ],
         [
-          "assets/char/portrait/char_017_huang_witch_5.png",
-          139646
+          "assets/char/portrait/char_1013_chen2_summer_20.png",
+          130426
+        ],
+        [
+          "assets/char/portrait/char_1014_nearl2_epoque_17.png",
+          131186
+        ],
+        [
+          "assets/char/portrait/char_1016_agoat2_epoque_34.png",
+          119829
+        ],
+        [
+          "assets/char/portrait/char_1016_agoat2_epoque_57.png",
+          125022
+        ],
+        [
+          "assets/char/portrait/char_1019_siege2_epoque_50.png",
+          141903
+        ],
+        [
+          "assets/char/portrait/char_1020_reed2_epoque_30.png",
+          130365
+        ],
+        [
+          "assets/char/portrait/char_1020_reed2_snow_8.png",
+          124447
         ]
       ]
     }
