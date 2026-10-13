@@ -34826,11 +34826,11 @@
     },
     {
       "id": "mod-ave-mujica-20261013",
-      "what": "ave-mujica 工坊包自带素材：spine/op/char_4185_amoris/back/char_4185_amoris.png（542356 B，sha256 b6fc24fd571b…）",
+      "what": "ave-mujica 工坊包自带素材：spine/op/char_4186_tmoris/back/char_4186_tmoris.skel（138257 B，sha256 3d8634d27f3e…）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 60,
-      "bytes": 10935973,
+      "files": 66,
+      "bytes": 12035410,
       "keys": [
         [
           "assets/char/avatar/char_4184_dolris.png",
@@ -35071,6 +35071,30 @@
         [
           "assets/spine/op/char_4185_amoris/front/char_4185_amoris.atlas",
           16860
+        ],
+        [
+          "assets/spine/op/char_4185_amoris/front/char_4185_amoris.png",
+          557729
+        ],
+        [
+          "assets/spine/op/char_4185_amoris/front/char_4185_amoris.skel",
+          308759
+        ],
+        [
+          "assets/spine/op/char_4186_tmoris/back/char_4186_tmoris.atlas",
+          4697
+        ],
+        [
+          "assets/spine/op/char_4186_tmoris/back/char_4186_tmoris.png",
+          82165
+        ],
+        [
+          "assets/spine/op/char_4186_tmoris/back/char_4186_tmoris.skel",
+          138257
+        ],
+        [
+          "assets/spine/op/char_4186_tmoris/front/char_4186_tmoris.atlas",
+          7830
         ]
       ]
     }
