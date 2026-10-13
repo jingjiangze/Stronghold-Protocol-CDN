@@ -35372,11 +35372,11 @@
     },
     {
       "id": "sp-forge-2026-10-13",
-      "what": "卫戍协议 Forge 工坊包 cosmetics-05（引擎 0.18.3 单装 0 error，逆向自 weishuxieyi 0.2.1）",
+      "what": "卫戍协议 Forge 工坊包 cosmetics-06（引擎 0.18.3 单装 0 error，逆向自 weishuxieyi 0.2.1）",
       "addedAt": "2026-10-13",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 6,
-      "bytes": 120324237,
+      "files": 8,
+      "bytes": 167743749,
       "keys": [
         [
           "packs/sp-forge-2026-10-13/clemnt-addition.zip",
@@ -35397,6 +35397,14 @@
         [
           "packs/sp-forge-2026-10-13/cosmetics-05.zip",
           27201463
+        ],
+        [
+          "packs/sp-forge-2026-10-13/cosmetics-06.zip",
+          26717757
+        ],
+        [
+          "packs/sp-forge-2026-10-13/cosmetics-07.zip",
+          20701755
         ],
         [
           "packs/sp-forge-2026-10-13/i18n-online-gaps.zip",
