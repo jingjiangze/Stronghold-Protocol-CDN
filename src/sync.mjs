@@ -647,11 +647,21 @@ async function main() {
   // Write mode.
   const config = r2Config();
   if (diff.add.length || diff.change.length) {
-    const keys = [...diff.add, ...diff.change];
-    log(`uploading ${keys.length} objects …`);
-    const uploaded = await uploadKeys(config, stage, keys, index.files);
-    report.uploaded = uploaded;
-    if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
+    // A pinned path is already carried by the index with OUR bytes (applyOverrides ran above), so it
+    // always shows up as a "change" against upstream's release — by design, forever. Uploading it
+    // from the stage tree would undo the override, and its size guard would abort the whole run
+    // ("size changed while uploading"), which is the correct refusal of the wrong bytes.
+    // The override block right below owns those keys instead.
+    const mainPinned = new Set(pins.map((pin) => pin.path));
+    const keys = [...diff.add, ...diff.change].filter((key) => !mainPinned.has(key));
+    const spared = diff.add.length + diff.change.length - keys.length;
+    if (spared) log(`${spared} pinned path(s) kept out of the main upload — the override upload owns them`);
+    if (keys.length) {
+      log(`uploading ${keys.length} objects …`);
+      const uploaded = await uploadKeys(config, stage, keys, index.files);
+      report.uploaded = uploaded;
+      if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
+    }
   }
 
   // The bytes of every declared override, read from this repository and verified against the pin
