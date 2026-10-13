@@ -35433,6 +35433,24 @@
           330168
         ]
       ]
+    },
+    {
+      "id": "yuan-apk-skins",
+      "what": "鸢 v0.2.5.1 补齐：CDN 上原本没有的皮肤素材",
+      "addedAt": "2026-10-13",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 277027,
+      "keys": [
+        [
+          "assets/char/portrait/char_1012_skadi2_boc_4.png",
+          137381
+        ],
+        [
+          "assets/char/portrait/char_017_huang_witch_5.png",
+          139646
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
