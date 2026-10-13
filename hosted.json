@@ -35369,6 +35369,20 @@
           25513
         ]
       ]
+    },
+    {
+      "id": "sp-forge-2026-10-13",
+      "what": "Forge 工坊包 i18n-online-gaps（引擎 0.18.3 校验 0 error）",
+      "addedAt": "2026-10-13",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 5019,
+      "keys": [
+        [
+          "packs/sp-forge-2026-10-13/i18n-online-gaps.zip",
+          5019
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
