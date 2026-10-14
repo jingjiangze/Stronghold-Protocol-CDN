@@ -1,0 +1,29 @@
+name: net-probe
+
+# 云端只读网络探针：dispatch 时传 url，runner 上 curl 并把状态行/响应头/前 400 字节打进日志。
+# 用途：本机 Clash 到某些域（如 *.workers.dev）不稳时，用干净出口实测目标服务真实状态。
+# 只读、无副作用；`permissions: {}` 最小权限。
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: '要探测的完整 URL'
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: curl
+        env:
+          TARGET: ${{ inputs.url }}
+        run: |
+          set -u
+          echo "url=$TARGET"
+          curl -sS -D /tmp/h -o /tmp/b --max-time 40 -H 'user-agent: Mozilla/5.0 (net-probe)' "$TARGET" || echo "curl rc=$?"
+          echo "---- headers ----"; head -20 /tmp/h || true
+          echo "---- body (first 400 bytes) ----"; head -c 400 /tmp/b || true; echo
