@@ -465,19 +465,22 @@ async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
 }
 
 
-// ---- the two download links --------------------------------------------------------------
+// ---- the download link --------------------------------------------------------------------
 
 /**
  * Each zip is rebuilt whenever the guide, the launchers or the stamped token change, so a link
  * must never name a version. The deploy-time snapshot carries the resolved assets; the page only
  * falls back to the Releases page when that resolution failed.
  *
- * The two variants are the same shape, so they share one renderer. The name patterns are kept
- * disjoint on purpose: "stronghold-official-cdn-…" does not contain "stronghold-cdn" (the
- * substring is "official-cdn"), so neither can put the other's zip behind its own button.
+ * 2026-10-14 用户指令：给玩家的「两种下载，按你的情况选一个」已去掉，只留**整合包**一条路
+ * （自给自足：自带启动脚本与依赖，玩家手上有没有游戏服都能直接开）。侧车包 dropin 已从页面
+ * 下线，这里同步移除它的渲染项——`renderDownload` 对缺失元素本就 `if (!button) return`，
+ * 但留着死配置会让人误以为页面上还有第二个入口。
+ *
+ * 只剩一个变体后，原先「两个 pattern 刻意不相交（official-cdn 不含 stronghold-cdn 子串）」
+ * 的防撞车说明随之作废。
  */
 const DOWNLOADS = [
-  { key: 'dropin', id: 'dropin', pattern: /stronghold-cdn[^/]*\.zip$/i },
   { key: 'officialCdn', id: 'official', pattern: /^stronghold-official-cdn[^/]*\.zip$/i },
 ];
 

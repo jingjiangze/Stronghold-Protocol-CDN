@@ -60,28 +60,15 @@
   <section class="block" id="players">
     <div class="block__head">
       <span class="block__num">1</span>
-      <span class="block__title">玩家：两种下载，按你的情况选一个</span>
+      <span class="block__title">玩家：下载整合包，解压即开服</span>
       <span class="block__who">不写代码 · 解压即用 · 随时撤销</span>
     </div>
     <p class="block__lead">
-      两条路都能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
-      <b>区别只在于你手上有没有一份能跑的游戏服</b>——有就选 A，没有就选 B。
+      一个包就能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
+      <b>它自带启动脚本与依赖</b>，不管你手上有没有一份能跑的游戏服，下载这一个就行。
     </p>
 
     <div class="download">
-      <div class="download__label">A · 你已经有能跑的游戏服</div>
-      <a class="button button-primary" id="dropin-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载侧车包</a>
-      <a class="button button-secondary" id="dropin-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
-      <div class="download__meta">
-        <b id="dropin-name">stronghold-cdn-dropin-<span class="tag">v0.2.2</span>.zip</b>
-        <span id="dropin-meta"> · 正在读取最新版本…</span><br />
-        十几天 KB。内含启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表。
-        <b>它不会改动你部署包里的任何文件</b>，删掉文件夹就完全回到原样。
-      </div>
-    </div>
-
-    <div class="download">
-      <div class="download__label">B · 你还没有游戏服，想直接开一个</div>
       <a class="button button-primary" id="official-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载整合包</a>
       <a class="button button-secondary" id="official-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
       <div class="download__meta">
@@ -95,8 +82,8 @@
     </div>
 
     <div class="notice">
-      <span><b>两个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
-      上游发新版后，A 只需重下一次（十几 KB），B 请重新下整包，<b>不要</b>用官方的 update 增量包升级
+      <span><b>这个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
+      上游发新版后请重新下整包，<b>不要</b>用官方的 update 增量包升级
       （那会把你带回需要本地素材的状态）。</span>
     </div>
 

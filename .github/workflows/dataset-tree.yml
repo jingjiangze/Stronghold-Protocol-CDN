@@ -14,8 +14,13 @@ name: dataset-tree
 #   本作业                  → 数据集 `releases/v1-trial/**`（整棵素材树）
 #
 # 分批：整树 30k 份 / 3.3 GiB，一次推必然超时。每轮按 max_bytes / max_files 提交一批，
-# 跑完仍有剩余就退出码 3，同一窗内再跑一轮（steps 顺序执行，最多 6 轮 = 约 2.4 GiB/次运行）。
-# 幂等：脚本先 `git add` 再 `git diff --cached --quiet`，字节没变就跳过 push。
+# 跑完仍有剩余就退出码 3，同一窗内再跑一轮（steps 顺序执行）。实测单轮 6000 份 / 897 MiB
+# 约 2 分钟（含 push），8 轮足以排干首轮积压。
+# 幂等：脚本先比对父提交树，字节没变就跳过 push。
+#
+# 全流程走索引层（`cat-file --batch` 读源 blob → `hash-object -w` 写对象库 →
+# `update-index --index-info` 挂 index → `write-tree` → `commit-tree` → push），
+# clone 用 `--no-checkout`，不落工作树 —— 否则 `git add` 会报 "not in the current sparse checkout"。
 on:
   workflow_dispatch:
     inputs:
@@ -34,6 +39,7 @@ on:
 
 permissions:
   contents: read
+  actions: write   # 跑满轮数仍没排干时，自己再触发一次本作业续跑
 
 concurrency:
   group: dataset-tree
@@ -73,12 +79,15 @@ jobs:
           fi
           # 退出码 3 = 还有剩余（正常分批续跑），只有跑满轮数仍有剩余才报 error 收尾。
           # 之前直接 `exit $code` 会把 3 传成 job failure —— 实测首轮已成功推 1200 份。
+          # ⚠ step 默认 `bash -e`：node 退出 3（有剩余，正常）会直接终止 step，
+          # 循环根本走不到 `last=$?`（实测 38612937265 就是在 round 1 推成 6000 份后被 -e 打断）。
+          # 所以每条会失败的调用都要 `|| true` 显式吃掉退出码，判断全靠 $?。
           last=0
           for i in $(seq 1 ${{ inputs.rounds || 6 }}); do
             echo "=== round $i $(date -u +%H:%M:%S) ==="
             node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
-              --max-files=${{ inputs.max_files || 1500 }}
+              --max-files=${{ inputs.max_files || 1500 }} || true
             last=$?
             if [ $last -eq 0 ]; then echo "数据集已与源树一致"; break; fi
             if [ $last -ne 3 ]; then echo "::error:: push-dataset-tree 退出 $last"; exit $last; fi
