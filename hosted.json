@@ -35779,6 +35779,24 @@
           130566
         ]
       ]
+    },
+    {
+      "id": "sp-namecards-20261014",
+      "what": "Account namecards: 600px cards and 300px previews; preserve account picks and local fallback",
+      "addedAt": "2026-10-14",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 6074,
+      "keys": [
+        [
+          "assets/local/sp-namecards-20261014/016ef37e15cd.s.webp",
+          2096
+        ],
+        [
+          "assets/local/sp-namecards-20261014/00cfbef97d9a.s.webp",
+          3978
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
