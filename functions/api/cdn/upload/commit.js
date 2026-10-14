@@ -7,7 +7,7 @@
 // 逐字节算 —— 边缘 10 ms CPU 与 128 MB 内存撑不起 600 MB 的哈希，别在这儿假充。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone, triggerPublish } from './_http.js';
-import { claimKeyFor, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, cleanWhat, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const EDGE_HASH_LIMIT = 4 * 1024 * 1024;
 
@@ -70,6 +70,11 @@ export async function onRequestPost(context) {
   }
   if (edgeMismatch) return deny(`字节与声明的 sha256 不符（边缘实测 ${edgeSha}）—— 已拒绝，不会上线`, 412, { staged: staged.size });
 
+  // 太短的说明会在发布轮写 hosted.json 时把校验打红（那条闸门同时挡着 promote 与站点部署），
+  // 所以在这里就拒。此时字节还停在暂存区、没被任何清单引用，改完说明重新 commit 就行。
+  const w = cleanWhat(doc.what || doc.note || '');
+  if (!w.ok) return deny(w.reason, 400);
+
   // 静态素材直发；其它格式/落点照收进暂存区，但要等人工放行（判据在 src/upload.mjs 的 formatVerdict）。
   const fmt = formatVerdict(finalKey);
   const claim = {
@@ -80,7 +85,7 @@ export async function onRequestPost(context) {
     size: staged.size,
     sha256: s.sha256,
     source: String(doc.source || '').slice(0, 60),
-    what: String(doc.what || doc.note || '').slice(0, 200),
+    what: w.what,
     // state 只用老promotion认得的两个值：待审靠 tier 表达，不用新状态位。
     // 换新状态值会让部署间隙里还在跑的旧发布轮把它当成「不合格的 claim」，而那一条的处理是删暂存字节。
     state: edgeSha ? 'verified-at-edge' : 'queued',

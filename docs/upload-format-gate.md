@@ -40,6 +40,18 @@
 放行不做批量：一个 id 一次请求。放行也不降低标准——字节仍由 Actions 逐字节核对才落到对外键。
 清理待审件仍走既有通道：`DELETE …/staging?id=<上传 id>`（立即真删，只动暂存区）。
 
+### `what` 至少 10 字（这次真踩到了）
+
+`src/hosted.mjs:27` 要求 hosted.json 每组的 `what` ≥ 10 个字符，短了就抛；而这条校验跑在
+**promote 与 site.yml 的 unit tests 步骤里** —— 所以「说明写太短」不是文档瑕疵，是把整条上线通道
+堵死：上线之后每一轮发布都红，连处理撤销的那一轮也红。
+
+2026-10-14 闸门上线自测就撞上了：说明填了 5 个字（`闸门验收件`），发布轮照原样写进 hosted.json，
+下一轮 promote（run 38539951690）停在 `hosted.json: audit-selftest-20261014 needs a description`。
+
+现在这一条在收字节的端点就挡掉：`commit` 与浏览器 `put` 都走 `cleanWhat()`（下限 10、上限 200、
+去控制字符），不合格回 400；此时字节仍安全停在暂存区，改完说明重新提交就行。
+
 ## 两条实现上的「为什么」
 
 - **待审的 claim 不引入新 `state` 值。** `claimIsPublishable` 对不认识的 state 返回「不合格」，

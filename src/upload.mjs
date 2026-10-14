@@ -78,6 +78,10 @@ export const CLAIM_SCHEMA = 1;
 export const STAGING_PREFIX = 'cdn/incoming/';
 
 const BAD_CHARS = /[\uFFFD\u0000-\u001F\u007F]/;
+// 替换必须用带 g 的另一份：非全局的 replace 只去掉第一个控制字符，后面的换行/制表符会一路
+// 活到 claim、hosted.json 与浏览面上（2026-10-14 加 cleanWhat 的下限时实测到：一条带换行的说明
+// 清完还剩一个 \n）。BAD_CHARS 保持不带 g —— 带 g 的正则做 .test() 会记住 lastIndex。
+const CONTROL_CHARS = /[\uFFFD\u0000-\u001F\u007F]/g;
 const encoder = new TextEncoder();
 
 const byteLength = (s) => encoder.encode(s).length;
@@ -103,7 +107,22 @@ export function validateKey(rawKey) {
 /** 自述文字：限长、去控制字符。乱码标题会直接出现在浏览面上，所以这里就挡掉。 */
 export function cleanNote(raw, max = 120) {
   if (typeof raw !== 'string') return '';
-  return raw.replace(BAD_CHARS, '').trim().slice(0, max);
+  return raw.replace(CONTROL_CHARS, '').trim().slice(0, max);
+}
+
+/**
+ * 「这批字节是什么」的说明。下限 10 个字符不是审美：hosted.json 每组都要带说明，
+ * `src/hosted.mjs` 读到短于 10 字的会直接抛 —— 那是发布轮与站点部署共同的测试闸门。
+ * 也就是说「说明写太短」不是文档瑕疵，而是把整条上线通道堵死。
+ * 所以这一条必须在收字节的这一步就挡下来，而不是等发布轮替你红。
+ * （2026-10-14 实测踩过：自测件填了 5 字说明，之后每一轮 promote 都停在 unit tests。）
+ */
+export function cleanWhat(raw, { min = 10, max = 200 } = {}) {
+  const what = cleanNote(raw, max);
+  if (what.length < min) {
+    return { ok: false, reason: `what 需要至少 ${min} 个字符（它会进 hosted.json 当这组的说明；短于 ${min} 会让发布轮的校验直接失败）` };
+  }
+  return { ok: true, what };
 }
 
 /** 来源标识：它会成为 hosted.json 的分组 id，也是「这批字节是谁的」的唯一答案。 */

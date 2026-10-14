@@ -15,6 +15,8 @@ import {
   ASSET_TREE_PREFIXES,
   UPLOAD_EXTENSIONS,
   claimIsPublishable,
+  cleanNote,
+  cleanWhat,
   formatVerdict,
   releaseClaim,
   validateKey,
@@ -99,6 +101,32 @@ test('metadata that lands inside the asset tree is treated as art -- a known, st
   assert.equal(formatVerdict('assets/docs/img/x.json').tier, 'asset');
   assert.equal(formatVerdict('assets/local/sp-four-02a466edd43d/config-983fc33d3181838e.json').tier, 'asset');
   assert.equal(formatVerdict('assets/local/x.zip').tier, 'hold', 'container formats are held even inside the tree');
+});
+
+test('cleanNote strips every control character, not just the first', () => {
+  // BAD_CHARS has no /g on purpose (a global regex makes .test() stateful). That means a
+  // non-global replace used to leave the *second and later* control characters standing -- and
+  // this is the text that goes into claim.json and hosted.json. Found while adding the length
+  // floor below: a note with a tab and a newline kept the newline.
+  const raw = `说明\t带\n换行\u000B和另一个制表符\u0007的一整段足够长的文字`;
+  const out = cleanNote(raw, 120);
+  assert.equal(/[\u0000-\u001F\u007F]/.test(out), false, 'no control character survives');
+  assert.equal(out.length, raw.replace(/[\u0000-\u001F]/g, '').trim().length);
+  assert.equal(cleanNote(`带替换符的说明${'很长'.repeat(20)}`, 120).includes(String.fromCharCode(0xfffd)), false);
+});
+
+test('a too-short description is refused at the edge, not at the publisher', () => {
+  // src/hosted.mjs throws on any group whose `what` is shorter than 10 chars, and that check runs
+  // in promote's own test gate -- so a five-character note used to turn every later publish round
+  // (and the site deploy) red, including the round that was supposed to clean the file up.
+  // Live proof: 2026-10-14, a self-test upload with a 5-character note reddened run 38539951690.
+  assert.equal(cleanWhat('闸门验收件').ok, false);
+  assert.match(cleanWhat('闸门验收件').reason, /至少 10/);
+  const ok = cleanWhat('闸门验收件：格式闸门上线后端到端自测');
+  assert.equal(ok.ok, true);
+  assert.equal(cleanWhat('').ok, false, 'an empty description is the same trap');
+  assert.equal(cleanWhat(`说明${'很'.repeat(300)}`).what.length, 200, 'still capped at 200');
+  assert.equal(cleanWhat('带\t制表符和\n换行的说明至少十个字').what.includes('\n'), false, 'control characters go');
 });
 
 test('a held claim publishes only after release, and never reads as a rejection', () => {

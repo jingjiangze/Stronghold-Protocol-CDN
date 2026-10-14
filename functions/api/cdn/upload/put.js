@@ -6,7 +6,7 @@
 // 摘要不在边缘算（免费档每次调用 10 ms CPU，算不动几十 MB），状态留 queued，由发布机逐字节核对。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, sameOriginOrNone, triggerPublish } from './_http.js';
-import { claimKeyFor, cleanNote, cleanSource, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, cleanSource, cleanWhat, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const MAX_BODY = 64 * 1024 * 1024;
 
@@ -24,7 +24,8 @@ export async function onRequestPut(context) {
   const declaredSha = q.get('sha256') || '';
   const declaredSize = q.get('size') || '';
   const rawSource = q.get('source') || '';
-  const what = cleanNote(q.get('what') || '', 200);
+  // 收字节之前就验说明：太短的 what 之后会把发布轮的 hosted.json 校验打红（见 src/upload.mjs 的 cleanWhat）。
+  const w = cleanWhat(q.get('what') || '');
 
   const k = validateKey(declaredKey);
   if (!k.ok) return deny(k.reason, 400);
@@ -34,6 +35,7 @@ export async function onRequestPut(context) {
   if (!z.ok) return deny(z.reason, 400);
   const src = cleanSource(rawSource);
   if (!src.ok) return deny(src.reason, 400);
+  if (!w.ok) return deny(w.reason, 400);
   if (Number(z.size) > MAX_BODY) {
     return deny(`本页面单次上限 ${MAX_BODY / 1024 / 1024} MiB，${(z.size / 1048576).toFixed(1)} MiB 请用 tools/agent-upload.mjs（走 presigned 直传，不受这个限制）`, 413);
   }
@@ -79,7 +81,7 @@ export async function onRequestPut(context) {
     size: Number(z.size),
     sha256: s.sha256,
     source: src.source,
-    what,
+    what: w.what,
     state,
     edgeSha256: measured,
     tier: fmt.tier,
