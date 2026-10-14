@@ -36400,11 +36400,11 @@
     },
     {
       "id": "sp-ausevaywstr-0.2.5",
-      "what": "骨骼素材（.skel/.atlas/图集）—— 上游发布包内的 assets/spine，我们发布树 public/ 逐字节相同",
+      "what": "干员素材 —— 上游发布包内的 assets/char，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 34,
-      "bytes": 1568861,
+      "files": 35,
+      "bytes": 1584291,
       "keys": [
         [
           "assets/char/avatar/char_230_savage.webp",
@@ -36429,6 +36429,10 @@
         [
           "assets/char/avatar/char_476_blkngt_2.webp",
           18972
+        ],
+        [
+          "assets/char/avatar/char_493_firwhl_2.webp",
+          15430
         ],
         [
           "assets/char/portrait/char_230_savage_1.webp",
