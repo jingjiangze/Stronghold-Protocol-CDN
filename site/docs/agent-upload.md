@@ -9,7 +9,17 @@
 键名规则   与上游部署树一致：assets/<类>/<子类>/<文件名>（不要自己造新的顶层目录）
 必须自带   size（字节）与 sha256（64 位十六进制）——发布机会逐字节核对，不符就不上线
 禁止       覆盖已存在的键、删除键、写 cdn/ data/ apk/ site/ scout/ 这些契约与其它产品线的键
-扩展名     只收素材：png jpg jpeg webp gif atlas skel json txt mp3 ogg wav m4a woff woff2 ttf otf zip bin data xml
+扩展名     能直发对外键的静态素材：png jpg jpeg webp gif atlas skel obj bin json mp3 woff2 otf ttf
+           且必须落在 assets/ 或 fonts/ 之下 —— 判据是「格式 × 落点」两条一起，只看扩展名不够：
+           .json/.bin/.obj 两边都是（assets/local/map/common/materials.json 是素材，
+           packs/mod-assets/index.json 是清单）
+先审后发   名单内但不算素材的（zip txt ogg wav m4a woff xml data，以及任何不在 assets/ fonts/ 下的键，
+           包括 packs/ 下的 mod 包与 manifest）：照收进暂存区，当场回 tier=hold 与原因，**不上线**；
+           要上线得有人 POST /api/cdn/upload/release {id}（单向、一次性、留放行痕迹），
+           放行之后仍然由发布轮逐字节核对 sha256 才落对外键
+说明       what 至少 10 个字符（它会进 hosted.json 当这一组的说明）——短于 10 字当场 400。
+           这不是排版洁癖：那条下限同时是发布轮与站点部署的测试闸门，短了会把整条上线通道堵红
+禁止       覆盖已存在的键、删除键、写 cdn/ data/ apk/ site/ scout/ 这些契约与其它产品线的键
            （.html/.svg/.js 一律拒：这个域名对全世界发 ACAO *，放可执行内容等于在自己的域上开 XSS 位）
 ```
 
@@ -57,6 +67,9 @@ POST /api/cdn/upload/begin      JSON {key,size,sha256,source,note}
       → {id, putUrl, stagingKey}          # putUrl 有效 15 分钟，只对一个键有效
 PUT  <putUrl>                    原始字节，不带任何自定义头
 POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
+      → {id,key,tier,state,dispatched}    # tier=hold 表示「留在暂存区等放行」，这种不会叫发布轮
+POST /api/cdn/upload/release    JSON {id,note}
+      → {ok,key,releasedAt,dispatched}    # 只放行 hold 的那一类；重复调用会被告知已放行过
 ```
 
 浏览器另有一条一条式的 `PUT /api/cdn/upload/put?<key>&<size>&<sha256>&<source>&<what>`，body 就是文件，≤64 MiB，元数据必须在查询串里（HTTP 头不允许非 ISO-8859-1）。
@@ -78,6 +91,22 @@ POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
 
 
 所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
+
+## 收到 `tier=hold` 之后该做什么（2026-10-14 起的规则）
+
+对外键只发静态素材；mod 包、manifest、索引这类**要经人工审计**才上线。工具侧的正确姿势：
+
+- **别重传、别改名绕过。** `hold` 不是失败：字节已经安全落在 `cdn/incoming/<id>/`，重传只会多一份。
+  把 `id`、`key`、`holdReason` 原样回报给调用方就够了。
+- 想让它上线，得有人（不是 agent）在后台点「审计后放行」，或
+  `POST /api/cdn/upload/release {id,note}`；放行不降标准——仍然由发布轮逐字节核对 sha256 才落键。
+- 不想要了就清暂存：`DELETE /api/cdn/upload/staging?id=<id>`（或 `--purge=<id> --yes`），
+  这些字节对外没有任何引用，删掉不影响任何玩家。
+- 判据只有一处真相：`src/upload.mjs` 的 `formatVerdict()`（名单、两个素材前缀、放行后的行为都由它定，
+  并有 `tests/upload-format-gate.test.mjs` 钉住）。规则细节与取舍见仓库 `docs/upload-format-gate.md`。
+- **一个已知盲点**：塞进 `assets/**` 的元数据会被当素材直发（例：`assets/local/<source>/config-*.json`）。
+  没有任何「前缀 + 扩展名」规则能把它和 `materials.json` 分开，所以要审计的东西请一律放 `packs/<source>/`
+  ——`tools/agent-upload.mjs` 的默认键本来就是那个形状。
 
 ## 后台状态：为什么一行会停在「只传了字节、没提交」
 
