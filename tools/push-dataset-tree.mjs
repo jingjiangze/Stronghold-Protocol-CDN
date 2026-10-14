@@ -113,36 +113,50 @@ try {
   }
   if (!plan.length) { console.log('本轮没有可提交内容'); process.exit(0); }
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'dataset-stage-'));
-  const res = spawnSync('git', ['cat-file', '--batch'], {
-    cwd: REPO_ROOT, maxBuffer: 400 * 1024 * 1024, input: plan.map((r) => `${SRC_REF}:${r.path}\n`).join(''),
-  });
-  if (res.status) throw new Error(`cat-file --batch 退出 ${res.status}: ${res.stderr}`);
-  const batchOut = res.stdout;
-  // 输出：<sha> blob <size>\n<字节>\n 逐条解析
-  let off = 0;
+  // 分块喂 --batch：一次喂几千条会撞上 Node/管道缓冲，实测第 4119 条开始 head 为空（输出被截）。
+  // 每块 CHUNK 条、单独一条进程，既稳又比逐文件快两个数量级（500 份实测 0.87 s）。
+  const CHUNK = Number(process.env.BATCH_CHUNK || 800);
   const rel = [];
-  for (let i = 0; i < plan.length; i++) {
-    const nl = batchOut.indexOf('\n', off);
-    const head = batchOut.slice(off, nl).toString('utf8').trim().split(/\s+/);
-    const size = Number(head[2]);
-    const start = nl + 1;
-    if (!Number.isFinite(size)) throw new Error(`cat-file --batch 第 ${i} 条解析失败: ${head.join(' ')}`);
-    const dest = path.join(stage, plan[i].path);
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.writeFileSync(dest, batchOut.subarray(start, start + size));
-    rel.push(plan[i].path);
-    off = start + size + 1; // 末尾还有一个 \n
+  for (let c = 0; c < plan.length; c += CHUNK) {
+    const slice = plan.slice(c, c + CHUNK);
+    const res = spawnSync('git', ['cat-file', '--batch'], {
+      cwd: REPO_ROOT, maxBuffer: 512 * 1024 * 1024, input: slice.map((r) => `${SRC_REF}:${r.path}\n`).join(''),
+    });
+    if (res.status) throw new Error(`cat-file --batch 退出 ${res.status}: ${res.stderr}`);
+    const out = res.stdout;
+    let off = 0;
+    for (let i = 0; i < slice.length; i++) {
+      const nl = out.indexOf('\n', off);
+      if (nl < 0) throw new Error(`cat-file --batch 块 ${c} 第 ${i} 条：${slice[i].path} 找不到头部换行（off=${off}/${out.length}）`);
+      const head = out.slice(off, nl).toString('utf8').trim().split(/\s+/);
+      const size = Number(head[2]);
+      if (!Number.isFinite(size) || head[1] !== 'blob') {
+        throw new Error(`cat-file --batch 块 ${c} 第 ${i} 条：${slice[i].path} 解析失败 head="${head.join(' ')}"`);
+      }
+      const start = nl + 1;
+      const dest = path.join(stage, slice[i].path);
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, out.subarray(start, start + size));
+      rel.push(slice[i].path);
+      off = start + size + 1; // 末尾还有一个 \n
+    }
   }
   const bytes = plan.reduce((s, r) => s + r.size, 0);
   const added = rel.length;
 
-  // 一次进程 hash 整批（--stdin-paths 读相对路径清单，cwd = stage）
-  const shas = execFileSync('git', ['hash-object', '-w', '--no-filters', '--stdin-paths'], {
-    cwd: w, encoding: 'utf8', maxBuffer: 1 << 30,
-    input: rel.map((p) => path.resolve(stage, p)).join('\n') + '\n',
-  }).trim().split('\n');
-  if (shas.length !== rel.length) throw new Error(`hash-object 返回 ${shas.length} 行，期望 ${rel.length}`);
-  const cacheinfo = rel.map((p, i) => `100644 ${shas[i]}\t${DEST_ROOT}/${p}`);
+  // 一次进程 hash 一批（--stdin-paths 读路径清单），同样分块避免命令行/输出缓冲爆掉。
+  const cacheinfo = [];
+  for (let i = 0; i < rel.length; i += CHUNK) {
+    const slice = rel.slice(i, i + CHUNK);
+    const h = spawnSync('git', ['hash-object', '-w', '--no-filters', '--stdin-paths'], {
+      cwd: w, maxBuffer: 64 * 1024 * 1024,
+      input: slice.map((p) => path.resolve(stage, p)).join('\n') + '\n',
+    });
+    if (h.status) throw new Error(`hash-object 退出 ${h.status}: ${h.stderr}`);
+    const shas = h.stdout.toString('utf8').trim().split('\n');
+    if (shas.length !== slice.length) throw new Error(`hash-object 返回 ${shas.length} 行，期望 ${slice.length}`);
+    for (let k = 0; k < slice.length; k++) cacheinfo.push(`100644 ${shas[k]}\t${DEST_ROOT}/${slice[k]}`);
+  }
   fs.rmSync(stage, { recursive: true, force: true });
 
   // update-index 分批喂（一次几万条会让命令行爆掉）
