@@ -36891,6 +36891,132 @@
           11640
         ]
       ]
+    },
+    {
+      "id": "forge-0.18.6-0.2.6",
+      "what": "批量上传（agent-upload-batch）",
+      "addedAt": "2026-10-14",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 29,
+      "bytes": 966205,
+      "keys": [
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_022.mp3",
+          14646
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_020.mp3",
+          36798
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_032.mp3",
+          29484
+        ],
+        [
+          "assets/audio/voice/kr/char_494_vendla/cn_019.mp3",
+          49128
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_029.mp3",
+          40769
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_032.mp3",
+          44948
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_031.mp3",
+          45993
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_030.mp3",
+          72742
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_028.mp3",
+          16527
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_027.mp3",
+          11511
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_024.mp3",
+          16945
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_021.mp3",
+          24050
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_023.mp3",
+          28648
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_027.mp3",
+          26558
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_023.mp3",
+          34081
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_024.mp3",
+          41187
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_022.mp3",
+          34081
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_028.mp3",
+          40142
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_025.mp3",
+          20498
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_026.mp3",
+          29484
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_026.mp3",
+          30320
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_031.mp3",
+          59159
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_019.mp3",
+          9631
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_025.mp3",
+          43903
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_030.mp3",
+          32827
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_021.mp3",
+          15482
+        ],
+        [
+          "assets/audio/voice/kr/char_498_inside/cn_029.mp3",
+          86117
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_019.mp3",
+          10884
+        ],
+        [
+          "assets/audio/voice/kr/char_496_wildmn/cn_020.mp3",
+          19662
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
