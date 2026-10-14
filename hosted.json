@@ -36400,11 +36400,11 @@
     },
     {
       "id": "sp-ausevaywstr-0.2.5",
-      "what": "盟约图 —— 我们发布树 public/assets/bond",
+      "what": "道具图 —— 我们发布树 public/assets/item",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 86,
-      "bytes": 4592793,
+      "files": 88,
+      "bytes": 4612105,
       "keys": [
         [
           "assets/bond/rembetShip.webp",
@@ -36541,6 +36541,14 @@
         [
           "assets/char/portrait/char_493_firwhl_2.webp",
           26122
+        ],
+        [
+          "assets/item/trap_rembet_pick.webp",
+          8920
+        ],
+        [
+          "assets/item/trap_rembet_watch.webp",
+          10392
         ],
         [
           "assets/spine/op/char_129_bluep/back/char_129_bluep.atlas",
