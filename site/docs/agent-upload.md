@@ -9,6 +9,7 @@
 键名规则   与上游部署树一致：assets/<类>/<子类>/<文件名>（不要自己造新的顶层目录）
 必须自带   size（字节）与 sha256（64 位十六进制）——发布机会逐字节核对，不符就不上线
 禁止       覆盖已存在的键、删除键、写 cdn/ data/ apk/ site/ scout/ 这些契约与其它产品线的键
+           （.html/.svg/.js 一律拒：这个域名对全世界发 ACAO *，放可执行内容等于在自己的域上开 XSS 位）
 扩展名     能直发对外键的静态素材：png jpg jpeg webp gif atlas skel obj bin json mp3 woff2 otf ttf
            且必须落在 assets/ 或 fonts/ 之下 —— 判据是「格式 × 落点」两条一起，只看扩展名不够：
            .json/.bin/.obj 两边都是（assets/local/map/common/materials.json 是素材，
@@ -19,8 +20,6 @@
            放行之后仍然由发布轮逐字节核对 sha256 才落对外键
 说明       what 至少 10 个字符（它会进 hosted.json 当这一组的说明）——短于 10 字当场 400。
            这不是排版洁癖：那条下限同时是发布轮与站点部署的测试闸门，短了会把整条上线通道堵红
-禁止       覆盖已存在的键、删除键、写 cdn/ data/ apk/ site/ scout/ 这些契约与其它产品线的键
-           （.html/.svg/.js 一律拒：这个域名对全世界发 ACAO *，放可执行内容等于在自己的域上开 XSS 位）
 ```
 
 ## 目录怎么归类（照上游既有结构放，不要新造）
