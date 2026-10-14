@@ -36403,8 +36403,8 @@
       "what": "骨骼素材（.skel/.atlas/图集）—— 上游发布包内的 assets/spine，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 82,
-      "bytes": 4554398,
+      "files": 84,
+      "bytes": 4588813,
       "keys": [
         [
           "assets/char/avatar/char_129_bluep_2.webp",
@@ -36541,6 +36541,10 @@
         [
           "assets/spine/op/char_129_bluep/back/char_129_bluep.atlas",
           2294
+        ],
+        [
+          "assets/spine/op/char_129_bluep/back/char_129_bluep.skel",
+          22775
         ],
         [
           "assets/spine/op/char_129_bluep/back/char_129_bluep.webp",
@@ -36733,6 +36737,10 @@
         [
           "assets/spine/op/char_493_firwhl/front/char_493_firwhl.webp",
           43628
+        ],
+        [
+          "assets/token/avatar/token_10021_blkngt_hypnos.webp",
+          11640
         ]
       ]
     }
