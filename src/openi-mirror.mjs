@@ -215,6 +215,98 @@ export async function commitAddedBytes(cwd, commit) {
   return sum;
 }
 
+/**
+ * Push one commit's tree in file-level slices, each under `budgetBytes`.
+ *
+ * Needed because the commit-level batching in `planBatches` cannot help when a *single* commit is
+ * already over the budget: 2026-10-15 measured the union-merge commit on `assets-raw` at 600 MiB
+ * against a remote that 413s somewhere between 232 and 641 MiB. `planBatches` only compares the
+ * budget when the current batch is non-empty, so an empty batch swallows that commit whole.
+ *
+ * Strategy: replay the commit's own tree into a throwaway clone of the remote branch, adding files
+ * a slice at a time and pushing after each slice. Every push after the first is a delta against
+ * what the remote just accepted, so the wire stays small — the same trick `planBatches` uses, just
+ * inside one commit. Objects are read out of `cwd`'s object store, never re-hashed from the network.
+ *
+ * The throwaway clone uses `--no-checkout`: there is no working tree to write into, and `git add`
+ * would fail with "not in the current sparse checkout". Everything happens on the index plane.
+ */
+export async function pushCommitInSlices(cwd, remote, branch, commit, budgetBytes) {
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const { execFileSync } = await import('node:child_process');
+
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'openi-slice-'));
+  const g = (...a) => execFileSync('git', a, { cwd: tmp, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
+  try {
+    const url = (await run('git', ['remote', 'get-url', remote], { cwd })).trim();
+    execFileSync('git', ['clone', '--depth', '1', '--no-checkout', '--branch', branch, '--quiet', url, 'w'],
+      { cwd: tmp, stdio: ['ignore', 'ignore', 'pipe'] });
+    const w = path.join(tmp, 'w');
+    const gw = (...a) => execFileSync('git', a, { cwd: w, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
+    gw('read-tree', 'HEAD');   // 不灌 index 的话，第一个 commit 会把远端已有内容全删掉
+
+    // 该 commit 相对当前远端 HEAD 新增/变更的文件（字节从 cwd 的对象库读，不经网络）
+    const base = gw('rev-parse', 'HEAD');
+    const diff = execFileSync('git', ['diff-tree', '-r', '--no-commit-id', '--root', '--diff-filter=ACM', commit],
+      { cwd, encoding: 'utf8', maxBuffer: 1 << 28 });
+    const rows = [];
+    for (const line of diff.split('\n')) {
+      const m = line.match(/^:(\d{6})\s+\d{6}\s+[0-9a-f]+\s+([0-9a-f]{40})\s+[ACM]\t(.*)$/);
+      if (m) rows.push({ mode: m[1], sha: m[2], p: m[3] });
+    }
+    // 远端已经有的就跳过（幂等：重跑不会重复传）
+    const have = new Set(gw('ls-tree', '-r', '--name-only', 'HEAD').split('\n').filter(Boolean));
+    const todo = rows.filter((r) => !have.has(r.p));
+    const sizes = new Map();
+    const check = execFileSync('git', ['cat-file', '--batch-check'], {
+      cwd, encoding: 'utf8', maxBuffer: 1 << 28, input: todo.map((r) => r.sha).join('\n') + '\n',
+    });
+    const lines = check.trim().split('\n');
+    for (let i = 0; i < todo.length; i++) {
+      const m = lines[i] && lines[i].match(/^[0-9a-f]{40}\s+blob\s+(\d+)$/);
+      sizes.set(todo[i].sha, m ? Number(m[1]) : 0);
+    }
+    console.log(`[openi]   文件级分批：${todo.length} 份待补 / ${([...sizes.values()].reduce((a, b) => a + b, 0) / 1048576).toFixed(1)} MiB`);
+
+    let sliceBytes = 0;
+    let slice = [];
+    let pushed = 0;
+    const flush = async () => {
+      if (!slice.length) return;
+      for (let i = 0; i < slice.length; i += 2000) {
+        execFileSync('git', ['update-index', '--add', '--index-info'], {
+          cwd: w, encoding: 'utf8',
+          input: slice.slice(i, i + 2000).map((r) => `${r.mode} ${r.sha}\t${r.p}`).join('\n') + '\n',
+        });
+      }
+      const tree = gw('write-tree');
+      const parent = gw('rev-parse', 'HEAD');
+      if (tree === gw('rev-parse', 'HEAD^{tree}')) { slice = []; sliceBytes = 0; return; }
+      const c = gw('-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.github.com',
+        '-c', 'commit.gpgsign=false', 'commit-tree', tree, '-p', parent,
+        '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
+      gw('update-ref', 'refs/heads/' + branch, c);
+      await run('git', ['push', '--quiet', 'origin', `refs/heads/${branch}:refs/heads/${branch}`], { cwd: w });
+      pushed += slice.length;
+      console.log(`[openi]   已推 ${pushed}/${todo.length} 份（${(sliceBytes / 1048576).toFixed(1)} MiB）`);
+      slice = [];
+      sliceBytes = 0;
+    };
+    for (const r of todo) {
+      const s = sizes.get(r.sha) || 0;
+      if (slice.length && sliceBytes + s > budgetBytes) await flush();
+      slice.push(r);
+      sliceBytes += s;
+    }
+    await flush();
+    console.log(`[openi]   文件级分批完成：${pushed} 份`);
+    return pushed;
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 export async function main(argv = process.argv) {
   const arg = (name, dflt) => {
     const hit = argv.find((a) => a.startsWith(`--${name}=`));
@@ -274,6 +366,35 @@ export async function main(argv = process.argv) {
     const total = Object.values(sizes).reduce((a, b) => a + b, 0);
     console.log(`[openi] dry-run: ${pending.length} commit(s), ${(total / 1048576).toFixed(1)} MiB in ${batches.length} batch(es) — nothing pushed (pass --write)`);
     return { commit, files, bytes, pushed: false, skipped: false, pending: pending.length, batches: batches.length };
+  }
+
+  // ⚠ 单 commit 也可能超预算（2026-10-15 实测）：把远端与本地 assets-raw 并集合并后，
+  // 一个 commit 的 delta 就有 600 MiB，而 OpenI 的 413 边界在 232–641 MiB 之间。
+  // planBatches 只在 `cur.length` 非空时才比预算，空 batch 会整个吞下这个超预算 commit
+  // ⇒ 一次 POST 600 MiB → HTTP 413（实测 38621866532）。commit 级分批在这棵树上结构性无效。
+  // 兜底：这些 commit 走文件级分批（多次小 push，每次 ≤ budget）。
+  const oversize = batches.flatMap((b) =>
+    (b.length === 1 && (sizes[b[0]] || 0) > budgetBytes) ? [b[0]] : []);
+
+  if (oversize.length) {
+    const normal = batches.filter((b) => !(b.length === 1 && oversize.includes(b[0])));
+    for (const [i, batch] of normal.entries()) {
+      const head = batch[batch.length - 1];
+      const batchBytes = batch.reduce((s, c) => s + (sizes[c] || 0), 0);
+      console.log(`[openi] batch ${i + 1}/${normal.length}: ${batch.length} commit(s), ${(batchBytes / 1048576).toFixed(1)} MiB → ${head.slice(0, 10)}`);
+      await run('git', ['push', '--quiet', remote, `${head}:refs/heads/${branch}`]);
+    }
+    for (const c of oversize) {
+      console.log(`[openi] commit ${c.slice(0, 10)} 自身 ${(sizes[c] / 1048576).toFixed(1)} MiB > ${budgetBytes / 1048576} MiB —— 改文件级分批`);
+      await pushCommitInSlices(cwd, remote, branch, c, budgetBytes);
+    }
+    const afterAll = await remoteHead(remote, branch);
+    if (afterAll === commit) {
+      console.log(`[openi] pushed → ${branch} @ ${commit.slice(0, 10)}`);
+      return { commit, files, bytes, pushed: true, skipped: false, partial: false };
+    }
+    console.log(`[openi] 推进到 ${String(afterAll).slice(0, 10)}，未追平 ${commit.slice(0, 10)} —— 下次运行继续`);
+    return { commit, files, bytes, pushed: true, skipped: false, partial: true, at: afterAll };
   }
 
   let done = 0;
