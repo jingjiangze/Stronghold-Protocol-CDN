@@ -71,14 +71,24 @@ jobs:
             echo "::warning:: MODELSCOPE_DATASET_URL 未配置，跳过数据集素材树推送"
             exit 0
           fi
+          # 退出码 3 = 还有剩余（正常分批续跑），只有跑满轮数仍有剩余才报 error 收尾。
+          # 之前直接 `exit $code` 会把 3 传成 job failure —— 实测首轮已成功推 1200 份。
+          last=0
           for i in $(seq 1 ${{ inputs.rounds || 6 }}); do
             echo "=== round $i $(date -u +%H:%M:%S) ==="
             node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
               --max-files=${{ inputs.max_files || 1500 }}
-            code=$?
-            if [ $code -eq 0 ]; then echo "数据集已与源树一致"; break; fi
-            if [ $code -ne 3 ]; then echo "::error:: push-dataset-tree 退出 $code"; exit $code; fi
+            last=$?
+            if [ $last -eq 0 ]; then echo "数据集已与源树一致"; break; fi
+            if [ $last -ne 3 ]; then echo "::error:: push-dataset-tree 退出 $last"; exit $last; fi
             echo "仍有剩余，继续下一轮"
             sleep 2
           done
+          if [ $last -eq 3 ]; then
+            echo "::warning:: 跑满 ${{ inputs.rounds || 6 }} 轮仍有剩余，再次触发本作业继续"
+            gh workflow run dataset-tree.yml \
+              -f max_bytes=${{ inputs.max_bytes || 400 }} \
+              -f max_files=${{ inputs.max_files || 1500 }} \
+              -f rounds=${{ inputs.rounds || 6 }}
+          fi

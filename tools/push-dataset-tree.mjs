@@ -32,7 +32,7 @@
 //     每批一个 commit 一次 push；跑完仍有剩余就退出码 3 提示再跑一轮。
 //
 // 凭据走环境变量 MODELSCOPE_URL（与另两个脚本同一约定），脚本从不打印它。
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -99,21 +99,51 @@ try {
   // 写入：字节从源 ref 的 blob 读出，hash-object -w --stdin 写进数据集对象库，
   // update-index --cacheinfo 挂到 index —— 全程不落工作树（clone 用了 --no-checkout，
   // 本来就没有工作树；走 `git add` 会报 "not in the current sparse checkout"）。
-  let added = 0, bytes = 0;
-  const cacheinfo = [];
-  for (const r of todo) {
-    if (added >= MAX_FILES || bytes >= MAX_BYTES) break;
-    const buf = execFileSync('git', ['cat-file', 'blob', `${SRC_REF}:${r.path}`], {
-      cwd: REPO_ROOT, maxBuffer: 1 << 28,
-    });
-    const sha = execFileSync('git', ['hash-object', '-w', '--stdin'], {
-      cwd: w, input: buf, encoding: 'utf8', maxBuffer: 1 << 28,
-    }).trim();
-    if (!/^[0-9a-f]{40}$/.test(sha)) { console.warn(`  跳过 ${r.path}（hash-object 返回异常）`); continue; }
-    cacheinfo.push(`100644 ${sha}\t${DEST_ROOT}/${r.path}`);
-    added++; bytes += r.size;
+  //
+  // 批量：逐文件一个 git 进程实测 1200 份要 9 s（且 round 上限把总量卡死在 37 MiB/轮）；
+  // `git hash-object -w --stdin-paths` 一次进程能吃整批路径清单，字节走它的 stdin。
+  // 但 --stdin-paths 读的是**本地文件路径**，源在工作树里并不存在（源是孤儿分支上的 blob），
+  // 所以这里用 --no-filters 的批处理做不到；改成本批先落盘到临时目录再一次 hash-object。
+  // cat-file 同理：--batch 一条进程吐整批 blob（逐文件起进程实测 1200 份 ~9 s，批量 500 份 0.87 s）。
+  // 用 spawnSync：execFileSync 的 maxBuffer 对 Buffer 返回值有硬上限，整批字节会抛 ERR_OUT_OF_RANGE。
+  const plan = [];
+  {
+    let n = 0, b = 0;
+    for (const r of todo) { if (n >= MAX_FILES || b >= MAX_BYTES) break; plan.push(r); n++; b += r.size; }
   }
-  if (!added) { console.log('本轮没有可提交内容'); process.exit(0); }
+  if (!plan.length) { console.log('本轮没有可提交内容'); process.exit(0); }
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'dataset-stage-'));
+  const res = spawnSync('git', ['cat-file', '--batch'], {
+    cwd: REPO_ROOT, maxBuffer: 400 * 1024 * 1024, input: plan.map((r) => `${SRC_REF}:${r.path}\n`).join(''),
+  });
+  if (res.status) throw new Error(`cat-file --batch 退出 ${res.status}: ${res.stderr}`);
+  const batchOut = res.stdout;
+  // 输出：<sha> blob <size>\n<字节>\n 逐条解析
+  let off = 0;
+  const rel = [];
+  for (let i = 0; i < plan.length; i++) {
+    const nl = batchOut.indexOf('\n', off);
+    const head = batchOut.slice(off, nl).toString('utf8').trim().split(/\s+/);
+    const size = Number(head[2]);
+    const start = nl + 1;
+    if (!Number.isFinite(size)) throw new Error(`cat-file --batch 第 ${i} 条解析失败: ${head.join(' ')}`);
+    const dest = path.join(stage, plan[i].path);
+    fs.mkdirSync(path.dirname(dest), { recursive: true });
+    fs.writeFileSync(dest, batchOut.subarray(start, start + size));
+    rel.push(plan[i].path);
+    off = start + size + 1; // 末尾还有一个 \n
+  }
+  const bytes = plan.reduce((s, r) => s + r.size, 0);
+  const added = rel.length;
+
+  // 一次进程 hash 整批（--stdin-paths 读相对路径清单，cwd = stage）
+  const shas = execFileSync('git', ['hash-object', '-w', '--no-filters', '--stdin-paths'], {
+    cwd: w, encoding: 'utf8', maxBuffer: 1 << 30,
+    input: rel.map((p) => path.resolve(stage, p)).join('\n') + '\n',
+  }).trim().split('\n');
+  if (shas.length !== rel.length) throw new Error(`hash-object 返回 ${shas.length} 行，期望 ${rel.length}`);
+  const cacheinfo = rel.map((p, i) => `100644 ${shas[i]}\t${DEST_ROOT}/${p}`);
+  fs.rmSync(stage, { recursive: true, force: true });
 
   // update-index 分批喂（一次几万条会让命令行爆掉）
   for (let i = 0; i < cacheinfo.length; i += 2000) {
