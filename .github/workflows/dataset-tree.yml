@@ -1,0 +1,84 @@
+name: dataset-tree
+
+# 把 GitHub `assets-raw` 分支的整棵素材树镜像到 **魔搭数据集**
+# `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`。
+#
+# 为什么必须有这条链（2026-10-15 实测）：容器（魔搭创空间）把数据集当首选源，实测只覆盖
+# **54.5%**（抽样 134，61 个 404）。根因不是平台拒收 —— 全仓原本只有
+# `push-rank-modelscope.mjs` 会写这个数据集，而它只碰 `cdn/v1/rank.json` 一个路径；素材树是
+# 当初一次性灌入后停更，上游 `assets-raw` 自己补齐后也不会自动流过来。
+#
+# 与另外两条魔搭链的分工（三条互不相干，别混）：
+#   mirror-modelscope.yml  → 创空间 `cdn` 分支（整树；脚本只在 feat/modelscope-mirror 上，未合 main）
+#   rank.yml               → 数据集 `cdn/v1/rank.json`（单文件，一天四次）
+#   本作业                  → 数据集 `releases/v1-trial/**`（整棵素材树）
+#
+# 分批：整树 30k 份 / 3.3 GiB，一次推必然超时。每轮按 max_bytes / max_files 提交一批，
+# 跑完仍有剩余就退出码 3，同一窗内再跑一轮（steps 顺序执行，最多 6 轮 = 约 2.4 GiB/次运行）。
+# 幂等：脚本先 `git add` 再 `git diff --cached --quiet`，字节没变就跳过 push。
+on:
+  workflow_dispatch:
+    inputs:
+      max_bytes:
+        description: '单轮字节预算（MiB）'
+        type: number
+        default: 400
+      max_files:
+        description: '单轮文件数预算'
+        type: number
+        default: 1500
+      rounds:
+        description: '本次运行最多跑几轮'
+        type: number
+        default: 6
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dataset-tree
+  cancel-in-progress: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 素材树在孤儿分支 assets-raw 上，checkout 不会带它；脚本从本机 git 对象读字节之前先 fetch。
+      - name: fetch assets-raw
+        run: git fetch origin assets-raw:refs/heads/assets-raw
+
+      - name: git identity
+        run: |
+          git config --global user.name cdn-bot
+          git config --global user.email cdn-bot@users.noreply.modelscope.cn
+          git config --global init.defaultBranch master
+
+      # 凭据是仓库 secret，本机没有；缺失时只警告不失败 —— 数据集是加速源，不能让它把 CI 带红。
+      - name: push asset tree to the modelscope dataset
+        env:
+          MODELSCOPE_URL: ${{ secrets.MODELSCOPE_DATASET_URL }}
+        run: |
+          if [ -z "${MODELSCOPE_URL}" ]; then
+            echo "::warning:: MODELSCOPE_DATASET_URL 未配置，跳过数据集素材树推送"
+            exit 0
+          fi
+          for i in $(seq 1 ${{ inputs.rounds || 6 }}); do
+            echo "=== round $i $(date -u +%H:%M:%S) ==="
+            node tools/push-dataset-tree.mjs \
+              --max-bytes=${{ inputs.max_bytes || 400 }} \
+              --max-files=${{ inputs.max_files || 1500 }}
+            code=$?
+            if [ $code -eq 0 ]; then echo "数据集已与源树一致"; break; fi
+            if [ $code -ne 3 ]; then echo "::error:: push-dataset-tree 退出 $code"; exit $code; fi
+            echo "仍有剩余，继续下一轮"
+            sleep 2
+          done

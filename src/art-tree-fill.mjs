@@ -1,0 +1,293 @@
+#!/usr/bin/env node
+// 把**上游素材树**里还没进 git 的那部分补进 `assets-raw` 孤儿分支。
+//
+// ## 与 git-art-sync.mjs 的分工（不要混）
+//
+//   git-art-sync.mjs  → 补 hosted.json 登记的**第三方托管内容**（后台上传、mod 素材）。
+//                      它的 todo 来源就是 hosted.json，结构上补不了上游素材。
+//   art-tree-fill.mjs → 补**上游素材树**（R2 里 assets/** 这些由 sync.mjs 从上游 release 包
+//                      解出并上线的字节）。2026-10-14 实测：R2 权威 29,788 个素材键，
+//                      assets-raw 只有 21,768 → 缺 8,020（约 1,146 MiB，其中 assets/packs
+//                      899 MiB 是待下线分片包，默认排除）。这 8,020 个**没有任何作业会补**：
+//                      全仓只有 git-art-sync 写 assets-raw，而它不看上游树。
+//                      后果是 git 挂载层（jsdelivr / ghfast / OpenI）与它的下游（魔搭数据集）
+//                      对这批素材一律 404 —— 实测三源抽样：R2 全 200、jsDelivr 全 404。
+//
+// ## 为什么字节从公开 CDN 取而不是 S3
+//
+//   这些是**已上线**的公开素材，走公开域名 HEAD/GET 不需要桶凭据，本机就能跑；
+//   只有兜底才用 S3（环境里有凭据时）。sha256 权威表来自桶内 cdn/v1/hosted-index.json，
+//   取不到就退化为体积核对——与 git-art-sync 同一套保守策略。
+//
+// ## 为什么仍然走索引平面
+//
+//   同 git-art-sync：assets-raw 是 2 万+ 文件的孤儿分支，checkout 一遍只为加 blob 是浪费。
+//   read-tree → hash-object -w → update-index --index-info → write-tree → commit-tree。
+//   不碰工作树、不重新哈希既有 blob。
+//
+// ## 预算
+//
+//   首轮积压 ~247 MiB（排除 packs 后）。默认 --max-bytes=220 MiB / --max-files=1200 先停，
+//   剩下的下一轮继续；跑空时一轮只做 read-tree + ls-tree 判定，几秒结束。
+//
+// 用法：
+//   node src/art-tree-fill.mjs                      # 只报告
+//   node src/art-tree-fill.mjs --write              # 真的提交并推送 assets-raw
+//   node src/art-tree-fill.mjs --write --max-bytes=400
+//   node src/art-tree-fill.mjs --include-packs      # 连 assets/packs/** 也补（899 MiB，默认不）
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+import crypto from 'node:crypto';
+import { spawn } from 'node:child_process';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { r2Config, getObject } from './r2.mjs';
+import { listKeys } from './r2.mjs';
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const BRANCH = 'assets-raw';
+const CDN_BASE = (process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu').replace(/\/+$/, '');
+const HOSTED_INDEX_KEY = 'cdn/v1/hosted-index.json';
+
+// 分片包：待下线通道（manifest 改指 GitHub 后即废弃），899 MiB 全塞进 git 是纯浪费。
+const EXCLUDE_PREFIXES = ['assets/packs/', 'packs/', 'apk/', 'cdn/'];
+
+function run(cmd, args, { cwd = ROOT, env = process.env, input = null } = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
+    let out = '', err = '';
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('error', reject);
+    child.on('close', (code) => (code === 0 ? resolve(out) : reject(new Error(`${cmd} ${args.join(' ')} → ${code}: ${err || out}`))));
+    if (input != null) child.stdin.end(input); else child.stdin.end();
+  });
+}
+
+const sha256 = (buf) => crypto.createHash('sha256').update(buf).digest('hex');
+const MiB = (n) => `${(n / 1024 / 1024).toFixed(1)} MiB`;
+
+async function fetchBranch() {
+  await run('git', ['fetch', '--quiet', 'origin', `${BRANCH}:refs/heads/${BRANCH}`]).catch(() => {});
+  try {
+    return (await run('git', ['rev-parse', `refs/heads/${BRANCH}`])).trim();
+  } catch {
+    throw new Error(`分支 ${BRANCH} 不存在：先建孤儿分支再跑本脚本`);
+  }
+}
+
+/** 分支里已有的路径集合（只列名字，不读字节）。 */
+async function trackedPaths() {
+  const out = await run('git', ['ls-tree', '-r', '--name-only', `refs/heads/${BRANCH}`]);
+  return new Set(out.split('\n').filter(Boolean));
+}
+
+async function fetchBytes(config, key) {
+  if (config) {
+    try {
+      const res = await fetch(`${CDN_BASE}/${key}`, { redirect: 'follow' });
+      if (res.ok) return Buffer.from(await res.arrayBuffer());
+    } catch { /* 回退 S3 */ }
+    return Buffer.from(await toBuffer(await getObject(config, key)));
+  }
+  const res = await fetch(`${CDN_BASE}/${key}`, { redirect: 'follow' });
+  if (!res.ok) throw new Error(`${key}: CDN ${CDN_BASE} 返 ${res.status}`);
+  return Buffer.from(await res.arrayBuffer());
+}
+
+async function toBuffer(body) {
+  if (!body) return Buffer.alloc(0);
+  if (Buffer.isBuffer(body)) return body;
+  if (typeof body.arrayBuffer === 'function') return Buffer.from(await body.arrayBuffer());
+  const chunks = [];
+  for await (const c of body) chunks.push(Buffer.from(c));
+  return Buffer.concat(chunks);
+}
+
+async function writeBlob(buf, key) {
+  const child = spawn('git', ['hash-object', '-w', '--stdin', '--path', key], { cwd: ROOT, stdio: ['pipe', 'pipe', 'pipe'] });
+  const p = new Promise((resolve, reject) => {
+    let out = '', err = '';
+    child.stdout.on('data', (d) => { out += d; });
+    child.stderr.on('data', (d) => { err += d; });
+    child.on('error', reject);
+    child.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(`hash-object ${key} → ${code}: ${err}`))));
+  });
+  child.stdin.end(buf);
+  return p;
+}
+
+/**
+ * R2 里的上游素材键。
+ *
+ * 两种来源，按可用性选：
+ *  - `--snapshot=<file>`：一份 R2 全量清单（形如 `[{key,size}]` 或 `{objects:[…]}`）。本机没有
+ *    R2 S3 凭据（那些是 CI secret），所以本机跑只能走这个。清单必须是当轮审计产物，陈旧清单
+ *    会把已删的键当缺口——所以要求它比分支新，且脚本会报告来源与条数让人核对。
+ *  - 无 snapshot 时走 S3 LIST（CI 里有凭据时的正常路径）。
+ */
+async function upstreamKeys(config, snapshot) {
+  const keys = new Map();
+  if (snapshot) {
+    const raw = JSON.parse(fs.readFileSync(snapshot, 'utf8'));
+    const arr = Array.isArray(raw) ? raw : (raw.objects || raw.keys || []);
+    for (const r of arr) {
+      const k = r.key || r.Key;
+      if (typeof k !== 'string') continue;
+      if (!(k.startsWith('assets/') || k.startsWith('fonts/'))) continue;
+      keys.set(k, Number(r.size || r.Size || 0));
+    }
+    if (!keys.size) throw new Error(`${snapshot}: 没解析出任何 assets/ 或 fonts/ 键`);
+    return keys;
+  }
+  if (!config || !config.bucket) throw new Error('需要 R2 凭据或 --snapshot=<file>');
+  for (const prefix of ['assets/', 'fonts/']) {
+    for (const row of await listKeys(config, prefix, { maxPages: 200 })) keys.set(row.key, row.size);
+  }
+  return keys;
+}
+
+export async function fill({
+  write = false, maxBytes = 220 * 1024 * 1024, maxFiles = 1200,
+  includePacks = false, snapshot = null, push = true, log = console.log,
+} = {}) {
+  const report = { scanned: 0, added: 0, bytes: 0, missing: [], mismatched: [], pushed: false, commit: null, remaining: 0, dry: !write };
+
+  const head = await fetchBranch();
+  const have = await trackedPaths();
+  // 本机没有 R2 S3 凭据（那些是 CI secret）。字节走公开 CDN 已足够——这些是已上线的公开素材——
+  // 所以凭据缺失不是错误，只是少一道 sha256 权威核对。
+  let config = null;
+  try { config = r2Config(process.env); } catch { config = null; }
+  const hasCreds = !!(config && config.bucket && config.accessKeyId);
+
+  let indexFiles = {};
+  if (hasCreds) {
+    try {
+      const raw = await fetchBytes(config, HOSTED_INDEX_KEY);
+      if (raw) indexFiles = (JSON.parse(raw.toString('utf8'))).files || {};
+    } catch (e) {
+      log(`[art-tree-fill] 读 ${HOSTED_INDEX_KEY} 失败（${e.message}）—— 仍会按体积核对`);
+    }
+  } else {
+    log(`[art-tree-fill] 无 R2 凭据：字节走 ${CDN_BASE}，sha256 权威表不可用（退化为体积核对）`);
+  }
+
+  const all = await upstreamKeys(config, snapshot);
+  const exclude = includePacks ? EXCLUDE_PREFIXES.filter((p) => p !== 'assets/packs/') : EXCLUDE_PREFIXES;
+  const todo = [...all.keys()].filter((k) => {
+    if (have.has(k)) return false;
+    return !exclude.some((p) => k.startsWith(p));
+  });
+  report.scanned = todo.length;
+  let backlogBytes = 0;
+  for (const k of todo) backlogBytes += all.get(k) || 0;
+  log(`[art-tree-fill] R2 上游素材 ${all.size} 键（来源 ${snapshot ? snapshot : 'S3 LIST'}）/ 分支已有 ${have.size} → 待补 ${todo.length}（约 ${MiB(backlogBytes)}）`);
+
+  if (!write) {
+    report.remaining = todo.length;
+    report.bytes = backlogBytes;
+    log(`[art-tree-fill] dry：只做路径差集；加 --write 按预算取字节并提交`);
+    return report;
+  }
+  if (!todo.length) { log('[art-tree-fill] 无缺口'); return report; }
+
+  const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'sp-artfill-'));
+  const indexFile = path.join(cwd, 'index');
+  await run('git', ['read-tree', `refs/heads/${BRANCH}`], { env: { ...process.env, GIT_INDEX_FILE: indexFile } });
+  const env = { ...process.env, GIT_INDEX_FILE: indexFile };
+
+  // 并发取字节：串行时每份一个 HTTP 往返，实测 400 份要 20+ 分钟（本机 Clash 下单次 RTT 上百毫秒）。
+  // 并发度 8 是被两边夹出来的：CDN 侧没有理由限流，但本机代理并发过高会 ECONNRESET（已知网络特例），
+  // 失败的文件会进 missing 留给下一轮，不会静默丢。
+  const CONCURRENCY = 8;
+  const budget = todo.slice(0, maxFiles);
+  const cacheinfo = [];
+  let cursor = 0;
+  const nextKey = () => {
+    while (cursor < budget.length) {
+      const k = budget[cursor++];
+      if (report.missing.includes(k)) continue;
+      if (report.bytes >= maxBytes || report.added >= maxFiles) return null;
+      return k;
+    }
+    return null;
+  };
+  const worker = async () => {
+    for (;;) {
+      const key = nextKey();
+      if (!key) return;
+      let buf;
+      try {
+        buf = await fetchBytes(hasCreds ? config : null, key);
+        if (!buf || !buf.length) { report.missing.push(key); continue; }
+      } catch { report.missing.push(key); continue; }
+      if (report.bytes + buf.length > maxBytes && report.added > 0) { cursor--; return; }
+      const want = indexFiles[key]?.sha256;
+      if (want && sha256(buf) !== want) { report.mismatched.push(key); continue; }
+      const blob = await writeBlob(buf, key);
+      cacheinfo.push(`100644 ${blob}\t${key}`);
+      report.added++;
+      report.bytes += buf.length;
+    }
+  };
+  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+  report.remaining = Math.max(0, todo.length - report.added - report.missing.length);
+  if (report.remaining) log(`[art-tree-fill] 达到预算（${MiB(report.bytes)} / ${report.added} 份），剩 ${report.remaining} 留给下一轮`);
+
+  if (!cacheinfo.length) { log('[art-tree-fill] 本轮没有可提交内容'); return report; }
+
+  for (let i = 0; i < cacheinfo.length; i += 500) {
+    await run('git', ['update-index', '--add', '--index-info'], { env, input: `${cacheinfo.slice(i, i + 500).join('\n')}\n` });
+  }
+  const tree = (await run('git', ['write-tree'], { env })).trim();
+  const message = `assets: 补入上游素材树缺口（${cacheinfo.length} 个键，${MiB(report.bytes)}）`;
+  let commit = (await run('git', ['commit-tree', tree, '-p', head, '-m', message], { env })).trim();
+  report.commit = commit;
+
+  await run('git', ['update-ref', `refs/heads/${BRANCH}`, commit]);
+
+  // --no-push：只把提交落在本地 ref，推送交给 tools/push-via-api（git push 走不通时的通路）。
+  // 2026-10-14 实测：本机 git push 到 github.com 两种 SSL 后端都失败（schannel 握手失败 /
+  // openssl unexpected eof），而 gh 走 443 正常。两段式让字节采集与推送各自可重试。
+  if (!push) {
+    log(`[art-tree-fill] 已提交 ${BRANCH} → ${commit.slice(0, 8)}（${cacheinfo.length} 份 / ${MiB(report.bytes)}），按 --no-push 未推送`);
+    return report;
+  }
+
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      await run('git', ['push', 'origin', `${BRANCH}:${BRANCH}`]);
+      report.pushed = true;
+      log(`[art-tree-fill] 已推送 ${BRANCH} → ${commit.slice(0, 8)}（${cacheinfo.length} 份 / ${MiB(report.bytes)}）`);
+      return report;
+    } catch (e) {
+      log(`[art-tree-fill] push 第 ${attempt} 次失败：${e.message}`);
+      await run('git', ['fetch', '--quiet', 'origin', `${BRANCH}:refs/heads/${BRANCH}`]).catch(() => {});
+      const nowHead = (await run('git', ['rev-parse', `refs/heads/${BRANCH}`])).trim();
+      const t2 = (await run('git', ['write-tree'], { env })).trim();
+      commit = (await run('git', ['commit-tree', t2, '-p', nowHead, '-m', message], { env })).trim();
+      report.commit = commit;
+      await run('git', ['update-ref', `refs/heads/${BRANCH}`, commit]);
+    }
+  }
+  throw new Error('assets-raw 推不上去');
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  const write = process.argv.includes('--write');
+  const includePacks = process.argv.includes('--include-packs');
+  // 前缀 = "--" (2) + name + "=" (1) = name.length + 3。写成 +2 会把 "=" 留在值里（路径变 "=C:\…"）。
+  const arg = (n, d) => { const h = process.argv.find((a) => a.startsWith(`--${n}=`)); return h ? Number(h.slice(n.length + 3)) : d; };
+  const sarg = (n, d) => { const h = process.argv.find((a) => a.startsWith(`--${n}=`)); return h ? h.slice(n.length + 3) : d; };
+  const r = await fill({
+    write, includePacks,
+    push: !process.argv.includes('--no-push'),
+    snapshot: sarg('snapshot', null),
+    maxBytes: arg('max-bytes', 220) * 1024 * 1024,
+    maxFiles: arg('max-files', 1200),
+  });
+  if (r.missing.length) console.log(`取不到字节 ${r.missing.length} 份，例：${r.missing.slice(0, 3).join(', ')}`);
+  if (r.mismatched.length) console.log(`sha256 不符已跳过 ${r.mismatched.length} 份`);
+  process.exit(r.pushed || r.dry || r.added === 0 ? 0 : 1);
+}
