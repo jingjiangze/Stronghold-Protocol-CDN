@@ -25,6 +25,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # 链发下游镜像（openi / ModelScope）需要 workflow dispatch 权限
 
 concurrency:
   group: git-art-sync
@@ -52,6 +53,10 @@ jobs:
       - name: unit tests (plumbing)
         run: node --test tests/git-art-sync.test.mjs
 
+      - name: note assets-raw head (before)
+        id: before
+        run: echo "head=$(git ls-remote origin refs/heads/assets-raw | cut -f1)" >> "$GITHUB_OUTPUT"
+
       - name: sync hosted art into assets-raw
         env:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
@@ -65,3 +70,19 @@ jobs:
           args=""
           if [ "${{ inputs.write }}" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --write"; fi
           node src/git-art-sync.mjs $args --max-bytes=${{ inputs.max_bytes || 700 }}
+
+      # 2026-10-14：git 链是素材树的唯一中枢 —— 落完 commit 就链发下游多源，不再等各自 6 小时定时窗。
+      # 只有 assets-raw 真的前进才链发（否则下游要白拉一遍 ~650 MB 的树）；两条下游都幂等。
+      - name: chain downstream mirrors (openi / modelscope)
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          after=$(git ls-remote origin refs/heads/assets-raw | cut -f1)
+          if [ "$after" = "${{ steps.before.outputs.head }}" ]; then
+            echo "assets-raw 未变（本轮无新内容），不链发下游"; exit 0
+          fi
+          gh workflow run openi-mirror.yml -f write=true \
+            && echo "已触发 openi-mirror(write=true)" || echo "触发 openi-mirror 失败（定时兜底）"
+          gh workflow run mirror-modelscope.yml \
+            && echo "已触发 mirror-modelscope" || echo "触发 mirror-modelscope 失败（定时兜底）"

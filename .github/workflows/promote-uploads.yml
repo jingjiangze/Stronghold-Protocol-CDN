@@ -129,6 +129,17 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: node src/sync.mjs --write --interface-only
 
+      # 2026-10-14 用户口径：上传一落定就触发多源同步（git → openi；ModelScope 合入 main 后同链）。
+      # 只在"本轮确实上线/下线了东西"时链发；下游自身幂等（差集/sha 比对），重复触发安全。
+      - name: trigger multi-source sync (git-art -> openi)
+        if: env.CHANGED != '' && env.CHANGED != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run git-art-sync.yml -f write=true \
+            && echo "已触发 git-art-sync(write=true)——它落完 commit 后自行链发 openi/ModelScope" \
+            || echo "触发 git-art-sync 失败（交给下一次定时兜底）"
+
       # 触发式排干：本轮没做完（到 --max 上限）就立刻再来一轮，不让人等定时。
       # 只在"确实还有货"时补投，所以不会出现自链空转把免费分钟烧光。
       - name: drain the backlog

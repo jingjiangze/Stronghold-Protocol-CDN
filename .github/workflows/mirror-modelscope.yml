@@ -1,0 +1,75 @@
+name: mirror-modelscope
+
+# Mirror the asset snapshot to the ModelScope 创空间, four times a day.
+#
+# Why a separate workflow instead of a flag on sync.yml: sync.yml is the R2/Pages origin and runs on
+# its own contract (mirror → gate → publish). This one has a different destination, different
+# credential and different failure semantics — a broken ModelScope push must not mark the CDN red.
+#
+# It is cheap when nothing changed: the script hashes the source tree, compares it with the hash it
+# recorded in the mirror's assets.summary.json, and exits without pushing when they match. A run
+# therefore costs one fetch plus one blob read on the no-op path.
+#
+# NOTE on the destination: a 创空间 serves no raw file URLs. Every /resolve/, /raw/ and
+# /api/v1/.../repo/blob/ endpoint was measured to return the same ~8.6 KB SPA HTML for any path,
+# real or not. So this mirror is a git mirror: it exists so the tree can be cloned or mounted by a
+# git-mount CDN, not so a browser can fetch art from modelscope.cn directly.
+
+on:
+  schedule:
+    # Four times a day. Offset from sync.yml (minute 17) so the two never contend.
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      include_skins:
+        description: 'true = also mirror assets/skins/** (only when the upstream set is complete)'
+        type: boolean
+        default: false
+      dry_run:
+        description: 'true = build and hash the tree but do not push'
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: mirror-modelscope
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      # The source branch (assets-raw) is a rewritten snapshot, not a history, so a normal clone
+      # would drag every version ever committed. Fetch just that one ref.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: fetch the asset snapshot ref
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin '+refs/heads/assets-raw:refs/remotes/origin/assets-raw' \
+            || echo "no assets-raw branch on origin; the script will report it"
+
+      # The push carries ~650 MB and the server closes slow connections, so give git room.
+      - name: git transport settings
+        run: |
+          git config --global http.postBuffer 2097152000
+          git config --global http.lowSpeedLimit 1024
+          git config --global http.lowSpeedTime 600
+
+      - name: mirror to ModelScope
+        env:
+          MODELSCOPE_URL: ${{ secrets.MODELSCOPE_URL }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ "${{ inputs.dry_run }}" = "true" ]; then args+=(--dry-run); fi
+          if [ "${{ inputs.include_skins }}" = "true" ]; then args+=(--include-skins); fi
+          node tools/push-modelscope.mjs "${args[@]}"
