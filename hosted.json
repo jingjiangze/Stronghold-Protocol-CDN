@@ -36403,8 +36403,8 @@
       "what": "干员素材 —— 上游发布包内的 assets/char，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 66,
-      "bytes": 3209890,
+      "files": 67,
+      "bytes": 3233296,
       "keys": [
         [
           "assets/char/avatar/char_230_savage.webp",
@@ -36477,6 +36477,10 @@
         [
           "assets/char/portrait/char_378_asbest_2.webp",
           22486
+        ],
+        [
+          "assets/char/portrait/char_4066_highmo_2.webp",
+          23406
         ],
         [
           "assets/char/portrait/char_4232_hbound_1.webp",
