@@ -54,7 +54,10 @@ jobs:
       - name: fetch the asset snapshot ref
         run: |
           set -euo pipefail
-          git fetch --depth=1 origin '+refs/heads/assets-raw:refs/remotes/origin/assets-raw' \
+          # 2026-10-14 修：脚本（tools/push-modelscope.mjs）用 `git ls-tree -r assets-raw` / `git archive assets-raw`
+          # 读的是**本地 ref 名**；只 fetch 成 refs/remotes/origin/assets-raw 时解析不到
+          # （实测 fatal: Not a valid object name assets-raw）。所以两个 ref 一起落。
+          git fetch --depth=1 origin '+refs/heads/assets-raw:refs/heads/assets-raw' '+refs/heads/assets-raw:refs/remotes/origin/assets-raw' \
             || echo "no assets-raw branch on origin; the script will report it"
 
       # The push carries ~650 MB and the server closes slow connections, so give git room.
