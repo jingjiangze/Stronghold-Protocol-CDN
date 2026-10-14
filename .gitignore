@@ -8,3 +8,6 @@ report.md
 .DS_Store
 Thumbs.db
 _tmp/
+# rank.json 的本地副本（src/rank.mjs 每次生成，供 tools/push-rank-modelscope.mjs 镜像到魔搭数据集）。
+# 权威发布点是 R2 的 cdn/v1/rank.json 与数据集的 cdn/v1/rank.json，本地产物不入库。
+out/

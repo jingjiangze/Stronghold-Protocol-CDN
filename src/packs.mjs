@@ -4,12 +4,16 @@
 // (measured: minutes of sequential ~15 KB requests). Packs turn the same bytes into a handful of
 // ~100 MB downloads that the gh-proxy mirror chain serves at line speed. The flat tree stays the
 // per-file source of truth; packs are a bulk channel over the very same content.
+//
+// **Packs are GitHub-only (2026-10-14 用户指令)。** 字节只落到 GitHub Release，由镜像链加速；
+// R2 与其他镜像都不存 packs。此前 R2 是主存（这里 putObject 一份、GitHub 一份），
+// 结果是同一个 ~100MB 的包在两边各存一份，而 R2 那一份既不是权威也不比 GitHub 快。
+// 现在 GitHub Release 是唯一权威源，URL 列表不再含自有域那条。
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { putObject, IMMUTABLE } from './r2.mjs';
 import { sha256File } from './index-tree.mjs';
 import { DOCS_PREFIX } from './names.mjs';
 
@@ -105,21 +109,26 @@ export { sha256File } from './index-tree.mjs';
  * Mirror prefixes applied to a github.com URL. The list is data (`mirrors.json`), not code, so
  * adding a mirror is an edit to a JSON file.
  *
- * `ownUrl` is the copy on our own origin, and it is included because otherwise no pack URL uses
- * our domain at all -- the list was github plus third-party mirrors only, so "download through my
- * domain" was impossible for the 481 MB of packs even though R2 already holds every one of them.
- * It is listed first for readability; consumers classify by URL, not position.
+ * 2026-10-14：去掉 `ownUrl`（R2 自有域那条）。packs 不再落 R2，那条 URL 会 404，
+ * 留着就是给客户端一条死链。GitHub 排在首位即权威源，其余是镜像链加速副本；
+ * 消费者按 URL 形态分类，不按位置。
  */
 export function mirrorUrls(githubUrl, prefixes, ownUrl) {
-  const list = [githubUrl, ...prefixes.map((p) => `${String(p).replace(/\/+$/, '')}/${githubUrl.replace(/^https:\/\//, '')}`)];
-  return ownUrl ? [String(ownUrl), ...list] : list;
+  // `ownUrl` 已停用：签名保留是为了不破坏调用方，但一律忽略。
+  void ownUrl;
+  return [githubUrl, ...prefixes.map((p) => `${String(p).replace(/\/+$/, '')}/${githubUrl.replace(/^https:\/\//, '')}`)];
 }
 
 /**
- * Upload the packs to R2 and attach them to this repository's GitHub release
- * `assets-<tag>`, which is what the mirror chain accelerates.
+ * Publish the packs to this repository's GitHub release `assets-<tag>` — the one thing the mirror
+ * chain accelerates. **R2 no longer receives packs** (2026-10-14): the bucket is the per-file art
+ * source, the bulk channel is GitHub, and storing both was two copies of the same ~100 MB zip
+ * where only one of them was authoritative.
  */
 export async function publishPacks({ config, root, packs, tag, repo, workDir, mirrorPrefixes, ownBase }) {
+  // `config` / `ownBase` 保留在签名里以免破坏调用方，但不再用于写 R2。
+  void config;
+  void ownBase;
   const releaseTag = `assets-${tag}`;
   const published = [];
   for (const pack of packs) {
@@ -127,9 +136,6 @@ export async function publishPacks({ config, root, packs, tag, repo, workDir, mi
     const file = path.join(workDir, name);
     const size = buildPack(root, pack.keys, file);
     const sha256 = await sha256File(file);
-
-    const key = `packs/${releaseTag}/${name}`;
-    await putObject(config, key, fs.readFileSync(file), { contentType: 'application/zip', cacheControl: IMMUTABLE });
 
     const gh = spawnSync('gh', ['release', 'upload', releaseTag, file, '--clobber', '-R', repo], {
       encoding: 'utf8',
@@ -142,11 +148,9 @@ export async function publishPacks({ config, root, packs, tag, repo, workDir, mi
       files: pack.keys.length,
       bytes: size,
       sha256,
-      key,
       urls: mirrorUrls(
         `https://github.com/${repo}/releases/download/${releaseTag}/${name}`,
         mirrorPrefixes,
-        ownBase ? `${String(ownBase).replace(/\/+$/, '')}/${key}` : null,
       ),
     });
   }

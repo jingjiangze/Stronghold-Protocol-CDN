@@ -29,3 +29,21 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: node src/rank.mjs --write
+      # 同一份 rank.json 再镜像一份到魔搭数据集（jingjiangze/Stronghold-Protocol-Assets@master 的
+      # cdn/v1/rank.json）。为什么非做不可：容器（创空间）读 CF 系门牌实测 4.7~20 s，而 rank 抓取
+      # 超时只有 4 s ⇒ 三条 CF 门牌全失败，排名永远取不到，「动态最快 CDN」在容器侧退化成静态
+      # order。数据集门牌把这份 3.6 KB 放到容器自己平台内（实测 67 ms）。
+      # 幂等：字节没变就跳过 push，一天四次里绝大多数是空转。缺失 MODELSCOPE_DATASET_URL 时只警告
+      # 不失败——镜像是优化，不能让它把 R2 那一侧的正式发布也带成 red。
+      - name: mirror rank to the modelscope dataset
+        env:
+          MODELSCOPE_URL: ${{ secrets.MODELSCOPE_DATASET_URL }}
+        run: |
+          if [ -z "${MODELSCOPE_URL}" ]; then
+            echo "::warning:: MODELSCOPE_DATASET_URL 未配置，跳过镜像（容器侧继续用 CF 门牌）"
+            exit 0
+          fi
+          git config --global user.name cdn-bot
+          git config --global user.email cdn-bot@users.noreply.modelscope.cn
+          git config --global init.defaultBranch master
+          node tools/push-rank-modelscope.mjs --file=out/cdn/v1/rank.json

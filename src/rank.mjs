@@ -100,6 +100,12 @@ const doc = {
 };
 const body = `${JSON.stringify(doc, null, 2)}\n`;
 console.log(body.split('\n').slice(0, 22).join('\n'));
+// 同时落一份本地副本：CDN 侧的另一条链（tools/push-rank-modelscope.mjs）要把它镜像到魔搭数据集，
+// 作为容器侧的首选门牌。R2 仍是权威发布点，这里只是把同一份字节交给镜像链，不改变发布语义。
+const LOCAL_COPY = path.join(ROOT, 'out', 'cdn', 'v1', 'rank.json');
+fs.mkdirSync(path.dirname(LOCAL_COPY), { recursive: true });
+fs.writeFileSync(LOCAL_COPY, body);
+console.log(`本地副本：${path.relative(ROOT, LOCAL_COPY)}`);
 if (!write) { console.log('(dry run — 加 --write 发布到 cdn/v1/rank.json)'); process.exit(0); }
 const config = r2Config();
 await putObject(config, 'cdn/v1/rank.json', Buffer.from(body, 'utf8'), { contentType: 'application/json', cacheControl: 'public, max-age=300' });

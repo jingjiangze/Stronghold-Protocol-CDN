@@ -467,17 +467,13 @@ async function main() {
       upstreamTag: published.upstream.tag,
       mirrorsJson: mirrorsDoc,
     });
-    await putObject(config, `packs/assets-${published.upstream.tag}/${dropin.name}`, fs.readFileSync(dropin.file), {
-      contentType: 'application/zip',
-      cacheControl: IMMUTABLE,
-    });
     const uploaded = spawnSync(
       'gh',
       ['release', 'upload', `assets-${published.upstream.tag}`, dropin.file, '--clobber', '-R', opts.repo],
       { encoding: 'utf8' },
     );
     if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-    log(`rebuilt the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → R2 + release`);
+    log(`rebuilt the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → release only (packs are GitHub-only)`);
 
     // The official-CDN variant rebuilds here too: it needs the upstream release's lite asset, not
     // the extracted tree, so it fits the fast path exactly like the drop-in does.
@@ -492,17 +488,13 @@ async function main() {
       });
       const check = await verifyOfficialCdn(variant.file);
       if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
-      await putObject(config, `packs/assets-${release.tag}/${variant.name}`, fs.readFileSync(variant.file), {
-        contentType: 'application/zip',
-        cacheControl: IMMUTABLE,
-      });
       const up = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (up.status !== 0) throw new Error((up.stderr || 'gh release upload failed').slice(0, 200));
-      log(`rebuilt the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → R2 + release`);
+      log(`rebuilt the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → release only (packs are GitHub-only)`);
     } catch (error) {
       console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
     }
@@ -850,9 +842,6 @@ async function main() {
         repo: opts.repo,
         workDir: packDir,
         mirrorPrefixes: readMirrorPrefixes(ROOT),
-        // The R2 copy of each pack, so the URL list offers our own domain and not only github and
-        // third-party mirrors.
-        ownBase: opts.base,
       });
       report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
     } catch (error) {
@@ -911,19 +900,14 @@ async function main() {
         upstreamTag: release.tag,
         mirrorsJson: mirrorsDoc,
       });
-      const key = `packs/assets-${release.tag}/${dropin.name}`;
-      await putObject(config, key, fs.readFileSync(dropin.file), {
-        contentType: 'application/zip',
-        cacheControl: IMMUTABLE,
-      });
       const uploaded = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, dropin.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-      report.dropin = { name: dropin.name, size: dropin.size, key };
-      log(`published the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB)`);
+      report.dropin = { name: dropin.name, size: dropin.size, release: `assets-${release.tag}` };
+      log(`published the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → release only (packs are GitHub-only)`);
     } catch (error) {
       console.error(`[sync] drop-in zip FAILED: ${error.message}`);
       report.dropin = { error: error.message };
@@ -942,19 +926,14 @@ async function main() {
       });
       const check = await verifyOfficialCdn(variant.file);
       if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
-      const key = `packs/assets-${release.tag}/${variant.name}`;
-      await putObject(config, key, fs.readFileSync(variant.file), {
-        contentType: 'application/zip',
-        cacheControl: IMMUTABLE,
-      });
       const uploaded = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-      report.officialCdn = { name: variant.name, size: variant.size, key, refs: variant.refs };
-      log(`published the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB)`);
+      report.officialCdn = { name: variant.name, size: variant.size, release: `assets-${release.tag}`, refs: variant.refs };
+      log(`published the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → release only (packs are GitHub-only)`);
     } catch (error) {
       console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
       report.officialCdn = { error: error.message };

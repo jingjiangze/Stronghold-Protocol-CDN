@@ -90,15 +90,16 @@ export function pickOfficialCdnAsset(releases) {
 /**
  * Attach the download URLs to a picked asset.
  *
- * `ownBase` is the CDN's own origin. Both zips are uploaded to R2 under `packs/<release>/`, so
- * without this the page could only offer github.com and third-party mirrors -- there would be no
- * way to download through our own domain at all.
+ * Packs are GitHub-only (2026-10-14 用户指令): the bytes live in a GitHub Release and every URL here
+ * is that one download, either direct or through a mirror prefix that accelerates it. `ownBase` is
+ * accepted so callers keep working, but it is deliberately ignored: the R2 bucket no longer holds
+ * packs, so pointing at our own domain would 404.
  */
 export function withMirrors(picked, prefixes, ownBase) {
+  void ownBase;
   if (!picked) return null;
   const bare = picked.url.replace(/^https:\/\//, '');
-  const own = ownBase ? [`${String(ownBase).replace(/\/+$/, '')}/packs/${picked.release}/${picked.name}`] : [];
-  return { ...picked, urls: [...own, picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
+  return { ...picked, urls: [picked.url, ...prefixes.map((prefix) => `${String(prefix).replace(/\/+$/, '')}/${bare}`)] };
 }
 
 async function fetchReleases({ repo, token }) {
