@@ -36403,8 +36403,8 @@
       "what": "技能图标 —— 我们发布树 public/assets/skill",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 94,
-      "bytes": 4664849,
+      "files": 95,
+      "bytes": 4671739,
       "keys": [
         [
           "assets/band/band_rembet_inara.webp",
@@ -36569,6 +36569,10 @@
         [
           "assets/skill/skchr_blkngt_2.webp",
           4874
+        ],
+        [
+          "assets/skill/skchr_glider_1.webp",
+          6890
         ],
         [
           "assets/skill/skchr_tmslot_2.webp",
