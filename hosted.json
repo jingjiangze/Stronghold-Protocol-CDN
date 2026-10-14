@@ -36403,8 +36403,8 @@
       "what": "干员素材 —— 上游发布包内的 assets/char，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 52,
-      "bytes": 2741024,
+      "files": 55,
+      "bytes": 2849398,
       "keys": [
         [
           "assets/char/avatar/char_230_savage.webp",
@@ -36417,6 +36417,10 @@
         [
           "assets/char/avatar/char_378_asbest_2.webp",
           12052
+        ],
+        [
+          "assets/char/avatar/char_4232_hbound_2.webp",
+          15238
         ],
         [
           "assets/char/avatar/char_4236_tmslot.webp",
@@ -36469,6 +36473,10 @@
         [
           "assets/char/portrait/char_4236_tmslot_2.webp",
           29398
+        ],
+        [
+          "assets/char/portrait/char_436_whispr_1.webp",
+          27210
         ],
         [
           "assets/char/portrait/char_449_glider_1.webp",
@@ -36553,6 +36561,10 @@
         [
           "assets/spine/op/char_4236_tmslot/front/char_4236_tmslot.skel",
           250790
+        ],
+        [
+          "assets/spine/op/char_4236_tmslot/front/char_4236_tmslot.webp",
+          65926
         ],
         [
           "assets/spine/op/char_449_glider/back/char_449_glider.atlas",
