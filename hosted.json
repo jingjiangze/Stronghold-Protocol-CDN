@@ -36397,6 +36397,24 @@
           12444
         ]
       ]
+    },
+    {
+      "id": "sp-ausevaywstr-0.2.5",
+      "what": "干员素材 —— 上游发布包内的 assets/char，我们发布树 public/ 逐字节相同",
+      "addedAt": "2026-10-14",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 27148,
+      "keys": [
+        [
+          "assets/char/avatar/char_230_savage_2.webp",
+          12606
+        ],
+        [
+          "assets/char/avatar/char_230_savage.webp",
+          14542
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
