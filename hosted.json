@@ -36403,8 +36403,8 @@
       "what": "骨骼素材（.skel/.atlas/图集）—— 上游发布包内的 assets/spine，我们发布树 public/ 逐字节相同",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4,
-      "bytes": 119738,
+      "files": 5,
+      "bytes": 122516,
       "keys": [
         [
           "assets/char/avatar/char_230_savage.webp",
@@ -36413,6 +36413,10 @@
         [
           "assets/char/avatar/char_230_savage_2.webp",
           12606
+        ],
+        [
+          "assets/spine/op/char_230_savage/back/char_230_savage.atlas",
+          2778
         ],
         [
           "assets/spine/op/char_230_savage/back/char_230_savage.skel",
