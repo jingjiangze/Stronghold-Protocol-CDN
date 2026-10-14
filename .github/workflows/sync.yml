@@ -95,6 +95,9 @@ jobs:
       # The dry-run path needs none of them, so an empty value is harmless.
       - name: sync
         env:
+          # 2026-10-14：主 CDN 门牌 = speedcdn（仓库变量；缺省仍回退 weishucdn）。
+          # 这行让「清单绝对 URL / drop-in 基址」等随本仓发布的产物都带 speedcdn，别再改回旧门牌。
+          SP_CDN_BASE: ${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
