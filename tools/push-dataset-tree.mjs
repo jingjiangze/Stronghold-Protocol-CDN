@@ -159,25 +159,44 @@ try {
   }
   fs.rmSync(stage, { recursive: true, force: true });
 
-  // update-index 分批喂（一次几万条会让命令行爆掉）
-  for (let i = 0; i < cacheinfo.length; i += 2000) {
-    execFileSync('git', ['update-index', '--add', '--index-info'], {
-      cwd: w, input: cacheinfo.slice(i, i + 2000).join('\n') + '\n', encoding: 'utf8',
-    });
-  }
+  const applyCacheinfo = () => {
+    for (let i = 0; i < cacheinfo.length; i += 2000) {
+      execFileSync('git', ['update-index', '--add', '--index-info'], {
+        cwd: w, input: cacheinfo.slice(i, i + 2000).join('\n') + '\n', encoding: 'utf8',
+      });
+    }
+  };
+  applyCacheinfo();
   console.log(`  index 已挂 ${cacheinfo.length} 条`);
 
   const tree = git(w, 'write-tree');
-  // 与父提交同树？不可能（我们刚加了文件），但要防重复跑：比对父提交树
-  const parent = git(w, 'rev-parse', 'HEAD');
   const parentTree = git(w, 'rev-parse', 'HEAD^{tree}');
   if (tree === parentTree) { console.log('内容与数据集一致，无需推送。'); process.exit(0); }
 
   console.log(`  本轮 ${added} 份 / ${(bytes / 1048576).toFixed(1)} MiB`);
   if (DRY) { console.log('干跑结束（未推送）。'); process.exit(0); }
 
+  // ⚠ 提交前先对齐远端：rank.yml 也在推这个数据集的 master（写 cdn/v1/rank.json），
+  // 两边撞车时 push 会报 "cannot lock ref ... is at X but expected Y"（实测 38614298983）。
+  // 处理：fetch 后把 index 重置成远端最新树，再把本轮改动重新挂上去 —— 两条链写的路径
+  // 互不相交（我们只碰 releases/v1-trial/**），这样合并不会吃掉 rank 那一侧的新提交。
+  try {
+    git(w, 'fetch', '--depth', '1', 'origin', BRANCH);
+  } catch (e) {
+    console.warn(`  fetch 失败（按原父提交继续）：${String(e.message).slice(0, 120)}`);
+  }
+  let parent = git(w, 'rev-parse', 'HEAD');
+  const remoteHead = git(w, 'rev-parse', `refs/remotes/origin/${BRANCH}`);
+  if (remoteHead !== parent) {
+    console.log(`  远端已前进到 ${remoteHead.slice(0, 8)}（并发写入），重挂本轮改动`);
+    git(w, 'read-tree', remoteHead);
+    applyCacheinfo();
+    parent = remoteHead;
+  }
+
+  const tree2 = git(w, 'write-tree');
   const commit = git(w, '-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.modelscope.cn',
-    '-c', 'commit.gpgsign=false', 'commit-tree', tree, '-p', parent,
+    '-c', 'commit.gpgsign=false', 'commit-tree', tree2, '-p', parent,
     '-m', `assets: 补入素材树（${added} 份，${(bytes / 1048576).toFixed(1)} MiB）`);
   git(w, 'update-ref', `refs/heads/${BRANCH}`, commit);
   git(w, 'push', 'origin', `refs/heads/${BRANCH}:refs/heads/${BRANCH}`);
