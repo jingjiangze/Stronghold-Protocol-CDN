@@ -35785,16 +35785,80 @@
       "what": "Account namecards: 600px cards and 300px previews; preserve account picks and local fallback",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2,
-      "bytes": 6074,
+      "files": 18,
+      "bytes": 155298,
       "keys": [
+        [
+          "assets/local/sp-namecards-20261014/00cfbef97d9a.s.webp",
+          3978
+        ],
+        [
+          "assets/local/sp-namecards-20261014/00cfbef97d9a.webp",
+          11684
+        ],
+        [
+          "assets/local/sp-namecards-20261014/013b0e4ed8f2.s.webp",
+          4202
+        ],
+        [
+          "assets/local/sp-namecards-20261014/013b0e4ed8f2.webp",
+          11098
+        ],
         [
           "assets/local/sp-namecards-20261014/016ef37e15cd.s.webp",
           2096
         ],
         [
-          "assets/local/sp-namecards-20261014/00cfbef97d9a.s.webp",
-          3978
+          "assets/local/sp-namecards-20261014/016ef37e15cd.webp",
+          6080
+        ],
+        [
+          "assets/local/sp-namecards-20261014/0324481e9931.s.webp",
+          4158
+        ],
+        [
+          "assets/local/sp-namecards-20261014/0324481e9931.webp",
+          10000
+        ],
+        [
+          "assets/local/sp-namecards-20261014/068246d2a0a1.s.webp",
+          6620
+        ],
+        [
+          "assets/local/sp-namecards-20261014/068246d2a0a1.webp",
+          18942
+        ],
+        [
+          "assets/local/sp-namecards-20261014/09d830d13d33.s.webp",
+          4764
+        ],
+        [
+          "assets/local/sp-namecards-20261014/09d830d13d33.webp",
+          13174
+        ],
+        [
+          "assets/local/sp-namecards-20261014/0a5d9301635f.s.webp",
+          5222
+        ],
+        [
+          "assets/local/sp-namecards-20261014/0a5d9301635f.webp",
+          19154
+        ],
+        [
+          "assets/local/sp-namecards-20261014/1083c1ad27ae.s.webp",
+          4286
+        ],
+        [
+          "assets/local/sp-namecards-20261014/1083c1ad27ae.webp",
+          12680
+        ],
+        [
+          "assets/local/sp-namecards-20261014/14210d05d154.s.webp",
+          4192
+        ],
+        [
+          "assets/local/sp-namecards-20261014/14210d05d154.webp",
+          12968
         ]
       ]
     }
