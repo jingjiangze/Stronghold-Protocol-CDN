@@ -113,10 +113,18 @@
 
     <div class="toolbar" style="margin-top:14px">
       <button class="button button-primary" type="button" id="go">计算摘要并上传</button>
+      <button class="button button-primary" type="button" id="sync-mirrors">同步到镜像源</button>
       <button class="button button-secondary" type="button" id="kick">催一次发布</button>
       <button class="button button-secondary" type="button" id="refresh">刷新状态</button>
       <span class="section-note" id="line"></span>
     </div>
+    <p class="section-note" style="margin:8px 0 0">
+      <b>上传只写暂存区，不会自动上线</b>（2026-10-15 起：一次提交叫一轮发布会把 Actions 队列打爆，
+      所以发布改成手动）。传完点<b>「同步到镜像源」</b>：一次点击按顺序触发 ——
+      ① 发布轮（暂存 → 对外键 + hosted.json）② git 链（R2 → assets-raw 分支）
+      ③ 由 git 链自动跟进下游（openi / 魔搭数据集 / git 挂载源）。约 2–20 分钟。
+      只发布、不推进镜像，用「催一次发布」。
+    </p>
 
     <div class="table-wrap" style="margin-top:16px">
       <table id="queue-table">
@@ -157,8 +165,9 @@
     </div>
 
     <p class="section-note" style="margin-top:12px">
-      发布是触发式的：上传、提交都会当场叫起发布轮（约 1–2 分钟落到对外地址），
-      每半小时的定时只是兜底。一轮没排干会自己再补一轮。叫不动时会明说原因，不会假装已发布。
+      发布/同步是<b>手动的</b>（2026-10-15 起）：传完点上方「同步到镜像源」按顺序触发
+      发布轮 → git 链 → 下游镜像（openi / 魔搭数据集 / git 挂载源）。「催一次发布」只跑发布轮。
+      看 Actions 页约 2–20 分钟可收到结果；每半小时的定时轮仍在，只作兜底。
     </p>
     <div class="notice">
       <span><b>删除不在这张页面上，是刻意的。</b>删除只走 agent 通道（命令行），因为一次误点就会把对外
@@ -170,7 +179,7 @@
   </section>
 
   <p class="section-note" style="margin:26px 0">
-    接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · remove · kick</code>、
+    接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · remove · kick · sync-mirrors</code>、
     <code class="inline">DELETE /api/cdn/upload/staging?id=</code>、
     <code class="inline">GET /api/cdn/upload/agent-doc</code>；
     只接受同源调用，命令行请用仓库里的 <code class="inline">tools/agent-upload.mjs</code>。

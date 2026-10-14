@@ -5,7 +5,7 @@
 // 代价是吃经代理域名的 100 MB 请求体上限，所以这里把上限压到 64 MiB —— 更大的文件请用 agent 通道。
 // 摘要不在边缘算（免费档每次调用 10 ms CPU，算不动几十 MB），状态留 queued，由发布机逐字节核对。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
-import { actorHash, checkAuth, deny, json, sameOriginOrNone, triggerPublish } from './_http.js';
+import { actorHash, checkAuth, deny, json, sameOriginOrNone } from './_http.js';
 import { claimKeyFor, cleanSource, cleanWhat, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const MAX_BODY = 64 * 1024 * 1024;
@@ -94,9 +94,8 @@ export async function onRequestPut(context) {
   });
   if (!claimRes.ok) return deny(`写领取单失败：HTTP ${claimRes.status}`, 502);
 
-  // 浏览器这条一次到位，所以更要当场叫发布轮 —— 否则用户看见的是"传完了，然后等 20 分钟"。
-  // 待审计的那一类不去叫：发布轮只会跳过它，白烧一轮。
-  const trigger = fmt.tier === 'hold' ? { dispatched: false } : await triggerPublish(env);
+  // 2026-10-15 用户口径：提交不再叫发布轮（批量会打爆 Actions 队列）；发布/同步走后台
+  // 「同步到镜像源」按钮（POST /api/cdn/upload/sync-mirrors）或定时兜底轮。
   return json({
     ok: true,
     id,
@@ -105,13 +104,11 @@ export async function onRequestPut(context) {
     state,
     tier: fmt.tier,
     stagingKey,
-    dispatched: trigger.dispatched,
+    dispatched: false,
     ...(fmt.tier === 'hold' ? { holdReason: fmt.reason } : {}),
     message: fmt.tier === 'hold'
       ? `已收进暂存区（摘要核对过），但没有上线：${fmt.reason}`
-      : trigger.dispatched
-        ? '已收下并核对过摘要，正在落到对外键'
-        : `已收下并核对过摘要，但叫不动发布轮（${trigger.reason}）—— 等定时兜底，或点「催一次发布」`,
+      : '已收下并核对过摘要（尚未上线）—— 在后台点「同步到镜像源」即可发布并同步，或等定时兜底轮',
   }, 202);
 }
 

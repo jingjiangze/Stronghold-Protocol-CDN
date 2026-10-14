@@ -6,7 +6,7 @@
 // 这里能核对的只有「大小对不对」和（小文件）边缘直接算一次 sha256；大文件的摘要由 Actions
 // 逐字节算 —— 边缘 10 ms CPU 与 128 MB 内存撑不起 600 MB 的哈希，别在这儿假充。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
-import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone, triggerPublish } from './_http.js';
+import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
 import { claimKeyFor, cleanWhat, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const EDGE_HASH_LIMIT = 4 * 1024 * 1024;
@@ -102,9 +102,9 @@ export async function onRequestPost(context) {
   });
   if (!put.ok) return deny(`写 claim 失败：HTTP ${put.status}`, 502);
 
-  // 待审计的这一份不去叫发布轮 —— 叫了也只会在发布轮里被跳过，还白烧一轮 Actions。
-  const trigger = fmt.tier === 'hold' ? { dispatched: false } : await triggerPublish(env);
-
+  // 2026-10-15 用户口径：**提交不再叫发布轮**。批量上传时"每件叫一轮"会把 Actions 队列打爆
+  // （实测 5000 件 → 5000 次 dispatch，GitHub 开始取消别人的排队）。现在发布 / 同步到镜像源
+  // 由后台的「同步到镜像源」按钮统一触发（POST /api/cdn/upload/sync-mirrors），或等定时兜底轮。
   return json({
     ok: true,
     id,
@@ -113,13 +113,11 @@ export async function onRequestPost(context) {
     tier: fmt.tier,
     size: staged.size,
     stagingKey,
-    dispatched: trigger.dispatched,
+    dispatched: false,
     ...(fmt.tier === 'hold' ? { holdReason: fmt.reason } : {}),
     message: fmt.tier === 'hold'
       ? `已收进暂存区，但没有上线：${fmt.reason}`
-      : trigger.dispatched
-        ? '已收下，正在发布（Actions 会逐字节核对后落到对外键，并写进 hosted.json）'
-        : `已收下，但这次叫不动发布轮（${trigger.reason}）—— 等定时兜底；要马上发可在后台点「催一次发布」`,
+      : '已收进暂存区（尚未上线）—— 在后台点「同步到镜像源」把暂存发布并同步到各镜像，或等定时兜底轮',
   }, 202);
 }
 

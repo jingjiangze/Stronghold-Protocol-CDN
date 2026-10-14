@@ -22,6 +22,8 @@
            这不是排版洁癖：那条下限同时是发布轮与站点部署的测试闸门，短了会把整条上线通道堵红
 ```
 
+> **2026-10-15 行为变更（重要）**：`commit` / `put` 成功后**不再自动触发发布轮**。返回里 `dispatched` 固定为 `false`，并提示「已收进暂存区（尚未上线）」。要让素材真正上线、进镜像，需显式调用发布（见「两种调用方式」里的 `kick` / 新增的 `sync-mirrors`，或等 30 分钟定时兜底）。
+
 ## 目录怎么归类（照上游既有结构放，不要新造）
 
 | 放这里 | 内容 |
@@ -39,19 +41,37 @@
 
 ## 两种调用方式
 
-**1) agent 命令行（推荐，不受单请求 100 MB 上限）**
+**1) agent 命令行**
+
+批量（推荐，不受单请求 100 MB 上限、内建重复跳过）：
+
+```bash
+node tools/agent-upload-batch.mjs \
+  --manifest=list.json                       # 每行一个 {key,file,source,what,...}
+# 或
+node tools/agent-upload-batch.mjs \
+  --dir=./art --to=assets/char/avatar/ \
+  --source=demo-mod --what="说明：这批字节是什么、出处"
+# 结束再叫一次发布轮（只触发发布轮本身，不推镜像）：
+node tools/agent-upload-batch.mjs --kick
+```
+
+`agent-upload-batch.mjs` 内建「重复自动跳过」：对每个目标键先对桶公开面做 `HEAD` 预检，已存在的跳过；未完成的按 ledger 续传。**批量上传后想推到镜像，建议改用后台「同步到镜像源」按钮（见 `sync-mirrors`），或手动 dispatch `git-art-sync.yml`** —— 命令行本身只把字节收进暂存区、不推 git 镜像。
+
+单条（旧工具，仍可单文件用）：
 
 ```bash
 node tools/agent-upload.mjs \
   --file=./art.png --to=assets/char/avatar/mod_x.png \
-  --source=demo-mod --what="说明：这批字节是什么、出处" \
-  --dispatch --wait
+  --source=demo-mod --what="说明：这批字节是什么、出处"
 node tools/agent-upload.mjs --list          # 暂存区与最近发布
 node tools/agent-upload.mjs --docs          # 打这一份说明（含密钥）——路径不写死，见下
 node tools/agent-upload.mjs --kick          # 催一次发布轮
 node tools/agent-upload.mjs --purge=<id> --yes   # 清掉一组还没上线的暂存
 node tools/agent-upload.mjs --rm=<键> --yes      # 下线一个后台上线过的键
 ```
+
+> 注：旧工具里的 `--dispatch --wait` 现在不再有意义——`commit` 已经不会自动叫发布轮，等不等都没差；上传完直接拿 `--kick` 或后台按钮触发发布即可。
 
 `--source` 会成为 `hosted.json` 里的分组 id（2–60 位字母数字 `. _ -`），也是 prune 的唯一保护名单——**不登记的文件会被例行清理当镜像残渣删掉**。
 
@@ -66,30 +86,63 @@ POST /api/cdn/upload/begin      JSON {key,size,sha256,source,note}
       → {id, putUrl, stagingKey}          # putUrl 有效 15 分钟，只对一个键有效
 PUT  <putUrl>                    原始字节，不带任何自定义头
 POST /api/cdn/upload/commit     JSON {id,stagingKey,key,sha256,size,source,what}
-      → {id,key,tier,state,dispatched}    # tier=hold 表示「留在暂存区等放行」，这种不会叫发布轮
+      → {id,key,tier,state,dispatched:false}   # 2026-10-15 起：commit 不再叫发布轮，dispatched 恒为 false
 POST /api/cdn/upload/release    JSON {id,note}
-      → {ok,key,releasedAt,dispatched}    # 只放行 hold 的那一类；重复调用会被告知已放行过
+      → {ok,key,releasedAt}               # 只放行 hold 的那一类；重复调用会被告知已放行过。
+                                          # 放行只是离开 hold，不触发发布——仍需 kick / sync-mirrors 才上线
 ```
 
-浏览器另有一条一条式的 `PUT /api/cdn/upload/put?<key>&<size>&<sha256>&<source>&<what>`，body 就是文件，≤64 MiB，元数据必须在查询串里（HTTP 头不允许非 ISO-8859-1）。
+**新增：同步到镜像源 / 催发布（同源 + `x-admin-key`）**
+
+```
+POST /api/cdn/upload/sync-mirrors
+      # 「同步到镜像源」按钮的后端：按顺序触发
+      #   ① promote-uploads.yml 发布轮（暂存 → 对外键 + hosted.json）
+      #   ② git-art-sync.yml --write=true（R2 → assets-raw 分支）
+      # 下游镜像（openi / 魔搭数据集 / git 挂载源）由 git 链收尾步自动跟进（仅 assets-raw 真前进时才链发）
+      → 202 { ok, dispatched:[{step, ok|dispatched, ...}], message }
+      # 失败项在数组里逐条给 reason；幂等，可重复点
+
+POST /api/cdn/upload/kick
+      # 只触发发布轮本身（不推镜像）；保留作轻量催单用
+```
+
+浏览器另有一条一条式的 `PUT /api/cdn/upload/put?<key>&<size>&<sha256>&<source>&<what>`，body 就是文件，≤64 MiB，元数据必须在查询串里（HTTP 头不允许非 ISO-8859-1）。`put` 同样不再触发发布轮（返回 `dispatched:false`）。
 
 ## 上线节奏与核对
 
-**发布是触发式的**：`commit` / `put` / `remove` / `kick` 任一发生，都会当场叫起 `.github/workflows/promote-uploads.yml`（靠 Pages secret `GH_DISPATCH_TOKEN` + `GH_REPO`；没配就退回定时兜底，定时是每半小时的保险，不是主路径）。一轮做完若还有积压会立刻自补一轮排干。它做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
+**发布不再由上传自动触发（2026-10-15 起）。** 以前 `commit` / `put` 成功会当场叫起 `.github/workflows/promote-uploads.yml`；批量上传时一次提交等于一轮发布，实测 5,096 件上传产生数千次 dispatch，GitHub 开始取消排队。现在 `commit` / `put` 只把字节收进暂存区（返回 `dispatched:false`，提示「已收进暂存区（尚未上线）」），发布轮改由以下三种方式之一触发：
+
+- `POST /api/cdn/upload/kick` —— 只跑发布轮（暂存 → 对外键 + hosted.json），**不推 git 镜像**；
+- `POST /api/cdn/upload/sync-mirrors` —— 先跑发布轮，再跑 `git-art-sync`（见下）；
+- `.github/workflows/promote-uploads.yml` 的 **30 分钟 cron 兜底** —— 处理暂存积压，平时主路径。
+
+发布轮做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
 
 「会同步到 Git 源仓库吗？」——分两层，结论如下（链路审计，依据 `src/promote-uploads.mjs` 与 `promote-uploads.yml`）：
 
 - **素材字节：进 git，但不是当场。** 字节从 `cdn/incoming/<id>/` 暂存区经 `CopyObject` 落到 R2 对外键（`Cache-Control: public, max-age=31536000, immutable` + `x-amz-meta-sha256`）。R2 是**当场**的权威副本；随后 `.github/workflows/git-art-sync.yml`（一天四次：01:07 / 07:07 / 13:07 / 19:07）把它们补提交进 `assets-raw` 孤儿分支，git 挂载镜像（ghfast / gitcdn / OpenI raw …）才拿得到。
-  - 为什么这一环不可省：那些镜像拉的是 `assets-raw`，不是 R2。2026-10-12 审计实测 `hosted.json` 登记 5,246 个键而分支上只有 1,856 个路径，缺 3,390 个（约 932 MiB）——缺的正是后台上传的那批，于是"git 挂载层 coverage:full"名不副实。
+  - 为什么这一环不可省：那些镜像拉的是 `assets-raw`，不是 R2。历史上曾缺 3,390 个键（约 932 MiB），由 git-art-sync 持续补齐。
   - 补的时候不检出工作树（分支是 14k 文件 / 2 GiB）：`read-tree` 进临时索引 → `hash-object -w` → `update-index --index-info` → `write-tree` → `commit-tree`，只追加提交。每个字节先与 `hosted-index.json` 的 sha256 比对，不一致就跳过——索引平面写错一个 blob sha 会静默发布空内容树而 push 仍报成功。
   - 首轮积压按 700 MiB/轮排，两轮排干；排干后每轮几秒退出。所以**新上传的素材在 git 侧最多滞后约 6 小时**，R2 侧始终即时。
 - **登记元数据：会进 git。** 发布轮在本地 `fs.writeFileSync('hosted.json', …)`，然后 workflow 末尾 `git add hosted.json && git commit && git push origin main`（带重试 + rebase，冲突要人工并）。这一步**失败会让整轮变红**——因为 `prune` 只读仓库里的那份 `hosted.json`，桶里上线但 git 没登记 = 下次例行清理会把这批字节当镜像残渣删掉。
 - **接口/浏览面：重发而非同步。** 发布轮最后跑 `sync.mjs --write --interface-only`，重发 `cdn/v1/tree.json`、`hosted-index.json`、`upload-log.json` 等到 R2（几十秒，不重下上游 428 MB 包）。
+- **git 镜像推送只由 git-art-sync 负责。** `sync-mirrors` 与 `git-art-sync.yml` 的 cron（一天四窗）把 R2 字节补提交进 `assets-raw` 孤儿分支；**发布轮本身不再推 git 镜像**——那是 git-art-sync 的活，定时窗之外也可被 `sync-mirrors` 手动触发。
 
 一句话：**"同步到 Git"是两条腿**——`hosted.json` 这份登记（谁传的、传了什么、键、sha256、来源）当场进 main；素材字节随后由 `git-art-sync` 一天四次补进 `assets-raw`。权威副本始终先落在 R2 桶，git 是给镜像站的第二份。要查"传上去了吗"，看 `upload-log.json` 与 `hosted-index.json`，而不是 git 历史里的文件内容。
 
-
 所以「传上去了吗」只有一个答案来源：<https://speedcdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
+
+## 上传后如何到达各镜像源（2026-10-15 链路）
+
+| 阶段 | 动作 | 谁触发 | 结果 |
+|---|---|---|---|
+| 1 | 上传字节进暂存区 | `commit` / `put` / 直传 `put` | R2 `cdn/incoming/<id>/`（返回 `dispatched:false`） |
+| 2 | 发布轮（暂存 → 对外键 + hosted.json） | `kick` / `sync-mirrors` / 30min cron | R2 对外键 + `hosted.json` + tree/index/log |
+| 3 | git 同步（R2 → `assets-raw`） | `sync-mirrors` 第二步 / `git-art-sync` cron | 字节进 `assets-raw` 分支 |
+| 4 | 镜像跟随 | git 链收尾步自动 | openi（git push）、魔搭数据集（dataset-tree）、ghfast / jsDelivr / gitcdn（拉取式自动跟随） |
+
+只有第 2 步 `kick` 也能完成；**要到齐全部镜像（第 3、4 步）必须走 `sync-mirrors`**（或等 git-art-sync 的定时窗）。`assets-raw` 没真前进时，下游镜像不会链发。完整镜像链路同步方法见站点新页 [./sync-chain](./sync-chain)。
 
 ## 收到 `tier=hold` 之后该做什么（2026-10-14 起的规则）
 
@@ -99,6 +152,7 @@ POST /api/cdn/upload/release    JSON {id,note}
   把 `id`、`key`、`holdReason` 原样回报给调用方就够了。
 - 想让它上线，得有人（不是 agent）在后台点「审计后放行」，或
   `POST /api/cdn/upload/release {id,note}`；放行不降标准——仍然由发布轮逐字节核对 sha256 才落键。
+  **放行只是离开 hold，不会自动上线**：放行后还要 `kick` 或 `sync-mirrors` 才真正发布。
 - 不想要了就清暂存：`DELETE /api/cdn/upload/staging?id=<id>`（或 `--purge=<id> --yes`），
   这些字节对外没有任何引用，删掉不影响任何玩家。
 - 判据只有一处真相：`src/upload.mjs` 的 `formatVerdict()`（名单、两个素材前缀、放行后的行为都由它定，

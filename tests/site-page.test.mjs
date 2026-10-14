@@ -59,22 +59,23 @@ test('the manifest block explains partial coverage instead of just labelling it'
   assert.match(render, /assets-raw/, 'the lead names the branch that now carries the asset tree');
 });
 
-// The page offers two downloads and the reader has to know which one is theirs. The distinguishing
-// fact is whether they already run a deployment, so both labels and both button sets must exist --
-// a single merged button would be wrong for one of the two audiences either way.
-test('the page offers both downloads with the choice spelled out', () => {
-  for (const id of ['dropin', 'official']) {
+// 2026-10-14 改版：玩家区只剩**一个**下载（整合包）。原先的「两种下载，按你的情况选一个」
+// 由用户要求删除 —— 单一入口对两类读者都成立（有没有现成游戏服都能用），二选一反而让人在
+// 下载前先卡住。所以这里断言「只有一个入口、且二选一的说法已消失」，而不是「两个按钮都在」。
+test('the player section offers exactly one download and no either/or framing', () => {
+  for (const id of ['official']) {
     assert.ok(new RegExp(`id="${id}-download"`).test(html), `missing the ${id} download button`);
     assert.ok(new RegExp(`id="${id}-name"`).test(html), `missing the ${id} file name`);
     assert.ok(new RegExp(`id="${id}-meta"`).test(html), `missing the ${id} size line`);
     assert.ok(new RegExp(`id="${id}-mirror"`).test(html), `missing the ${id} mirror link`);
   }
-  // The two labels must state the situation, not just "A" and "B".
-  assert.match(html, /已经有能跑的游戏服/, 'the first option must say who it is for');
-  assert.match(html, /还没有游戏服/, 'the second option must say who it is for');
+  // 二选一的说法必须消失：那两句话是旧版用来区分两个按钮的。
+  assert.doesNotMatch(html, /已经有能跑的游戏服/, 'the either/or label must be gone');
+  assert.doesNotMatch(html, /还没有游戏服/, 'the either/or label must be gone');
+  assert.doesNotMatch(html, /两种下载/, 'the "two downloads" framing must be gone');
+  assert.doesNotMatch(html, /id="dropin-download"/, 'the second (dropin) download must be gone');
 
-  // Both variants share one renderer, driven by a table whose patterns must stay disjoint: a single
-  // pattern would let one button pick up the other's zip.
+  // 但渲染器仍由一张表驱动 —— 将来加回变体不必重写，表的 pattern 必须保持互斥。
   const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
   assert.match(script, /const DOWNLOADS = \[/, 'the variants must be driven by one table');
   assert.match(script, /stronghold-official-cdn/, 'the variant pattern must be present');

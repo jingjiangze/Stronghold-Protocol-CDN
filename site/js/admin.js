@@ -530,6 +530,24 @@
     setTimeout(refresh, 90000);
   }
 
+  // 「同步到镜像源」：一次点击按顺序触发 发布轮 → git-art-sync → （由 git 链自动跟进）下游镜像。
+  // 为什么合成一个按钮而不是三个：顺序是硬依赖（git 链读的是发布轮刚写好的 hosted.json），
+  // 让人按顺序点三次，迟早会有人点反。
+  async function syncMirrors(btn) {
+    if (btn) { btn.disabled = true; btn.textContent = '同步中…'; }
+    line('正在按顺序触发：发布轮 → git-art-sync（下游 openi/魔搭数据集由 git 链自动跟进）…');
+    const { status, doc } = await api('/api/cdn/upload/sync-mirrors', { method: 'POST' });
+    const steps = (doc && doc.dispatched) || [];
+    const brief = steps.map((s) => `${s.step}=${s.ok || s.dispatched ? 'ok' : `失败(${s.reason || s.status || '?'})`}`).join(' · ');
+    if (status === 202 || (doc && doc.ok)) {
+      line(`已触发：${brief}。看 Actions 页约 2–20 分钟；可再点一次（幂等）。`);
+    } else {
+      line(`同步没能触发：${brief || (doc && (doc.error || doc.message)) || `HTTP ${status}`}`, 'err');
+    }
+    if (btn) { btn.disabled = false; btn.textContent = '同步到镜像源'; }
+    setTimeout(refresh, 90000);
+  }
+
   async function copyText(text, label) {
     const box = $('copy-msg');
     try {
@@ -585,6 +603,7 @@
   $('files').addEventListener('change', () => { prepare(); });
   $('dir').addEventListener('change', () => { prepare(); });
   $('kick').addEventListener('click', kick);
+  $('sync-mirrors').addEventListener('click', () => syncMirrors($('sync-mirrors')));
   $('refresh').addEventListener('click', () => { refresh(); });
 
   // 已经开着标签页的人不用重打口令：sessionStorage 里有就先验一次。
