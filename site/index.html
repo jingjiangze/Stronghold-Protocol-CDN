@@ -366,7 +366,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
     <p class="section-note" style="margin-bottom:12px">
       整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
-      再套社区镜像前缀加速。
+      再套社区镜像前缀加速。<b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），
+      对象存储不再存包 —— 同一批 100 MB 的 zip 只保留一份权威副本，避免两处各自漂移。
     </p>
     <div class="table-wrap">
       <table id="packs">
