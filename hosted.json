@@ -36397,20 +36397,6 @@
           12444
         ]
       ]
-    },
-    {
-      "id": "audit-selftest-20261014",
-      "what": "闸门验收件：格式闸门上线后端到端自测（2026-10-14），验完由 remove 通道下线",
-      "addedAt": "2026-10-14",
-      "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 1,
-      "bytes": 62,
-      "keys": [
-        [
-          "packs/audit-selftest-20261014/probe.json",
-          62
-        ]
-      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
