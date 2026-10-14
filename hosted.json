@@ -36400,12 +36400,16 @@
     },
     {
       "id": "sp-ausevaywstr-0.2.5",
-      "what": "骨骼素材（.skel/.atlas/图集）—— 上游发布包内的 assets/spine，我们发布树 public/ 逐字节相同",
+      "what": "盟约图 —— 我们发布树 public/assets/bond",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 85,
-      "bytes": 4590827,
+      "files": 86,
+      "bytes": 4592793,
       "keys": [
+        [
+          "assets/bond/rembetShip.webp",
+          1966
+        ],
         [
           "assets/char/avatar/char_129_bluep_2.webp",
           12280
