@@ -6,19 +6,39 @@
     "TCP 时延单独看会误导：DNS 污染下连到劫持 IP 很快但取字节失败（raw.githubusercontent 就是这种）。判断可用性必须看 HTTP 成功数。",
     "样本量有限（每格 5-6），用于排序与排除，不足以做精细数值比较。"
   ],
-  "measuredAt": "2026-10-09",
-  "carriers": { "电信": 4134, "联通": 4837, "移动": 9808 },
+  "measuredAt": "2026-10-14",
+  "carriers": {
+    "电信": 4134,
+    "联通": 4837,
+    "移动": 9808
+  },
   "sources": [
     {
       "id": "r2-primary",
       "host": "weishucdn.jiangjiangze.icu",
       "probe": "/cdn/v1/probe.bin",
       "kind": "flat",
-      "tcpRttMs": { "电信": 227, "联通": 184, "移动": 211 },
+      "tcpRttMs": {
+        "电信": 227,
+        "联通": 184,
+        "移动": 211
+      },
       "http": {
-        "电信": { "ok": 5, "bad": 0, "ttfbMs": 246 },
-        "联通": { "ok": 5, "bad": 0, "ttfbMs": 195 },
-        "移动": { "ok": 5, "bad": 0, "ttfbMs": 244 }
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 246
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 195
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 244
+        }
       },
       "note": "最稳（15/15），最慢。Cloudflare 免费档把内地路由到圣何塞（实测 CF-RAY 尾缀 -SJC），195-321ms 是这条跨境链路的代价。"
     },
@@ -27,11 +47,27 @@
       "host": "spages.jiangjiangze.icu",
       "probe": "/cdn/v1/probe.bin",
       "kind": "flat",
-      "tcpRttMs": { "电信": 212, "联通": 184, "移动": 231 },
+      "tcpRttMs": {
+        "电信": 212,
+        "联通": 184,
+        "移动": 231
+      },
       "http": {
-        "电信": { "ok": 5, "bad": 0, "ttfbMs": 283 },
-        "联通": { "ok": 5, "bad": 0, "ttfbMs": 321 },
-        "移动": { "ok": 5, "bad": 0, "ttfbMs": 294 }
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 283
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 321
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 294
+        }
       },
       "note": "与 r2-primary 同稳，同样跨太平洋。二者互为冗余，不是速度上的选择。"
     },
@@ -40,11 +76,27 @@
       "host": "gitcdn.jiangjiangze.icu",
       "probe": "/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": 221, "联通": 182, "移动": 68 },
+      "tcpRttMs": {
+        "电信": 221,
+        "联通": 182,
+        "移动": 68
+      },
       "http": {
-        "电信": { "ok": 5, "bad": 0, "ttfbMs": 241 },
-        "联通": { "ok": 5, "bad": 0, "ttfbMs": 713 },
-        "移动": { "ok": 4, "bad": 1, "ttfbMs": 277 }
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 241
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 713
+        },
+        "移动": {
+          "ok": 4,
+          "bad": 1,
+          "ttfbMs": 277
+        }
       },
       "note": "自有域中继（Worker，按路径选 main / assets-raw 分支，后端 jsdelivr→ghfast 回退）。TCP 时延很好（移动 68ms，联通优于 gh-proxy），但 TTFB 241-713ms —— 比自有 R2 源高，因为它要多一跳再取上游。两轮复测里偶见单格 1 次失败，与上游有关。2026-10-09 曾因 DNS 记录缺失而完全不可达，记录已按本 zone 惯例（AAAA 100:: 代理，同 arknights）补回。"
     },
@@ -53,11 +105,27 @@
       "host": "cdn.jsdelivr.net",
       "probe": "/gh/jingjiangze/Stronghold-Protocol-CDN@main/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": 157, "联通": 107, "移动": 83 },
+      "tcpRttMs": {
+        "电信": 157,
+        "联通": 107,
+        "移动": 83
+      },
       "http": {
-        "电信": { "ok": 3, "bad": 2, "ttfbMs": 2700 },
-        "联通": { "ok": 5, "bad": 0, "ttfbMs": 747 },
-        "移动": { "ok": 4, "bad": 1, "ttfbMs": 493 }
+        "电信": {
+          "ok": 3,
+          "bad": 2,
+          "ttfbMs": 2700
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 747
+        },
+        "移动": {
+          "ok": 4,
+          "bad": 1,
+          "ttfbMs": 493
+        }
       },
       "note": "联通最好（107ms / 5-5），电信最差（2/5 失败且 TTFB 2700ms）。单看 TCP 会高估它。"
     },
@@ -66,7 +134,11 @@
       "host": "ghfast.top",
       "probe": "/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": 175, "联通": 220, "移动": 3275 },
+      "tcpRttMs": {
+        "电信": 175,
+        "联通": 220,
+        "移动": 3275
+      },
       "http": {},
       "note": "移动上是灾难（3275ms）。移动用户占比高，因此不作运行时首选。"
     },
@@ -75,11 +147,27 @@
       "host": "gh-proxy.com",
       "probe": "/https://raw.githubusercontent.com/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": 57, "联通": 180, "移动": 49 },
+      "tcpRttMs": {
+        "电信": 57,
+        "联通": 180,
+        "移动": 49
+      },
       "http": {
-        "电信": { "ok": 5, "bad": 0, "ttfbMs": 290 },
-        "联通": { "ok": 5, "bad": 0, "ttfbMs": 444 },
-        "移动": { "ok": 5, "bad": 0, "ttfbMs": 358 }
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 290
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 444
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 358
+        }
       },
       "note": "第三方里唯一三网全绿（15/15），且电信/移动的 TCP 时延只有我们自己源的 1/4。可用，但受第三方可用性约束。"
     },
@@ -88,13 +176,125 @@
       "host": "raw.githubusercontent.com",
       "probe": "/jingjiangze/Stronghold-Protocol-CDN/main/probe/cdn-probe.bin",
       "kind": "git",
-      "tcpRttMs": { "电信": 74, "联通": 170, "移动": 86 },
+      "tcpRttMs": {
+        "电信": 74,
+        "联通": 170,
+        "移动": 86
+      },
       "http": {
-        "电信": { "ok": 3, "bad": 2, "ttfbMs": 72 },
-        "联通": { "ok": 3, "bad": 2, "ttfbMs": 176 },
-        "移动": { "ok": 3, "bad": 2, "ttfbMs": 92 }
+        "电信": {
+          "ok": 3,
+          "bad": 2,
+          "ttfbMs": 72
+        },
+        "联通": {
+          "ok": 3,
+          "bad": 2,
+          "ttfbMs": 176
+        },
+        "移动": {
+          "ok": 3,
+          "bad": 2,
+          "ttfbMs": 92
+        }
       },
       "note": "时延最好看，成功率最差：三网一律 3/5。典型 DNS 污染——连得上劫持 IP，取不到字节。**不得进入运行时候选。**"
+    },
+    {
+      "id": "r2-alt",
+      "host": "weishucdn2.jiangjiangze.icu",
+      "probe": "/cdn/v1/probe.bin",
+      "kind": "cdn",
+      "http": {
+        "电信": {
+          "ok": 4,
+          "bad": 1,
+          "ttfbMs": 264
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 245
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 192
+        }
+      },
+      "note": "自动补测（2026-10-14，Globalping 内地三运营商 HTTP GET /cdn/v1/probe.bin）"
+    },
+    {
+      "id": "ms-edge",
+      "host": "jingjiangze-stronghold-protocol.ms.show",
+      "probe": "/assets/char/avatar/char_003_kalts.png",
+      "kind": "cdn",
+      "http": {
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 261
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 248
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 245
+        }
+      },
+      "note": "自动补测（2026-10-14，Globalping 内地三运营商 HTTP GET /assets/char/avatar/char_003_kalts.png）"
+    },
+    {
+      "id": "ms-dataset",
+      "host": "modelscope.cn",
+      "probe": "/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial/assets/char/avatar/char_003_kalts.png",
+      "kind": "cdn",
+      "http": {
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 85
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 73
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 74
+        }
+      },
+      "note": "自动补测（2026-10-14，Globalping 内地三运营商 HTTP GET /datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial/assets/char/avatar/char_003_kalts.png）"
+    },
+    {
+      "id": "speedcdn",
+      "host": "speedcdn.jiangjiangze.icu",
+      "probe": "/cdn/v1/probe.bin",
+      "kind": "cdn",
+      "http": {
+        "电信": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 261
+        },
+        "联通": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 283
+        },
+        "移动": {
+          "ok": 5,
+          "bad": 0,
+          "ttfbMs": 152
+        }
+      },
+      "note": "自动补测（2026-10-14，Globalping 内地三运营商 HTTP GET /cdn/v1/probe.bin）"
     }
   ],
   "excluded": [
@@ -103,6 +303,11 @@
       "reason": "三网 HTTP 成功率均为 3/5（40% 失败），时延数据是污染下的假象。"
     }
   ],
-  "defaultOrderHint": ["r2-primary", "pages", "gh-proxy", "gitcdn"],
+  "defaultOrderHint": [
+    "r2-primary",
+    "pages",
+    "gh-proxy",
+    "gitcdn"
+  ],
   "_defaultOrderHint_note": "仅在客户端测速**完成之前**作为初始次序；测速完成后一律以现场结果为准。r2-primary/pages 排前是因为它们 15/15 全绿——先出内容，再让测速把更快的源顶上来。"
 }

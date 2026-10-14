@@ -1,0 +1,65 @@
+name: network-measure
+
+# 内地三运营商实测 → network.json。
+#
+# 为什么要有这条流水线（2026-10-14 审计）：
+#   rank.mjs 的 `measured` = 「该源 host 是否在 network.json.sources」。缺实测的源会被
+#   asset-jump 的 rankQualified() 淘汰，「动态最快」因此退化成静态 order —— 审计当天
+#   8 个源里只有 r2 一个合格，排序等于没排。这条流水线就是补那个数据缺口的。
+#
+# 为什么必须走 Globalping 而不是 runner 直测：runner 在境外，量出来的不是玩家链路。
+# network.json 的用途是「决定哪些源能进运行时候选」，境外视角会把这张表的语义毁掉。
+#
+# 频率：每周一次（周一 03:11 UTC）。Globalping 匿名额度有限，实测一天一次都嫌密；
+# 且内地网络质量是天/周级变化，分钟级抖动由客户端 pick.js 自己测速覆盖。
+# 与 rank.yml（一天四次）错开：rank 只是发布，真正产生新数据的在这里。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '11 3 * * 1'
+
+permissions:
+  contents: write   # 需要把实测结果提交回 network.json
+
+concurrency:
+  group: network-measure
+  cancel-in-progress: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 没有令牌也能跑（匿名额度），有令牌则额度更宽。
+      - name: measure mainland carriers
+        env:
+          GLOBALPING_TOKEN: ${{ secrets.GLOBALPING_TOKEN }}
+        run: node src/network-measure.mjs --write
+
+      - name: sanity-check the table
+        run: node --test tests/network-table.test.mjs
+
+      # 只在真的拿到新数据时提交：全失败的轮次脚本会 exit 1，这里不会被执行到。
+      - name: commit the measurement
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add network.json
+          if git diff --cached --quiet; then
+            echo "no measurement change"
+            exit 0
+          fi
+          git -c commit.gpgsign=false commit -m "network: 内地实测 $(date -u +%F)（Globalping 三运营商）"
+          git push
+
+      # 实测数据变了就立刻重发 rank，否则要等下一个 cron 窗口才生效。
+      - name: republish rank
+        run: gh workflow run rank.yml --ref main
+        env:
+          GH_TOKEN: ${{ secrets.GH_DISPATCH_TOKEN }}
