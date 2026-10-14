@@ -20,6 +20,14 @@
 名单外的危险扩展名维持**当场拒绝**（不是暂存）：`html`、`svg`、`js` 等。这个桶的自定义域名对全世界
 发 `Access-Control-Allow-Origin: *`，在自己的域名上放一个可执行内容位等于开 XSS 面。
 
+### 已知盲点（写清楚，不含糊）
+
+落在 `assets/**` 里的素材格式**一律当素材直发**，包括别人塞进树里的元数据 —— 例如
+`assets/local/<source>/config-*.json` 这类 mod 配置。没有任何「前缀 + 扩展名」规则能把它们和
+`materials.json` 分开，所以这一版的取舍是：**要经审计的东西请放 `packs/<source>/`**（`tools/agent-upload.mjs`
+的默认键就是这个形状），别往 `assets/**` 里塞清单。这条由
+`tests/upload-format-gate.test.mjs` 钉住（它断言的是「选定的行为」，不是「完美的行为」）。
+
 ## 状态与放行
 
 | 阶段 | 谁写 | 内容 |

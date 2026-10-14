@@ -62,7 +62,7 @@ test('format and landing place together decide the tier', () => {
 
   // Same extension, different landing place. This is the whole reason the rule cannot be a bare
   // extension list: .json is both an art payload (materials.json) and metadata (mod manifests).
-  for (const key of ['packs/mod-assets/index.json', 'packs/fanpack/pack.json', 'assets/docs/img/x.json']) {
+  for (const key of ['packs/mod-assets/index.json', 'packs/fanpack/pack.json', 'packs/sp-forge-2026-10-13/index.json']) {
     const v = formatVerdict(key);
     assert.equal(v.tier, 'hold', `${key} must wait for audit`);
     assert.match(v.reason, /\/api\/cdn\/upload\/release/);
@@ -88,6 +88,17 @@ test('dangerous formats are still refused outright, not merely held', () => {
   for (const key of ['assets/x.html', 'assets/x.svg', 'assets/x.js', 'assets/x.md', 'assets/x.css', 'cdn/v1/x.json']) {
     assert.equal(validateKey(key).ok, false, `${key} must never be accepted`);
   }
+});
+
+test('metadata that lands inside the asset tree is treated as art -- a known, stated blind spot', () => {
+  // assets/** is where the client's own art lives, and it also carries per-source folders that
+  // hold config (assets/local/<source>/config-*.json). No prefix/format rule can tell those apart
+  // from materials.json, so this test pins the *choosen* behaviour instead of leaving it implicit:
+  // in-tree art formats publish directly; a manifest someone put under assets/ publishes too.
+  // Anything that must be audited belongs under packs/ -- which is where agent-upload.mjs defaults.
+  assert.equal(formatVerdict('assets/docs/img/x.json').tier, 'asset');
+  assert.equal(formatVerdict('assets/local/sp-four-02a466edd43d/config-983fc33d3181838e.json').tier, 'asset');
+  assert.equal(formatVerdict('assets/local/x.zip').tier, 'hold', 'container formats are held even inside the tree');
 });
 
 test('a held claim publishes only after release, and never reads as a rejection', () => {
