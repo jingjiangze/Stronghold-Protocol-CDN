@@ -35785,8 +35785,8 @@
       "what": "Account namecards: 600px cards and 300px previews; preserve account picks and local fallback",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 151,
-      "bytes": 1332390,
+      "files": 152,
+      "bytes": 1344834,
       "keys": [
         [
           "assets/local/sp-namecards-20261014/00cfbef97d9a.s.webp",
@@ -36391,6 +36391,10 @@
         [
           "assets/local/sp-namecards-20261014/85a7c1bb7ca6.s.webp",
           7246
+        ],
+        [
+          "assets/local/sp-namecards-20261014/fd16bd26aef1.webp",
+          12444
         ]
       ]
     }
