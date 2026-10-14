@@ -82,7 +82,10 @@ jobs:
           if [ "$after" = "${{ steps.before.outputs.head }}" ]; then
             echo "assets-raw 未变（本轮无新内容），不链发下游"; exit 0
           fi
+          # ModelScope 素材树 = **数据集** `releases/v1-trial/**`（dataset-tree.yml，2026-10-15 并行会话新建）。
+          # 旧的 mirror-modelscope.yml（创空间 cdn 分支）被平台 1.6 GB 仓库上限硬拒（实测树 2.36 GB），
+          # 已手动 disabled —— 别再往它发。
+          gh workflow run dataset-tree.yml \
+            && echo "已触发 dataset-tree（魔搭数据集整树）" || echo "触发 dataset-tree 失败（定时兜底）"
           gh workflow run openi-mirror.yml -f write=true \
             && echo "已触发 openi-mirror(write=true)" || echo "触发 openi-mirror 失败（定时兜底）"
-          gh workflow run mirror-modelscope.yml \
-            && echo "已触发 mirror-modelscope" || echo "触发 mirror-modelscope 失败（定时兜底）"
