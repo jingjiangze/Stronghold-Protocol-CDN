@@ -24683,8 +24683,8 @@
       "what": "Chat sticker update; stable IDs, animated originals and small previews",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 98,
-      "bytes": 26637207,
+      "files": 104,
+      "bytes": 27133536,
       "keys": [
         [
           "assets/local/sp-four-emotes/011b78a293456c47b7c0.preview.webp",
@@ -24711,8 +24711,16 @@
           1802
         ],
         [
+          "assets/local/sp-four-emotes/0e00e538421ed707c4b1.jpg",
+          163235
+        ],
+        [
           "assets/local/sp-four-emotes/0e432091fa056e2f24d0.preview.webp",
           2176
+        ],
+        [
+          "assets/local/sp-four-emotes/0ec48edd3a10897e4986.jpg",
+          163036
         ],
         [
           "assets/local/sp-four-emotes/1273c497b6b22499b7b7.preview.webp",
@@ -24819,6 +24827,10 @@
           2120
         ],
         [
+          "assets/local/sp-four-emotes/5ae49007572fab99b3de.preview.webp",
+          3012
+        ],
+        [
           "assets/local/sp-four-emotes/5d5c232ff8627ea7c917.jpg",
           139078
         ],
@@ -24865,6 +24877,10 @@
         [
           "assets/local/sp-four-emotes/78dbea0468a7944b9122.preview.webp",
           1782
+        ],
+        [
+          "assets/local/sp-four-emotes/791672b4a2ccb8423490.preview.webp",
+          2322
         ],
         [
           "assets/local/sp-four-emotes/79809860a687178dc37c.jpg",
@@ -24953,6 +24969,10 @@
         [
           "assets/local/sp-four-emotes/b23b8ed23e3fac88a361.gif",
           226778
+        ],
+        [
+          "assets/local/sp-four-emotes/badc7bde5e163b5fc169.preview.webp",
+          2242
         ],
         [
           "assets/local/sp-four-emotes/bd6e1db1a76420570569.jpg",
@@ -25077,6 +25097,10 @@
         [
           "assets/local/sp-four-emotes/fbf0e40aae456a380288.jpg",
           55675
+        ],
+        [
+          "assets/local/sp-four-emotes/ff927404045c22b799dd.jpg",
+          162482
         ]
       ]
     },
