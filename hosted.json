@@ -36897,8 +36897,8 @@
       "what": "批量上传（agent-upload-batch）",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4715,
-      "bytes": 146764545,
+      "files": 4721,
+      "bytes": 146937010,
       "keys": [
         [
           "assets/audio/voice/en/char_003_kalts/cn_019.mp3",
@@ -42033,6 +42033,10 @@
           24259
         ],
         [
+          "assets/audio/voice/en/char_322_lmlee/cn_029.mp3",
+          56860
+        ],
+        [
           "assets/audio/voice/en/char_322_lmlee/cn_030.mp3",
           93849
         ],
@@ -44289,6 +44293,10 @@
           54561
         ],
         [
+          "assets/audio/voice/en/char_4098_vvana/cn_021.mp3",
+          26558
+        ],
+        [
           "assets/audio/voice/en/char_4098_vvana/cn_023.mp3",
           38888
         ],
@@ -45183,6 +45191,10 @@
         [
           "assets/audio/voice/en/char_416_zumama/cn_026.mp3",
           13485
+        ],
+        [
+          "assets/audio/voice/en/char_416_zumama/cn_028.mp3",
+          12717
         ],
         [
           "assets/audio/voice/en/char_416_zumama/cn_029.mp3",
@@ -47281,6 +47293,10 @@
           31573
         ],
         [
+          "assets/audio/voice/kr/char_1033_swire2/cn_023.mp3",
+          10258
+        ],
+        [
           "assets/audio/voice/kr/char_1033_swire2/cn_024.mp3",
           9840
         ],
@@ -48829,6 +48845,10 @@
           18199
         ],
         [
+          "assets/audio/voice/kr/char_179_cgbird/cn_020.mp3",
+          31991
+        ],
+        [
           "assets/audio/voice/kr/char_179_cgbird/cn_022.mp3",
           16109
         ],
@@ -49739,6 +49759,10 @@
         [
           "assets/audio/voice/kr/char_222_bpipe/cn_023.mp3",
           3988
+        ],
+        [
+          "assets/audio/voice/kr/char_222_bpipe/cn_024.mp3",
+          34081
         ],
         [
           "assets/audio/voice/kr/char_222_bpipe/cn_025.mp3",
