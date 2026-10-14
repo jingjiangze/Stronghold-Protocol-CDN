@@ -6,7 +6,7 @@
 // 摘要不在边缘算（免费档每次调用 10 ms CPU，算不动几十 MB），状态留 queued，由发布机逐字节核对。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, sameOriginOrNone, triggerPublish } from './_http.js';
-import { claimKeyFor, cleanNote, cleanSource, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, cleanNote, cleanSource, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const MAX_BODY = 64 * 1024 * 1024;
 
@@ -69,6 +69,8 @@ export async function onRequestPut(context) {
     return deny(`sha256 不符（实测 ${measured}）—— 已丢弃这次上传，请重新选文件`, 412);
   }
 
+  // 浏览器这条也走同一道闸门：非静态素材只进暂存，不当场叫发布轮。
+  const fmt = formatVerdict(k.key);
   const claim = {
     schema: 1,
     id,
@@ -80,6 +82,7 @@ export async function onRequestPut(context) {
     what,
     state,
     edgeSha256: measured,
+    tier: fmt.tier,
     claimedAt: new Date().toISOString(),
     ...actorHash(request),
   };
@@ -90,17 +93,23 @@ export async function onRequestPut(context) {
   if (!claimRes.ok) return deny(`写领取单失败：HTTP ${claimRes.status}`, 502);
 
   // 浏览器这条一次到位，所以更要当场叫发布轮 —— 否则用户看见的是"传完了，然后等 20 分钟"。
-  const trigger = await triggerPublish(env);
+  // 待审计的那一类不去叫：发布轮只会跳过它，白烧一轮。
+  const trigger = fmt.tier === 'hold' ? { dispatched: false } : await triggerPublish(env);
   return json({
     ok: true,
     id,
     key: k.key,
     size: claim.size,
     state,
+    tier: fmt.tier,
+    stagingKey,
     dispatched: trigger.dispatched,
-    message: trigger.dispatched
-      ? '已收下并核对过摘要，正在落到对外键'
-      : `已收下并核对过摘要，但叫不动发布轮（${trigger.reason}）—— 等定时兜底，或点「催一次发布」`,
+    ...(fmt.tier === 'hold' ? { holdReason: fmt.reason } : {}),
+    message: fmt.tier === 'hold'
+      ? `已收进暂存区（摘要核对过），但没有上线：${fmt.reason}`
+      : trigger.dispatched
+        ? '已收下并核对过摘要，正在落到对外键'
+        : `已收下并核对过摘要，但叫不动发布轮（${trigger.reason}）—— 等定时兜底，或点「催一次发布」`,
   }, 202);
 }
 

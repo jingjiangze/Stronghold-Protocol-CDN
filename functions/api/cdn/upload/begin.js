@@ -5,7 +5,7 @@
 // 只增不改不删在这里的体现：begin 会 HEAD 最终键，已存在就 409 —— 后台没有覆盖入口。
 import { headKey, presignPut, r2Config } from './_edge.js';
 import { checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
-import { cleanNote, cleanSource, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { cleanNote, cleanSource, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -54,6 +54,9 @@ export async function onRequestPost(context) {
     return deny(`签名失败：${e.message}`, 500);
   }
 
+  // 在这里就说清会不会直发：agent 传完 600 MB 才被告知「这格式要人工放行」是最差的体验。
+  const fmt = formatVerdict(k.key);
+
   return json({
     ok: true,
     id,
@@ -63,6 +66,8 @@ export async function onRequestPost(context) {
     sha256: s.sha256,
     source: src.source,
     note: cleanNote(doc.note),
+    tier: fmt.tier,
+    ...(fmt.tier === 'hold' ? { holdReason: fmt.reason } : {}),
     putUrl,
     // 直传桶的 S3 端点：经 CF 代理的自定义域名单次请求体上限是 100 MB，这里不受那个限制。
     putMethod: 'PUT',

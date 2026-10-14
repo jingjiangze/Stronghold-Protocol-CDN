@@ -74,6 +74,20 @@
       .replace(/^\.+/, '')
       .replace(/\/+/g, '/');
 
+  /**
+   * 「这一份会直接上线，还是留在暂存区等人工放行」—— 只为显示用。
+   *
+   * 权威判定在服务端（src/upload.mjs 的 formatVerdict，发布轮按它办事）。这里重复一遍是因为
+   * status 接口回的是 claim 的 state，不含 tier，而待审的字节在页面上必须看得见 —— 看不见就等于
+   * 没人会去放行。万一两边判得不一致，放行端点自己会说「这一份是静态素材，不需要放行」，不会误上线。
+   */
+  const ASSET_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'bin', 'json', 'mp3', 'woff2', 'otf', 'ttf']);
+  const awaitingAudit = (key) => {
+    const k = String(key || '').replace(/^\/+/, '');
+    const ext = (k.split('.').pop() || '').toLowerCase();
+    return !(k.startsWith('assets/') || k.startsWith('fonts/')) || !ASSET_EXT.has(ext);
+  };
+
   const filesFromInput = () => {
     const picked = [];
     for (const input of [$('files'), $('dir')]) {
@@ -306,6 +320,55 @@
     if (agentDoc.why) el.textContent += ` · ${agentDoc.why}`;
   }
 
+  /**
+   * 待审计面板：非静态素材的字节停在暂存区，只有人工放行之后发布轮才会处理它。
+   *
+   * 插在暂存区树的顶上，而不是新开一个区块 —— 加容器要动 admin.html，那个文件此刻有别的改动在走。
+   * 这里的判定只做显示用，权威判定在服务端（见 awaitingAudit 上方注释）。
+   */
+  function renderHeld(held) {
+    const host = $('stage-tree');
+    if (!host || !host.parentNode) return;
+    const prev = document.getElementById('held-panel');
+    if (prev) prev.remove();
+    if (!held.length) return;
+
+    const box = document.createElement('div');
+    box.id = 'held-panel';
+    box.className = 'section-note';
+    const title = document.createElement('strong');
+    title.textContent = `${held.length} 份不是静态素材，停在暂存区（对外零影响；放行之后发布轮仍会逐字节核对 sha256）`;
+    box.appendChild(title);
+    for (const item of held) {
+      const row = document.createElement('div');
+      const label = document.createElement('span');
+      label.textContent = ` ${item.key} · ${fmt(item.size || item.stagedSize || 0)} · 来源 ${item.source || '—'} — `;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = '审计后放行';
+      btn.addEventListener('click', () => releaseOne(item.id, btn));
+      row.appendChild(label);
+      row.appendChild(btn);
+      box.appendChild(row);
+    }
+    host.parentNode.insertBefore(box, host);
+  }
+
+  async function releaseOne(id, btn) {
+    btn.disabled = true;
+    btn.textContent = '放行中…';
+    const { status, doc } = await api('/api/cdn/upload/release', { method: 'POST', body: { id, note: '后台人工放行' } });
+    if (status === 202 || (doc && doc.ok)) {
+      line(doc.message || '已放行，等发布轮核对 sha256 后落到对外键');
+    } else {
+      line(`放行失败：${(doc && (doc.error || doc.reason)) || `HTTP ${status}`}`, 'err');
+      btn.disabled = false;
+      btn.textContent = '审计后放行';
+      return;
+    }
+    await refresh();
+  }
+
   function renderStatus(doc) {
     const staged = (doc.staging || []);
     $('q-staged').textContent = String(staged.length);
@@ -330,6 +393,8 @@
       $('stage-tree'), $('stage-filter'), $('stage-status'), $('stage-collapse'),
       stageRows, '暂存区是空的（刚发布完，或还没传过东西）',
     );
+    // 待审计的那几份必须显眼，否则没人知道自己在等一次放行。
+    renderHeld(staged.filter((i) => i.hasClaim && i.key && awaitingAudit(i.key)));
 
     const logs = doc.log || [];
     const pendingRemoval = new Set((doc.removals || []).map((r) => r.key));
@@ -435,7 +500,8 @@
         });
         const doc = await res.json().catch(() => ({}));
         if (res.ok && doc.ok) {
-          row.state = '已进暂存';
+          // 服务端在这一步就知道 tier，所以这里不用自己再判一遍。
+          row.state = doc.tier === 'hold' ? '留在暂存 · 待审计' : '已进暂存';
           row.note = doc.id;
         } else {
           row.state = '被拒';
@@ -448,7 +514,10 @@
       renderPlan(plan);
     }
     await refresh();
-    line(`已提交 ${plan.length} 个，等发布轮核对上线（约 20 分钟内，或点「催一次发布」）`);
+    const held = plan.filter((r) => r.state === '留在暂存 · 待审计').length;
+    line(held
+      ? `已提交 ${plan.length} 个，其中 ${held} 个不是静态素材、停在暂存区等放行（见下方「待审计」），其余等发布轮核对上线（约 20 分钟内，或点「催一次发布」）`
+      : `已提交 ${plan.length} 个，等发布轮核对上线（约 20 分钟内，或点「催一次发布」）`);
   }
 
   async function kick() {

@@ -246,7 +246,7 @@ async function dropStaging(config, key, { dry }) {
 
 export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } = {}) {
   const config = r2Config(process.env);
-  const report = { dry, scanned: 0, published: [], rejected: [], already: [], skippedNoClaim: 0, pendingLeft: 0, errors: [] };
+  const report = { dry, scanned: 0, published: [], rejected: [], already: [], held: [], skippedNoClaim: 0, pendingLeft: 0, errors: [] };
 
   // A round is bounded by a count AND by a clock, whichever comes first.
   //
@@ -259,6 +259,9 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
   const rows = await listKeys(config, STAGING_PREFIX);
   report.scanned = rows.length;
   const groups = claimsFromListing(rows);
+  // 本轮已确认「等人工放行」的组。它们必须从 pendingLeft 里扣掉：
+  // 触发式发布是「PENDING_LEFT>0 就自己再投一轮」，把待审计的算进去就会无限自投。
+  const heldIds = new Set();
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
@@ -270,7 +273,7 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     if (done >= max || Date.now() >= deadline) {
       // 还剩多少要发的必须报出来：触发式发布靠这个数字决定"做完这一轮马上再来一轮"，
       // 而不是回头等定时。
-      report.pendingLeft = groups.slice(i).filter((x) => x.claim).length;
+      report.pendingLeft = groups.slice(i).filter((x) => x.claim && !heldIds.has(x.id)).length;
       const why = done >= max ? `到单轮上限 ${max}` : `到单轮时间预算 ${budgetSeconds}s（已处理 ${done} 份）`;
       log(`${why}，还剩 ${report.pendingLeft} 份等下一轮`);
       break;
@@ -289,6 +292,13 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     }
 
     const verdict = claimIsPublishable(claim, { payloadSize });
+    if (verdict.hold) {
+      // 待审计 ≠ 不合格：不合格会删暂存字节，而这一份就是要留在暂存区等人放行。
+      // 不动字节、不登记 hosted.json、不进日志 —— 对外零影响，放行之后才走正常验收。
+      heldIds.add(g.id);
+      report.held.push({ id: g.id, key: claim.key, size: claim.size, source: claim.source || '', reason: verdict.reason });
+      continue;
+    }
     if (!verdict.ok || !g.payload) {
       report.rejected.push({ id: g.id, key: claim.key, reason: !g.payload ? '有 claim 但没有字节对象' : verdict.reason });
       if (!dry) {
@@ -443,9 +453,10 @@ export async function main(argv = process.argv.slice(2)) {
 
   console.log(`\n== 发布结果${opts.dry ? '（dry-run）' : ''} ==`);
   console.log(`staging 对象 ${report.scanned} 个；未提交 claim ${report.skippedNoClaim} 组`);
-  console.log(`published ${report.published.length}，already ${report.already.length}，rejected ${report.rejected.length}，errors ${report.errors.length}`);
+  console.log(`published ${report.published.length}，already ${report.already.length}，rejected ${report.rejected.length}，待审计保留 ${report.held.length}，errors ${report.errors.length}`);
   for (const p of report.published) console.log(`  + ${p.key}  ${p.size} B  ${p.source}`);
   for (const r of report.rejected) console.log(`  ✗ ${r.key || r.id} — ${r.reason}`);
+  for (const h of report.held) console.log(`  ⏸ 留暂存 ${h.key}  ${h.size ?? '?'} B  ${h.source} — ${h.reason}`);
   for (const e of report.errors) console.log(`  ! ${e.key || e.id} — ${e.error}`);
   console.log(`\n== 撤销结果 ==`);
   console.log(`removed ${removals.removed.length}，refused ${removals.refused.length}，errors ${removals.errors.length}`);

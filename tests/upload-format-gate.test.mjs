@@ -1,0 +1,139 @@
+// The format gate: what may go straight to a public key, and what must wait in staging.
+//
+// Two invariants here are worth pinning because breaking either is silent and expensive:
+//   1. ASSET_EXTENSIONS must be a subset of UPLOAD_EXTENSIONS. A format that may be published but
+//      cannot be uploaded is a key nobody can ever write; the gate would look enforced while being
+//      unreachable.
+//   2. A held claim must never read as an ordinary rejection. promote-uploads.mjs deletes staging
+//      bytes for rejections -- if "awaiting audit" shared that path, the audit step would destroy
+//      the very bytes it exists to look at.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  ASSET_EXTENSIONS,
+  ASSET_TREE_PREFIXES,
+  UPLOAD_EXTENSIONS,
+  claimIsPublishable,
+  formatVerdict,
+  releaseClaim,
+  validateKey,
+} from '../src/upload.mjs';
+
+const claimFor = (key, over = {}) => ({
+  schema: 1,
+  id: 'aaaaaaaaaaaaaaaaaaaaaaaa',
+  key,
+  stagingKey: `cdn/incoming/aaaaaaaaaaaaaaaaaaaaaaaa/${key.split('/').pop()}`,
+  size: 1024,
+  sha256: '0'.repeat(64),
+  source: 'unit-test',
+  what: 'fixture',
+  state: 'queued',
+  tier: formatVerdict(key).tier,
+  claimedAt: '2026-10-14T00:00:00.000Z',
+  ...over,
+});
+
+test('every publishable format is also uploadable', () => {
+  for (const ext of ASSET_EXTENSIONS) {
+    assert.ok(UPLOAD_EXTENSIONS.has(ext), `.${ext} may be published but begin/commit would reject it`);
+  }
+});
+
+test('the asset tree prefixes are the two the client reads bytes from', () => {
+  assert.deepEqual(ASSET_TREE_PREFIXES, ['assets/', 'fonts/']);
+});
+
+test('format and landing place together decide the tier', () => {
+  // Formats measured live (2026-10-14) in index.json / hosted-index.json, under the asset tree.
+  for (const key of [
+    'assets/char/avatar/char_003_kalts.png',
+    'assets/audio/bgm/m_bat_abyssalhunters_intro.mp3',
+    'assets/spine/enemy/enemy_10138_xdsnow/enemy_10138_xdsnow.atlas',
+    'assets/spine/enemy/enemy_10138_xdsnow/enemy_10138_xdsnow.skel',
+    'assets/local/map/common/materials.json',
+    'assets/local/scene/act1autochess_m01/scene.bin',
+    'assets/local/map/fx/Start_back.obj',
+    'fonts/noto-sans-sc.ttf',
+  ]) {
+    assert.equal(formatVerdict(key).tier, 'asset', `${key} is art the client loads by URL`);
+  }
+
+  // Same extension, different landing place. This is the whole reason the rule cannot be a bare
+  // extension list: .json is both an art payload (materials.json) and metadata (mod manifests).
+  for (const key of ['packs/mod-assets/index.json', 'packs/fanpack/pack.json', 'assets/docs/img/x.json']) {
+    const v = formatVerdict(key);
+    assert.equal(v.tier, 'hold', `${key} must wait for audit`);
+    assert.match(v.reason, /\/api\/cdn\/upload\/release/);
+  }
+
+  // Container and text formats that are not part of the measured asset set, wherever they land.
+  for (const key of [
+    'packs/sp-forge-2026-10-13/cosmetics-01.zip',
+    'assets/packs/core.spine.op.1-5.zip',
+    'assets/local/x.txt',
+    'packs/mod-assets/README.txt',
+    'assets/local/x.ogg',
+  ]) {
+    assert.equal(formatVerdict(key).tier, 'hold', `${key} is not a static asset format`);
+  }
+
+  assert.equal(formatVerdict('/assets/leading/slash.png').tier, 'asset', 'a leading slash normalizes before the prefix test');
+});
+
+test('dangerous formats are still refused outright, not merely held', () => {
+  // The bucket domain answers ACAO `*`; an html/svg/js object there is an executable content slot.
+  // The gate must not have quietly turned "refuse" into "accept into staging".
+  for (const key of ['assets/x.html', 'assets/x.svg', 'assets/x.js', 'assets/x.md', 'assets/x.css', 'cdn/v1/x.json']) {
+    assert.equal(validateKey(key).ok, false, `${key} must never be accepted`);
+  }
+});
+
+test('a held claim publishes only after release, and never reads as a rejection', () => {
+  const verdict = claimIsPublishable(claimFor('packs/mod-assets/index.json'), { payloadSize: 1024 });
+  assert.equal(verdict.ok, false);
+  assert.equal(verdict.hold, true, 'promote must key off hold to keep the staging bytes');
+  assert.match(verdict.reason, /暂存区/);
+
+  // Both legacy states behave the same way -- the hold marker is the tier, not the state.
+  for (const state of ['queued', 'verified-at-edge']) {
+    assert.equal(claimIsPublishable(claimFor('packs/x.json', { state }), { payloadSize: 1024 }).hold, true);
+  }
+
+  assert.equal(claimIsPublishable(claimFor('packs/x.json', { releasedAt: '2026-10-14T01:00:00.000Z' }), { payloadSize: 1024 }).ok, true, 'a released claim publishes');
+  assert.equal(claimIsPublishable(claimFor('assets/a/char.png'), { payloadSize: 1024 }).ok, true, 'art is never held');
+
+  // A real defect stays a real rejection: hold must not swallow it.
+  const bad = claimIsPublishable(claimFor('packs/x.json'), { payloadSize: 999 });
+  assert.equal(bad.ok, false);
+  assert.notEqual(bad.hold, true);
+  assert.match(bad.reason, /staging 大小/);
+});
+
+test('releaseClaim marks once, refuses art, and sanitizes the note', () => {
+  const art = releaseClaim(claimFor('assets/a/char.png'), { note: 'nope' });
+  assert.equal(art.ok, false);
+  assert.match(art.reason, /静态素材/);
+
+  const out = releaseClaim(claimFor('packs/x.json'), {
+    note: `已核对 mod 清单\u0000${'长'.repeat(200)}`,
+    actor: { actor: 'deadbeefdeadbeef', via: 'browser' },
+    at: '2026-10-14T02:00:00.000Z',
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.claim.releasedAt, '2026-10-14T02:00:00.000Z');
+  assert.equal(out.claim.releasedBy, 'deadbeefdeadbeef');
+  assert.equal(out.claim.releasedVia, 'browser');
+  assert.ok(out.claim.releasedNote.length <= 120, 'the note is capped');
+  assert.ok(!/[\u0000-\u001F]/.test(out.claim.releasedNote), 'control characters are stripped');
+  assert.equal(out.claim.key, 'packs/x.json', 'the claim keeps its identity');
+  assert.equal(out.claim.sha256, '0'.repeat(64));
+
+  const twice = releaseClaim(out.claim, { note: '再放一次' });
+  assert.equal(twice.ok, false, 'release is one-way');
+  assert.match(twice.reason, /放行过了/);
+
+  // Whatever releaseClaim produces must satisfy the publish gate, or the audit step is a dead end.
+  assert.equal(claimIsPublishable(out.claim, { payloadSize: 1024 }).ok, true);
+});

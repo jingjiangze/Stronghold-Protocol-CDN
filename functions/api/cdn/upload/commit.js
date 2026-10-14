@@ -7,7 +7,7 @@
 // 逐字节算 —— 边缘 10 ms CPU 与 128 MB 内存撑不起 600 MB 的哈希，别在这儿假充。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone, triggerPublish } from './_http.js';
-import { claimKeyFor, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const EDGE_HASH_LIMIT = 4 * 1024 * 1024;
 
@@ -70,6 +70,8 @@ export async function onRequestPost(context) {
   }
   if (edgeMismatch) return deny(`字节与声明的 sha256 不符（边缘实测 ${edgeSha}）—— 已拒绝，不会上线`, 412, { staged: staged.size });
 
+  // 静态素材直发；其它格式/落点照收进暂存区，但要等人工放行（判据在 src/upload.mjs 的 formatVerdict）。
+  const fmt = formatVerdict(finalKey);
   const claim = {
     schema: 1,
     id,
@@ -79,8 +81,11 @@ export async function onRequestPost(context) {
     sha256: s.sha256,
     source: String(doc.source || '').slice(0, 60),
     what: String(doc.what || doc.note || '').slice(0, 200),
+    // state 只用老promotion认得的两个值：待审靠 tier 表达，不用新状态位。
+    // 换新状态值会让部署间隙里还在跑的旧发布轮把它当成「不合格的 claim」，而那一条的处理是删暂存字节。
     state: edgeSha ? 'verified-at-edge' : 'queued',
     edgeSha256: edgeSha,
+    tier: fmt.tier,
     claimedAt: new Date().toISOString(),
     ...actorHash(request),
   };
@@ -92,19 +97,24 @@ export async function onRequestPost(context) {
   });
   if (!put.ok) return deny(`写 claim 失败：HTTP ${put.status}`, 502);
 
-  // 触发式发布：收下就立刻叫一轮发布，不让人等定时。催不动也照实说（定时轮是兜底）。
-  const trigger = await triggerPublish(env);
+  // 待审计的这一份不去叫发布轮 —— 叫了也只会在发布轮里被跳过，还白烧一轮 Actions。
+  const trigger = fmt.tier === 'hold' ? { dispatched: false } : await triggerPublish(env);
 
   return json({
     ok: true,
     id,
     key: finalKey,
     state: claim.state,
+    tier: fmt.tier,
     size: staged.size,
+    stagingKey,
     dispatched: trigger.dispatched,
-    message: trigger.dispatched
-      ? '已收下，正在发布（Actions 会逐字节核对后落到对外键，并写进 hosted.json）'
-      : `已收下，但这次叫不动发布轮（${trigger.reason}）—— 等定时兜底；要马上发可在后台点「催一次发布」`,
+    ...(fmt.tier === 'hold' ? { holdReason: fmt.reason } : {}),
+    message: fmt.tier === 'hold'
+      ? `已收进暂存区，但没有上线：${fmt.reason}`
+      : trigger.dispatched
+        ? '已收下，正在发布（Actions 会逐字节核对后落到对外键，并写进 hosted.json）'
+        : `已收下，但这次叫不动发布轮（${trigger.reason}）—— 等定时兜底；要马上发可在后台点「催一次发布」`,
   }, 202);
 }
 

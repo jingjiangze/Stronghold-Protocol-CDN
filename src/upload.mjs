@@ -7,22 +7,67 @@
 //   3. 字节先进 staging，发布由 Actions 逐字节核对 sha256 之后才落到对外键。
 // 第 3 条为什么要绕一圈：最终键一旦被引用就是玩家会下载的地址，把未经核对的半成品直接放上去，
 // 等于把「上传中断」变成「线上坏文件」。
+//
+// 第四条（2026-10-14）：对外键只发**静态素材**。格式或落点不对的（zip 包、mod 清单、元数据 JSON）
+// 照收进暂存区，但发布轮跳过它，直到有人 POST /api/cdn/upload/release 放行。
+// 判据在 formatVerdict —— 它同时看扩展名和落点，单看扩展名会把真素材挡掉或把清单放进来。
 
 /** 后台能写的键前缀。其它一律拒绝。 */
 export const UPLOAD_PREFIXES = ['assets/', 'fonts/', 'packs/'];
 
 /**
- * 扩展名白名单（不是黑名单）。
+ * 扩展名白名单（不是黑名单）—— 这是「暂存区收不收」的名单，不是「能不能上线」的名单。
  *
  * 这个桶的自定义域名对全世界发 ACAO `*`，放一个 .html/.svg/.js 上去就是在自己的域名上开一个
  * 可执行内容位（SVG 能带脚本）。素材面不需要那种东西，所以默认拒绝、按名单放行。
  */
 export const UPLOAD_EXTENSIONS = new Set([
-  'png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'json', 'txt',
+  'png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'json', 'txt',
   'mp3', 'ogg', 'wav', 'm4a',
   'woff', 'woff2', 'ttf', 'otf',
   'zip', 'bin', 'data', 'xml',
 ]);
+
+/**
+ * 「静态素材格式」= 本桶现在真的在发的那些（2026-10-14 按线上 index.json / hosted-index.json 实测得出）。
+ * 名单外的格式不再直发，但也不拒绝：落到暂存区等审计，见 formatVerdict。
+ *
+ * `.json` 在这里，但只有落在素材树才算素材 —— 同一个扩展名既是素材（materials.json、scene.json、
+ * spine 导出）也是元数据（mod 的 index/manifest），区分它们的是落点，不是扩展名。
+ */
+export const ASSET_EXTENSIONS = new Set([
+  'png', 'jpg', 'jpeg', 'webp', 'gif',
+  'atlas', 'skel', 'obj', 'bin', 'json',
+  'mp3',
+  'woff2', 'otf', 'ttf',
+]);
+
+/** 素材树：客户端按 URL 直接取字节的那两棵。 */
+export const ASSET_TREE_PREFIXES = ['assets/', 'fonts/'];
+
+/**
+ * 这一份算「静态素材」还是「先暂存、审计后放行」。
+ *
+ * 为什么判据必须是 格式 + 落点 两条，不能只看扩展名：`.json` / `.bin` / `.obj` 两边都是 ——
+ * 上游素材清单里就有 26 个 materials.json/tiles.json、11 个 scene.bin、15 个特效 .obj，
+ * 而 `packs/mod-assets/index.json`、mod 的 manifest.json 同样是 `.json` 却是**元数据**。
+ * 只看扩展名要么把真素材挡在门外，要么让 mod 清单绕过审计直接上线。
+ * @returns {{ok:true, tier:'asset'|'hold', ext:string, reason?:string}}
+ */
+export function formatVerdict(rawKey) {
+  const key = String(rawKey || '').trim().replace(/^\/+/, '');
+  const ext = (key.split('.').pop() || '').toLowerCase();
+  const inAssetTree = ASSET_TREE_PREFIXES.some((p) => key.startsWith(p));
+  if (inAssetTree && ASSET_EXTENSIONS.has(ext)) return { ok: true, tier: 'asset', ext };
+  return {
+    ok: true,
+    tier: 'hold',
+    ext,
+    reason: inAssetTree
+      ? `.${ext} 不是本桶现有的静态素材格式：字节留在暂存区，审计后 POST /api/cdn/upload/release {id} 才上线`
+      : `落点不在素材树（要在 ${ASSET_TREE_PREFIXES.join(' / ')}）：字节留在暂存区，审计后 POST /api/cdn/upload/release {id} 才上线`,
+  };
+}
 
 export const LOG_KEY = 'cdn/v1/upload-log.json';
 export const HOSTED_INDEX_KEY = 'cdn/v1/hosted-index.json';
@@ -204,10 +249,39 @@ export function claimIsPublishable(claim, { payloadSize } = {}) {
   if (Number.isFinite(payloadSize) && payloadSize !== z.size) {
     return { ok: false, reason: `staging 大小 ${payloadSize} 与 claim 声明 ${z.size} 不符` };
   }
+  // 非静态素材：不是「不合格」，是「还没审计」。调用方必须用 verdict.hold 分辨这两种，
+  // 因为不合格的处理是删暂存字节，而这一份要留着等放行。
+  const fmt = formatVerdict(claim.key);
+  if (fmt.tier === 'hold' && !claim.releasedAt) {
+    return { ok: false, hold: true, reason: fmt.reason };
+  }
   if (claim.state !== 'verified-at-edge' && claim.state !== 'queued') {
     return { ok: false, reason: `claim 状态 ${claim.state} 不该出现在待办里` };
   }
-  return { ok: true };
+  return { ok: true, tier: fmt.tier };
+}
+
+/**
+ * 人工审计放行：把一张待审领取单改成「已放行」。纯函数，读写交给端点。
+ *
+ * 放行是一次性、单向的（没有撤回档）—— 撤回的语义属于 remove 通道，混在这里会让
+ * 「这一份要不要上线」和「这一份要不要下线」变成同一个开关。
+ * CLAIM_SCHEMA 不因为多出来的 releasedAt 而抬版：线上一半的待办是旧版边缘写的 schema=1，
+ * 抬版会让发布轮把它们当不认识的 claim 直接删掉暂存字节。
+ */
+export function releaseClaim(claim, { note = '', actor = {}, at = nowIso() } = {}) {
+  if (!claim || typeof claim !== 'object') return { ok: false, reason: '没有 claim 对象' };
+  const fmt = formatVerdict(claim.key);
+  if (fmt.tier !== 'hold') return { ok: false, reason: '这一份本来就是静态素材，发布轮会直接上线，不需要放行' };
+  if (claim.releasedAt) return { ok: false, reason: `已经在 ${claim.releasedAt} 放行过了（放行是一次性的）` };
+  const released = {
+    ...claim,
+    releasedAt: at,
+    releasedNote: cleanNote(note, 120),
+    releasedBy: actor.actor || null,
+    releasedVia: actor.via || null,
+  };
+  return { ok: true, claim: released, verdict: fmt };
 }
 
 export function emptyLog() {
