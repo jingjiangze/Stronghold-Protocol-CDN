@@ -36400,7 +36400,7 @@
     },
     {
       "id": "audit-selftest-20261014",
-      "what": "闸门验收件",
+      "what": "闸门验收件：格式闸门上线后端到端自测（2026-10-14），验完由 remove 通道下线",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
       "files": 1,
