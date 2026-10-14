@@ -90,6 +90,63 @@ function renderStatus(art, source) {
  */
 const servesAssets = (mirror) => mirror?.coverage !== 'partial';
 
+/**
+ * The mainland-carrier measurement table (rank.json).
+ *
+ * Why it is shown separately from the cards below: those cards carry the reader's OWN measurement
+ * (wireProbe), this table carries someone else's — Globalping probes from 电信/联通/移动 ASNs.
+ * Mixing them would let a number from another network wear the authority of a test the reader just
+ * ran. Its real job is narrower: it decides which origins are runtime candidates at all, and the
+ * order used before a client has measured anything.
+ *
+ * Nothing here is allowed to break the page: the table is a reference panel, so every failure
+ * path ends in a quiet note.
+ */
+function renderRank(rank) {
+  const body = $('rank-table')?.querySelector('tbody');
+  if (!body) return;
+  const note = $('rank-note');
+  const rows = Array.isArray(rank?.rank) ? rank.rank : [];
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" class="muted">暂未发布实测排名。</td></tr>';
+    return;
+  }
+  const CARRIERS = ['电信', '联通', '移动'];
+  const cell = (ms, fail) => {
+    if (typeof ms !== 'number') return `<td class="num muted">${fail || '—'}</td>`;
+    return `<td class="num">${Math.round(ms)} ms</td>`;
+  };
+  body.innerHTML = rows
+    .map((r) => {
+      const ttfb = r.ttfbMs || {};
+      // "measured" means a probe actually ran; "usable" means ≥4/5 succeeded on a carrier.
+      // A source can be measured and still unusable — that is the interesting row, not an error.
+      const badge =
+        r.usable === true
+          ? '<span class="chip chip--mod" title="三个运营商中至少一家达到 4/5 成功率">合格</span>'
+          : r.measured === true
+            ? '<span class="chip chip--warn" title="测过，但没有运营商达到 4/5 成功率">实测不可用</span>'
+            : '<span class="chip chip--warn" title="network.json 里没有这个源的实测数据">未实测</span>';
+      return (
+        `<tr><td class="num">${r.n}</td><td class="mono">${r.id}</td>` +
+        `<td class="mono muted" style="word-break:break-all">${r.host || '—'}</td>` +
+        CARRIERS.map((c) => cell(ttfb[c])).join('') +
+        `<td>${badge}</td></tr>`
+      );
+    })
+    .join('');
+  if (note) {
+    const noData = rows.filter((r) => r.measured !== true).map((r) => r.id);
+    note.hidden = false;
+    note.innerHTML =
+      `<span>实测日期 <b>${rank.measuredAt || '—'}</b>；生成于 <b>${(rank.generatedAt || '—').slice(0, 10)}</b>。` +
+      (noData.length
+        ? ` 其中 <b>${noData.join('、')}</b> 尚未纳入内地实测，因此<b>不进入</b>运行时排序的头部（只按登记顺序排在尾部）。`
+        : ' 全部源均已纳入内地实测。') +
+      ` 排序口径：先按实测可用性，再按各运营商中的<b>最差</b>值 —— 只要有一家运营商慢，就算慢。</span>`;
+  }
+}
+
 function renderMirrors(flat) {
   const host = $('mirror-cards');
   if (!host) return;
@@ -764,6 +821,14 @@ async function main() {
   const flat = mirrors?.flat || art?.art?.mirrors || [];
   renderStatus(art, source);
   renderMirrors(flat);
+  // Fire and forget: the carrier table is a reference panel. If rank.json is missing or stale the
+  // page still works — the reader's own speed test below is the one that picks a mirror.
+  getJson(`${CDN}/cdn/v1/rank.json`, 15000)
+    .then(renderRank)
+    .catch(() => {
+      const body = $('rank-table')?.querySelector('tbody');
+      if (body) body.innerHTML = '<tr><td colspan="7" class="muted">实测排名读取失败。</td></tr>';
+    });
   // art.json's pack list is the complete one (id, group, files, size, urls); mirrors.json's copy
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);

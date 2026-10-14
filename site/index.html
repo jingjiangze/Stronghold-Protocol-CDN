@@ -329,6 +329,30 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </div>
     </div>
 
+    <div class="block" id="measured-rank">
+      <div class="block__head">
+        <span class="block__num">·</span>
+        <span class="block__title">内地三运营商实测排名</span>
+        <span class="block__who">rank.json · 不是你这条线路的测速结果</span>
+      </div>
+      <p class="block__lead">
+        下面这张表是<b>从内地电信 / 联通 / 移动真实网络</b>测出的首字节时间（Globalping 按 ASN 取样，每格 5 次），
+        用来决定<b>哪些源有资格进入运行时候选</b>，以及客户端测速完成前的默认次序。
+        它<b>不是</b>你当前这条线路的速度 —— 你自己的快慢请用下面的「开始测速」按钮。
+      </p>
+      <div class="table-wrap" style="margin-top:16px">
+        <table id="rank-table">
+          <thead><tr>
+            <th class="num">#</th><th>源</th><th>域名</th>
+            <th class="num">电信</th><th class="num">联通</th><th class="num">移动</th>
+            <th>资格</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="muted">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="notice" id="rank-note" hidden></div>
+    </div>
+
     <div class="toolbar" style="margin-top:26px">
       <button class="button button-primary" id="probe" type="button">开始测速</button>
       <span class="section-note" id="probe-line"></span>
