@@ -151,7 +151,7 @@
       <div class="mini">
         <h4>措施 1 · <code class="inline">SP_ASSET_CDN</code>：把素材整块搬出盒子</h4>
         <p class="download__meta">收益：<b>盒子出口砍掉 462.6 MiB/人</b>，改由 Cloudflare 边缘承担</p>
-        <pre class="code">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</pre>
+        <pre class="code">SP_ASSET_CDN=https://speedcdn.jiangjiangze.icu/</pre>
         <ul style="margin-top:10px">
           <li>运行时把 <code class="inline">data/assets.json</code> 里 7,969 个 <code class="inline">/assets/…</code> 引用改写成绝对 CDN URL 再回给客户端。</li>
           <li>线上核验：该接口实测 <b>1,408,362 字节</b>，素材条目<b>全部</b>指向 CDN —— 已生效，无需改动。</li>
@@ -566,9 +566,9 @@
       <div><div class="eyebrow">VERIFY</div><h2>验收命令</h2></div>
       <span class="section-status">四条命令确认本页结论仍然成立</span>
     </div>
-    <pre class="code"><i># 1. 素材确已离场（应全部指向 CDN）</i>
+    <pre class="code"><i># 1. 素材确已离场（应全部指向 CDN 门牌：speedcdn / weishucdn 同桶）</i>
 curl -s https://weishu.jiangjiangze.icu/data/assets.json \
-  | grep -o '"https://[^"]*weishucdn[^"]*"' | wc -l
+  | grep -oE '"https://[^"]*(speedcdn|weishucdn)[^"]*"' | wc -l
 
 <i># 2. 首载代码确带版本号（应见 ?v=&lt;hash&gt;）</i>
 curl -s https://weishu.jiangjiangze.icu/ | grep -o 'js/[a-z.]*js?v=[a-f0-9]*' | head -3

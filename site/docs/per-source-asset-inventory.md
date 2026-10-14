@@ -1,7 +1,7 @@
 # 逐源素材清单（每个源实际有什么）
 
 > 日期：2026-10-12（晚间修订版）· 全部数字为本机实测，不是估算。
-> 权威清单（真源）：`https://weishucdn.jiangjiangze.icu/cdn/v1/{index,tree,mirrors}.json`
+> 权威清单（真源）：`https://speedcdn.jiangjiangze.icu/cdn/v1/{index,tree,mirrors}.json`（2026-10-14 口径：规范门牌 speedcdn）
 > **测量口径**：一律 `curl --noproxy '*'` / `--noproxy` + 浏览器 UA。
 > **不绕过本地代理会得到假 000**（本机 Clash）；**不带 UA 会被 ms-edge 平台门禁挡成 403**。
 >
@@ -225,7 +225,7 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
   `rank.json` 也会为它排名（与 r2 同桶，实测并列）。**它不是 docker 中转 CDN**，就是同一个桶的第三个门牌。
 
 > **此前状态（已更正）**：域名早已生效但从未进源清单，客户端不会自动挑它、`rank.json` 也不会为它排名。
-> 2026-10-13 补登后，三个 R2 入口（weishucdn / weishucdn2 / speedcdn）在清单里并列，客户端按实测任选其一。
+> 2026-10-13 补登后，三个 R2 入口（weishucdn / weishucdn2 / speedcdn）在清单里并列，客户端按实测任选其一（**2026-10-14 口径：speedcdn 为规范门牌**）。
 
 ---
 

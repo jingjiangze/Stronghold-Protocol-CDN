@@ -108,7 +108,7 @@
 
 ```bash
 # 1. 接口清单里有 pick.js 与 mirrors.json（应见这两个端点）
-curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/(pick\.js|mirrors\.json)"'
+curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/(pick\.js|mirrors\.json)"'
 
 # 2. 站点的测速按钮真在数据上跑（打开 https://downcdn.jiangjiangze.icu/#mirrors 点「开始测速」）
 #    应看到每个源一条时延，最快的排在前面；git 挂载源若标 partial 不应被当坏源

@@ -55,7 +55,7 @@
 ### 措施 1 — `SP_ASSET_CDN`：把素材整块搬出盒子（收益最大）
 
 ```ini
-SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/
+SP_ASSET_CDN=https://speedcdn.jiangjiangze.icu/
 ```
 
 运行时把 `data/assets.json` 里 7,969 个 `/assets/…` 引用改写成绝对 CDN URL 再回给客户端。
@@ -222,8 +222,8 @@ C/D 两行按**盒子源码现行**快照率算：**球员 20 Hz**（`SNAPSHOT_E
 ## 六、验收命令
 
 ```bash
-# 1. 素材确已离场（应全部指向 CDN，无 /assets/ 相对路径）
-curl -s https://weishu.jiangjiangze.icu/data/assets.json | grep -o '"https://[^"]*weishucdn[^"]*"' | wc -l
+# 1. 素材确已离场（应全部指向 CDN 门牌：speedcdn / weishucdn 同桶，无 /assets/ 相对路径）
+curl -s https://weishu.jiangjiangze.icu/data/assets.json | grep -oE '"https://[^"]*(speedcdn|weishucdn)[^"]*"' | wc -l
 
 # 2. 首载代码确带版本号（应见 ?v=<hash>）
 curl -sI https://weishu.jiangjiangze.icu/ | head -1
@@ -414,7 +414,7 @@ normal / unite / boss 的 p99 只有 0.15 ~ 0.44 格，远低于 `render/interp.
    nginx 会一直转发给它启动时读到的那个上游。改 conf 前必须先确认 nginx 进程真的重载了。
 2. **nginx 静态 root/alias 指向不存在的目录**：`root D:/stronghold/Stronghold-Protocol/public` 与
    `/media/` 的 `alias` 都指向旧目录（实际是 `Stronghold-Protocol-cdn`），两条 `try_files`
-   必然落到 `@sp`。目前无功能影响（素材走 weishucdn CDN），但属于悬错配置。
+   必然落到 `@sp`。目前无功能影响（素材走 speedcdn CDN），但属于悬错配置。
 
 ---
 

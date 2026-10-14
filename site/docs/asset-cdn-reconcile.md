@@ -68,6 +68,11 @@ spine 的 `atlas` 按相对路径找同目录 `png`。若「同一 spine 目录�
 
 > 客户端拿清单的两个入口：`data/assets.json`（主清单，改写 `/assets|fonts/` 绝对 URL，随 ETag 缓存）与
 > `data/local-assets.json`（本地客户端美术覆盖，同上）；`emotes.json` 同机制。
+>
+> **本地素材清单现状（2026-10-14）：**`/data/local-assets.json` 共 **1,658 个文件 / 75 组**，
+> 条目为**绝对 URL**、指向 `https://speedcdn.jiangjiangze.icu/assets/local/…?v=<令牌>`（版本令牌与接口同源）；
+> 直接连 CDN 的客户端 / 第三方照此取用。服务器部署侧用的是**相对路径版**（同一批 1,658 个文件 / 75 组，
+> 由叠加链发布）：客户端对 `/assets/local/…` 的请求先到服务器，再由服务器 **302 到 speedcdn** 取字节。
 
 ---
 
@@ -77,12 +82,12 @@ spine 的 `atlas` 按相对路径找同目录 `png`。若「同一 spine 目录�
 # 1. 改写是否生效（应见 X-Asset-CDN 头，且 cdn 条数远大于 local）
 curl -sI https://weishu.jiangjiangze.icu/data/assets.json | grep -i "x-asset-cdn"
 
-# 2. 清单条目是否都指向 CDN（应几乎 100% 命中）
+# 2. 清单条目是否都指向 CDN（speedcdn / weishucdn 两个门牌同桶，应几乎 100% 命中）
 curl -s https://weishu.jiangjiangze.icu/data/assets.json \
-  | grep -o '"https://[^"]*weishucdn[^"]*"' | wc -l
+  | grep -oE '"https://[^"]*(speedcdn|weishucdn)[^"]*"' | wc -l
 
 # 3. 单文件 HEAD 实测（挑一个"疑似缺失"的，应 200）
-curl -sI https://weishucdn.jiangjiangze.icu/assets/char/avatar/char_002_amiya.png \
+curl -sI https://speedcdn.jiangjiangze.icu/assets/char/avatar/char_002_amiya.png \
   | grep -i "^HTTP"
 ```
 

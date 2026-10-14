@@ -35,7 +35,7 @@
 | `fonts/` | 字体 |
 | `packs/` | 打包通道用的 zip（文件名形如 `<组名>-<序号>.zip`） |
 
-不确定就对照现成的两张表：<https://weishucdn.jiangjiangze.icu/cdn/v1/tree.json>（桶里每个目录与文件）和 <https://weishucdn.jiangjiangze.icu/cdn/v1/index.json>（上游素材 + size/sha256）。
+不确定就对照现成的两张表：<https://speedcdn.jiangjiangze.icu/cdn/v1/tree.json>（桶里每个目录与文件）和 <https://speedcdn.jiangjiangze.icu/cdn/v1/index.json>（上游素材 + size/sha256）。
 
 ## 两种调用方式
 
@@ -89,7 +89,7 @@ POST /api/cdn/upload/release    JSON {id,note}
 一句话：**"同步到 Git"是两条腿**——`hosted.json` 这份登记（谁传的、传了什么、键、sha256、来源）当场进 main；素材字节随后由 `git-art-sync` 一天四次补进 `assets-raw`。权威副本始终先落在 R2 桶，git 是给镜像站的第二份。要查"传上去了吗"，看 `upload-log.json` 与 `hosted-index.json`，而不是 git 历史里的文件内容。
 
 
-所以「传上去了吗」只有一个答案来源：<https://weishucdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
+所以「传上去了吗」只有一个答案来源：<https://speedcdn.jiangjiangze.icu/cdn/v1/upload-log.json>（后台发布记录）与 `hosted-index.json`（这些字节的摘要表）。三份摘要不一致就不会上线，日志里会留 `rejected` 原因。
 
 ## 收到 `tier=hold` 之后该做什么（2026-10-14 起的规则）
 

@@ -62,7 +62,7 @@
 
 ## 四、为什么默认停用（CORS 硬伤）
 
-实测（带 / 不带 `Origin: https://weishucdn.jiangjiangze.icu`，结果一致）：
+实测（带 / 不带 `Origin: https://speedcdn.jiangjiangze.icu`，结果一致）：
 
 ```
 Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com
@@ -142,5 +142,5 @@ git -C <本地仓> cat-file blob $(git -C <本地仓> rev-parse assets-raw:asset
 curl -s https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw/assets/char/avatar/char_1016_agoat2.png | sha256sum
 
 # 3. CORS（应看到写死的第三方域，证明它不能当运行时源）
-curl -sI -H "Origin: https://weishucdn.jiangjiangze.icu" https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw/assets/char/avatar/char_1016_agoat2.png | grep -i "access-control-allow-origin"
+curl -sI -H "Origin: https://speedcdn.jiangjiangze.icu" https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw/assets/char/avatar/char_1016_agoat2.png | grep -i "access-control-allow-origin"
 ```

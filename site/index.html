@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
 
-<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu" data-repo="jingjiangze/Stronghold-Protocol-CDN">
+<body data-cdn-base="https://speedcdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu" data-repo="jingjiangze/Stronghold-Protocol-CDN">
 
 <div class="topbar">
   <div class="container topbar-inner">
@@ -208,7 +208,7 @@
           </tr>
           <tr>
             <td>本项目 fork</td>
-            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。<b>注意：这个开关是本项目 fork 加的，上游官方包没有</b>——上游的 <code class="inline">-lite.zip</code> 里 grep 不到它，所以下载 B 走的是改清单而不是设变量。</td>
+            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://speedcdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。<b>注意：这个开关是本项目 fork 加的，上游官方包没有</b>——上游的 <code class="inline">-lite.zip</code> 里 grep 不到它，所以下载 B 走的是改清单而不是设变量。</td>
           </tr>
           <tr>
             <td>nginx 反代</td>
@@ -216,8 +216,8 @@
 <pre class="code" style="margin:0">location = /data/assets.json {
   proxy_pass http://127.0.0.1:3001;
   proxy_set_header Accept-Encoding "";   <i># 必须：否则拿到的是 gzip，替换不生效</i>
-  sub_filter '"/assets/'  '"<b>https://weishucdn.jiangjiangze.icu</b>/assets/';
-  sub_filter '"/fonts/'   '"<b>https://weishucdn.jiangjiangze.icu</b>/fonts/';
+  sub_filter '"/assets/'  '"<b>https://speedcdn.jiangjiangze.icu</b>/assets/';
+  sub_filter '"/fonts/'   '"<b>https://speedcdn.jiangjiangze.icu</b>/fonts/';
   sub_filter_once off;
 }</pre>
               <div class="section-note" style="margin-top:8px">三张清单各写一条 <code class="inline">location</code>（assets / local-assets / emotes）。</div>
@@ -246,10 +246,10 @@
     </div>
 
 <pre class="code"><i># 清单里已经是绝对 CDN 地址，直接喂给客户端</i>
-curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"
+curl "<b>https://speedcdn.jiangjiangze.icu</b>/data/assets.json"
 
 <i># 逐文件校验用这张表（size + sha256）</i>
-curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
+curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   </section>
 
 
@@ -272,7 +272,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <tbody>
           <tr>
             <td>基址</td>
-            <td class="mono"><span data-base>https://weishucdn.jiangjiangze.icu</span>/</td>
+            <td class="mono"><span data-base>https://speedcdn.jiangjiangze.icu</span>/</td>
             <td>与上游部署树里的 <code class="inline">assets/…</code> 完全一致，直接拼即可</td>
           </tr>
           <tr>
@@ -537,7 +537,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="notice">
       <span><b>给 agent：怎么保证拿到的是最新版。</b>这批文件<b>随上游每次发布整体更换，但路径不变</b>，
       而裸路径的浏览器缓存是 1 小时 —— 直接抓 <code class="inline">/docs/&lt;path&gt;</code> 可能读到旧版本。
-      正确顺序：① 读 <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/art.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/art.json</code></a>
+      正确顺序：① 读 <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/art.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/art.json</code></a>
       的 <code class="inline">token</code>（页顶状态行的「缓存令牌」就是同一个值）；
       ② 请求 <code class="inline">/docs/&lt;path&gt;?v=&lt;token&gt;</code> —— 带令牌的边缘副本不可变（1 年），
       令牌一变即表示上游发了新版本，应重新取。
@@ -562,20 +562,21 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   <section class="section" id="api">
     <div class="section-heading">
       <div><div class="eyebrow">REFERENCE · ENDPOINTS</div><h2>API 接入点</h2></div>
-      <span class="section-status">基址 <span data-base>https://weishucdn.jiangjiangze.icu</span></span>
+      <span class="section-status">基址 <span data-base>https://speedcdn.jiangjiangze.icu</span></span>
     </div>
     <div class="notice">
-      <span><b>接口域名：<span data-base>https://weishucdn.jiangjiangze.icu</span></b>
-      （同一批接口文件另有一个等价入口 <b>https://speedcdn.jiangjiangze.icu</b> ——
-      它与本域名指向<b>同一个桶、同一份字节</b>，实测 <code class="inline">/cdn/v1/api.json</code>
-      sha256 完全相同；<code class="inline">mirrors.json</code> / <code class="inline">index.json</code> /
-      <code class="inline">tree.json</code> / <code class="inline">data/assets.json</code> 均 200）。
+      <span><b>接口域名（2026-10-14 口径：本桶的规范门牌是 speedcdn）：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>
+      —— 同一批接口文件另有两个等价入口 <b>https://weishucdn.jiangjiangze.icu</b> 与
+      <b>https://weishucdn2.jiangjiangze.icu</b>：三者指向<b>同一个桶、同一份字节</b>，实测
+      <code class="inline">/cdn/v1/api.json</code> sha256 完全相同；<code class="inline">mirrors.json</code> /
+      <code class="inline">index.json</code> / <code class="inline">tree.json</code> /
+      <code class="inline">data/assets.json</code> 均 200。
       上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
       <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
-      所以：<b>接口从这两个域名里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
+      所以：<b>接口从这三个域名里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
       <br />⚠️ 机器可读的那份权威声明是 <code class="inline">/cdn/v1/api.json</code> 的
-      <code class="inline">base</code> 字段（当前值 <code class="inline">https://weishucdn.jiangjiangze.icu</code>）——
-      以它为准，本页文字不另立权威。</span>
+      <code class="inline">base</code> 字段（由接口重发生成，迁移期可能仍读到旧门牌 weishucdn / weishucdn2
+      —— 三个门牌同桶同字节）—— 以它为准，本页文字不另立权威。</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -584,7 +585,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </table>
     </div>
     <p class="section-note" style="margin:10px 0 0">
-      这张表由 <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
+      这张表由 <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
       渲染，不再手抄。手抄版已经漂移过：<code class="inline">/fonts/**</code> 的缓存被写成
       <code class="inline">immutable</code>，实际是「带令牌 1 年 / 裸路径 1 小时」；而且漏掉了
       <code class="inline">/packs/**</code>、<code class="inline">/dl/**</code> 与
@@ -616,15 +617,15 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </p>
     </div>
 <pre class="code"><i># 问一个文件在不在、多大（最快，不用下任何索引）</i>
-curl -sI "<b>https://weishucdn.jiangjiangze.icu</b>/assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.skel" | grep -i content-length
+curl -sI "<b>https://speedcdn.jiangjiangze.icu</b>/assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.skel" | grep -i content-length
 
 <i># 问某个目录里有什么</i>
-node -e 'fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/tree.json").then(r=>r.json()).then(j=>
+node -e 'fetch("<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/tree.json").then(r=>r.json()).then(j=>
   console.log(j.dirs["assets/spine/op/char_1016_agoat2/front"].files))'
 
 <i>// 在你的页面里挑最快的镜像</i>
-import { pickFastest } from "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
-const list = await (await fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
+import { pickFastest } from "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
+const list = await (await fetch("<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
 const { best, ranked } = await pickFastest(list.flat);
 console.log(best.id, best.base, best.ms + "ms");</pre>
   </section>
