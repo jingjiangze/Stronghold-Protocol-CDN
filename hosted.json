@@ -24683,8 +24683,8 @@
       "what": "Chat sticker update; stable IDs, animated originals and small previews",
       "addedAt": "2026-10-14",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 104,
-      "bytes": 27133536,
+      "files": 112,
+      "bytes": 27734990,
       "keys": [
         [
           "assets/local/sp-four-emotes/011b78a293456c47b7c0.preview.webp",
@@ -24705,6 +24705,10 @@
         [
           "assets/local/sp-four-emotes/0c5d44945ad37e379a88.jpg",
           239912
+        ],
+        [
+          "assets/local/sp-four-emotes/0c969855d2cf9d561075.jpg",
+          173170
         ],
         [
           "assets/local/sp-four-emotes/0dcc26cd5630ec8f8aa9.preview.webp",
@@ -24753,6 +24757,10 @@
         [
           "assets/local/sp-four-emotes/2a77fa6e6ea8b525a9b3.jpg",
           14840
+        ],
+        [
+          "assets/local/sp-four-emotes/2ab0e6b61d85cf646ffc.jpg",
+          159879
         ],
         [
           "assets/local/sp-four-emotes/2afc6f6b1f86f776d09b.jpg",
@@ -24835,6 +24843,10 @@
           139078
         ],
         [
+          "assets/local/sp-four-emotes/5ee8108cfce88daa6a37.preview.webp",
+          1788
+        ],
+        [
           "assets/local/sp-four-emotes/5f7342e237549d617682.jpg",
           101296
         ],
@@ -24875,6 +24887,10 @@
           90508
         ],
         [
+          "assets/local/sp-four-emotes/778fb03519180aa576bc.preview.webp",
+          1740
+        ],
+        [
           "assets/local/sp-four-emotes/78dbea0468a7944b9122.preview.webp",
           1782
         ],
@@ -24897,6 +24913,10 @@
         [
           "assets/local/sp-four-emotes/82566f43b5c86fc526ea.jpg",
           138702
+        ],
+        [
+          "assets/local/sp-four-emotes/86afe724839887cdbe5e.jpg",
+          193487
         ],
         [
           "assets/local/sp-four-emotes/8a3be43fb874d4b32384.preview.webp",
@@ -24987,6 +25007,10 @@
           128909
         ],
         [
+          "assets/local/sp-four-emotes/c4e18bae3928a26bd65e.jpg",
+          67388
+        ],
+        [
           "assets/local/sp-four-emotes/c6bf226ddaee8d56d72f.preview.webp",
           1994
         ],
@@ -25039,8 +25063,16 @@
           96217
         ],
         [
+          "assets/local/sp-four-emotes/e1e498fbd2a88b86ad2c.preview.webp",
+          1350
+        ],
+        [
           "assets/local/sp-four-emotes/e31a90bac70995f7bcb4.jpg",
           10860
+        ],
+        [
+          "assets/local/sp-four-emotes/e32acecd795161750a6a.preview.webp",
+          2652
         ],
         [
           "assets/local/sp-four-emotes/e61d299f66a5fdd19362.jpg",
