@@ -56,11 +56,13 @@ export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
  * 而一次 push 的真实成本是 pack 体积，含所有缺失祖先 blob 与沿途全部 tree 对象 —— 实测低估
  * 8–30 倍（60.8 MiB diff → 566 MB pack → 413）。所以「232 MiB 能过」从来不是真的能过。
  *
- * 新口径下增量同步的实测：300 个文件 / 3.1 MiB pack，稳定两个数量级的安全余量。这里取 20 MiB
- * 作为一片的上限 —— 约 2000 个中等文件，一次 POST 远离任何已知边界，同时不至于把 20,000
- * 份的差集切成太多个 round trip。
+ * 新口径下增量同步的实测：300 个文件 / 3.1 MiB pack，稳定两个数量级的安全余量。
+ *
+ * 60 MiB 是 run 38683553998 之后的取值：20 MiB/片在 OpenI 上实测 41s/片（几乎全是 RTT，
+ * 本地同一步只要 0.5s），20,000 份的差集要跑 3.8 小时，超过 workflow 的 90 分钟 timeout。
+ * 而 60 MiB 的增量 pack 仍比 413 边界低一个数量级，round trip 数降到 1/3。
  */
-export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 20;
+export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 60;
 
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {
@@ -297,6 +299,36 @@ export function planSlices(todo, budgetBytes) {
   return slices;
 }
 
+/**
+ * Push one slice, retrying a stalled connection instead of losing the whole run to it.
+ *
+ * Why: run 38683553998 pushed 46 of ~200 slices successfully, then died on
+ * `Failed to connect to openi.pcl.ac.cn port 443 after 300019 ms`. The pack size was never the
+ * problem — the host simply stopped accepting from GitHub's runner IP for five minutes. Since each
+ * push is idempotent (the ref is created before it is sent, and re-sending the same ref is a
+ * no-op), a retry costs nothing and turns a five-minute network blip into a 30-second one.
+ *
+ * A 300 s default matches what the transport itself gives up on; anything shorter would kill a
+ * large slice mid-flight and make the retry re-send it.
+ */
+async function pushSlice(url, branch, { cwd, timeoutMs = 300000, attempts = 5 } = {}) {
+  let last;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`],
+        { cwd, timeoutMs });
+      return;
+    } catch (e) {
+      last = e;
+      // 退避：对端是限流/连接被挂，立刻重试只会再撞一次。30s 起，最长 2 分钟。
+      const backoff = Math.min(30000 * i, 120000);
+      process.stderr.write(`[openi] push 第 ${i}/${attempts} 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+      if (i < attempts) await new Promise((s) => setTimeout(s, backoff));
+    }
+  }
+  throw last;
+}
+
 export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, { onProgress } = {}) {
   const fs = await import('node:fs');
   const os = await import('node:os');
@@ -339,7 +371,7 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
 
   const totalBytes = todo.reduce((s, r) => s + r.size, 0);
   const remoteCount = remoteTree.split('\n').filter(Boolean).length;
-  console.log(`[openi] 文件级同步：远端有 ${remoteCount} 份，待补 ${todo.length} 份 / ${(totalBytes / 1048576).toFixed(1)} MiB`);
+  process.stderr.write(`[openi] 文件级同步：远端有 ${remoteCount} 份，待补 ${todo.length} 份 / ${(totalBytes / 1048576).toFixed(1)} MiB\n`);
 
   if (!todo.length) {
     if (parent) {
@@ -355,7 +387,7 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
         // ⚠ `cwd` 必须传：漏了它 push 就在进程自己的工作目录里跑，报
         // "src refspec refs/heads/_openi_sync does not match any"。CI 上恰好看不出来
         // （checkout 的 cwd 就是仓库根），是离线集成测试才把它照出来的。
-        await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`], { cwd });
+        await pushSlice(url, branch, { cwd });
         parent = c;
       }
     }
@@ -390,15 +422,17 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
           ...(parent ? ['-p', parent] : []),
           '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
         await g('update-ref', 'refs/heads/_openi_sync', c);
-        await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`], { cwd });
+        await pushSlice(url, branch, { cwd });
         parent = c;
         pushed += slice.length;
         if (onProgress) onProgress(pushed, todo.length, sliceBytes);
-        console.log(`[openi] 已推 ${pushed}/${todo.length} 份（本片 ${(sliceBytes / 1048576).toFixed(1)} MiB）`);
+        // stderr：GitHub Actions 实时转发 stderr，stdout 会被 logdriver 聚合缓冲 —— 一次 3 小时的
+        // 同步里，缓冲让进度日志看起来像「卡在某一帧不动」，无法判断是死了还是在跑。
+        process.stderr.write(`[openi] 已推 ${pushed}/${todo.length} 份（本片 ${(sliceBytes / 1048576).toFixed(1)} MiB）\n`);
       } else {
         // 树没变（这组文件 sha 与远端相同，只是路径集合的差集计算偏差）——不制造空提交。
         pushed += slice.length;
-        console.log(`[openi] 跳过 ${slice.length} 份（远端已有相同内容）`);
+        process.stderr.write(`[openi] 跳过 ${slice.length} 份（远端已有相同内容）\n`);
       }
     }
   } catch (e) {

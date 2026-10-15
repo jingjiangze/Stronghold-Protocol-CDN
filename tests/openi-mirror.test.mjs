@@ -226,7 +226,10 @@ test('planSlices on nothing pushes nothing', () => {
 test('the default budget is sized for the measured incremental pack, not the old diff bytes', () => {
   // 300 files measured 3.1 MiB of pack. The old default of 200 MiB was calibrated on diff bytes,
   // which under-report a push by 8–30x — that miscalibration is what 413'd run 38671002854.
-  assert.ok(DEFAULT_BUDGET_MIB <= 32, `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice`);
+  // 60 MiB is where it landed after run 38683553998: 20 MiB/片 cost 41 s per round trip on OpenI
+  // (almost all RTT), so a 20,000-file gap needed 3.8 h and blew the 90-minute timeout. 60 MiB is
+  // still an order of magnitude below the 413 boundary and cuts the round trips to a third.
+  assert.ok(DEFAULT_BUDGET_MIB <= 96, `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice`);
   assert.ok(DEFAULT_BUDGET_MIB > 0);
 });
 
