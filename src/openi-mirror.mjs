@@ -59,12 +59,19 @@ export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
  *
  * 新口径下增量同步的实测：300 个文件 / 3.1 MiB pack，稳定两个数量级的安全余量。
  *
- * 为什么停在 20 而不是更大：本地 bare repo 上大片确实更快（60 MiB 一片 11s vs 5 MiB 十二片
- * 14s），但 OpenI 服务端对单次 push 的字节量有强非线性惩罚 —— 实测每文件成本：
- *   20 MiB/片 ≈ 200 文件 / 41s  → 0.20 s/文件
- *   60 MiB/片 ≈ 600 文件 / 840s → 1.40 s/文件（贵 7 倍）
- * run 38687681729 用 60 MiB 跑了 90 分钟只推完 ~5 片就被 timeout 取消。所以大预算在这条
- * 链路上是负优化：RTT 只是常数项，服务端处理才是随体积增长的那一项。
+ * 为什么停在 20 而不是更大，**以及为什么这里原先的「强非线性惩罚」说法是错的**：
+ * ⚠ 2026-10-15 深度审计推翻了这个归因。原注释写的「60 MiB/片 ≈ 1.40 s/文件，贵 7 倍」是拿
+ * 本地 bare repo 的计时去外推 runner↔OpenI 链路 —— 但 run 38707181417 里**同一片 20 MiB**，
+ * 每文件成本从 0.27 s 一路到 554 s，差 2,000 倍。成本不是体积的函数，是**那一次连接的健康度**
+ * 的函数。真正的杀手是两个自己制造的问题：
+ *   ① 客户端 300 s 超时一杀，`git-remote-https` 孤儿仍握着 TCP 连接（Actions 日志里有
+ *      `Terminate orphan process: pid (4528) (git-remote-https)` 实证），占着服务端 receive-pack
+ *      槽位和下一次 push 抢同一个 ref ⇒ 正反馈。
+ *   ② 重试退避 10 s×i 不设上限，累计能到 420 s，于是失败间隔永远是 ≈300 s + 退避，
+ *      看起来就像「每 5 分钟挂一次」，其实那是我们自己的时钟。
+ * 现在这两条都修了（`run` 用进程组杀、`pushSlice` 退避封顶 40 s 且设总时长上限），
+ * 20 MiB 保留的理由回归朴素：它是实测增量 pack 的安全量级，且**单片大文件已经由
+ * BIG_FILE_BYTES 单独拆走**（大文件才是慢的真来源，不是预算本身）。
  *
  * 20 MiB 仍推不完 20,000 份（约 2.3 小时 > 90 分钟 timeout），但 `syncByFiles` 幂等、
  * 每次从远端当前树续算差集，所以多轮触发会收敛 —— 这正是它该有的形状。
@@ -93,31 +100,43 @@ export function failTail(e, keep = 200) {
   return msg.slice(-keep);
 }
 
-/** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
+/**
+ * Promise wrapper around a child process that fails loudly, with the tool's own stderr.
+ *
+ * `detached: true` 是超时杀进程树的前提：git 会把真正的 HTTP 传输甩给 `git-remote-https`
+ * 子进程，只 `child.kill()` 杀 git 父进程会留下一个**仍握着 TCP 连接到 OpenI 的孤儿**。
+ * run 38707181417 的 Actions 日志里那条 `Terminate orphan process: pid (4528) (git-remote-https)`
+ * 就是证据。孤儿会占着服务端的 receive-pack 槽位，与下一次 push 并发写同一个 ref ⇒ 越超时越容易
+ * 再超时，是个正反馈。用 `-child.pid` 打整个进程组才杀得干净。
+ */
 export function run(cmd, args, opts = {}) {
   const { timeoutMs = 0, ...spawnOpts } = opts;
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...spawnOpts });
+    const child = spawn(cmd, args, {
+      stdio: ['ignore', 'pipe', 'pipe'], detached: true, ...spawnOpts,
+    });
     let out = '';
     let err = '';
+    let settled = false;
+    const done = (fn, v) => { if (!settled) { settled = true; fn(v); } };
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { err += d; });
-    child.on('error', reject);
+    child.on('error', (e) => done(reject, e));
     // 可选超时：remoteHead 用它划清「分支不存在」与「探测卡死」。默认 0 = 不设（push
     // 本身可能 legitimately 跑几十分钟，不能一刀切）。
     let timer = null;
     if (timeoutMs > 0) {
       timer = setTimeout(() => {
-        child.kill('SIGKILL');
-        reject(new Error(`${cmd} ${args.join(' ')} → 超时 ${timeoutMs}ms 未返回`));
+        try { process.kill(-child.pid, 'SIGKILL'); } catch { /* 进程组已退出 */ }
+        done(reject, new Error(`${cmd} ${args.join(' ')} → 超时 ${timeoutMs}ms 未返回`));
       }, timeoutMs);
       timer.unref();
     }
     child.on('close', (code) => {
       if (timer) clearTimeout(timer);
       code === 0
-        ? resolve(out)
-        : reject(new Error(`${cmd} ${args.join(' ')} → exit ${code}\n${(err || out).trim().slice(0, 2000)}`));
+        ? done(resolve, out)
+        : done(reject, new Error(`${cmd} ${args.join(' ')} → exit ${code}\n${(err || out).trim().slice(0, 2000)}`));
     });
   });
 }
@@ -326,21 +345,44 @@ export function missingFiles(remoteTree, targetTree) {
  * cannot be split, and the tree's largest blob is far below the 413 boundary on its own. What this
  * replaces is a budget measured in *diff* bytes, which under-reported a real push by 8–30x — see
  * the table on `syncByFiles`.
+ *
+ * 2026-10-15 两个新约束，都是被实测逼出来的：
+ *
+ * ① **大文件单独成片。** `assets/packs/*.zip` 单份 16–64 MiB，`packs/sp-forge-*` 单份最大 29.8 MiB。
+ *    它们和 30 KiB 的小文件混在同一个 20 MiB 预算里时，一片可能是「2 份 / 75 MiB」——run
+ *    38707181417 的最后 60 分钟只推进了 7 份，全部耗在这种片上（实测 493–554 s/份，且几乎必然再次
+ *    触发客户端超时 ⇒ 5 次全废 ⇒ 整片作废）。超过 `bigFileBytes` 的文件各自独占一片，小文件的
+ *    round trip 数不受影响，大文件也不必和小文件一起陪葬。
+ *
+ * ② **单片文件数上限。** round trip 数 = 片数，171 片 vs 200 份/片的 45 片是个 3.8 倍差距。
+ *    只按字节切时 `assets/audio` 那种平均 30.5 KiB 的目录能一片塞 1,446 份，服务端处理长尾全压在
+ *    一片里。加上份数上限后单片工作量有界。
+ *
+ * 另按 size 降序排：字典序下 `assets/packs` 恰好排在最后，run 38707181417 就这么死在大 zip 区；
+ * 而降序让小文件先走完（小文件段实测效率是大文件段的 ~300 倍）。⚠ 这一条只是让形状稳定，
+ * 真正的保证来自 ①。
  */
+export const BIG_FILE_BYTES = 8 * 1024 * 1024;   // 超过它单独成片
+export const MAX_FILES_PER_SLICE = 200;          // 单片文件数上限
+
 export function planSlices(todo, budgetBytes) {
+  const big = BIG_FILE_BYTES;
+  const maxFiles = MAX_FILES_PER_SLICE;
+  // 降序：小文件先推完。稳定排序，同尺寸保持原字典序。
+  const sorted = [...todo].sort((a, b) => b.size - a.size);
+
   const slices = [];
   let cur = [];
   let curBytes = 0;
-  for (const r of todo) {
+  const flush = () => { if (cur.length) { slices.push(cur); cur = []; curBytes = 0; } };
+
+  for (const r of sorted) {
+    if (r.size >= big) { flush(); slices.push([r]); continue; }
     cur.push(r);
     curBytes += r.size;
-    if (curBytes >= budgetBytes) {
-      slices.push(cur);
-      cur = [];
-      curBytes = 0;
-    }
+    if (curBytes >= budgetBytes || cur.length >= maxFiles) flush();
   }
-  if (cur.length) slices.push(cur);
+  flush();
   return slices;
 }
 
@@ -353,22 +395,52 @@ export function planSlices(todo, budgetBytes) {
  * push is idempotent (the ref is created before it is sent, and re-sending the same ref is a
  * no-op), a retry costs nothing and turns a five-minute network blip into a 30-second one.
  *
- * A 300 s default matches what the transport itself gives up on; anything shorter would kill a
- * large slice mid-flight and make the retry re-send it.
+ * ⚠ 2026-10-15 三次修订，前两次的判断都是错的：
+ *
+ * 1. `timeoutMs` 从 300 s 降到 120 s。原注释说「300s matches what the transport itself gives up on」，
+ *    但实测 20 MiB 片的健康耗时只有 36–58 s，300 s 是给服务端 6–8 倍宽限。后果是 run 38707181417
+ *    那条极稳定的「每 5 分钟挂一次」序列（`08:55:34 → 09:01:04 → 09:08:05 → …`）——失败间隔
+ *    330/301/332/350 s，几乎全是 `300 s 超时 + 30/60 s 退避`。**那不是 OpenI 的限流周期，是
+ *    我们自己在 SIGKILL 自己的连接。**（真因文本也只有过一次：`Recv failure: Connection reset by
+ *    peer`，TCP 层 RST，不是 HTTP 4xx。）
+ *
+ * 2. `run()` 改为 `detached` + `process.kill(-pid)` 杀进程组。只杀 git 父进程会留下仍握着
+ *    TCP 连接的孤儿 `git-remote-https`（Actions 日志里 `Terminate orphan process: pid (4528)
+ *    (git-remote-https)` 是实证），孤儿占着服务端 receive-pack 槽位并与下一次 push 并发写同一
+ *    ref ⇒ 越超时越容易再超时。
+ *
+ * 3. 退避从 `min(30000*i, 120000)`（5 次全败累计 420 s，等于白吃掉 7 分钟预算）改为
+ *    `min(10000*i, 40000)`，并给整个 slice 的重试设总时长上限 `maxTotalMs`：超了就抛，
+ *    让上层决定要不要继续，而不是把 90 分钟全耗在退避上。
+ *
+ * `bigFile` 的一片允许更长超时：64 MiB 的 blob 服务端要 index-pack，2 分钟不够。给它 5 分钟，
+ * 并且不参与「总重试时长」的累计——大文件本来就该是少数几片。
  */
-async function pushSlice(url, branch, { cwd, timeoutMs = 300000, attempts = 5 } = {}) {
+async function pushSlice(url, branch, {
+  cwd, timeoutMs = 120000, attempts = 5, bigFile = false, maxTotalMs = 300000,
+} = {}) {
+  const perAttempt = bigFile ? 300000 : timeoutMs;
+  const started = Date.now();
   let last;
   for (let i = 1; i <= attempts; i++) {
     try {
       await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`],
-        { cwd, timeoutMs });
+        { cwd, timeoutMs: perAttempt });
       return;
     } catch (e) {
       last = e;
-      // 退避：对端是限流/连接被挂，立刻重试只会再撞一次。30s 起，最长 2 分钟。
-      const backoff = Math.min(30000 * i, 120000);
-      process.stderr.write(`[openi] push 第 ${i}/${attempts} 次失败（${failTail(e, 160)}），${backoff / 1000}s 后重试\n`);
-      if (i < attempts) await new Promise((s) => setTimeout(s, backoff));
+      // 退避：对端是限流/连接被挂，立刻重试只会再撞一次。10s 起，最长 40s。
+      const backoff = Math.min(10000 * i, 40000);
+      const spent = Date.now() - started;
+      const label = bigFile ? 'push(大文件)' : 'push';
+      process.stderr.write(`[openi] ${label} 第 ${i}/${attempts} 次失败（已耗 ${(spent / 1000).toFixed(0)}s；${failTail(e, 160)}），${backoff / 1000}s 后重试\n`);
+      if (i < attempts) {
+        // 大文件片不累计：它本来就该是少数几片，且每次尝试 5 分钟，累计上限会把唯一的机会砍掉。
+        if (!bigFile && Date.now() - started + backoff > maxTotalMs) {
+          throw new Error(`[openi] ${label} 重试已耗 ${((Date.now() - started) / 1000).toFixed(0)}s 超过上限 ${maxTotalMs / 1000}s，放弃本片：${failTail(last, 200)}`);
+        }
+        await new Promise((s) => setTimeout(s, backoff));
+      }
     }
   }
   throw last;
@@ -485,7 +557,11 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
           ...(parent ? ['-p', parent] : []),
           '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
         await g('update-ref', 'refs/heads/_openi_sync', c);
-        await pushSlice(url, branch, { cwd });
+        // 单文件 ≥ BIG_FILE_BYTES 的片是「大文件片」：给它 5 分钟/次而不是 2 分钟，且不参与
+        // 重试总时长累计。判据用片内最大文件，而不是份数——一片 200 份小文件和一份 64 MiB
+        // 需要完全不同的耐心。
+        const biggest = Math.max(...slice.map((r) => r.size));
+        await pushSlice(url, branch, { cwd, bigFile: biggest >= BIG_FILE_BYTES });
         parent = c;
         pushed += slice.length;
         if (onProgress) onProgress(pushed, todo.length, sliceBytes);

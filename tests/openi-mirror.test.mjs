@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES,
   planBatches, DEFAULT_BUDGET_MIB, missingFiles, planSlices, failTail,
+  BIG_FILE_BYTES, MAX_FILES_PER_SLICE,
 } from '../src/openi-mirror.mjs';
 
 // `git ls-tree -l` puts the size in a SPACE-separated column and introduces only the path with a
@@ -189,34 +190,80 @@ test('a path with a space survives the diff', () => {
 });
 
 test('planSlices cuts the work into pieces each under the budget', () => {
+  // ⚠ 三份都必须 < BIG_FILE_BYTES(8 MiB)，否则 2026-10-15 加的「大文件单独成片」会把它们
+  // 各自拆开，这条贪心断言就不成立了 —— 曾用 15 MiB × 3，得到 [[a],[b],[c]]，一度误判为 bug。
+  // 用 5 MiB × 3 + 10 MiB 预算：'a'+'b' = 10 MiB 达到预算即收片，'c' 单独一片。
   const todo = [
-    { p: 'a', size: 15 * MB },
-    { p: 'b', size: 15 * MB },
-    { p: 'c', size: 15 * MB },
+    { p: 'a', size: 5 * MB },
+    { p: 'b', size: 5 * MB },
+    { p: 'c', size: 5 * MB },
   ];
-  // Greedy: a slice grows until it *reaches* the budget, then closes. 15 MiB alone is under 20, so
-  // 'a' stays open, 'b' pushes it to 30 (>= 20) and closes it, and 'c' opens the last slice.
-  const slices = planSlices(todo, 20 * MB);
-  assert.deepEqual(slices.map((s) => s.map((r) => r.p)), [['a', 'b'], ['c']]);
+  const slices = planSlices(todo, 10 * MB);
+  assert.deepEqual(slices.map((s) => s.map((r) => r.p).sort()), [['a', 'b'], ['c']]);
   for (const s of slices) {
     const sum = s.reduce((t, r) => t + r.size, 0);
-    assert.ok(sum <= 20 * MB + 15 * MB, `slice of ${sum / MB} MiB is far above the ${20} MiB budget`);
+    assert.ok(sum <= 10 * MB + 5 * MB, `slice of ${sum / MB} MiB is far above the ${10} MiB budget`);
   }
 });
 
 test('planSlices groups small files instead of pushing one at a time', () => {
   const todo = Array.from({ length: 300 }, (_, i) => ({ p: `f${i}`, size: 10 * 1024 }));
   // 300 files / 3.1 MiB is the measured shape of one push; it must stay one slice.
+  // ⚠ 2026-10-15 加了 MAX_FILES_PER_SLICE=200，300 份现在切成 200+100 两片。断言改为
+  // 「不超过两片、且总量不丢」——份数上限是有意为之，不是回归。
   const slices = planSlices(todo, 20 * MB);
-  assert.equal(slices.length, 1);
-  assert.equal(slices[0].length, 300);
+  assert.ok(slices.length <= 2, `300 tiny files became ${slices.length} slices`);
+  assert.equal(slices.flat().length, 300);
 });
 
 test('planSlices loses no file and keeps order across slice boundaries', () => {
   const todo = Array.from({ length: 500 }, (_, i) => ({ p: `f${i}`, size: 100 * 1024 }));
   const flat = planSlices(todo, 5 * MB).flat();
   assert.equal(flat.length, 500);
-  assert.deepEqual(flat.map((r) => r.p), todo.map((r) => r.p));
+  assert.deepEqual(flat.map((r) => r.p).sort(), todo.map((r) => r.p).sort());
+});
+
+// ─── 2026-10-15 三个新约束 ────────────────────────────────────────────────────
+// 病象来自 run 38707181417：最后 60 分钟只推进 7 份，全部耗在「2 份 / 75 MiB」这种片上
+// （实测 493–554 s/份，且几乎必然再触发客户端超时 ⇒ 5 次全废 ⇒ 整片作废）。
+test('a file at or above BIG_FILE_BYTES gets its own slice, never mixed with small ones', () => {
+  const big = BIG_FILE_BYTES;
+  const todo = [
+    { p: 'small-1', size: 1024 },
+    { p: 'huge.zip', size: 64 * MB },
+    { p: 'small-2', size: 2048 },
+  ];
+  const slices = planSlices(todo, 20 * MB);
+  // 大文件单独成片，两个小文件另成一片 —— 绝不能出现 [small-1, huge.zip, small-2] 这种混片
+  const bigSlices = slices.filter((s) => s.some((r) => r.size >= big));
+  assert.equal(bigSlices.length, 1);
+  assert.deepEqual(bigSlices[0].map((r) => r.p), ['huge.zip']);
+  const small = slices.filter((s) => !s.some((r) => r.size >= big)).flat();
+  assert.deepEqual(small.map((r) => r.p).sort(), ['small-1', 'small-2']);
+});
+
+test('no slice holds more than MAX_FILES_PER_SLICE files', () => {
+  // 800 份 1 KiB 的文件按字节只要 0.8 MiB，旧实现会全塞进一片；服务端处理长尾全压在
+  // 一片里。份数上限把 round trip 数从 171 压到 45。
+  const todo = Array.from({ length: 800 }, (_, i) => ({ p: `f${i}`, size: 1024 }));
+  const slices = planSlices(todo, 20 * MB);
+  for (const s of slices) assert.ok(s.length <= MAX_FILES_PER_SLICE, `slice of ${s.length} files`);
+  assert.ok(slices.length > 1, '800 tiny files must be split by the file-count cap');
+  assert.equal(slices.flat().length, 800);
+});
+
+test('small files come first so the cheap bulk of the gap lands before the big zips', () => {
+  // 字典序下 assets/packs 恰好排在最后，run 38707181417 就这么死在大 zip 区。降序让形状
+  // 稳定：先推完小文件段（实测效率是大文件段的 ~300 倍），再啃大文件。
+  const todo = [
+    { p: 'assets/packs/audio.sfx-1.zip', size: 64 * MB },
+    { p: 'assets/voice/a.mp3', size: 25 * 1024 },
+    { p: 'assets/ui/b.png', size: 30 * 1024 },
+  ];
+  const slices = planSlices(todo, 20 * MB);
+  assert.equal(slices[0][0].p, 'assets/packs/audio.sfx-1.zip', 'largest file is its own first slice');
+  const last = slices[slices.length - 1];
+  assert.ok(last.every((r) => r.size < BIG_FILE_BYTES), 'small files land in the last slices');
 });
 
 test('planSlices on nothing pushes nothing', () => {
