@@ -36897,8 +36897,8 @@
       "what": "时装补充包（skin-supplement）素材：12 套官方时装的头像/立绘/正背面 Spine。含官方素材，版权归鹰角网络 / Yostar，仅非商业。",
       "addedAt": "2026-10-15",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4785,
-      "bytes": 153489896,
+      "files": 4787,
+      "bytes": 153780835,
       "keys": [
         [
           "assets/audio/voice/en/char_003_kalts/cn_019.mp3",
@@ -55917,6 +55917,10 @@
           113313
         ],
         [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/back/char_308_swire_nian_2.skel",
+          92591
+        ],
+        [
           "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/front/char_308_swire_nian_2.atlas",
           10676
         ],
@@ -55991,6 +55995,10 @@
         [
           "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_game_6/back/char_437_mizuki_game_6.png",
           184874
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_game_6/back/char_437_mizuki_game_6.skel",
+          198348
         ],
         [
           "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_game_6/front/char_437_mizuki_game_6.atlas",
