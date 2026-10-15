@@ -543,52 +543,73 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
   }
 
   let pushed = 0;
+  let skipped = 0;      // 推失败被放弃的片数（下次运行会重算差集，不会丢内容）
   let partial = false;
-  try {
-    for (const slice of planSlices(todo, budgetBytes)) {
-      const sliceBytes = slice.reduce((s, r) => s + r.size, 0);
+  for (const slice of planSlices(todo, budgetBytes)) {
+    const sliceBytes = slice.reduce((s, r) => s + r.size, 0);
+    for (let k = 0; k < slice.length; k += 2000) {
+      await giIn(
+        slice.slice(k, k + 2000).map((r) => `${r.mode} ${r.sha}\t${r.p}`).join('\n') + '\n',
+        'update-index', '--add', '--index-info',
+      );
+    }
+    const tree = await gi('write-tree');
+    const headTree = parent ? await g('rev-parse', '--verify', `${parent}^{tree}`) : null;
+    if (tree === headTree) {
+      // 树没变（这组文件 sha 与远端相同，只是路径集合的差集计算偏差）——不制造空提交。
+      pushed += slice.length;
+      process.stderr.write(`[openi] 跳过 ${slice.length} 份（远端已有相同内容）\n`);
+      continue;
+    }
+    const c = await g('-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.github.com',
+      '-c', 'commit.gpgsign=false', 'commit-tree', tree,
+      ...(parent ? ['-p', parent] : []),
+      '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
+    await g('update-ref', 'refs/heads/_openi_sync', c);
+    // 单文件 ≥ BIG_FILE_BYTES 的片是「大文件片」：给它 5 分钟/次而不是 2 分钟，且不参与
+    // 重试总时长累计。判据用片内最大文件，而不是份数——一片 200 份小文件和一份 64 MiB
+    // 需要完全不同的耐心。
+    const biggest = Math.max(...slice.map((r) => r.size));
+    try {
+      await pushSlice(url, branch, { cwd, bigFile: biggest >= BIG_FILE_BYTES });
+    } catch (e) {
+      // ⚠ 一片失败**绝不能带走整轮**。run 38741643487 就这么死的：升序排好、小文件一片片
+      // 稳稳推过去（已推 4,400/8,543），第 22 片连续 5 次 push 超时，`pushSlice` 一抛，
+      // 后面 60 片小文件**一份都没推**，90 分钟只换回 26,264 → 30,664。
+      // 而 `syncByFiles` 是幂等的（每次从远端当前树重算差集），下一轮会把这片的文件重新
+      // 算进 `todo` ⇒ 跳过一片只是延后，丢不了内容。整轮作废才是真亏。
+      //
+      // 两条必须同时守住的不变量，少一条这个「跳过」就是假跳过：
+      //   ① **ref 回退**：`parent` 不前进，而 `_openi_sync` 已指向这个没推成的 commit ——
+      //      下一片会以它为父，与远端 assets-raw 形成分叉。所以先把 ref 退回上一个**真的
+      //      推成了**的 parent（远端那一个），让分叉在本地就被消掉。
+      //   ② **index 回退**：`update-index` 已经把这一片的路径写进 scratch index 了，不回退的话
+      //      下一片的 `write-tree` 会把它们一起打进去，于是「跳过」只是把它们并进下一次推送，
+      //      连日志都在撒谎。用 `update-index --force-remove` 按路径删掉，才是真的延后。
+      skipped += 1;
+      partial = true;
+      if (parent) await g('update-ref', 'refs/heads/_openi_sync', parent);
+      else await g('update-ref', '-d', 'refs/heads/_openi_sync');
       for (let k = 0; k < slice.length; k += 2000) {
         await giIn(
-          slice.slice(k, k + 2000).map((r) => `${r.mode} ${r.sha}\t${r.p}`).join('\n') + '\n',
-          'update-index', '--add', '--index-info',
+          slice.slice(k, k + 2000).map((r) => r.p).join('\0') + '\0',
+          'update-index', '--force-remove', '-z', '--stdin',
         );
       }
-      const tree = await gi('write-tree');
-      const headTree = parent ? await g('rev-parse', '--verify', `${parent}^{tree}`) : null;
-      if (tree !== headTree) {
-        const c = await g('-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.github.com',
-          '-c', 'commit.gpgsign=false', 'commit-tree', tree,
-          ...(parent ? ['-p', parent] : []),
-          '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
-        await g('update-ref', 'refs/heads/_openi_sync', c);
-        // 单文件 ≥ BIG_FILE_BYTES 的片是「大文件片」：给它 5 分钟/次而不是 2 分钟，且不参与
-        // 重试总时长累计。判据用片内最大文件，而不是份数——一片 200 份小文件和一份 64 MiB
-        // 需要完全不同的耐心。
-        const biggest = Math.max(...slice.map((r) => r.size));
-        await pushSlice(url, branch, { cwd, bigFile: biggest >= BIG_FILE_BYTES });
-        parent = c;
-        pushed += slice.length;
-        if (onProgress) onProgress(pushed, todo.length, sliceBytes);
-        // stderr：GitHub Actions 实时转发 stderr，stdout 会被 logdriver 聚合缓冲 —— 一次 3 小时的
-        // 同步里，缓冲让进度日志看起来像「卡在某一帧不动」，无法判断是死了还是在跑。
-        process.stderr.write(`[openi] 已推 ${pushed}/${todo.length} 份（本片 ${(sliceBytes / 1048576).toFixed(1)} MiB）\n`);
-      } else {
-        // 树没变（这组文件 sha 与远端相同，只是路径集合的差集计算偏差）——不制造空提交。
-        pushed += slice.length;
-        process.stderr.write(`[openi] 跳过 ${slice.length} 份（远端已有相同内容）\n`);
-      }
+      process.stderr.write(`[openi] ⚠ 本片推失败已跳过（${slice.length} 份 / ${(sliceBytes / 1048576).toFixed(1)} MiB）：${failTail(e, 200)} —— 已从 index 移除并回退 ref，下一轮重算差集补上\n`);
+      continue;
     }
-  } catch (e) {
-    // 推失败：保留已推进的 parent，下一次运行从那里继续。不谎报完成。
-    partial = true;
-    await g('update-ref', '-d', remoteRef);
-    fs.rmSync(scratch, { force: true });
-    throw e;
+    parent = c;
+    pushed += slice.length;
+    if (onProgress) onProgress(pushed, todo.length, sliceBytes);
+    // stderr：GitHub Actions 实时转发 stderr，stdout 会被 logdriver 聚合缓冲 —— 一次 3 小时的
+    // 同步里，缓冲让进度日志看起来像「卡在某一帧不动」，无法判断是死了还是在跑。
+    process.stderr.write(`[openi] 已推 ${pushed}/${todo.length} 份（本片 ${(sliceBytes / 1048576).toFixed(1)} MiB）\n`);
   }
 
   await g('update-ref', '-d', remoteRef);
   fs.rmSync(scratch, { force: true });
-  return { pushed, total: todo.length, partial, at: parent };
+  return { pushed, total: todo.length, skipped, partial, at: parent };
 }
 
 

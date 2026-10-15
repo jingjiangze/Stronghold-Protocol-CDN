@@ -415,3 +415,123 @@ test('syncByFiles splits work when the budget forces more than one push', async 
     fs.rmSync(base, { recursive: true, force: true });
   }
 });
+
+// ─── 单片推失败：跳过而不是带走整轮 ─────────────────────────────────────────────
+// run 38741643487 的真实形状：升序排好、小文件一片片稳稳推过去（已推 4,400/8,543），第 22 片
+// 连续 5 次 push 超时，`pushSlice` 一抛，**后面 60 片小文件一份都没推**，90 分钟只换回
+// 26,264 → 30,664。修法是让一片失败只跳过自己 —— 而「跳过」有三条很容易只做两条的不变量：
+//   ① **运行不中断**：后面的片照推（这才是本次事故真正的损失）
+//   ② **index 回退**：这一片的路径必须从 scratch index 删掉，否则下一片的 write-tree 会把
+//      它们一起打进去 —— 「跳过」就只是并进下一次推送，连日志都在撒谎
+//   ③ **ref 回退**：`_openi_sync` 必须退回上一个真的推成了的 parent，否则下一片以没推成的
+//      commit 为父，本地与远端分叉，而且**看不出来**
+// ②③的失败模式都极安静，所以同一条断言同时盯远端文件列表（②）与 _openi_sync（③）。
+/** 在 fixture 的 remote/baseline 之上加 n 个新文件，返回目标 ref。
+ *  ⚠ 拿 ref 必须用 `rev-parse HEAD`，不能用 `commit` 的 stdout —— `-q` 会把它吞掉，
+ *  于是 target 是空串，syncByFiles 的 `ls-tree -r -l ` 直接 fatal: Not a valid object name
+ *  （第一版就这么挂的，报错位置在 src 里不在测试里，很容易误判成代码 bug）。 */
+function fixtureWithNewFiles(names) {
+  const { base, src, bare } = fixture();
+  for (const n of names) fs.writeFileSync(path.join(src, n), `${n}\n`);
+  const g = (args) => execFileSync('git', args, { cwd: src, encoding: 'utf8' }).trim();
+  g(['add', '-A']);
+  execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t',
+    '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'more'], { cwd: src, encoding: 'utf8' });
+  return { base, src, bare, target: g(['rev-parse', 'HEAD']) };
+}
+
+/** 给远端装 pre-receive hook：**凡是树里带 REJECT_MARK 的 push 一律拒收**，其它放行。
+ *
+ * ⚠ 为什么按内容判而不是按「第 N 次」判：`pushSlice` 每次失败要重试 5 次。按次数判的 hook
+ * （前 N 次拒）在上一版实测里把预期打乱了 —— 前一片耗掉的 retry 次数会改变后一片的判定阈值，
+ * 而且每片重试 5 次 × 退避 10/20/30/40s ≈ 100 s，3 条测试要跑 8 分钟。按内容判则**幂等**：
+ * 同一个树无论推多少次都一样被拒，重试 5 次全落在同一片，一次退避（10s）就够观察到结果。
+ *
+ * ⚠ 它必须真的执行（真实文件 + chmod 755）：bare repo 的 hook 不执行就等于没注入，而「没注入」
+ * 长得很像「代码没实现跳过」。所以下面每条测试都另配一条对照组，注入本身也要被断言。 */
+function rejectTreesContaining(bare, marker) {
+  const hook = path.join(bare, 'hooks', 'pre-receive');
+  fs.writeFileSync(hook,
+    `#!/bin/sh\n` +
+    `while read old new ref; do\n` +
+    `  if git ls-tree -r "$new" --name-only | grep -q '${marker}'; then\n` +
+    `    echo "remote: rejecting a tree carrying ${marker}" >&2\n` +
+    `    exit 1\n` +
+    `  fi\n` +
+    `done\n` +
+    `exit 0\n`);
+  fs.chmodSync(hook, 0o755);
+}
+
+const remoteFiles = (bare, ref) => execFileSync('git', ['ls-tree', '-r', '--name-only', ref], {
+  cwd: bare, encoding: 'utf8',
+}).trim().split('\n').filter(Boolean).sort();
+
+test('a slice that fails to push is skipped, and the rest of the run still lands', async () => {
+  // ⚠ 待补总数是 **5** 不是 3：`fixture()` 自己就带了 c.txt 与 d/e.txt 两个远端没有的文件
+  // （第一版 assertion 写 3，`5 !== 3` 挂在测试里而非代码里，白查了一轮）。
+  // 5 片按升序排：c.txt / d/e.txt / m1.txt / **m2-rejectme.txt** / m3.txt —— 被拒那片排在
+  // 中间而不是最后，才能证明「它**后面**的片照推」：若跳过没实现，pushSlice 一抛整轮作废，
+  // m3.txt 不会出现在远端，那正是 run 38741643487 损失后面 60 片的形状。
+  const { base, src, bare, target } = fixtureWithNewFiles(['m1.txt', 'm2-rejectme.txt', 'm3.txt']);
+  rejectTreesContaining(bare, 'm2-rejectme.txt');
+  try {
+    const r = await syncByFiles(src, 'origin', 'art', target, 1);
+    assert.equal(r.total, 5, 'fixture 的 c/d/e 加上新加的 3 个，共 5 份待补');
+    // ① 运行不中断：被拒那片之后，m3 照样推成。
+    assert.equal(r.pushed, 4, `pushed=${r.pushed}；除 m2-rejectme.txt 外都应推成`);
+    assert.equal(r.skipped, 1, `skipped=${r.skipped}；m2-rejectme.txt 那一片必须被记为跳过`);
+    assert.equal(r.partial, true, '跳过过就必须报 partial，不能谎报完成');
+    // ② index 回退：被拒文件没有悄悄混进已推成的树里。
+    assert.deepEqual(remoteFiles(bare, 'art'),
+      ['a.txt', 'b.txt', 'c.txt', 'd/e.txt', 'm1.txt', 'm3.txt'],
+      'm2-rejectme.txt 不在远端才说明它真被从 index 里摘掉了');
+    // ③ ref 回退：本地 _openi_sync 与远端 ref 一致，没有留在那个没推成的 commit 上。
+    const localSync = execFileSync('git', ['rev-parse', '--verify', 'refs/heads/_openi_sync'], {
+      cwd: src, encoding: 'utf8',
+    }).trim();
+    const remoteArt = execFileSync('git', ['rev-parse', 'art'], { cwd: bare, encoding: 'utf8' }).trim();
+    assert.equal(localSync, remoteArt,
+      `_openi_sync(${localSync.slice(0, 10)}) 必须等于远端 art(${remoteArt.slice(0, 10)})，否则已成分叉`);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('the failure injection actually fires — without it the skip test proves nothing', async () => {
+  // 对照组：hook 不执行（路径错 / 没 chmod / sh 不在 PATH）时，上一条会 5 片全推成 ⇒
+  // pushed=5、skipped=0、被拒文件出现在远端 ⇒ 断言失败。但那种失败长得像「代码没实现跳过」，
+  // 分不清是注入坏还是逻辑坏，所以这里直接验证注入本身。同时钉住 5 次重试：重试是刻意行为
+  // （push 幂等，重试把一次网络抖动从 90 分钟事故降级成 10 秒），别哪天被「优化」成 1 次。
+  const { base, src, bare, target } = fixtureWithNewFiles(['rejectme.txt']);
+  rejectTreesContaining(bare, 'rejectme.txt');
+  const counter = path.join(base, 'hookruns');
+  // ⚠ 计数器只数**拒收**，不数所有 push：前两片（c.txt / d/e.txt）是推成功的，它们也会触发 hook，
+  // 于是「数所有 push」得到 7，看着像 pushSlice 重试了 7 次（我第一版就这么误判的）。数拒收才
+  // 恰好等于 attempts，这才是要钉住的量。
+  fs.writeFileSync(path.join(bare, 'hooks', 'pre-receive'),
+    `#!/bin/sh\n` +
+    `C='${counter.replace(/\\/g, '/')}'\n` +
+    `while read old new ref; do\n` +
+    `  if git ls-tree -r "$new" --name-only | grep -q 'rejectme.txt'; then\n` +
+    `    n=$(cat "$C" 2>/dev/null || echo 0); echo $((n+1)) > "$C"\n` +
+    `    echo "remote: rejecting a tree carrying rejectme.txt" >&2; exit 1\n` +
+    `  fi\n` +
+    `done\n` +
+    `exit 0\n`);
+  fs.chmodSync(path.join(bare, 'hooks', 'pre-receive'), 0o755);
+  try {
+    const r = await syncByFiles(src, 'origin', 'art', target, 1);
+    // fixture 的 c.txt / d/e.txt 排在被拒文件之前 ⇒ 它们推成，只有 rejectme.txt 那片被跳过。
+    assert.equal(r.total, 3, 'c.txt / d/e.txt / rejectme.txt 共 3 份待补');
+    assert.equal(r.pushed, 2, '前两片推成');
+    assert.equal(r.skipped, 1, '只有 rejectme.txt 那片被跳过');
+    assert.equal(r.partial, true);
+    assert.equal(fs.readFileSync(counter, 'utf8').trim(), '5',
+      `hook 跑了 ${fs.readFileSync(counter, 'utf8').trim()} 次，预期 5 次（pushSlice 的 attempts）`);
+    assert.deepEqual(remoteFiles(bare, 'art'), ['a.txt', 'b.txt', 'c.txt', 'd/e.txt'],
+      'rejectme.txt 不在远端');
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
