@@ -36894,11 +36894,11 @@
     },
     {
       "id": "forge-0.18.6-0.2.6",
-      "what": "批量上传（agent-upload-batch）",
-      "addedAt": "2026-10-14",
+      "what": "时装补充包（skin-supplement）素材：12 套官方时装的头像/立绘/正背面 Spine。含官方素材，版权归鹰角网络 / Yostar，仅非商业。",
+      "addedAt": "2026-10-15",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4721,
-      "bytes": 146937010,
+      "files": 4761,
+      "bytes": 150987750,
       "keys": [
         [
           "assets/audio/voice/en/char_003_kalts/cn_019.mp3",
@@ -55783,6 +55783,166 @@
         [
           "assets/audio/voice/kr/char_498_inside/cn_032.mp3",
           29484
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_game_3/avatar.png",
+          63440
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_game_3/back/char_1021_kroos2_game_3.png",
+          152612
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_game_3/front/char_1021_kroos2_game_3.atlas",
+          9236
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_game_3/front/char_1021_kroos2_game_3.skel",
+          216639
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_game_3/portrait.png",
+          119298
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_nian_8/avatar.png",
+          55613
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_1021_kroos2/char_1021_kroos2_nian_8/back/char_1021_kroos2_nian_8.atlas",
+          5975
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/back/char_136_hsguma_nian_3.atlas",
+          3958
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/back/char_136_hsguma_nian_3.png",
+          99336
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/back/char_136_hsguma_nian_3.skel",
+          66886
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/front/char_136_hsguma_nian_3.atlas",
+          8031
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/front/char_136_hsguma_nian_3.skel",
+          144283
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_nian_3/portrait.png",
+          105681
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/avatar.png",
+          55039
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/back/char_136_hsguma_summer_16.png",
+          218765
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/back/char_136_hsguma_summer_16.skel",
+          113049
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/front/char_136_hsguma_summer_16.atlas",
+          7906
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/front/char_136_hsguma_summer_16.png",
+          287240
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/front/char_136_hsguma_summer_16.skel",
+          282493
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/avatar.png",
+          61109
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/back/char_308_swire_nian_2.png",
+          113313
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/front/char_308_swire_nian_2.atlas",
+          10676
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/front/char_308_swire_nian_2.png",
+          153010
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/front/char_308_swire_nian_2.skel",
+          165672
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_308_swire/char_308_swire_nian_2/portrait.png",
+          120495
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_373_lionhd/char_373_lionhd_snow_3/back/char_373_lionhd_snow_3.atlas",
+          5076
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_373_lionhd/char_373_lionhd_snow_3/back/char_373_lionhd_snow_3.png",
+          101077
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_373_lionhd/char_373_lionhd_snow_3/front/char_373_lionhd_snow_3.atlas",
+          13618
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_373_lionhd/char_373_lionhd_wild_3/front/char_373_lionhd_wild_3.atlas",
+          16390
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_373_lionhd/char_373_lionhd_wild_3/portrait.png",
+          142382
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_game_6/back/char_437_mizuki_game_6.atlas",
+          6249
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_game_6/back/char_437_mizuki_game_6.png",
+          184874
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_437_mizuki/char_437_mizuki_sale_7/front/char_437_mizuki_sale_7.png",
+          149963
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_epoque_31/back/char_440_pinecn_epoque_31.skel",
+          118535
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_epoque_31/front/char_440_pinecn_epoque_31.atlas",
+          8837
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_epoque_31/front/char_440_pinecn_epoque_31.skel",
+          199055
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_epoque_31/portrait.png",
+          123887
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_shining_1/avatar.png",
+          68689
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_shining_1/front/char_440_pinecn_shining_1.atlas",
+          10506
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_440_pinecn/char_440_pinecn_shining_1/front/char_440_pinecn_shining_1.skel",
+          261847
         ]
       ]
     },
