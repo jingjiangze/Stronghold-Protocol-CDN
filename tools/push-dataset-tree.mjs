@@ -94,6 +94,28 @@ const isLfsPath = (p) => {
   return dot > p.lastIndexOf('/') && LFS_EXTS.has(p.slice(dot + 1).toLowerCase());
 };
 
+// 平台已知不可达豁免表：这些路径**推得上去、但会被平台内容审核自动 revert**，永远进不了
+// 数据集 HEAD。若不排除，`have` 永远不含它们 → `todo` 永远含它们 → 每轮 `remain > 0`
+// → exit 3 → workflow 自触发续跑 → 再推再被 revert，**无限循环**（每轮还要 clone ~650 MB
+// 树、跑 6 轮，白烧 Actions 额度；而 git-art-sync 每次 assets-raw 前进都会再供一次燃料）。
+//
+// 收录判据（三条同时满足，缺一不收）：
+//   ① 源树确有该文件（assets-raw 的 ls-tree 能列出，字节完好）；
+//   ② 推送侧无过错——git push 与 git lfs push 都成功，平台却把该路径单独 revert；
+//   ③ 历史上重复出现，不是一次性抖动（同一条 revert 记录跨多次推送复现）。
+//
+// 当前唯一条目（2026-10-15 实测）：
+//   assets/skins/char_340_shwaz_snow_1/illustration.png（3,541,555 B，源 blob ef7cac43）
+//   平台 revert 记录：9d6d566 加入 → da58372 revert → b51194a revert → … → c64e935 revert
+//   （c64e935  revert 的正是本轮 LFS 化推送 df7d76e，且 diff 只有这一条路径、无附带损伤）。
+//   客户端侧已有改道：ms-edge 层的 exceptions 表把它指向 r2，见 origins.json 的 ms-dataset note。
+//
+// ⚠ 维护约定：平台若放行某个路径，**必须从表里删掉它**，否则它会从「永动」变成「静默缺失」。
+// 脚本每轮都会打印豁免清单（见下方 `平台审核豁免` 日志），审查时以那行为准。
+const PLATFORM_REJECTED = new Set([
+  'assets/skins/char_340_shwaz_snow_1/illustration.png',
+]);
+
 const REMOTE_URL = process.env.MODELSCOPE_URL || '';
 if (!REMOTE_URL && !DRY) {
   console.error('缺少 MODELSCOPE_URL（形如 https://oauth2:<token>@www.modelscope.cn/datasets/<ns>/<name>.git）');
@@ -136,9 +158,27 @@ try {
   }
   console.log(`  数据集已有 ${have.size} 份`);
 
-  const todo = all.filter((r) => !have.has(r.path));
+  // 平台审核豁免：先摘出来再算待补。**不是**把它塞进 `have` —— `have` 是「远端真实有什么」，
+  // 掺假会让下面的日志与 `ls-tree` 对不上；这里直接从 `todo` 排除，树里自然也没有它。
+  // 效果：`remain` 归零 → exit 0 正常收敛，不再触发 workflow 自触发续跑。
+  const exempt = all.filter((r) => PLATFORM_REJECTED.has(r.path));
+  const exemptPresent = exempt.filter((r) => have.has(r.path));
+  if (exempt.length) {
+    const kinds = exempt.map((r) => {
+      const state = have.has(r.path) ? '已在远端（平台曾放行）' : '不在远端（平台 revert）';
+      return `${r.path} [${(r.size / 1024).toFixed(0)} KB] ${state}`;
+    });
+    console.log(`  平台审核豁免 ${exempt.length} 份 —— 不计入待补、不写入树、不影响 exit 码：`);
+    for (const k of kinds) console.log(`    - ${k}`);
+    if (exemptPresent.length) {
+      console.log(`    ⚠ 其中 ${exemptPresent.length} 份已在远端，说明平台已放行 —— `
+        + `应从 PLATFORM_REJECTED 删除，否则会静默不再更新`);
+    }
+  }
+
+  const todo = all.filter((r) => !have.has(r.path) && !PLATFORM_REJECTED.has(r.path));
   console.log(`  待补 ${todo.length} 份 / ${(todo.reduce((s, r) => s + r.size, 0) / 1048576).toFixed(1)} MiB`);
-  if (!todo.length) { console.log('数据集已与源树一致，无需推送。'); process.exit(0); }
+  if (!todo.length) { console.log('数据集已与源树一致（含平台审核豁免），无需推送。'); process.exit(0); }
 
   const w = path.join(tmp, 'work');
   // 写入：字节从源 ref 的 blob 读出，hash-object -w --stdin-paths 写进数据集对象库，
