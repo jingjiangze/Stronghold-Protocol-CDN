@@ -71,6 +71,28 @@ export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
  */
 export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 20;
 
+/**
+ * 从一次失败的 child process 里挑出真正有信息的那几行。
+ *
+ * 为什么不能 `String(e.message).split('\n').pop().slice(0, 120)`：git 的 fatal 行后面往往还跟着
+ * 空行或 "hint: ..." 提示，pop() 取到最后一行等于把真因丢掉 —— run 38707181417 的 push 重试日志
+ * 就是这么全军覆没的（十条失败记录里九条只剩 `git push --quiet https://...` 的命令名前 120 字符）。
+ * 这里优先抓 `fatal:`/`error:`，退化到 stderr 尾部，再退化到 message 尾部。
+ */
+export function failTail(e, keep = 200) {
+  const msg = String(e?.message ?? e ?? '');
+  const errText = String(e?.stderr ?? '');
+  const pool = [errText, msg];
+  for (const text of pool) {
+    if (!text) continue;
+    const lines = text.split('\n').map((s) => s.trim()).filter(Boolean);
+    const hit = lines.filter((l) => /^(fatal|error|remote:)/.test(l));
+    if (hit.length) return hit.join(' | ').slice(-keep);
+    if (lines.length) return lines.join(' | ').slice(-keep);
+  }
+  return msg.slice(-keep);
+}
+
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {
   const { timeoutMs = 0, ...spawnOpts } = opts;
@@ -165,7 +187,7 @@ export async function remoteHead(remote, branch, { timeoutMs = 180000, attempts 
     } catch (e) {
       last = e;
       const backoff = Math.min(15000 * i, 60000);
-      process.stderr.write(`[openi] ls-remote 第 ${i}/${attempts} 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+          process.stderr.write(`[openi] ls-remote 第 ${i}/${attempts} 次失败（${failTail(e, 160)}），${backoff / 1000}s 后重试\n`);
       if (i < attempts) await new Promise((s) => setTimeout(s, backoff));
     }
   }
@@ -345,7 +367,7 @@ async function pushSlice(url, branch, { cwd, timeoutMs = 300000, attempts = 5 } 
       last = e;
       // 退避：对端是限流/连接被挂，立刻重试只会再撞一次。30s 起，最长 2 分钟。
       const backoff = Math.min(30000 * i, 120000);
-      process.stderr.write(`[openi] push 第 ${i}/${attempts} 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+      process.stderr.write(`[openi] push 第 ${i}/${attempts} 次失败（${failTail(e, 160)}），${backoff / 1000}s 后重试\n`);
       if (i < attempts) await new Promise((s) => setTimeout(s, backoff));
     }
   }
@@ -387,7 +409,7 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
         return;
       } catch (e) {
         const backoff = Math.min(15000 * i, 60000);
-        process.stderr.write(`[openi] fetch 远端树第 ${i}/5 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+          process.stderr.write(`[openi] fetch 远端树第 ${i}/5 次失败（${failTail(e, 160)}），${backoff / 1000}s 后重试\n`);
         if (i < 5) await new Promise((s) => setTimeout(s, backoff));
         else throw e;
       }

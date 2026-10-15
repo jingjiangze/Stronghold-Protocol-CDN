@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES,
-  planBatches, DEFAULT_BUDGET_MIB, missingFiles, planSlices,
+  planBatches, DEFAULT_BUDGET_MIB, missingFiles, planSlices, failTail,
 } from '../src/openi-mirror.mjs';
 
 // `git ls-tree -l` puts the size in a SPACE-separated column and introduces only the path with a
@@ -221,6 +221,35 @@ test('planSlices loses no file and keeps order across slice boundaries', () => {
 
 test('planSlices on nothing pushes nothing', () => {
   assert.deepEqual(planSlices([], 20 * MB), []);
+});
+
+// ─── failTail：重试日志必须真的能失败 ─────────────────────────────────────────
+// 原来的写法是 `String(e.message).split('\n').pop().slice(0, 120)`，取的是最后一行。
+// git 的 fatal 行后面常跟着空行 / "hint:" 提示，于是 run 38707181417 的十条 push 失败记录里
+// 九条只剩 `git push --quiet https://openi...` 的命令名前 120 字符，真因全部丢失。
+// 这三条既是用例也是对照：第一条若也 FAIL，说明 failTail 本身退化了。
+test('failTail picks the fatal line out of a git error, not the trailing blank', () => {
+  // run 38707181417 真实抓到过一次的形状：fatal 在中间，尾部是空行
+  const e = Object.assign(
+    new Error("git push --quiet https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol.git refs/heads/_openi_sync:refs/heads/assets-raw → exit 128\nfatal: unable to access 'https://openi.pcl.ac.cn/...': Recv failure: Connection reset by peer\n"),
+    { stderr: "remote: \nfatal: unable to access 'https://openi.pcl.ac.cn/...': Recv failure: Connection reset by peer\n\n" },
+  );
+  const tail = failTail(e, 160);
+  assert.match(tail, /Recv failure: Connection reset by peer/);
+  assert.doesNotMatch(tail, /^git push --quiet/); // 不能退化回「只剩命令名」
+});
+
+test('failTail keeps the remote: rejection line, which is what a 413 looks like', () => {
+  const e = Object.assign(new Error('push → exit 1'), {
+    stderr: 'remote: Resolving deltas: 100% (12/12)\nremote: error: pack exceeds maximum allowed size\n',
+  });
+  assert.match(failTail(e), /pack exceeds maximum allowed size/);
+});
+
+test('failTail still says something when there is no fatal/error line at all', () => {
+  // 退化路径：全部行都没有 fatal/error/remote: 前缀时，必须仍返回非空内容而不是空串
+  assert.ok(failTail(new Error('something odd happened')).length > 0);
+  assert.equal(failTail(new Error('')), '');
 });
 
 test('the default budget is sized for the measured incremental pack, not the old diff bytes', () => {
