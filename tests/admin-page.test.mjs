@@ -114,7 +114,6 @@ test('the manual-upload fold hides the staging block while it is open', () => {
   const reveal = new RegExp("upload'\\)\\.hidden = false;\\n {4}showStaging\\(\\);");
   assert.ok(reveal.test(script), 'the gate must reveal the upload area and then let showStaging() decide about the staging block');
   assert.ok(!/\$\('todo'\)\.hidden = false/.test(script), 'the staging block must not be force-revealed');
-  assert.ok(!/\$\('todo'\)\.hidden = false/.test(script), 'the staging block must not be force-revealed');
   // The 401 path hides both again, or a rejected key leaves the trees on screen.
   assert.match(script, /\$\('todo'\)\.hidden = true;/, 'the rejected-key path must hide the staging block');
 });
@@ -147,4 +146,24 @@ test('no duplicate element ids on the staging page', () => {
   const seen = new Set();
   const duplicates = stageIds.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
   assert.deepEqual(duplicates, [], `duplicate ids: ${duplicates.join(', ')}`);
+});
+
+// 2026-10-16 用户口径：手动发布不再选目录 —— 目标键由文件名+后缀自动推导，
+// 推导不到的先进暂存区（packs/<来源>/，服务端判 hold 等放行）。
+// 这条测试钉的是「页面上不能再有目录输入」和「推导必须发生在上传之前、看得见」。
+test('the upload form derives the target key instead of asking for a directory', () => {
+  assert.ok(!/id="prefix"/.test(html), 'the directory picker must be gone — the user chooses files, not paths');
+  assert.ok(!/目标目录/.test(html), 'no label may still ask for a target directory');
+  // 推导规则必须是独立文件（测试直接对它求值），页面只是消费者。
+  assert.match(html, /src="\.\/js\/autokeys\.js"/, 'the rule module must be loaded before admin.js');
+  const autoPos = html.indexOf('autokeys.js');
+  const adminPos = html.indexOf('admin.js');
+  assert.ok(autoPos < adminPos, 'autokeys.js must load before admin.js, which consumes it');
+  assert.match(script, /SP_AUTO_KEYS\.autoTargetKey/, 'the script must derive keys through the shared rule');
+  assert.match(script, /SP_AUTO_KEYS\.stagingKeyFor/, 'the fallback must use the shared packs/<source>/ rule');
+  // 兜底不是失败：对不上的文件照样上传，只是落暂存区 —— 界面必须把这件事说在人点上传之前。
+  assert.match(script, /对不上素材树/, 'the operator must be told before upload which files fall to staging');
+  assert.match(html, /目标键（自动推导）/, 'the queue table must show the derived key per file');
+  // 服务端护栏不能因为页面变聪明而放松：键的合法性、tier 判定仍由 put.js/formatVerdict 说了算。
+  // （这条是给未来改 put.js 的人的提示，行为测试在 upload-flow/agent-doc 那边。）
 });

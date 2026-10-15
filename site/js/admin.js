@@ -139,14 +139,17 @@
     if (!rows.length) {
       const tr = tbody.insertRow();
       const td = tr.insertCell();
-      td.colSpan = 5;
+      td.colSpan = 6;
       td.className = 'muted';
       td.textContent = '还没选文件';
       return;
     }
     for (const r of rows) {
       const tr = tbody.insertRow();
-      for (const [text, cls] of [[r.rel, ''], [fmt(r.size), 'num'], [r.sha256 ? `${r.sha256.slice(0, 16)}…` : '…', 'mono'], [r.state, ''], [r.note || '', '']]) {
+      // 「目标键」列让推导结果先看得见再上传：对不上的写的是 packs/<来源>/…，
+      // 人在这里就该看出来这份会先进暂存区，而不是上传完去状态里猜。
+      const shown = r.key || '…';
+      for (const [text, cls] of [[r.rel, ''], [shown, r.matched ? 'mono' : 'mono held-key'], [fmt(r.size), 'num'], [r.sha256 ? `${r.sha256.slice(0, 16)}…` : '…', 'mono'], [r.state, ''], [r.note || '', '']]) {
         const td = tr.insertCell();
         if (cls) td.className = cls;
         td.textContent = text;
@@ -471,17 +474,23 @@
   }
 
   async function prepare() {
-    const prefix = $('prefix').value.trim();
-    if (!/^(assets|fonts|packs)\/[A-Za-z0-9._/-]*$/.test(prefix + 'x')) {
-      line('目标目录必须是 assets/ fonts/ packs/ 之下', 'err');
-      return;
-    }
     const source = $('source').value.trim();
     if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,59}$/.test(source)) {
-      line('来源标识需要是 2–60 位字母数字 . _ -（它会进 hosted.json 当分组 id）', 'err');
+      line('来源标识需要是 2–60 位字母数字 . _ -（它会进 hosted.json 当分组 id，匹配不到时也当暂存落点）', 'err');
       return;
     }
-    const rows = filesFromInput().map((r) => ({ ...r, size: r.file.size, sha256: '', state: '算摘要…', note: '' }));
+    const rows = filesFromInput().map((r) => {
+      const auto = globalThis.SP_AUTO_KEYS.autoTargetKey(r.rel);
+      return {
+        ...r,
+        size: r.file.size,
+        sha256: '',
+        state: '算摘要…',
+        note: '',
+        key: auto || globalThis.SP_AUTO_KEYS.stagingKeyFor(source, r.rel),
+        matched: !!auto,
+      };
+    });
     if (!rows.length) { line('还没选文件', 'err'); return; }
     renderPlan(rows);
 
@@ -503,21 +512,29 @@
       renderPlan(rows);
     }
     window.__plan = rows.filter((r) => r.sha256 && r.state !== '太大');
-    line(`准备好了 ${window.__plan.length} 个文件，点「计算摘要并上传」再点一次即开始上传`);
+    // 计数说在最后一行才不会被中途覆盖：prepare 里 renderPlan 会跑好几轮，但 line() 只有这一句在结尾。
+    const unmatched = window.__plan.filter((r) => !r.matched).length;
+    line(unmatched
+      ? `准备好了 ${window.__plan.length} 个文件，其中 ${unmatched} 个按名字对不上素材树 —— 会先进暂存区（packs/${source}/），上线前要点放行；点「计算摘要并上传」再点一次即开始上传`
+      : `准备好了 ${window.__plan.length} 个文件，点「计算摘要并上传」再点一次即开始上传`);
   }
 
   async function upload() {
     if (!window.__plan || !window.__plan.length) { await prepare(); }
     const plan = window.__plan || [];
     if (!plan.length) { line('没有可上传的文件', 'err'); return; }
-    const prefix = $('prefix').value.trim().replace(/\/+$/, '');
     const source = $('source').value.trim();
     const what = $('what').value.trim();
 
     for (const row of plan) {
       row.state = '上传中…';
+      // 重新推导而不是用 prepare 时缓存的 row.key：选完文件之后人可能才填「来源标识」，
+      // 匹配不到的那份兜底键里有它。autoTargetKey 是纯函数，重算不要钱。
+      const auto = globalThis.SP_AUTO_KEYS.autoTargetKey(row.rel);
+      row.key = auto || globalThis.SP_AUTO_KEYS.stagingKeyFor(source, row.rel);
+      row.matched = !!auto;
+      const targetKey = row.key;
       renderPlan(plan);
-      const targetKey = `${prefix}/${row.rel}`;
       // 元数据进查询串：HTTP 头只允许 ISO-8859-1，中文说明放头里会让 fetch 直接抛异常。
       const qs = new URLSearchParams({ key: targetKey, sha256: row.sha256, size: String(row.size), source, what });
       try {

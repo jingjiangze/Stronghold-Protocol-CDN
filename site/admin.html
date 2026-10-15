@@ -90,11 +90,7 @@
       <table>
         <tbody>
           <tr>
-            <td>目标目录<br /><span class="section-note">只能落在 assets/ fonts/ packs/ 之下</span></td>
-            <td><input id="prefix" value="assets/" style="min-width:260px" /></td>
-          </tr>
-          <tr>
-            <td>来源标识<br /><span class="section-note">会成为 hosted.json 的分组 id</span></td>
+            <td>来源标识<br /><span class="section-note">会成为 hosted.json 的分组 id，也是匹配不到时的暂存落点 packs/&lt;来源&gt;/</span></td>
             <td><input id="source" placeholder="例如 mod-makoto-p3r" style="min-width:260px" /></td>
           </tr>
           <tr>
@@ -102,7 +98,7 @@
             <td><input id="what" placeholder="一句话说明内容与出处" style="min-width:320px" /></td>
           </tr>
           <tr>
-            <td>文件</td>
+            <td>文件<br /><span class="section-note">不用选目录：按文件名和后缀自动定位（m_*.mp3→bgm、a_/b_/e_/g_/p_*.mp3→对应音效树、字体→fonts/）；匹配不到的先进暂存区等放行</span></td>
             <td>
               <input type="file" id="files" multiple />
               <label class="section-note" style="margin-left:12px"><input type="file" id="dir" webkitdirectory="" directory="" multiple /> 或整个目录</label>
@@ -129,8 +125,8 @@
 
     <div class="table-wrap" style="margin-top:16px">
       <table id="queue-table">
-        <thead><tr><th>文件</th><th>大小</th><th>sha256</th><th>状态</th><th>说明</th></tr></thead>
-        <tbody><tr><td colspan="5" class="muted">还没选文件</td></tr></tbody>
+        <thead><tr><th>文件</th><th>目标键（自动推导）</th><th>大小</th><th>sha256</th><th>状态</th><th>说明</th></tr></thead>
+        <tbody><tr><td colspan="6" class="muted">还没选文件</td></tr></tbody>
       </table>
     </div>
     </details>
@@ -192,6 +188,7 @@
   </p>
 </main>
 
+<script src="./js/autokeys.js"></script>
 <script src="./js/admin.js" defer></script>
 </body>
 </html>
