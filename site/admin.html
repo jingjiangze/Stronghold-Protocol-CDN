@@ -24,6 +24,7 @@
     </div>
     <nav class="navigation">
       <a href="./">返回文档</a>
+      <a href="./stage">暂存区（精简页）</a>
       <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/tree.json" target="_blank" rel="noopener">全量文件树</a>
       <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/upload-log.json" target="_blank" rel="noopener">发布日志</a>
     </nav>
@@ -84,7 +85,7 @@
     </div>
 
     <details id="manual">
-      <summary>手动上传（默认收起 · 主要通道是给 agent 的接口，见上面的复制按钮）</summary>
+      <summary>手动上传（默认收起 · 主要通道是给 agent 的接口，见上面的复制按钮）<span class="section-note" style="margin-left:10px">展开时下面第 2 块「暂存区与最近发布」会自动让位，两者不并排</span></summary>
     <div class="table-wrap">
       <table>
         <tbody>
@@ -140,7 +141,8 @@
     <div class="block__head">
       <span class="block__num">2</span>
       <span class="block__title">暂存区与最近发布</span>
-      <span class="block__who">读的是桶里的事实，不是浏览器缓存</span>
+      <span class="block__who" id="todo-who">读的是桶里的事实，不是浏览器缓存 · 展开上方「手动上传」时本块自动隐藏</span>
+      <a class="button button-secondary" href="./stage" id="stage-jump" title="另一个更轻的页面：只有暂存区，没有上传表单；给 agent 与脚本读">单独打开暂存区页</a>
     </div>
     <div class="toolbar">
       <input id="stage-filter" type="search" placeholder="筛选暂存区，例如 sp-four 或 .skel" autocomplete="off" />
@@ -185,6 +187,8 @@
     只接受同源调用，命令行请用仓库里的 <code class="inline">tools/agent-upload.mjs</code>。
     经 CF 代理的域名单次请求体上限 100 MB，所以本页面先把字节直传桶的 S3 端点，再由发布机搬到对外键。
     站点文档的索引在 <code class="inline">/data/docs.json</code>（每次部署重新生成）。
+    只想知道暂存区里有什么：<code class="inline">/stage</code> 是同一份状态的精简页（无上传表单、无发布历史树），
+    给 agent 和脚本读。
   </p>
 </main>
 

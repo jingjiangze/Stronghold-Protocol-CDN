@@ -14,7 +14,10 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const html = fs.readFileSync(path.join(ROOT, 'site', 'admin.html'), 'utf8');
 const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'admin.js'), 'utf8');
+const stageHtml = fs.readFileSync(path.join(ROOT, 'site', 'stage.html'), 'utf8');
+const stageScript = fs.readFileSync(path.join(ROOT, 'site', 'js', 'stage.js'), 'utf8');
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+const stageIds = [...stageHtml.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
 
 test('no duplicate element ids on the admin page', () => {
   const seen = new Set();
@@ -93,4 +96,55 @@ test('untrusted names are escaped before they reach innerHTML', () => {
       `${field} goes into innerHTML and must be escaped`,
     );
   }
+});
+
+// The staging block and the manual-upload fold are mutually exclusive: the expanded upload form
+// pushes the staging trees below the fold, so an operator watching the queue table has to scroll
+// past two trees. This is the 2026-10-15 arrangement the user asked for by hand, and it is the kind
+// of thing a later edit silently breaks (reveal both, forget the toggle, re-show on refresh).
+test('the manual-upload fold hides the staging block while it is open', () => {
+  assert.match(html, /id="manual"/, 'the upload fold is missing');
+  assert.ok(html.includes('id="todo"'), 'the staging block is missing');
+  // Hiding must be wired to the fold's own state, not to a second button somebody has to click.
+  assert.match(script, /addEventListener\('toggle'/, 'the fold must drive the block through its toggle event');
+  assert.match(script, /manualOpen/, 'the fold state must be remembered, so a refresh does not resurrect the block');
+  // ...and the reveal path must go through the same helper, or the two disagree about who is hidden.
+  // The helper has to be the only place that decides, so a force-reveal would defeat the exclusion.
+  // `$` is escaped so the pattern reads as the literal path lookup it is checking for.
+  const reveal = new RegExp("upload'\\)\\.hidden = false;\\n {4}showStaging\\(\\);");
+  assert.ok(reveal.test(script), 'the gate must reveal the upload area and then let showStaging() decide about the staging block');
+  assert.ok(!/\$\('todo'\)\.hidden = false/.test(script), 'the staging block must not be force-revealed');
+  assert.ok(!/\$\('todo'\)\.hidden = false/.test(script), 'the staging block must not be force-revealed');
+  // The 401 path hides both again, or a rejected key leaves the trees on screen.
+  assert.match(script, /\$\('todo'\)\.hidden = true;/, 'the rejected-key path must hide the staging block');
+});
+
+// The staging view is reachable without the upload form: that page answers "what is in staging"
+// for an agent, and it must be a real page, not a query string off the console.
+test('a standalone staging page exists and is linked from the console', () => {
+  assert.match(html, /href="\.\/stage"/, 'the console must link to the staging page');
+  assert.match(stageHtml, /id="gate-form"/, 'the staging page keeps the same password gate');
+  // No upload controls: the moment this page can act, it is a second console to keep in sync.
+  assert.ok(!/id="files"/.test(stageHtml), 'the staging page must not offer a file picker');
+  assert.ok(!/id="go"/.test(stageHtml), 'the staging page must not upload');
+  assert.ok(!/id="sync-mirrors"/.test(stageHtml), 'the staging page must not trigger mirrors');
+  // ...and it must stay read-only in the same way the console is: no delete path on the page.
+  assert.ok(!/upload\/staging\?id=/.test(stageScript), 'the staging page must not call the staging delete endpoint');
+  assert.ok(!/['"`]\/api\/cdn\/upload\/remove/.test(stageScript), 'the staging page must not call the published-remove endpoint');
+  // The key never survives the tab: same rule as the console.
+  assert.match(stageScript, /sessionStorage/, 'the staging page must keep the key in sessionStorage');
+  assert.ok(
+    !/localStorage/.test(stageScript),
+    'the staging page must not keep the key in localStorage',
+  );
+  // Every id its script looks up must exist on the page.
+  const looked = [...stageScript.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]);
+  const missing = [...new Set(looked)].filter((id) => !stageIds.includes(id));
+  assert.deepEqual(missing, [], `the staging script looks up ids that are not on the page: ${missing.join(', ')}`);
+});
+
+test('no duplicate element ids on the staging page', () => {
+  const seen = new Set();
+  const duplicates = stageIds.filter((id) => (seen.has(id) ? true : (seen.add(id), false)));
+  assert.deepEqual(duplicates, [], `duplicate ids: ${duplicates.join(', ')}`);
 });

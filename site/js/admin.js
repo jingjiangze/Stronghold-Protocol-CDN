@@ -34,6 +34,34 @@
   const $ = (id) => document.getElementById(id);
   const key = () => sessionStorage.getItem(KEY_STORE) || '';
 
+  // 手动上传展开 ⇄ 暂存区隐藏。
+  //
+  // 为什么让它俩互斥：展开的上传页里已经有「上传只写暂存区」的说明和一整套按钮，而暂存区那一块
+  // 同屏出现时，人看到的是两棵大树夹一个表单，滚三屏才回到按钮上；更实际的麻烦是上传中途要
+  // 一直盯着 queue-table，那棵树在下面一直在变。互斥之后一屏只干一件事。
+  // 反过来也一样：想看暂存区时把「手动上传」收起来，否则页面仍然被表单占着。
+  let manualOpen = false;
+  const showStaging = () => {
+    const todo = $('todo');
+    if (!todo) return;
+    // 只在互斥真起作用（暂存区因互斥而隐藏）时才把 hidden 让回互斥逻辑管；口令没过时它俩也都是
+    // hidden，那时不能因为一次 toggle 就把没鉴权的暂存区放出来。
+    todo.hidden = manualOpen ? true : $('upload').hidden;
+  };
+  const wireManualToggle = () => {
+    const manual = $('manual');
+    if (!manual) return;
+    manualOpen = manual.open;
+    manual.addEventListener('toggle', () => {
+      const wasOpen = manualOpen;
+      manualOpen = manual.open;
+      showStaging();
+      // 收起就要把树放回来给人看了。上面那些 poll 在互斥期间是跳过的，所以此刻这棵树可能已经旧了
+      // 好几分钟 —— 收起这一刻补拉一次，正是「要看了」的时刻，不是白烧请求。
+      if (wasOpen && !manualOpen) refresh();
+    });
+  };
+
   const fmt = (n) => {
     const x = Number(n);
     if (!Number.isFinite(x)) return '—';
@@ -412,6 +440,10 @@
   }
 
   async function refresh() {
+    // 暂存区因互斥而隐藏时，这棵树没有人看 —— 继续每 2 分钟拉一次全量状态（列一遍暂存 + 读每个
+    // claim.json + 列撤销）是白烧请求，而且上传途中那两分钟正好在给人看 queue-table。所以
+    // 「不可见就不拉」。手动点「刷新状态」仍然强制拉一次：它就在上传表单里，人点它就是要看结果。
+    if ($('todo').hidden && !manualOpen) return;
     // 每 2 分钟的 setInterval 也调这里。fetch 的网络失败会变成未捕获的 Promise 拒绝
     // （2026-10-12 实测：断网时整页弹错、按钮看着像失效），所以要在这里收住。
     let status, doc;
@@ -429,8 +461,7 @@
       $('todo').hidden = true;
       setNav('未进入');
       return;
-    }
-    if (!doc || doc.ok !== true) {
+    }    if (!doc || doc.ok !== true) {
       setNav('状态读不到');
       line(`读状态失败：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
       return;
@@ -571,6 +602,7 @@
 
   $('copy-agent').addEventListener('click', copyAgentDoc);
   setCopyEnabled();
+  wireManualToggle();
 
   $('gate-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -591,7 +623,7 @@
     }
     $('gate-msg').textContent = '';
     $('upload').hidden = false;
-    $('todo').hidden = false;
+    showStaging();
     renderStatus(doc);
     setNav('在线');
     setCopyEnabled();
@@ -608,5 +640,7 @@
 
   // 已经开着标签页的人不用重打口令：sessionStorage 里有就先验一次。
   if (key()) { $('key').value = key(); $('gate-form').requestSubmit(); }
+  // 2 分钟一次。里面第一行就是「不可见就不拉」：暂存区被互斥藏起来时这棵树没人看，
+  // 拉回来也只是让隐藏的 DOM 更新（上传途中那两分钟尤其白烧）。
   setInterval(() => { if (!$('upload').hidden) refresh(); }, 120000);
 })();

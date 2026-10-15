@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex" />
+  <meta name="description" content="素材 CDN 暂存区：只读、精简、给 agent 和脚本读的一份清单（卫戍协议：盟约）" />
+  <title>暂存区 · 素材 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+<body data-site-base="https://downcdn.jiangjiangze.icu">
+
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>
+        素材 CDN <b>暂存区</b>
+        <small>STAGING · READ ONLY</small>
+      </div>
+    </div>
+    <nav class="navigation">
+      <a href="./admin">上传后台</a>
+      <a href="./sync-chain">镜像链路</a>
+      <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/tree.json" target="_blank" rel="noopener">全量文件树</a>
+    </nav>
+    <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">未进入</span></div>
+  </div>
+</div>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <h1>暂存区里有什么</h1>
+      <p class="hero-description">
+        只回答这一个问题：哪些字节已经上传、等着发布轮搬上线。<b>没有上传表单、没有发布历史、
+        没有镜像按钮</b>，所以这一页轻，给 agent 和脚本读。
+      </p>
+    </div>
+    <div class="quick-stats" id="quota">
+      <span>组数 <strong id="q-groups">…</strong></span>
+      <span>等发布 <strong id="q-pending">…</strong></span>
+      <span>只传了字节 <strong id="q-awaiting">…</strong></span>
+      <span>合计 <strong id="q-bytes">…</strong></span>
+    </div>
+  </section>
+
+  <section class="block" id="gate">
+    <div class="block__head">
+      <span class="block__num">0</span>
+      <span class="block__title">口令</span>
+      <span class="block__who">和 /admin 是同一个口令，同样只活在这个标签页里</span>
+    </div>
+    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px;flex-wrap:wrap">
+      <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
+      <button class="button button-primary" type="submit" id="gate-go">读取暂存区</button>
+      <span class="section-note" id="gate-msg"></span>
+    </form>
+    <p class="section-note" style="margin:10px 0 0">
+      不想用口令也可以命令行取：<code class="inline">node tools/agent-upload.mjs --list</code>
+      （要带 <code class="inline">--key=</code> 与 <code class="inline">--host=</code>，见
+      <code class="inline">GET /api/cdn/upload/stage</code> 返回里的说明）。这个口令能读上传方的键名与来源，
+      所以这一页和后台一样不接受跨源调用。
+    </p>
+  </section>
+
+  <section class="block" id="stage" hidden>
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">暂存区清单</span>
+      <span class="block__who" id="stage-who">读的是桶里的事实，不是缓存</span>
+      <button class="button button-secondary" type="button" id="reload">重新读取</button>
+    </div>
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="筛选，例如 sp-four 或 .skel" autocomplete="off" />
+      <span class="section-status" id="status">读取中…</span>
+    </div>
+    <div class="table-wrap">
+      <table id="rows">
+        <thead>
+          <tr><th>状态</th><th>目标键</th><th>大小</th><th>sha256</th><th>来源</th><th>说明</th></tr>
+        </thead>
+        <tbody><tr><td colspan="6" class="muted">还没读取</td></tr></tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin:10px 0 0">
+      这里的每一行都是<b>还没上线</b>的字节：暂存区没有任何清单引用，删掉不影响任何玩家。
+      能删它的只有 agent 通道（<code class="inline">--purge=&lt;上传 id&gt;</code>），
+      因为这个口令一次误点就会拿掉字节，而这一页的用途是「看清楚」。
+    </p>
+  </section>
+</main>
+
+<script src="./js/stage.js" defer></script>
+</body>
+</html>
