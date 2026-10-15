@@ -119,8 +119,8 @@
         <h4>链 C · R2 → git 树 → 各 git 镜像</h4>
         <ul>
           <li><code class="inline">git-art-sync.yml</code> 把 R2 已上线后台上传的字节补提交进孤儿分支 <code class="inline">assets-raw</code>（一天 4 窗 + 链式触发）。</li>
-          <li>① <code class="inline">openi-mirror.yml</code> 把该分支 <code class="inline">git push</code> 到 OpenI（每天 4 次）。</li>
-          <li>② <code class="inline">dataset-tree.yml</code> 把整棵树分批推魔搭数据集 <code class="inline">releases/v1-trial/**</code>（每次运行最多 6 轮 × 400 MiB）。</li>
+          <li>① <code class="inline">openi-mirror.yml</code> 把该分支按<b>文件级增量</b>推到 OpenI（每天 4 次，单片约 60 MiB；OpenI 平台偶发连接超时，靠重试与多次运行追平）。</li>
+          <li>② <code class="inline">dataset-tree.yml</code> 把整棵树分批推魔搭数据集 <code class="inline">releases/v1-trial/**</code>。<b>⚠ 2026-10-14 起受阻</b>：新树 1.78 GB 超数据集 1.6 GB 仓库上限被 pre-receive 硬拒（连拒 18 次），master 冻结在旧提交，处置待定。</li>
           <li>③ ghfast / jsDelivr / gitcdn-own 读 GitHub 的 <code class="inline">assets-raw</code> / <code class="inline">main</code> 分支（拉取型，自动跟随，无需推送）。</li>
         </ul>
       </div>
@@ -136,7 +136,7 @@
     </div>
 
     <div class="notice" style="margin-top:16px">
-      <span><b>镜像源清单（2026-10-15 实测）：</b>① R2 桶（三域名，字节真源）；② 魔搭数据集 <code class="inline">jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/</code>（容器边缘默认跳转目标，覆盖约 54.5%，缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%，正由 dataset-tree 链持续补齐）；③ OpenI 启智（<code class="inline">openi.pcl.ac.cn/.../raw/branch/assets-raw</code>，最快但 CORS 写死第三方域不可用，仅 <code class="inline">?sp_source=openi</code> 点名可达）；④ ghfast / jsDelivr（GitHub 代理，可用率低）；⑤ gitcdn-own（自有中转 Worker）；⑥ spages（Pages）。</span>
+      <span><b>镜像源清单（2026-10-15 实测）：</b>① R2 桶（三域名，字节真源）；② 魔搭数据集 <code class="inline">jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/</code>（容器边缘默认跳转目标，覆盖约 54.5%，缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%；<b>2026-10-14 起因 1.6 GB 上限冻结、不再补齐</b>，缺口需另行处置）；③ OpenI 启智（<code class="inline">openi.pcl.ac.cn/.../raw/branch/assets-raw</code>，最快但 CORS 写死第三方域不可用，仅 <code class="inline">?sp_source=openi</code> 点名可达）；④ ghfast / jsDelivr（GitHub 代理，可用率低）；⑤ gitcdn-own（自有中转 Worker）；⑥ spages（Pages）。</span>
     </div>
   </section>
 
@@ -155,7 +155,7 @@
           <tr><td class="mono">B 接口重发</td><td class="mono">sync.mjs --write --interface-only</td><td class="mono">发布轮末尾</td><td>几十秒</td></tr>
           <tr><td class="mono">C git 中枢</td><td class="mono">git-art-sync.yml</td><td class="mono">链式触发 / 一天 4 窗</td><td>2–25 分钟（视积压）</td></tr>
           <tr><td class="mono">C→OpenI</td><td class="mono">openi-mirror.yml</td><td class="mono">每天 4 次</td><td>幂等 git push</td></tr>
-          <tr><td class="mono">C→魔搭数据集</td><td class="mono">dataset-tree.yml</td><td class="mono">链式触发 / 定时</td><td>每次最多 6 轮 × 400 MiB</td></tr>
+          <tr><td class="mono">C→魔搭数据集</td><td class="mono">dataset-tree.yml</td><td class="mono">链式触发 / 定时</td><td><b>受阻</b>：1.78 GB 超 1.6 GB 上限，连拒 18 次</td></tr>
           <tr><td class="mono">C→GitHub 代理</td><td class="mono">ghfast / jsDelivr / gitcdn-own</td><td class="mono">拉取型，自动跟随</td><td>读 assets-raw / main，无需推送</td></tr>
           <tr><td class="mono">D 排名</td><td class="mono">rank.yml</td><td class="mono">每天 4 窗</td><td>Globalping 实测 → rank.json</td></tr>
           <tr><td class="mono">D 重测</td><td class="mono">network-measure.yml</td><td class="mono">每周一</td><td>重测并触发 rank</td></tr>
@@ -233,7 +233,10 @@ curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json | head</pre>
     <p class="block__lead">
       旧方案 <code class="inline">mirror-modelscope.yml</code> 把<b>整树推魔搭创空间 cdn 分支</b>，
       被平台 <b>1.6 GB 仓库上限硬拒</b>（实测素材树 2.36 GB），<b>已停用</b>。素材树现改走
-      <b>魔搭数据集</b> <code class="inline">releases/v1-trial</code>（<code class="inline">dataset-tree.yml</code> 分批推送，每次最多 6 轮 × 400 MiB）。
+      <b>魔搭数据集</b> <code class="inline">releases/v1-trial</code>（<code class="inline">dataset-tree.yml</code> 分批推送）。
+      <b>⚠ 数据集同样撞上限（2026-10-14 起）</b>：素材树累积到 1.78 GB 后，数据集 master 推送被 pre-receive 以
+      <code class="inline">repo size(1784479944) greater than max repo size(1600000000)</code> 连拒 18 次，
+      数据集内容冻结在旧提交（1.6 GB 上限是平台对仓库与数据集同口径的限制，数据集并未豁免）。
       任何新文档 / 脚本都不要再引用创空间 cdn 分支同步——它不会成功，也没有回退计划。
     </p>
   </section>

@@ -49,8 +49,8 @@
 **链 C · R2 → git 树 → 各 git 镜像（`git-art-sync.yml` 为中枢）**
 
 - `git-art-sync.yml` 把 R2 已上线后台上传的字节补提交进孤儿分支 `assets-raw`（一天 4 窗 + 链式触发）。
-- ① `openi-mirror.yml` 把该分支 `git push` 到 OpenI（每天 4 次）。
-- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`（每次运行最多 6 轮 × 400 MiB）。
+- ① `openi-mirror.yml` 把该分支按**文件级增量**推到 OpenI（每天 4 次，单片约 60 MiB；OpenI 平台偶发连接超时，靠重试与多次运行追平）。
+- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`。**⚠ 2026-10-14 起受阻**：新树 1.78 GB 超数据集 1.6 GB 仓库上限被 pre-receive 硬拒（连拒 18 次），master 冻结在旧提交，处置待定。
 - ③ ghfast / jsDelivr / gitcdn-own 读 GitHub 的 `assets-raw` / `main` 分支（拉取型，自动跟随，无需推送）。
 
 **链 D · 排名与测速（独立支线）**
@@ -63,7 +63,7 @@
 **镜像源清单（2026-10-15 实测）**
 
 - ① R2 桶（三域名，字节真源）；
-- ② 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`（容器边缘默认跳转目标，覆盖约 54.5%，缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%，正由 dataset-tree 链持续补齐）；
+- ② 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`（容器边缘默认跳转目标，覆盖约 54.5%，缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%；**2026-10-14 起因 1.6 GB 上限冻结、不再补齐**，缺口需另行处置）；
 - ③ OpenI 启智（`openi.pcl.ac.cn/.../raw/branch/assets-raw`，最快但 CORS 写死第三方域不可用，仅 `?sp_source=openi` 点名可达）；
 - ④ ghfast / jsDelivr（GitHub 代理，可用率低）；
 - ⑤ gitcdn-own（自有中转 Worker）；
@@ -78,7 +78,7 @@
 | B 接口重发 | `sync.mjs --write --interface-only` | 发布轮末尾 | 几十秒 |
 | C git 中枢 | `git-art-sync.yml` | 链式触发 / 一天 4 窗 | 2–25 分钟（视积压） |
 | C→OpenI | `openi-mirror.yml` | 每天 4 次 | 幂等 git push |
-| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / 定时 | 每次最多 6 轮 × 400 MiB |
+| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / 定时 | **受阻**：1.78 GB 超 1.6 GB 上限，连拒 18 次 |
 | C→GitHub 代理 | ghfast / jsDelivr / gitcdn-own | 拉取型，自动跟随 | 读 assets-raw / main，无需推送 |
 | D 排名 | `rank.yml` | 每天 4 窗 | Globalping 实测 → rank.json |
 | D 重测 | `network-measure.yml` | 每周一 | 重测并触发 rank |
