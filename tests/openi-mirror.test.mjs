@@ -63,8 +63,16 @@ test('listTree on this repo returns rows with a real size', async () => {
   assert.ok(rows.some((r) => r.size > 0), 'expected at least one non-empty file');
 });
 
-test('remoteHead returns null instead of throwing when the remote is unusable', async () => {
-  assert.equal(await remoteHead('definitely-not-a-remote', 'master'), null);
+// ⚠ 2026-10-15 改判据（run 38633412096）：这条测试原本断言「远端不可用时返回 null」，
+// 而那正是事故的形状 —— 一次慢到 300 秒的 ls-remote 被 catch 成 null，下游把「没探到」
+// 当成「分支不存在」，于是零推送、却打印 "advanced to …, 0 commit(s) left"。
+// 现在 null 只表示「ls-remote 成功、但远端确实没有这个分支」；探测失败必须抛错。
+test('remoteHead throws when the remote cannot be reached, instead of reporting an absent branch', async () => {
+  await assert.rejects(() => remoteHead('definitely-not-a-remote', 'master'));
+});
+
+test('remoteHead returns null only when the branch genuinely is not there', async () => {
+  assert.equal(await remoteHead(process.cwd(), 'no-such-branch-here'), null);
 });
 
 // The 413 that forced batching: one push of the whole 1,807 MiB tree was rejected outright. These

@@ -56,18 +56,30 @@ export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 200;
 
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {
+  const { timeoutMs = 0, ...spawnOpts } = opts;
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+    const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...spawnOpts });
     let out = '';
     let err = '';
     child.stdout.on('data', (d) => { out += d; });
     child.stderr.on('data', (d) => { err += d; });
     child.on('error', reject);
-    child.on('close', (code) => (
+    // 可选超时：remoteHead 用它划清「分支不存在」与「探测卡死」。默认 0 = 不设（push
+    // 本身可能 legitimately 跑几十分钟，不能一刀切）。
+    let timer = null;
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        child.kill('SIGKILL');
+        reject(new Error(`${cmd} ${args.join(' ')} → 超时 ${timeoutMs}ms 未返回`));
+      }, timeoutMs);
+      timer.unref();
+    }
+    child.on('close', (code) => {
+      if (timer) clearTimeout(timer);
       code === 0
         ? resolve(out)
-        : reject(new Error(`${cmd} ${args.join(' ')} → exit ${code}\n${(err || out).trim().slice(0, 2000)}`))
-    ));
+        : reject(new Error(`${cmd} ${args.join(' ')} → exit ${code}\n${(err || out).trim().slice(0, 2000)}`));
+    });
   });
 }
 
@@ -104,15 +116,27 @@ export function totalBytes(rows) {
   return rows.filter((r) => r.type === 'blob').reduce((s, r) => s + r.size, 0);
 }
 
-/** The remote's current commit for `branch`, or null when the branch does not exist. */
-export async function remoteHead(remote, branch) {
-  try {
-    const out = await run('git', ['ls-remote', remote, `refs/heads/${branch}`]);
-    const m = out.trim().split(/\s+/)[0];
-    return m || null;
-  } catch {
-    return null;
-  }
+/**
+ * The remote's current commit for `branch`.
+ *
+ * ⚠ 2026-10-15 实测（run 38633412096）：这里的 `catch → null` 曾经把一个**已经存在的分支**
+ * 报成 `(absent)` —— 那次 `ls-remote` 第一次耗时 300 秒（20:37:47→20:42:47）才返回，
+ * 而紧接着的第二次调用 2 秒就拿到了 `1950626623`。也就是说远端明明在，只是第一次慢。
+ * 而下层 `main()` 把 `before === null` 当作「全新分支」，于是 replay 列表为空、
+ * 一条都没推，却打印 "advanced to …, 0 commit(s) left" —— 一次彻底的假成功。
+ *
+ * 所以现在区分两种「拿不到」：
+ *   - 分支确实不存在 → `null`（`ls-remote` 成功但输出为空）
+ *   - 命令本身失败 / 超时 → 抛错，绝不退化成 null
+ * 宁可让作业红一次，也不要把「没探到」伪装成「不用推」。
+ *
+ * 超时是这里的关键：默认无超时时 git 会挂到 runner 的 90 分钟上限，
+ * 而这段等待既推不动任何字节，还会把「分支不存在」的错误结论带给后面所有逻辑。
+ */
+export async function remoteHead(remote, branch, { timeoutMs = 120000 } = {}) {
+  const out = await run('git', ['ls-remote', remote, `refs/heads/${branch}`], { timeoutMs });
+  const m = out.trim().split(/\s+/)[0];
+  return m || null;
 }
 
 /** Resolve a ref in this repository to a commit sha. */
@@ -240,14 +264,22 @@ export async function pushCommitInSlices(cwd, remote, branch, commit, budgetByte
   const g = (...a) => execFileSync('git', a, { cwd: tmp, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
   try {
     const url = (await run('git', ['remote', 'get-url', remote], { cwd })).trim();
-    execFileSync('git', ['clone', '--depth', '1', '--no-checkout', '--branch', branch, '--quiet', url, 'w'],
+    // `--branch` 在远端还没有这个分支时会直接失败，而「分支不存在」正是现在要支持的入口
+    // （整树首推）。所以先不带 --branch 克隆（拿远端默认分支或空仓），再在克隆里按需建分支。
+    execFileSync('git', ['clone', '--depth', '1', '--no-checkout', '--quiet', url, 'w'],
       { cwd: tmp, stdio: ['ignore', 'ignore', 'pipe'] });
     const w = path.join(tmp, 'w');
     const gw = (...a) => execFileSync('git', a, { cwd: w, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
-    gw('read-tree', 'HEAD');   // 不灌 index 的话，第一个 commit 会把远端已有内容全删掉
+    // 远端若已有该分支，切到它并把 index 灌满（不灌的话第一个 commit 会把远端内容全删掉）；
+    // 没有就从零开始 —— `update-ref` 会在首次 flush 时把分支建出来。
+    const hasBranch = gw('ls-remote', '--heads', 'origin', branch).trim().length > 0;
+    if (hasBranch) {
+      gw('fetch', '--depth', '1', 'origin', `${branch}:refs/heads/${branch}`);
+      gw('symbolic-ref', 'HEAD', `refs/heads/${branch}`);
+      gw('read-tree', 'HEAD');
+    }
 
     // 该 commit 相对当前远端 HEAD 新增/变更的文件（字节从 cwd 的对象库读，不经网络）
-    const base = gw('rev-parse', 'HEAD');
     const diff = execFileSync('git', ['diff-tree', '-r', '--no-commit-id', '--root', '--diff-filter=ACM', commit],
       { cwd, encoding: 'utf8', maxBuffer: 1 << 28 });
     const rows = [];
@@ -281,12 +313,15 @@ export async function pushCommitInSlices(cwd, remote, branch, commit, budgetByte
         });
       }
       const tree = gw('write-tree');
-      const parent = gw('rev-parse', 'HEAD');
-      if (tree === gw('rev-parse', 'HEAD^{tree}')) { slice = []; sliceBytes = 0; return; }
+      // 远端没有该分支时 HEAD 是无提交的空 ref，`rev-parse HEAD` 会直接报错 —— 首推没有父提交。
+      const parent = hasBranch ? gw('rev-parse', 'HEAD') : null;
+      if (hasBranch && tree === gw('rev-parse', 'HEAD^{tree}')) { slice = []; sliceBytes = 0; return; }
       const c = gw('-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.github.com',
-        '-c', 'commit.gpgsign=false', 'commit-tree', tree, '-p', parent,
+        '-c', 'commit.gpgsign=false', 'commit-tree', tree,
+        ...(parent ? ['-p', parent] : []),
         '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
       gw('update-ref', 'refs/heads/' + branch, c);
+      if (!hasBranch) gw('symbolic-ref', 'HEAD', `refs/heads/${branch}`);
       await run('git', ['push', '--quiet', 'origin', `refs/heads/${branch}:refs/heads/${branch}`], { cwd: w });
       pushed += slice.length;
       console.log(`[openi]   已推 ${pushed}/${todo.length} 份（${(sliceBytes / 1048576).toFixed(1)} MiB）`);
@@ -358,6 +393,23 @@ export async function main(argv = process.argv) {
   // commits keeps every POST small, and each one after the first is a delta against what the
   // remote just received.
   const pending = await commitsSince(cwd, before, commit);
+  // ⚠ 2026-10-15 实测（run 38633412096）：`before` 为 null 时 `commitsSince` 返回空数组
+  // ⇒ 循环一次都不跑、一个字节都没推，却一路走到下面的 "advanced to …" 分支打印成功。
+  // 那次 null 还是假的（ls-remote 只是慢），但即便分支真不存在，也必须先**真的推一次**：
+  // 「远端没有该分支」恰恰意味着要推整棵树，而不是什么都不做。
+  // 所以这里显式分流，且空 replay 只在「远端已经就是这个 commit」时才算完成。
+  if (!before) {
+    console.log(`[openi] 远端无 ${branch} —— 走整树（文件级分批，每次 ≤ ${budgetBytes / 1048576} MiB）`);
+    const pushed = await pushCommitInSlices(cwd, remote, branch, commit, budgetBytes);
+    const afterFresh = await remoteHead(remote, branch);
+    if (afterFresh === commit) {
+      console.log(`[openi] pushed → ${branch} @ ${commit.slice(0, 10)}`);
+      return { commit, files, bytes, pushed: true, skipped: false, partial: false, filesPushed: pushed };
+    }
+    console.log(`[openi] 推进到 ${String(afterFresh).slice(0, 10)}，未追平 ${commit.slice(0, 10)} —— 下次运行继续`);
+    return { commit, files, bytes, pushed: true, skipped: false, partial: true, at: afterFresh, filesPushed: pushed };
+  }
+
   const sizes = {};
   for (const c of pending) sizes[c] = await commitAddedBytes(cwd, c);
   const batches = planBatches(pending, sizes, budgetBytes);
