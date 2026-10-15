@@ -226,11 +226,15 @@ test('planSlices on nothing pushes nothing', () => {
 test('the default budget is sized for the measured incremental pack, not the old diff bytes', () => {
   // 300 files measured 3.1 MiB of pack. The old default of 200 MiB was calibrated on diff bytes,
   // which under-report a push by 8–30x — that miscalibration is what 413'd run 38671002854.
-  // 60 MiB is where it landed after run 38683553998: 20 MiB/片 cost 41 s per round trip on OpenI
-  // (almost all RTT), so a 20,000-file gap needed 3.8 h and blew the 90-minute timeout. 60 MiB is
-  // still an order of magnitude below the 413 boundary and cuts the round trips to a third.
-  assert.ok(DEFAULT_BUDGET_MIB <= 96, `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice`);
+  //
+  // The upper bound is the interesting part. Bigger is NOT better on this link: locally a 60 MiB
+  // slice pushes faster than twelve 5 MiB ones, but OpenI charges per-file ~7x more when the
+  // slice is 60 MiB (1.40 s/file) than 20 MiB (0.20 s/file) — run 38687681729 spent its whole
+  // 90-minute budget on ~5 slices and got cancelled. So the budget has to stay near the small end
+  // where RTT dominates and the server-side per-byte penalty is still flat; 32 MiB is the line.
   assert.ok(DEFAULT_BUDGET_MIB > 0);
+  assert.ok(DEFAULT_BUDGET_MIB <= 32,
+    `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice and into OpenI's per-byte penalty`);
 });
 
 // ─── syncByFiles 离线集成 ────────────────────────────────────────────────────────

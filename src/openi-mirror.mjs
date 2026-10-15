@@ -52,17 +52,24 @@ export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
 /**
  * Ceiling for one push, in MiB, measured as the slice's **blob bytes**.
  *
- * ⚠ 2026-10-15 重新校准。旧注释写的是「232 MiB 能过、641 MiB 413」，那个口径是 diff 字节，
- * 而一次 push 的真实成本是 pack 体积，含所有缺失祖先 blob 与沿途全部 tree 对象 —— 实测低估
- * 8–30 倍（60.8 MiB diff → 566 MB pack → 413）。所以「232 MiB 能过」从来不是真的能过。
+ * ⚠ 2026-10-15 三次校准，别再把 diff 字节当预算。旧注释写的是「232 MiB 能过、641 MiB 413」，
+ * 那个口径是 diff 字节，而一次 push 的真实成本是 pack 体积，含所有缺失祖先 blob 与沿途全部
+ * tree 对象 —— 实测低估 8–30 倍（60.8 MiB diff → 566 MB pack → 413）。「232 MiB 能过」从来
+ * 不是真的能过。
  *
  * 新口径下增量同步的实测：300 个文件 / 3.1 MiB pack，稳定两个数量级的安全余量。
  *
- * 60 MiB 是 run 38683553998 之后的取值：20 MiB/片在 OpenI 上实测 41s/片（几乎全是 RTT，
- * 本地同一步只要 0.5s），20,000 份的差集要跑 3.8 小时，超过 workflow 的 90 分钟 timeout。
- * 而 60 MiB 的增量 pack 仍比 413 边界低一个数量级，round trip 数降到 1/3。
+ * 为什么停在 20 而不是更大：本地 bare repo 上大片确实更快（60 MiB 一片 11s vs 5 MiB 十二片
+ * 14s），但 OpenI 服务端对单次 push 的字节量有强非线性惩罚 —— 实测每文件成本：
+ *   20 MiB/片 ≈ 200 文件 / 41s  → 0.20 s/文件
+ *   60 MiB/片 ≈ 600 文件 / 840s → 1.40 s/文件（贵 7 倍）
+ * run 38687681729 用 60 MiB 跑了 90 分钟只推完 ~5 片就被 timeout 取消。所以大预算在这条
+ * 链路上是负优化：RTT 只是常数项，服务端处理才是随体积增长的那一项。
+ *
+ * 20 MiB 仍推不完 20,000 份（约 2.3 小时 > 90 分钟 timeout），但 `syncByFiles` 幂等、
+ * 每次从远端当前树续算差集，所以多轮触发会收敛 —— 这正是它该有的形状。
  */
-export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 60;
+export const DEFAULT_BUDGET_MIB = Number(process.env.OPENI_BUDGET_MIB) || 20;
 
 /** Promise wrapper around a child process that fails loudly, with the tool's own stderr. */
 export function run(cmd, args, opts = {}) {
