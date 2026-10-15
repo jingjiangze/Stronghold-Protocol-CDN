@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
 
-<body data-cdn-base="https://weishucdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu" data-repo="jingjiangze/Stronghold-Protocol-CDN">
+<body data-cdn-base="https://speedcdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu" data-repo="jingjiangze/Stronghold-Protocol-CDN">
 
 <div class="topbar">
   <div class="container topbar-inner">
@@ -33,6 +33,7 @@
       <a href="#asset-cdn">素材 CDN 对账</a>
       <a href="#mirror-selection">多源自动选源</a>
       <a href="#server-deploy">服务器部署</a>
+      <a href="#p2p">异地联机</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -211,7 +212,7 @@
           </tr>
           <tr>
             <td>本项目 fork</td>
-            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://weishucdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。<b>注意：这个开关是本项目 fork 加的，上游官方包没有</b>——上游的 <code class="inline">-lite.zip</code> 里 grep 不到它，所以下载 B 走的是改清单而不是设变量。</td>
+            <td>不需要代理，设环境变量即可：<code class="inline">SP_ASSET_CDN=https://speedcdn.jiangjiangze.icu/</code>（服务端 <code class="inline">server/http/static.js</code> 会改写三张清单；该值启动时读一次，改完要重启）。<b>注意：这个开关是本项目 fork 加的，上游官方包没有</b>——上游的 <code class="inline">-lite.zip</code> 里 grep 不到它，所以下载 B 走的是改清单而不是设变量。</td>
           </tr>
           <tr>
             <td>nginx 反代</td>
@@ -219,8 +220,8 @@
 <pre class="code" style="margin:0">location = /data/assets.json {
   proxy_pass http://127.0.0.1:3001;
   proxy_set_header Accept-Encoding "";   <i># 必须：否则拿到的是 gzip，替换不生效</i>
-  sub_filter '"/assets/'  '"<b>https://weishucdn.jiangjiangze.icu</b>/assets/';
-  sub_filter '"/fonts/'   '"<b>https://weishucdn.jiangjiangze.icu</b>/fonts/';
+  sub_filter '"/assets/'  '"<b>https://speedcdn.jiangjiangze.icu</b>/assets/';
+  sub_filter '"/fonts/'   '"<b>https://speedcdn.jiangjiangze.icu</b>/fonts/';
   sub_filter_once off;
 }</pre>
               <div class="section-note" style="margin-top:8px">三张清单各写一条 <code class="inline">location</code>（assets / local-assets / emotes）。</div>
@@ -249,10 +250,10 @@
     </div>
 
 <pre class="code"><i># 清单里已经是绝对 CDN 地址，直接喂给客户端</i>
-curl "<b>https://weishucdn.jiangjiangze.icu</b>/data/assets.json"
+curl "<b>https://speedcdn.jiangjiangze.icu</b>/data/assets.json"
 
 <i># 逐文件校验用这张表（size + sha256）</i>
-curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
+curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   </section>
 
   <!-- ============================ 参考区 ============================ -->
@@ -267,7 +268,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <tbody>
           <tr>
             <td>基址</td>
-            <td class="mono"><span data-base>https://weishucdn.jiangjiangze.icu</span>/</td>
+            <td class="mono"><span data-base>https://speedcdn.jiangjiangze.icu</span>/</td>
             <td>与上游部署树里的 <code class="inline">assets/…</code> 完全一致，直接拼即可</td>
           </tr>
           <tr>
@@ -384,7 +385,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
     <p class="section-note" style="margin-bottom:12px">
       整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
-      再套社区镜像前缀加速。
+      再套社区镜像前缀加速。<b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），
+      对象存储不再存包 —— 同一批 100 MB 的 zip 只保留一份权威副本，避免两处各自漂移。
     </p>
     <div class="table-wrap">
       <table id="packs">
@@ -423,22 +425,8 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/ws-link-compression.md">
-        <div class="card__title">WS 链路压缩（当前已上线）</div>
-        <div class="card__meta"><span>白名单 + 窗口 12 / 广播漏压的真 bug / 观战节流 / 热帧去常量</span></div>
-        <div class="card__stats">
-          <span>每席位 <b>2,048 → 505 B/s</b></span>
-          <span>10 Mbps 带 <b>2,475 人</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/ws-link-compression-next.md">
-        <div class="card__title">WS 链路压缩（下一轮）</div>
-        <div class="card__meta"><span>待执行三步 + 准入条件 / 验收判据 / 退路</span></div>
-        <div class="card__stats">
-          <span>bonds 定制 <b>≈24%</b></span>
-          <span>delta 合计 <b>2.05×</b></span>
-        </div>
-      </a>
+      
+      
     </div>
   </section>
 
@@ -542,6 +530,37 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
+  <section class="section" id="p2p">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · P2P PLAY</div><h2>openp2p 异地联机</h2></div>
+      <span class="section-status">阿里云 ECS · 经 Cloudflare 隧道 · 玩家无需公网 IP</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      玩家分散在各自家里、没有公网 IP 时怎么联机：房主把本地 <b>3000 端口</b>映射出去，
+      每个玩家在本地访问 <code class="inline">127.0.0.1:3000</code> 即等同于访问房主机房里的同一端口。
+      平台跑在阿里云 ECS 上，对外经 Cloudflare 隧道暴露；客户端只要能<b>出站 UDP</b> 即可。
+      有 p2p 直连能力时数据<b>不经过服务器</b>（ECS 默认 <code class="inline">ShareBandwidth=0</code>，只走信令）。
+    </p>
+    <div class="cards">
+      <a class="card" href="./docs/openp2p-platform.md">
+        <div class="card__title">联机平台说明（含 API）</div>
+        <div class="card__meta"><span>开房 / 加入 / 收房 API · Web 零安装入口 · 安卓 APK 接入 · 房主侧</span></div>
+        <div class="card__stats">
+          <span>接口 <b>6 个</b></span>
+          <span>玩家 <b>零安装</b></span>
+        </div>
+      </a>
+      <a class="card" href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">
+        <div class="card__title">平台基址（p2p）</div>
+        <div class="card__meta"><span>主基址 p2p.jiangjiangze.icu · 备用 aliyun.jiangjiangze.icu</span></div>
+        <div class="card__stats">
+          <span>协议 <b>HTTPS</b></span>
+          <span>依赖 <b>出站 UDP</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
   <section class="section" id="layout">
     <div class="section-heading">
       <div><div class="eyebrow">REFERENCE · LAYOUT</div><h2>文件目录</h2></div>
@@ -593,10 +612,10 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   <section class="section" id="api">
     <div class="section-heading">
       <div><div class="eyebrow">REFERENCE · ENDPOINTS</div><h2>API 接入点</h2></div>
-      <span class="section-status">基址 <span data-base>https://weishucdn.jiangjiangze.icu</span></span>
+      <span class="section-status">基址 <span data-base>https://speedcdn.jiangjiangze.icu</span></span>
     </div>
     <div class="notice">
-      <span><b>接口只有一个域名：<span data-base>https://weishucdn.jiangjiangze.icu</span></b>。
+      <span><b>接口只有一个域名：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>。
       上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
       <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
       所以：<b>接口一律从这个域名取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。</span>
@@ -608,7 +627,7 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </table>
     </div>
     <p class="section-note" style="margin:10px 0 0">
-      这张表由 <a href="https://weishucdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
+      这张表由 <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
       渲染，不再手抄。手抄版已经漂移过：<code class="inline">/fonts/**</code> 的缓存被写成
       <code class="inline">immutable</code>，实际是「带令牌 1 年 / 裸路径 1 小时」；而且漏掉了
       <code class="inline">/packs/**</code>、<code class="inline">/dl/**</code> 与
@@ -640,15 +659,15 @@ curl "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </p>
     </div>
 <pre class="code"><i># 问一个文件在不在、多大（最快，不用下任何索引）</i>
-curl -sI "<b>https://weishucdn.jiangjiangze.icu</b>/assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.skel" | grep -i content-length
+curl -sI "<b>https://speedcdn.jiangjiangze.icu</b>/assets/spine/op/char_1016_agoat2/front/char_1016_agoat2.skel" | grep -i content-length
 
 <i># 问某个目录里有什么</i>
-node -e 'fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/tree.json").then(r=>r.json()).then(j=>
+node -e 'fetch("<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/tree.json").then(r=>r.json()).then(j=>
   console.log(j.dirs["assets/spine/op/char_1016_agoat2/front"].files))'
 
 <i>// 在你的页面里挑最快的镜像</i>
-import { pickFastest } from "<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
-const list = await (await fetch("<b>https://weishucdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
+import { pickFastest } from "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/pick.js";
+const list = await (await fetch("<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/mirrors.json")).json();
 const { best, ranked } = await pickFastest(list.flat);
 console.log(best.id, best.base, best.ms + "ms");</pre>
   </section>

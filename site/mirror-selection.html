@@ -71,7 +71,7 @@
   <section class="section" id="data">
     <div class="section-heading">
       <div><div class="eyebrow">SERVER</div><h2>服务端给的两份数据</h2></div>
-      <span class="section-status">接口只在 weishucdn 一个域名</span>
+      <span class="section-status">接口只在 speedcdn 一个域名</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -158,7 +158,7 @@
       客户端不看分支名，只看 <code class="inline">coverage</code> 字段。</span>
     </div>
     <div class="notice" style="margin-top:16px">
-      <span><b>fail-closed 白名单：</b>客户端挑源时只认白名单里的 host（<code class="inline">weishucdn</code> /
+      <span><b>fail-closed 白名单：</b>客户端挑源时只认白名单里的 host（<code class="inline">speedcdn</code> /
       <code class="inline">weishucdn2</code> / <code class="inline">spages</code> / <code class="inline">gitcdn</code> /
       <code class="inline">cdn.jsdelivr.net</code> / <code class="inline">ghfast.top</code> /
       <code class="inline">dl.jiangjiangze.icu</code> / <code class="inline">jingjiangze.github.io</code>），列表在构建期写死、
@@ -201,7 +201,7 @@
       <span class="section-status">接口 / 站点测速 / 客户端三条线</span>
     </div>
     <pre class="code"><i># 1. 接口清单里有 pick.js 与 mirrors.json（应见这两个端点）</i>
-curl -s https://weishucdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/(pick\.js|mirrors\.json)"'
+curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/api.json | grep -oE '"/cdn/v1/(pick\.js|mirrors\.json)"'
 
 <i># 2. 站点的测速按钮真在数据上跑（打开 https://downcdn.jiangjiangze.icu/#mirrors 点「开始测速」）</i>
 <i>#    应看到每个源一条时延，最快的排在前面；git 挂载源若标 partial 不应被当坏源</i>

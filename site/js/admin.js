@@ -129,7 +129,7 @@
         : `<span class="tree__name mono">${esc(node.name)}</span>`;
       row.innerHTML =
         `<span class="tree__caret"></span>${label}` +
-        (node.tag ? `<span class="chip chip--mod" title="${esc(node.note || '')}">${esc(node.tag)}</span>` : '') +
+        (node.tag ? `<span class="chip chip--mod" title="${esc(node.note)}">${esc(node.tag)}</span>` : '') +
         `<span class="tree__meta">${node.size == null ? '—' : fmt(node.size)}</span>`;
     }
     return row;

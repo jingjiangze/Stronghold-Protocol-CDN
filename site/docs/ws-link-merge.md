@@ -8,7 +8,7 @@
 
 对局期间一个玩家收到的字节 **98% 是 `m.public`**（对局公开状态广播）。默认配置下实测每席位
 **2,048 B/s** —— 10 Mbps 上行只带得动 **~610 人**。装上这个包后每席位 **~505 B/s**，10 Mbps 约 **2,475 人**。
-（数字来源见 [《WS 链路压缩》](./ws-link-compression.md)。）
+（数字来自本仓库实测脚本。）
 
 包里 5 个文件，各治一件事：
 
@@ -106,6 +106,5 @@ rm server/wsCompression.js && cp server/lobby.js.bak server/lobby.js && cp serve
 | 不做 permessage-deflate 协商的第三方客户端 | 零影响：没协商就不压，帧内容不变 |
 | 用 `version` 校验的连接 | 零影响：本包不动 `PROTOCOL_VERSION`、不动握手字段 |
 
-**本包不含**：热帧去常量 / 基线合并 / `hello.pub` 能力位（那是下一轮，见
-[《WS 链路压缩（下一轮）》](./ws-link-compression-next.md)）—— 那部分要求服务端与客户端**成对发布**，
+**本包不含**：热帧去常量 / 基线合并 / `hello.pub` 能力位 —— 那部分要求服务端与客户端**成对发布**，
 不能这样单独盖。

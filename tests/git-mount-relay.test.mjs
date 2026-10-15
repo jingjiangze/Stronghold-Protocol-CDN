@@ -81,19 +81,35 @@ test('asset prefixes select the asset branch, and nothing else does', () => {
 // Which branch a path reads is decided here, never by the caller -- a request cannot ask for the
 // art branch by naming it, so a caller that reaches /assets/** gets art and nothing else gets it.
 test('the branch is chosen from the path, and the caller cannot name one', () => {
-  assert.deepEqual(backendFor('/assets/char/a.png').map((b) => b.id), ['jsdelivr-assets', 'ghfast-assets']);
-  assert.deepEqual(backendFor('/fonts/1.woff2').map((b) => b.id), ['jsdelivr-assets', 'ghfast-assets']);
+  // OpenI is listed first on asset paths: it is the fastest backend, but emits a hard-coded
+  // third-party ACAO + ignores Range, so the Worker re-emits our own CORS/Range on its behalf.
+  assert.deepEqual(backendFor('/assets/char/a.png').map((b) => b.id), ['openi', 'jsdelivr-assets', 'ghfast-assets']);
+  assert.deepEqual(backendFor('/fonts/1.woff2').map((b) => b.id), ['openi', 'jsdelivr-assets', 'ghfast-assets']);
   assert.deepEqual(backendFor('/README.md').map((b) => b.id), ['jsdelivr', 'ghfast-raw']);
   assert.deepEqual(backendFor('/site/css/cdn.css').map((b) => b.id), ['jsdelivr', 'ghfast-raw']);
 });
 
+// OpenI is the asset backend the Worker proxies; if it answers (even with its bad CORS header on
+// the upstream response) the relay must still serve the bytes via our own edge. A path through
+// OpenI must never be reachable as anything but the asset branch.
+test('openi asset backend points at the raw branch of the OpenI mirror of this tree', () => {
+  const openi = backendFor('/assets/char/a.png').find((b) => b.id === 'openi');
+  assert.ok(openi, 'openi must be present in the asset backend list');
+  assert.ok(openi.prefix.startsWith('https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw'), openi.prefix);
+  // Interface paths must NOT reach openi (it only mirrors the art tree):
+  assert.equal(backendFor('/README.md').some((b) => b.id === 'openi'), false);
+});
+
 // Every backend must point at THIS repo and at one of the two known branches. A backend URL is
 // built from a constant table, but a typo in a ref would be a silent 404 on the whole tree.
-test('every backend targets this repo and a known branch', () => {
+// OpenI is the exception: it is a mirror of the same `assets-raw` tree on another host, so it is
+// allowed to name the OpenI repo + branch instead of ours — but it must still pin `assets-raw`.
+const REPO_OK = (p) => p.includes('jingjiangze/Stronghold-Protocol-CDN') || p.includes('openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol');
+test('every backend targets a known repo and a known branch', () => {
   const all = [...backendFor('/README.md'), ...backendFor('/assets/char/a.png')];
   assert.ok(all.length >= 2);
   for (const b of all) {
-    assert.ok(b.prefix.includes('jingjiangze/Stronghold-Protocol-CDN'), b.id);
+    assert.ok(REPO_OK(b.prefix), b.id + ': ' + b.prefix);
     assert.ok(b.prefix.includes('assets-raw') || b.prefix.includes('main'), b.id);
     assert.ok(/^https:\/\//.test(b.prefix), b.id);
   }

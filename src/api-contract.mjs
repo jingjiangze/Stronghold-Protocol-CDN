@@ -8,7 +8,7 @@
 // The table is authored rather than derived, because it is the contract: deriving it from whatever
 // the sync happens to upload would make it a description of the implementation instead of a promise
 // to callers. A test asserts the two agree, which is what keeps an authored table honest.
-export const API_SCHEMA = 1;
+export const API_SCHEMA = 2;
 
 /** Endpoints of the interface, in the order they are worth reading. */
 export const API_ENDPOINTS = [
@@ -107,6 +107,42 @@ export const API_ENDPOINTS = [
     contentType: '—',
     cache: 'public, max-age=3600',
     what: 'Release 资产的自有域短链，302 到镜像（不代理，避免用请求配额换字节）',
+  },
+  {
+    path: '/cdn/v1/hosted-index.json',
+    contentType: 'application/json',
+    cache: 'public, max-age=300',
+    what: '托管对象补摘要：后台上线的每一组键的 { size, sha256 }（上游清单里没有的那些，mod 素材与包存档都在这）。做二级镜像或逐文件校验的，把这份与 /cdn/v1/index.json 合起来才是全集',
+  },
+  {
+    path: '/cdn/v1/upload-log.json',
+    contentType: 'application/json',
+    cache: 'public, max-age=300',
+    what: '上传后台的上线记录（谁传的、何时、组 id、字节、下线留痕 removedAt）——「这个键为什么在这里」的唯一答案',
+  },
+  {
+    path: '/packs/mod-assets/index.json',
+    contentType: 'application/json',
+    cache: 'public, max-age=3600',
+    what: 'mod 素材权威键索引：sha256 → 唯一 canonical 键（含 size / 来源 / aliases）。上传前先在这里按哈希查一次，命中就指现有键，别再传第二份；aliases 是历史同字节副本，暂时保留但新包不许指',
+  },
+  {
+    path: '/packs/mod-assets/README.txt',
+    contentType: 'text/plain; charset=utf-8',
+    cache: 'public, max-age=3600',
+    what: '给 mod 作者的说明书（同文源码在本仓 docs/MOD-AUTHORS.md）：路径规则与 ?v= 令牌、唯一能吃绝对 URL 的两个字段、指不过去的字段与行号、上传通道、高清与去重政策、交付闸门。用 .txt 是因为 .md 不在上传白名单里',
+  },
+  {
+    path: '/packs/<自定义组>/<文件>',
+    contentType: '按扩展名',
+    cache: 'public, max-age=31536000, immutable',
+    what:
+      'mod 作者的命名空间：上传后台（/admin 或 tools/agent-upload.mjs）上线的任意对象——工坊包存档、外部素材、清单都放这里。' +
+      '键只允许 assets/ fonts/ packs/ 三个前缀、扩展名走白名单（png jpg webp atlas skel json txt mp3 ogg wav m4a woff woff2 ttf otf zip bin data xml），' +
+      '上线即带 immutable 与 sha256 元数据，逐键摘要见 /cdn/v1/hosted-index.json。' +
+      '**mod 能用绝对 URL 指过来的只有两处**：pack.json 的 voices / voiceLangs 条目 {url, sha256, file}（仅音频、必须 https、服务端装载时取字节、单条 ≤24 MiB），' +
+      '以及 assets.mirrors[]（base 必须绝对 https 且以 / 结尾、sha256 必须等于本包容器实算摘要，客户端取 <base><容器文件名>）。' +
+      'art / skins[].art / bondIcons / itemIcons / forms / i18n / notices / routes 与一切 Spine 都只接受包内相对路径、一律被改写成 /workshop-assets/<包id>/…，指向外部主机就是 404 —— 素材必须内嵌在包里。写法与实测依据见本仓 docs/INTEGRATION.md 第 6 节',
   },
 ];
 

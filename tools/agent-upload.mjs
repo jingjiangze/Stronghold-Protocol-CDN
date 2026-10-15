@@ -133,9 +133,13 @@ function putToR2(putUrl, abs, size) {
   });
 }
 
-function defaultKeyFor(abs) {
+function defaultKeyFor(abs, source) {
   const name = path.basename(abs).replace(/[^\w.\-]+/g, '_');
-  return `assets/local/${name}`;
+  // 以前这里默认落 assets/local/<文件名>。2026-10-13 的桶内对账显示：正是这个默认值让整棵别人的资源树
+  // 挤进了上游的 local 命名空间（assets/local/<组>/** 共 1,570 键 / 253.2 MiB，其中 1,033 个键与规范
+  // 路径逐字节相同，是「同字节多键」里最大的一块）。默认只该走后台给 mod 留的 packs/ 命名空间；
+  // 要进素材树就显式写 --to=assets/…，并按 docs/MOD-AUTHORS.md §2 先查一次哈希。
+  return `packs/${source}/${name}`;
 }
 
 async function listStatus() {
@@ -306,11 +310,11 @@ async function main() {
 
   const abs = path.resolve(file);
   if (!fs.existsSync(abs)) throw usage(`文件不存在：${abs}`);
-  const key = arg('to') || defaultKeyFor(abs);
-  const k = validateKey(key);
-  if (!k.ok) throw usage(`键名不行：${k.reason}`);
   const src = cleanSource(arg('source'));
   if (!src.ok) throw usage(`来源不行：${src.reason}`);
+  const key = arg('to') || defaultKeyFor(abs, src.source);
+  const k = validateKey(key);
+  if (!k.ok) throw usage(`键名不行：${k.reason}`);
   const what = arg('what', '');
 
   const result = await uploadOne(abs, k.key, src.source, what);

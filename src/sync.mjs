@@ -37,7 +37,7 @@ import { buildDropin } from './dropin.mjs';
 import { buildOfficialCdn, verifyOfficialCdn } from './official-cdn.mjs';
 import { PICK_SOURCE } from './pick-source.mjs';
 import { makeProbeBuffer, PROBE_KEY, PROBE_BYTES } from './probe-file.mjs';
-import { readExtraOrigins, readGitOrigins, readRetiredOrigins } from './origins.mjs';
+import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigins, readPreferredOrder, applyPreferredOrder } from './origins.mjs';
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
@@ -46,7 +46,7 @@ import { readSources, fetchSourcePackage, extractSourceTree, readSource, readOve
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
+const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu';
 const DEFAULT_PAGES_BASE = process.env.SP_PAGES_BASE || 'https://spages.jiangjiangze.icu';
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
 
@@ -355,7 +355,13 @@ async function main() {
     origins.push(...extraOrigins);
     const gitOrigins = readGitOrigins(ROOT);
     origins.push(...gitOrigins);
-    const flatOrigins = carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT));
+    // Parking an origin has to be applied here, before the list is published: `enabled:false` is
+    // what stops a selector from choosing it, and it is only meaningful if it survives into the
+    // interface. Anything carried forward from a previous run gets it too — an origin that was
+    // parked last run must not come back enabled just because this run did not rebuild it.
+    const disabledIds = readDisabledOrigins(ROOT);
+    for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
+    const flatOrigins = applyPreferredOrder(carryForwardOrigins(origins, published.art.mirrors, readRetiredOrigins(ROOT)), readPreferredOrder(ROOT));
     const mirrorsDoc = `${JSON.stringify(
       {
         schema: 1,
@@ -641,11 +647,21 @@ async function main() {
   // Write mode.
   const config = r2Config();
   if (diff.add.length || diff.change.length) {
-    const keys = [...diff.add, ...diff.change];
-    log(`uploading ${keys.length} objects …`);
-    const uploaded = await uploadKeys(config, stage, keys, index.files);
-    report.uploaded = uploaded;
-    if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
+    // A pinned path is already carried by the index with OUR bytes (applyOverrides ran above), so it
+    // always shows up as a "change" against upstream's release — by design, forever. Uploading it
+    // from the stage tree would undo the override, and its size guard would abort the whole run
+    // ("size changed while uploading"), which is the correct refusal of the wrong bytes.
+    // The override block right below owns those keys instead.
+    const mainPinned = new Set(pins.map((pin) => pin.path));
+    const keys = [...diff.add, ...diff.change].filter((key) => !mainPinned.has(key));
+    const spared = diff.add.length + diff.change.length - keys.length;
+    if (spared) log(`${spared} pinned path(s) kept out of the main upload — the override upload owns them`);
+    if (keys.length) {
+      log(`uploading ${keys.length} objects …`);
+      const uploaded = await uploadKeys(config, stage, keys, index.files);
+      report.uploaded = uploaded;
+      if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
+    }
   }
 
   // The bytes of every declared override, read from this repository and verified against the pin
@@ -808,6 +824,10 @@ async function main() {
   // already carry forward (below); origins now do the same, keeping the structural ones (r2, pages)
   // from the published interface and merging this run's view into it.
   const publishedBefore = await readPublishedArt(opts.base);
+  // Same parking pass as the mirrors.json path above; both publish an origin list, and a parked
+  // origin must be parked in both or a selector reading one of them would still pick it.
+  const disabledIds = readDisabledOrigins(ROOT);
+  for (const o of origins) if (disabledIds.has(o.id)) o.enabled = false;
   const mergedOrigins = carryForwardOrigins(origins, publishedBefore?.art?.mirrors, readRetiredOrigins(ROOT));
 
   let packs = [];
@@ -855,7 +875,7 @@ async function main() {
         zip: release.zip.name,
         zipSha256: release.zip.sha256,
       },
-      flat: mergedOrigins.map((origin) => ({
+      flat: applyPreferredOrder(mergedOrigins, readPreferredOrder(ROOT)).map((origin) => ({
         id: origin.id,
         kind: origin.kind,
         root: origin.root,

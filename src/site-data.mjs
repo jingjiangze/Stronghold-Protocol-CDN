@@ -12,10 +12,11 @@ import { fileURLToPath } from 'node:url';
 
 import { assertPublicHttpsUrl } from './upstream.mjs';
 import { groupOf, readMirrorPrefixes } from './packs.mjs';
+// Not ./docs-index.mjs: that half is the selection rules, and it is the one the Pages Function
+// loads at the edge. buildDocsIndex needs fs and git and lives in docs-index-build.mjs, which
+// imports docs-index.mjs. Reaching for it here through docs-index.mjs would both fail to resolve
+// and, if it ever did, drag node:fs into the edge bundle — so import the half that owns it.
 import { buildDocsIndex } from './docs-index-build.mjs';
-
-/** This file lives in `src/`, so the checkout root is one level up. */
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function getJson(url) {
   assertPublicHttpsUrl(url);
@@ -38,6 +39,9 @@ export function aggregate(files) {
 }
 
 export const RELEASES_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
+
+/** This file lives in `src/`, so the checkout root is one level up. */
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
  * The two name patterns the page resolves its downloads by, and they must stay disjoint.
@@ -176,7 +180,11 @@ export async function buildSnapshot({ base, out, log = console.log }) {
   // rather than a path somebody has to remember to update. It is written beside the snapshot so the
   // admin page (and any agent) can read it from the same origin without a key.
   const docs = await buildDocsIndex({ siteDir: path.join(ROOT, 'site'), repoRoot: ROOT, log });
-  await fsp.writeFile(path.join(path.dirname(out), 'docs.json'), `${JSON.stringify(docs, null, 2)}\n`, 'utf8');
+  await fsp.writeFile(
+    path.join(path.dirname(out), 'docs.json'),
+    `${JSON.stringify(docs, null, 2)}\n`,
+    'utf8',
+  );
   return snapshot;
 }
 
@@ -186,7 +194,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
     const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
     return hit ? hit.slice(name.length + 3) : fallback;
   };
-  const base = arg('base', process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu');
+  const base = arg('base', process.env.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu');
   const out = path.resolve(arg('out', 'site/data/snapshot.json'));
   buildSnapshot({ base, out }).catch((error) => {
     console.error(`site-data: ${error.message}`);

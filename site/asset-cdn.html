@@ -185,14 +185,14 @@
       <span class="section-status">三条命令确认本页结论仍然成立</span>
     </div>
     <pre class="code"><i># 1. 改写是否生效（应见 X-Asset-CDN 头，cdn 条数远大于 local）</i>
-curl -sI https://weishu.jiangjiangze.icu/data/assets.json | grep -i "x-asset-cdn"
+curl -sI https://speedcdn.jiangjiangze.icu/data/assets.json | grep -i "x-asset-cdn"
 
 <i># 2. 清单条目是否都指向 CDN（应几乎 100% 命中）</i>
-curl -s https://weishu.jiangjiangze.icu/data/assets.json \
-  | grep -o '"https://[^"]*weishucdn[^"]*"' | wc -l
+curl -s https://speedcdn.jiangjiangze.icu/data/assets.json \
+  | grep -o '"https://[^"]*speedcdn[^"]*"' | wc -l
 
 <i># 3. 单文件 HEAD 实测（挑一个"疑似缺失"的，应 200）</i>
-curl -sI https://weishucdn.jiangjiangze.icu/assets/char/avatar/char_002_amiya.png \
+curl -sI https://speedcdn.jiangjiangze.icu/assets/char/avatar/char_002_amiya.png \
   | grep -i "^HTTP"</pre>
   </section>
 
@@ -206,7 +206,6 @@ curl -sI https://weishucdn.jiangjiangze.icu/assets/char/avatar/char_002_amiya.pn
         <a href="./">CDN 首页</a>
         <a href="./bandwidth">↗ 上行带宽压缩</a>
         <a href="./docs/asset-cdn-reconcile.md">原始 Markdown</a>
-        <a href="./docs/ws-link-compression.md">WS 链路压缩（已上线）</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
         <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>

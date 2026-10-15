@@ -113,3 +113,77 @@ export function readRetiredOrigins(root) {
   const list = Array.isArray(cfg?.retired) ? cfg.retired : [];
   return new Set(list.filter((id) => typeof id === 'string' && id));
 }
+
+/**
+ * Origin ids that are parked: still built, still described, but `enabled:false`.
+ *
+ * "Retired" and "disabled" are different operations and must not be conflated. Retiring an id
+ * removes it — `carryForwardOrigins` will not restore it, and it disappears from the interface.
+ * Disabling keeps the entry in the file and in the interface but stops a selector from choosing it,
+ * which is what you want while a backend is degraded: the operator's intent (this origin exists and
+ * is meant to come back) survives, and so does its historical speed data.
+ *
+ * The setter must run before the list is published, on both paths that publish one (mirrors.json and
+ * art.json). A park applied to only one of them is worse than none: a selector reading the other
+ * would still pick the parked origin, and the failure would look like a fast origin that is down
+ * rather than an origin that was deliberately taken out.
+ */
+export function readDisabledOrigins(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return new Set();
+  }
+  const list = Array.isArray(cfg?.disabled) ? cfg.disabled : [];
+  return new Set(list.filter((id) => typeof id === 'string' && id));
+}
+
+/**
+ * The order origins are presented in, by id. Unknown ids are ignored and unlisted origins keep
+ * their built order, appended after the listed ones — so adding a new origin cannot silently
+ * displace the ranking of the ones already here.
+ *
+ * @returns {string[]} origin ids, in the order they should be presented
+ */
+export function readPreferredOrder(root) {
+  let cfg;
+  try {
+    cfg = JSON.parse(fs.readFileSync(path.join(root, 'origins.json'), 'utf8'));
+  } catch {
+    return [];
+  }
+  const list = Array.isArray(cfg?.preferredOrder) ? cfg.preferredOrder : [];
+  return list.filter((id) => typeof id === 'string' && id);
+}
+
+/**
+ * Apply {@link readPreferredOrder} to a list of origins.
+ *
+ * This only reorders presentation. It is not a ranking: the measured speed table is what a client
+ * uses to choose, and it is built elsewhere from real probes. Putting an order in a file is for the
+ * case where measurement is not the right answer — a backend that is objectively slower but does
+ * not cost request quota, say — and saying so out loud is why the field is named `preferredOrder`
+ * rather than `priority`.
+ *
+ * @template {{id: string}} T
+ * @param {T[]} origins
+ * @param {string[]} order
+ * @returns {T[]} a new array
+ */
+export function applyPreferredOrder(origins, order) {
+  const list = Array.isArray(origins) ? origins : [];
+  const wanted = (Array.isArray(order) ? order : []).filter((id) => typeof id === 'string' && id);
+  if (!wanted.length) return list.slice();
+  const byId = new Map(list.map((o) => [o?.id, o]));
+  const out = [];
+  for (const id of wanted) {
+    const hit = byId.get(id);
+    if (!hit) continue;
+    out.push(hit);
+    byId.delete(id);
+  }
+  // Everything not named keeps its built order, after the named ones.
+  for (const o of list) if (byId.has(o?.id)) out.push(o);
+  return out;
+}

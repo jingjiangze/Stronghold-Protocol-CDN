@@ -79,12 +79,7 @@
       而稳态正是 10 Mbps 带 2000 人的天花板所在。两块都要做。</span>
     </div>
     <p class="section-note" style="margin-top:14px">
-      WS 链路这块单独拆成了两份文档：
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
-      （白名单 + 窗口 12、广播漏压的真 bug、观战/AI 节流、热帧去常量 + 基线/兜底）；
-      <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是待执行的三步
-      （bonds 按收件人定制 ≈24% wire、delta 合计 2.05×、上游 PR #91 那 9%）与各自的准入条件、验收判据、退路。
-      本页是给站点访客的自包含摘要。
+      WS 链路这块此前拆成了两份文档；现已下线，本页保留自包含摘要。
     </p>
   </section>
 
@@ -551,8 +546,6 @@ curl -sI https://weishu.jiangjiangze.icu/ | grep -i "sec-websocket"</pre>
       </div>
       <div class="footer-links">
         <a href="./">CDN 首页</a>
-        <a href="./docs/ws-link-compression.md">WS 压缩（已上线）</a>
-        <a href="./docs/ws-link-compression-next.md">WS 压缩（下一轮）</a>
         <a href="./docs/bandwidth-max-compression.md">原始 Markdown</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>

@@ -2,7 +2,7 @@
 
 把上游（[`sganggs/Stronghold-Protocol`](https://github.com/sganggs/Stronghold-Protocol)）**最新 Release 里的静态素材**自动镜像到 Cloudflare R2，并对外提供一套可校验、可引用的素材接口。
 
-本仓是 `weishucdn.jiangjiangze.icu`（R2 桶 `stronghold-assets`）**素材部分的唯一发布者**。
+本仓是 `speedcdn.jiangjiangze.icu`（R2 桶 `stronghold-assets`）**素材部分的唯一发布者**。
 
 ## 为什么需要它
 
@@ -43,7 +43,7 @@ gh 取上游 latest release（或 --tag 指定）
 
 ## 接口
 
-基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`
+基址 `<CDN>` = `https://speedcdn.jiangjiangze.icu/`
 
 **完整清单以 `<CDN>/cdn/v1/api.json` 为准**（字段 `{ schema, base, token, endpoints[] }`，
 由 `src/api-contract.mjs` 维护，`tests/api-contract.test.mjs` 保证它不漏掉 sync 实际发布的键）。

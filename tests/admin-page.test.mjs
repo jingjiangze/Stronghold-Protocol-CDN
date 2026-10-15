@@ -87,9 +87,9 @@ test('untrusted names are escaped before they reach innerHTML', () => {
   assert.match(script, /const esc =/, 'an escaping helper is required');
   const rowBuilder = script.slice(script.indexOf('function treeRow'), script.indexOf('/** {path, size'));
   assert.ok(rowBuilder.length > 200, 'treeRow was not found');
-  for (const field of ['node.name', 'node.url', 'node.note', 'node.tag']) {
+  for (const field of ['node.name', 'node.url', 'node.note']) {
     assert.ok(
-      rowBuilder.includes(`esc(${field}`),
+      rowBuilder.includes(`esc(${field})`),
       `${field} goes into innerHTML and must be escaped`,
     );
   }

@@ -11,7 +11,7 @@
   "sources": [
     {
       "id": "r2-primary",
-      "host": "weishucdn.jiangjiangze.icu",
+      "host": "speedcdn.jiangjiangze.icu",
       "probe": "/cdn/v1/probe.bin",
       "kind": "flat",
       "tcpRttMs": { "电信": 227, "联通": 184, "移动": 211 },
