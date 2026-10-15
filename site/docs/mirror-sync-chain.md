@@ -28,7 +28,7 @@
 容器边缘 asset-jump.js 每 5 分钟读 rank.json（主门牌=魔搭数据集 API，兜底 weishucdn）把合格源排头部
 ```
 
-**时延（2026-10-15）**：上传端到端——点了「同步到镜像源」后，发布轮 **1–3 分钟** → git 链 **2–25 分钟**（视积压）→ OpenI / 数据集随之跟上；上游发布走 cron 4 窗（最长 6 小时）。魔搭数据集补齐是**长期收敛项**（2026-10-15 实测覆盖约 54.5%，缺口目录级：voice 0%、char 21%、ui 20%、spine 45%、local 36%）。
+**时延（2026-10-15）**：上传端到端——点了「同步到镜像源」后，发布轮 **1–3 分钟** → git 链 **2–25 分钟**（视积压）→ OpenI / 数据集随之跟上；上游发布走 cron 4 窗（最长 6 小时）。魔搭数据集 2026-10-15 已改走 LFS（LFS 指针进 git 对象库 + `git lfs push` 传字节），1.6 GB 上限已解决；全量实测 424 条待补路径 423 条已可达（14 份抽下载逐字节 sha256 与源 ref 完全一致），唯一失败的是 `assets/skins/char_340_shwaz_snow_1/illustration.png` —— 平台内容审核判敏感自动 revert（最近一次 c64e935），非推送链缺陷、亦非我方可控，该路径在 ms-edge 层走 exceptions 表改道。
 
 ## 2. 四条链路：A 上游发布 · B 后台上传 · C R2→git→镜像 · D 排名测速
 
@@ -50,7 +50,7 @@
 
 - `git-art-sync.yml` 把 R2 已上线后台上传的字节补提交进孤儿分支 `assets-raw`（一天 4 窗 + 链式触发）。
 - ① `openi-mirror.yml` 把该分支按**文件级增量**推到 OpenI（每天 4 次，单片约 60 MiB；OpenI 平台偶发连接超时，靠重试与多次运行追平）。
-- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`。**⚠ 2026-10-14 起受阻**：新树 1.78 GB 超数据集 1.6 GB 仓库上限被 pre-receive 硬拒（连拒 18 次），master 冻结在旧提交，处置待定。
+- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`。2026-10-15 已修复：原脚本用 `hash-object -w --no-filters` 绕过 LFS 把 16,702 份原始字节 blob / 1511.7 MiB 灌进对象库顶满 1.6 GB 上限；现改走 LFS——命表文件（png/jpg/jpeg/webp/gif/mp3/wav/ogg/m4a/skel/atlas/ttf/otf/woff/woff2/zip）只写 131 B 指针 blob 进对象库、真实字节经 `git lfs push` 上传，并补 `*.zip filter=lfs diff=lfs merge=lfs -text` 到根 `.gitattributes`。workflow `38715068861` 推送 `df7d76e`（490 份 / 192.8 MiB，481 份走 LFS 指针，对象库仅涨约 62 KB）后，平台内容审核 revert 了其中 1 个文件（`c64e935`）。全量验收 424 条待补路径 423 条已可达（字节数一致，14 份抽下载逐字节 sha256 与源 ref 完全一致）；唯一失败 `assets/skins/char_340_shwaz_snow_1/illustration.png` 系平台审核判敏感自动 revert（历史每次推送都会被 revert，最近一次 c64e935），非推送链缺陷、亦非我方可控。
 - ③ ghfast / jsDelivr / gitcdn-own 读 GitHub 的 `assets-raw` / `main` 分支（拉取型，自动跟随，无需推送）。
 
 **链 D · 排名与测速（独立支线）**
@@ -63,7 +63,7 @@
 **镜像源清单（2026-10-15 实测）**
 
 - ① R2 桶（三域名，字节真源）；
-- ② 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`（容器边缘默认跳转目标，覆盖约 54.5%，缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%；**2026-10-14 起因 1.6 GB 上限冻结、不再补齐**，缺口需另行处置）；
+- ② 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`（容器边缘默认跳转目标；2026-10-15 已改走 LFS，1.6 GB 上限已解决，全量实测 424 条待补路径 423 条已可达、缺口仅剩 1 个被平台内容审核自动 revert 的文件 `assets/skins/char_340_shwaz_snow_1/illustration.png`，该路径在 ms-edge 层走 exceptions 表改道）；
 - ③ OpenI 启智（`openi.pcl.ac.cn/.../raw/branch/assets-raw`，最快但 CORS 写死第三方域不可用，仅 `?sp_source=openi` 点名可达）；
 - ④ ghfast / jsDelivr（GitHub 代理，可用率低）；
 - ⑤ gitcdn-own（自有中转 Worker）；
@@ -78,7 +78,7 @@
 | B 接口重发 | `sync.mjs --write --interface-only` | 发布轮末尾 | 几十秒 |
 | C git 中枢 | `git-art-sync.yml` | 链式触发 / 一天 4 窗 | 2–25 分钟（视积压） |
 | C→OpenI | `openi-mirror.yml` | 每天 4 次 | 幂等 git push |
-| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / 定时 | **受阻**：1.78 GB 超 1.6 GB 上限，连拒 18 次 |
+| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / 定时 | 正常（链式触发 / 定时）；原「1.78 GB 超 1.6 GB 上限，连拒 18 次」为 2026-10-14 实测、2026-10-15 已修复（改走 LFS） |
 | C→GitHub 代理 | ghfast / jsDelivr / gitcdn-own | 拉取型，自动跟随 | 读 assets-raw / main，无需推送 |
 | D 排名 | `rank.yml` | 每天 4 窗 | Globalping 实测 → rank.json |
 | D 重测 | `network-measure.yml` | 每周一 | 重测并触发 rank |
@@ -118,7 +118,7 @@ curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json | head
 
 ## 6. 已废弃路径：推魔搭创空间 cdn 分支
 
-旧方案 `mirror-modelscope.yml` 把**整树推魔搭创空间 cdn 分支**，被平台 **1.6 GB 仓库上限硬拒**（实测素材树 2.36 GB），**已停用**。素材树现改走**魔搭数据集** `releases/v1-trial`（`dataset-tree.yml` 分批推送，每次最多 6 轮 × 400 MiB）。任何新文档 / 脚本都不要再引用创空间 cdn 分支同步——它不会成功，也没有回退计划。
+旧方案 `mirror-modelscope.yml` 把**整树推魔搭创空间 cdn 分支**，被平台 **1.6 GB 仓库上限硬拒**（实测素材树 2.36 GB），**已停用**（注：数据集那条 `dataset-tree.yml` 链已于 2026-10-15 修复、与创空间 cdn 分支是两回事，不要混淆）。素材树现改走**魔搭数据集** `releases/v1-trial`（`dataset-tree.yml` 分批推送，每次最多 6 轮 × 400 MiB）。任何新文档 / 脚本都不要再引用创空间 cdn 分支同步——它不会成功，也没有回退计划。
 
 ## 7. 关键约束
 
@@ -126,4 +126,4 @@ curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json | head
 - rank 链独立，只排顺序、不搬运字节；收尾由 `network-measure.yml` 每周一重测。
 - 2026-10-15 起上传不再自动叫发布轮；后台用「同步到镜像源」一次推整链，定时轮 30 分钟兜底。
 - 接口文件（`/cdn/v1/*.json`）只在 R2 三域名上存在，git 镜像无接口层。
-- 魔搭数据集补齐是长期收敛项（2026-10-15 覆盖约 54.5%），缺口目录级：voice 0% / char 21% / ui 20% / spine 45% / local 36%。
+- 魔搭数据集 2026-10-15 已改走 LFS（LFS 指针进 git 对象库 + `git lfs push` 传字节），1.6 GB 上限已解决；全量实测 424 条待补路径 423 条已可达（14 份抽下载逐字节 sha256 与源 ref 完全一致），唯一失败的是 `assets/skins/char_340_shwaz_snow_1/illustration.png` —— 平台内容审核判敏感自动 revert（最近一次 c64e935），非推送链缺陷、亦非我方可控，该路径在 ms-edge 层走 exceptions 表改道。
