@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES, planBatches, DEFAULT_BUDGET_MIB } from '../src/openi-mirror.mjs';
+import {
+  parseLsTree, listTree, totalBytes, remoteHead, localHead, MAX_BYTES,
+  planBatches, DEFAULT_BUDGET_MIB, missingFiles, planSlices,
+} from '../src/openi-mirror.mjs';
 
 // `git ls-tree -l` puts the size in a SPACE-separated column and introduces only the path with a
 // tab. Splitting the whole line on tabs therefore yields size 0 for every file — a mirror whose
@@ -75,10 +78,14 @@ test('remoteHead returns null only when the branch genuinely is not there', asyn
   assert.equal(await remoteHead(process.cwd(), 'no-such-branch-here'), null);
 });
 
-// The 413 that forced batching: one push of the whole 1,807 MiB tree was rejected outright. These
-// pin the arithmetic that replaces it, because a batching bug is invisible until a run 413s —
-// which is exactly the failure that costs 16 minutes to find out about.
+// The 413 that forced the rewrite: `git push` is one POST, so the only lever is how many bytes
+// that POST carries. These pin the arithmetic, because a batching bug is invisible until a run
+// 413s — which is exactly the failure that costs an hour to find out about.
 const MB = 1048576;
+
+// `planBatches` / `commitAddedBytes` / `commitsSince` are the *old* commit-level replay, kept
+// because they are pure and still exercised; `syncByFiles` replaced them in the live path
+// (2026-10-15, run 38671002854 413'd on its first batch after 57 minutes).
 
 test('planBatches keeps every batch under the budget', () => {
   const commits = ['a', 'b', 'c', 'd'];
@@ -112,8 +119,6 @@ test('a commit larger than the budget still gets its own batch', () => {
   const commits = ['small', 'huge'];
   const sizes = { small: 10 * MB, huge: 900 * MB };
   const batches = planBatches(commits, sizes, 700 * MB);
-  // Git moves whole objects, so an oversized commit cannot be split. Taking it alone gives it one
-  // honest attempt instead of folding it into something even bigger.
   assert.deepEqual(batches, [['small'], ['huge']]);
 });
 
@@ -128,9 +133,99 @@ test('planBatches on an empty replay pushes nothing', () => {
   assert.deepEqual(planBatches([], {}, 700 * MB), []);
 });
 
-test('the default budget stays under the size that was measured to pass', () => {
-  // Measured: 232 MiB of delta went through, 640.9 MiB got HTTP 413. The default keeps real
-  // distance below the size known to pass rather than probing the boundary with a 16-minute run.
-  assert.ok(DEFAULT_BUDGET_MIB < 232, `budget ${DEFAULT_BUDGET_MIB} MiB is not safely under the 232 MiB that was seen to pass`);
+// --- the live path: file-level incremental sync -------------------------------
+//
+// `missingFiles` decides what gets pushed. Getting it wrong in one direction re-uploads the whole
+// 3.8 GiB tree; in the other it silently skips files and the mirror never catches up. Both
+// failures look like a successful run, so they need tests rather than trust.
+
+const REMOTE = [
+  '.gitattributes',
+  'README.md',
+  'assets/local/map/a.png',
+  'assets/local/map/b.png',
+].join('\n');
+
+const TARGET = [
+  '100644 blob aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 609\t.gitattributes',
+  '100644 blob bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb 3289397\tassets/local/map/a.png',
+  '100644 blob cccccccccccccccccccccccccccccccccccccccc 1024\tassets/local/map/new.png',
+  '100644 blob dddddddddddddddddddddddddddddddddddddddd 2048\tassets/voice/x.mp3',
+  '040000 tree eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\tassets/local',
+].join('\n');
+
+test('missingFiles keeps only the files the remote does not already have', () => {
+  const todo = missingFiles(REMOTE, TARGET);
+  assert.deepEqual(todo.map((r) => r.p), ['assets/local/map/new.png', 'assets/voice/x.mp3']);
+});
+
+test('missingFiles carries the blob size, which is what the push budget is measured against', () => {
+  const todo = missingFiles(REMOTE, TARGET);
+  assert.equal(todo[0].size, 1024);
+  assert.equal(todo[1].size, 2048);
+});
+
+test('missingFiles drops trees: a directory entry is not a file to upload', () => {
+  const todo = missingFiles(REMOTE, TARGET);
+  assert.ok(!todo.some((r) => r.p === 'assets/local'));
+  assert.ok(todo.every((r) => r.mode === '100644'));
+});
+
+test('missingFiles on a remote that has nothing returns the whole tree', () => {
+  const todo = missingFiles('', TARGET);
+  assert.equal(todo.length, 4);
+});
+
+test('missingFiles on a remote that already has everything returns nothing', () => {
+  // The remote arg is name-only; every path in TARGET is named, so nothing to do. This is the
+  // idempotence that makes a re-run free: it must not re-upload 20,000 files.
+  const names = TARGET.split('\n').map((l) => l.slice(l.indexOf('\t') + 1));
+  assert.equal(missingFiles(names.join('\n'), TARGET).length, 0);
+});
+
+test('a path with a space survives the diff', () => {
+  const todo = missingFiles('', '100644 blob aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 42\tsome dir/a file.png');
+  assert.deepEqual(todo, [{ mode: '100644', sha: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', size: 42, p: 'some dir/a file.png' }]);
+});
+
+test('planSlices cuts the work into pieces each under the budget', () => {
+  const todo = [
+    { p: 'a', size: 15 * MB },
+    { p: 'b', size: 15 * MB },
+    { p: 'c', size: 15 * MB },
+  ];
+  // Greedy: a slice grows until it *reaches* the budget, then closes. 15 MiB alone is under 20, so
+  // 'a' stays open, 'b' pushes it to 30 (>= 20) and closes it, and 'c' opens the last slice.
+  const slices = planSlices(todo, 20 * MB);
+  assert.deepEqual(slices.map((s) => s.map((r) => r.p)), [['a', 'b'], ['c']]);
+  for (const s of slices) {
+    const sum = s.reduce((t, r) => t + r.size, 0);
+    assert.ok(sum <= 20 * MB + 15 * MB, `slice of ${sum / MB} MiB is far above the ${20} MiB budget`);
+  }
+});
+
+test('planSlices groups small files instead of pushing one at a time', () => {
+  const todo = Array.from({ length: 300 }, (_, i) => ({ p: `f${i}`, size: 10 * 1024 }));
+  // 300 files / 3.1 MiB is the measured shape of one push; it must stay one slice.
+  const slices = planSlices(todo, 20 * MB);
+  assert.equal(slices.length, 1);
+  assert.equal(slices[0].length, 300);
+});
+
+test('planSlices loses no file and keeps order across slice boundaries', () => {
+  const todo = Array.from({ length: 500 }, (_, i) => ({ p: `f${i}`, size: 100 * 1024 }));
+  const flat = planSlices(todo, 5 * MB).flat();
+  assert.equal(flat.length, 500);
+  assert.deepEqual(flat.map((r) => r.p), todo.map((r) => r.p));
+});
+
+test('planSlices on nothing pushes nothing', () => {
+  assert.deepEqual(planSlices([], 20 * MB), []);
+});
+
+test('the default budget is sized for the measured incremental pack, not the old diff bytes', () => {
+  // 300 files measured 3.1 MiB of pack. The old default of 200 MiB was calibrated on diff bytes,
+  // which under-report a push by 8–30x — that miscalibration is what 413'd run 38671002854.
+  assert.ok(DEFAULT_BUDGET_MIB <= 32, `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice`);
   assert.ok(DEFAULT_BUDGET_MIB > 0);
 });
