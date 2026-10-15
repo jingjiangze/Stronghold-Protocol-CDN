@@ -4,6 +4,17 @@ name: git-art-sync
 # （ghfast / gitcdn / OpenI raw …）拉的是这个分支，不是 R2。2026-10-12 审计实测：hosted.json
 # 登记 5,246 个键，只有 1,856 个在 assets-raw 里，缺 3,390 个（约 932 MiB）。本作业补这个缺口。
 #
+# 2026-10-16 追加第二腿（art-tree-fill）：上面这个 todo 只来自 main 里的 hosted.json，
+# **结构上补不了上游素材树**——0.3.0 实测缺口 13,609 键 / 225.5 MiB（assets/audio 988 +
+# assets/ui 37 + assets/local 12,584），全在 R2（sync.mjs 已发布、19,708 URL 验证 0 missing），
+# 但没有任何作业会把它们补进 assets-raw，于是 jsdelivr/gitcdn/ghfast 与链发的 openi/魔搭数据集
+# 对 0.3.0 全部滞后。src/art-tree-fill.mjs 是全仓唯一能补上游树缺口的工具，此前没有任何
+# workflow 调用它（只能本机手动跑，而本机没有 R2 S3 凭据）。挂进本作业后：CI 有凭据 →
+# 走 S3 内网取字节；head 前进 → 下面的链发步自动把下游带上。
+#
+# 预算口径：上游 release 与 hosted 缺口各自有预算；fill 默认 220 MiB/1200 份每轮，
+# 排干型积压靠窗口滚动收敛，不赌单轮。
+#
 # 频率：一天四次，与 sync（:17 每 6 小时）和 openi-mirror（:47 每 6 小时）错开，避免相互争抢。
 # openi-mirror(:37) 推的就是本作业(:06)刚入库的 assets-raw 提交——同窗内先入库再被镜像，留 31 分钟余量。
 #
@@ -34,7 +45,9 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 2026-10-16：30→45 分钟。第二腿（fill）在上游大版本落地时要按预算取回缺口字节
+    # （S3 并发 8），0.3.0 那轮 225 MiB 实测要十几分钟；两腿 + 链发都在这个窗口里。
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,6 +83,23 @@ jobs:
           args=""
           if [ "${{ inputs.write }}" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --write"; fi
           node src/git-art-sync.mjs $args --max-bytes=${{ inputs.max_bytes || 700 }}
+
+      # 第二腿：上游素材树的缺口（上面那条的 todo 只来自 hosted.json，看不到上游 release 的新键）。
+      # 预算按「一轮排干一个大版本」定：0.3.0 全量缺口实测 225 MiB / 13,609 键，500 MiB/16,000 份
+      # 一轮装得下，比它更大的 release 自动分两窗。没有缺口时这一步只做 read-tree+ls-tree，几秒。
+      - name: fill upstream art-tree gaps into assets-raw
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          # 与上一腿同一语义：定时跑就写，dispatch 只在 write=true 时写。
+          # dry 轮也值得跑：它把「上游树缺多少键」打进日志，0.3.0 之前这个数没人看得见。
+          scheduled=${{ github.event_name == 'schedule' && 'true' || 'false' }}
+          args="--max-bytes=500 --max-files=16000"
+          if [ "${{ inputs.write }}" = "true" ] || [ "$scheduled" = "true" ]; then args="--write $args"; fi
+          node src/art-tree-fill.mjs $args
 
       # 2026-10-14：git 链是素材树的唯一中枢 —— 落完 commit 就链发下游多源，不再等各自 6 小时定时窗。
       # 只有 assets-raw 真的前进才链发（否则下游要白拉一遍 ~650 MB 的树）；两条下游都幂等。
