@@ -55785,6 +55785,28 @@
           29484
         ]
       ]
+    },
+    {
+      "id": "forge-0186-026-retry",
+      "what": "重传 33 个超时文件（Forge 0.18.6-0.2.6 静态素材补漏）",
+      "addedAt": "2026-10-15",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 3,
+      "bytes": 91794,
+      "keys": [
+        [
+          "assets/audio/voice/kr/char_391_rosmon/cn_024.mp3",
+          54979
+        ],
+        [
+          "assets/audio/voice/kr/char_4054_malist/cn_026.mp3",
+          11511
+        ],
+        [
+          "assets/audio/voice/kr/char_1040_blaze2/cn_020.mp3",
+          25304
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
