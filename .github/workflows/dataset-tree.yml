@@ -179,6 +179,11 @@ jobs:
             echo ""
             echo "平台审核豁免与缺口口径见 \`tools/push-dataset-tree.mjs\` 的 \`PLATFORM_REJECTED\`。"
           } >> "$GITHUB_STEP_SUMMARY"
+          # stdout 里也留一份：`>>` 把内容全吞进 summary 文件，日志里反而一行不剩
+          # （实测 run 38733399414 的 summarize step stdout 区段为空），验收时无法从日志
+          # 证明「summary 真写进去了」。这行让每次运行都在日志里自证，同时让 run 列表页
+          # 的折叠预览有内容可看。
+          echo "job summary 已写入：${state}（实际轮数 ${rounds}）"
           # 注解只在异常时出现，避免每次 cron 探空都在 run 页面刷一条通知
           case "${LAST:-}" in
             3) echo "::warning:: dataset-tree 跑满 ${rounds} 轮仍有剩余，已自触发续跑";;
