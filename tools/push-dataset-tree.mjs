@@ -2,6 +2,7 @@
 // 把 `assets-raw` 孤儿分支的整棵素材树推到 ModelScope **数据集**的 `releases/v1-trial/`。
 //
 //   node tools/push-dataset-tree.mjs [--dry-run] [--max-files=N] [--max-bytes=MiB]
+//                                    [--no-lfs]
 //
 // ## 为什么必须有这个脚本（2026-10-14 实测）
 //
@@ -31,6 +32,26 @@
 //   - 分批：整树一次性推会让魔搭侧连接超时，所以按 `--max-bytes` / `--max-files` 分批提交，
 //     每批一个 commit 一次 push；跑完仍有剩余就退出码 3 提示再跑一轮。
 //
+// ## 2026-10-15：改走 LFS，否则永远推不动
+//
+// pre-receive 拒收的理由是 `repo size(1784479944) greater than max repo size(1600000000)`。
+// 这条上限**只量 git 对象库，不含 LFS 存量**（实测依据：数据集 API 报 StorageSize 3.9 GB，
+// 远超 1.6 GB，却仍能正常读写）。而 `git ls-tree -l` 量出来对象库里躺着
+// **16,702 份原始字节 blob / 1511.7 MiB**（>1 MiB 的全是 assets/packs/*.zip）——正是
+// 本脚本自己用 `hash-object -w --no-filters` 显式绕过 LFS 灌进去的，把上限顶到只剩 ~10 MiB，
+// 于是任何新增都被拒（rank.yml 推 3.6 KB 能过，因为它不加大对象）。
+//
+// 数据集根 `.gitattributes` 早就把 png/mp3/skel/atlas/ttf/otf/woff/woff2 等声明为 LFS，
+// `releases/v1-trial/.gitattributes` 只补 `-text -diff -merge`、不动 filter —— 所以这些扩展名
+// 本来就该是指针（D1 里 17,751 份确为 130 B 指针），是本脚本把它们写成了原始字节。
+// 修法：命中 LFS 表的文件只把 **130 B 指针**写进对象库，真实字节经 `git lfs push` 上传
+// （实测可用：Uploading LFS objects 100%，删本地对象后可按 ref 从远端 fetch 回同一字节）。
+// 424 份缺口因此只占约 55 KB 对象库，而不是 186.2 MiB。
+//
+// ⚠ `*.zip` 不在数据集的 LFS 表里，而缺口 86% 的体积正是 8 个 zip（159.97 MiB）。它们仍按
+// 原始字节进对象库 —— 这会吃掉余量里的大半。要根治得给数据集补 `*.zip` 的 LFS 规则，
+// 但那会改变已有 16k 份的存储形态、影响面远超本次补齐，故本版不动，只把它写进文档。
+//
 // 凭据走环境变量 MODELSCOPE_URL（与另两个脚本同一约定），脚本从不打印它。
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -45,9 +66,33 @@ const SRC_REF = process.env.SRC_REF || 'assets-raw';
 
 const args = process.argv.slice(2);
 const DRY = args.includes('--dry-run');
+// 默认走 LFS；--no-lfs 回到 2026-10-15 之前的原始字节行为（留作对照与回退）。
+const USE_LFS = !args.includes('--no-lfs');
 const opt = (n, d) => { const h = args.find((a) => a.startsWith(`--${n}=`)); return h ? Number(h.slice(n.length + 3)) : d; };
 const MAX_FILES = opt('max-files', 1500);
 const MAX_BYTES = opt('max-bytes', 400) * 1024 * 1024;
+
+// 与数据集根 .gitattributes 的 LFS 表逐字对齐（releases/v1-trial/.gitattributes 只补
+// -text -diff -merge，不覆盖 filter）。改动任一侧都要同步这一行，否则本脚本写出的形态
+// 与平台 resolve 时认定的形态不一致，客户端会拿到指针原文而不是素材。
+//
+// `zip` 是**我们补的第二组**：数据集自带的 LFS 表里没有它，而 assets/packs 下 16k 份 zip
+// 全以原始字节躺在对象库里（ls-tree -l 实测 1511.7 MiB，>1 MiB 的 blob 几乎都是 zip），
+// 正是它们把 1.6 GB 上限顶到只剩 ~10 MiB。给数据集补 `*.zip filter=lfs` 后，**新写入**的
+// zip 走指针；已有的 16k 份不会被转换也不会被删（gitattributes 只作用于新写入的 blob）。
+// 兼容性已实测：现有 zip 经 resolve 拿回的是 66,407,555 B 真实内容而非 130 B 指针 ——
+// 平台会把 LFS 指针 materialize 成原始字节，所以客户端无感。
+const LFS_EXTS = new Set([
+  'png', 'jpg', 'jpeg', 'webp', 'gif',
+  'mp3', 'wav', 'ogg', 'm4a',
+  'skel', 'atlas',
+  'ttf', 'otf', 'woff', 'woff2',
+  'zip',
+]);
+const isLfsPath = (p) => {
+  const dot = p.lastIndexOf('.');
+  return dot > p.lastIndexOf('/') && LFS_EXTS.has(p.slice(dot + 1).toLowerCase());
+};
 
 const REMOTE_URL = process.env.MODELSCOPE_URL || '';
 if (!REMOTE_URL && !DRY) {
@@ -96,7 +141,7 @@ try {
   if (!todo.length) { console.log('数据集已与源树一致，无需推送。'); process.exit(0); }
 
   const w = path.join(tmp, 'work');
-  // 写入：字节从源 ref 的 blob 读出，hash-object -w --stdin 写进数据集对象库，
+  // 写入：字节从源 ref 的 blob 读出，hash-object -w --stdin-paths 写进数据集对象库，
   // update-index --cacheinfo 挂到 index —— 全程不落工作树（clone 用了 --no-checkout，
   // 本来就没有工作树；走 `git add` 会报 "not in the current sparse checkout"）。
   //
@@ -113,10 +158,35 @@ try {
   }
   if (!plan.length) { console.log('本轮没有可提交内容'); process.exit(0); }
   const stage = fs.mkdtempSync(path.join(os.tmpdir(), 'dataset-stage-'));
+
+  // 数据集根 .gitattributes 必须有 `*.zip filter=lfs`，否则我们写进去的 zip 指针不会被平台
+  // materialize，客户端 resolve 到的是 130 B 指针原文。幂等：已在就跳过。
+  // 只追加一行、不改任何已有行 —— 已有的 16k 份 zip 继续以原始字节躺着，不受影响。
+  // 记进 attrCacheinfo 而不是直接 update-index：下面 `read-tree remoteHead`（对齐 rank.yml 的
+  // 并发写入）会把 index 整个重置，直接挂上去的那条会丢，必须跟着 cacheinfo 一起重挂。
+  const attrCacheinfo = [];
+  if (USE_LFS && !args.includes('--no-gitattributes')) {
+    let attr = '';
+    try { attr = git(w, 'cat-file', '-p', 'HEAD:.gitattributes'); } catch { /* 空仓库，从零写 */ }
+    if (!/(^|\n)\*\.zip\s+filter=lfs/m.test(attr)) {
+      const addition = (attr && !attr.endsWith('\n') ? '\n' : '') + '*.zip filter=lfs diff=lfs merge=lfs -text\n';
+      const p = path.join(stage, 'root-gitattributes');
+      fs.writeFileSync(p, attr + addition);
+      const h = spawnSync('git', ['hash-object', '-w', p], { cwd: w, encoding: 'utf8' });
+      if (h.status) throw new Error(`hash-object(.gitattributes) 退出 ${h.status}: ${h.stderr}`);
+      attrCacheinfo.push(`100644 ${h.stdout.trim()}\t.gitattributes`);
+      console.log('  将向数据集根 .gitattributes 追加 *.zip filter=lfs');
+    } else {
+      console.log('  数据集根 .gitattributes 已含 *.zip 规则，跳过');
+    }
+  }
   // 分块喂 --batch：一次喂几千条会撞上 Node/管道缓冲，实测第 4119 条开始 head 为空（输出被截）。
   // 每块 CHUNK 条、单独一条进程，既稳又比逐文件快两个数量级（500 份实测 0.87 s）。
   const CHUNK = Number(process.env.BATCH_CHUNK || 800);
   const rel = [];
+  // LFS 分流：命中 LFS 表的文件，真实字节**不进对象库**，只写 130 B 指针；字节交给
+  // `git lfs push`。所以落盘后要记下谁走 LFS，后面分别构造指针 blob 与原始 blob。
+  const lfsRel = [];
   for (let c = 0; c < plan.length; c += CHUNK) {
     const slice = plan.slice(c, c + CHUNK);
     const res = spawnSync('git', ['cat-file', '--batch'], {
@@ -136,8 +206,10 @@ try {
       const start = nl + 1;
       const dest = path.join(stage, slice[i].path);
       fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.writeFileSync(dest, out.subarray(start, start + size));
+      const buf = out.subarray(start, start + size);
+      fs.writeFileSync(dest, buf);
       rel.push(slice[i].path);
+      if (USE_LFS && isLfsPath(slice[i].path)) lfsRel.push({ path: slice[i].path, size, buf });
       off = start + size + 1; // 末尾还有一个 \n
     }
   }
@@ -146,23 +218,56 @@ try {
 
   // 一次进程 hash 一批（--stdin-paths 读路径清单），同样分块避免命令行/输出缓冲爆掉。
   const cacheinfo = [];
+  const lfsOids = [];
+  if (USE_LFS && lfsRel.length) {
+    // 指针自己就是 blob：`git lfs clean` 的输出格式与 `hash-object` 的结果逐字节一致
+    // （已用 100 KB 随机文件对照验证：oid/size/换行全部相同），所以不必起 git-lfs 进程。
+    const crypto = await import('node:crypto');
+    // git-lfs 客户端认得出 index 里的指针（实测报 `(missing) <path> (<oid>)`），但它要求
+    // **本地 LFS 对象**存在于 `.git/lfs/objects/<oid[:2]>/<oid[2:4]>/<oid>`；缺了就
+    // "Your push was rejected due to missing or corrupt local objects"。字节本来就在内存里，
+    // 落一份进去即可 —— 不落会白丢一次上传机会（实测：放好后同一命令立刻 Uploading 100%）。
+    const lfsDir = path.join(w, '.git', 'lfs', 'objects');
+    for (const f of lfsRel) {
+      const oid = crypto.createHash('sha256').update(f.buf).digest('hex');
+      const ptr = `version https://git-lfs.github.com/spec/v1\noid sha256:${oid}\nsize ${f.size}\n`;
+      const p = path.join(stage, f.path + '.lfsptr');
+      fs.writeFileSync(p, ptr);
+      const h = spawnSync('git', ['hash-object', '-w', p], { cwd: w, encoding: 'utf8' });
+      if (h.status) throw new Error(`hash-object(指针) 退出 ${h.status}: ${h.stderr}`);
+      cacheinfo.push(`100644 ${h.stdout.trim()}\t${DEST_ROOT}/${f.path}`);
+      const dir = path.join(lfsDir, oid.slice(0, 2), oid.slice(2, 4));
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, oid), f.buf);
+      lfsOids.push(oid);
+    }
+    const ptrBytes = lfsOids.length * 131;
+    console.log(`  LFS 分流：${lfsOids.length} 份写指针（约 ${(ptrBytes / 1024).toFixed(0)} KB），`
+      + `原始字节省 ${(lfsRel.reduce((s, f) => s + f.size, 0) / 1048576).toFixed(1)} MiB`);
+  }
   for (let i = 0; i < rel.length; i += CHUNK) {
     const slice = rel.slice(i, i + CHUNK);
+    // 走 LFS 的已经单独处理过，这里只 hash 剩下的（--no-filters 保持字节原样）。
+    // 用 Set 判 membership：数组 some() 在整批 424 份上是 O(n²)，脚本每轮都要跑一遍。
+    const lfsSet = USE_LFS ? new Set(lfsRel.map((f) => f.path)) : null;
+    const rest = lfsSet ? slice.filter((p) => !lfsSet.has(p)) : slice;
+    if (!rest.length) continue;
     const h = spawnSync('git', ['hash-object', '-w', '--no-filters', '--stdin-paths'], {
       cwd: w, maxBuffer: 64 * 1024 * 1024,
-      input: slice.map((p) => path.resolve(stage, p)).join('\n') + '\n',
+      input: rest.map((p) => path.resolve(stage, p)).join('\n') + '\n',
     });
     if (h.status) throw new Error(`hash-object 退出 ${h.status}: ${h.stderr}`);
     const shas = h.stdout.toString('utf8').trim().split('\n');
-    if (shas.length !== slice.length) throw new Error(`hash-object 返回 ${shas.length} 行，期望 ${slice.length}`);
-    for (let k = 0; k < slice.length; k++) cacheinfo.push(`100644 ${shas[k]}\t${DEST_ROOT}/${slice[k]}`);
+    if (shas.length !== rest.length) throw new Error(`hash-object 返回 ${shas.length} 行，期望 ${rest.length}`);
+    for (let k = 0; k < rest.length; k++) cacheinfo.push(`100644 ${shas[k]}\t${DEST_ROOT}/${rest[k]}`);
   }
   fs.rmSync(stage, { recursive: true, force: true });
 
   const applyCacheinfo = () => {
-    for (let i = 0; i < cacheinfo.length; i += 2000) {
+    const all = attrCacheinfo.concat(cacheinfo);
+    for (let i = 0; i < all.length; i += 2000) {
       execFileSync('git', ['update-index', '--add', '--index-info'], {
-        cwd: w, input: cacheinfo.slice(i, i + 2000).join('\n') + '\n', encoding: 'utf8',
+        cwd: w, input: all.slice(i, i + 2000).join('\n') + '\n', encoding: 'utf8',
       });
     }
   };
@@ -199,6 +304,24 @@ try {
     '-c', 'commit.gpgsign=false', 'commit-tree', tree2, '-p', parent,
     '-m', `assets: 补入素材树（${added} 份，${(bytes / 1048576).toFixed(1)} MiB）`);
   git(w, 'update-ref', `refs/heads/${BRANCH}`, commit);
+
+  // ⚠ 顺序：LFS 字节必须在 git push 之前传上去。指针先落库、字节后到，中间这段窗口里
+  // 远端 ref 指向的树里有指针却取不到内容；把 LFS 放前面能把这个窗口压到本进程内，
+  // 且 git push 一旦失败，多出来的 LFS 对象只是孤儿、无害（可被平台 GC）。
+  // 反过来则会真的坏：客户端解析指针时字节不存在。
+  if (USE_LFS && lfsOids.length) {
+    const r = spawnSync('git', ['lfs', 'push', 'origin', `refs/heads/${BRANCH}`], {
+      cwd: w, encoding: 'utf8', maxBuffer: 1 << 26, stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    // git-lfs 对"本地对象缺失"只打 hint、退出码仍是 0（实测），所以不能只判 status，
+    // 必须连输出一起看，否则会出现"以为传上去了、其实一个字节都没动"的假成功。
+    const msg = String(r.stdout || '') + String(r.stderr || '');
+    if (r.status || /missing|corrupt|failed/i.test(msg)) {
+      throw new Error(`git lfs push 失败：${msg.slice(0, 400)}`);
+    }
+    console.log(`  LFS 字节已上传 ${lfsOids.length} 份`);
+  }
+
   git(w, 'push', 'origin', `refs/heads/${BRANCH}:refs/heads/${BRANCH}`);
   console.log(`已推送 ${DATASET}@${BRANCH} → ${commit.slice(0, 8)}`);
   const remain = todo.length - added;

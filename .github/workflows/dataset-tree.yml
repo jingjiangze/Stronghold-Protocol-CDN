@@ -18,6 +18,12 @@ name: dataset-tree
 # 约 2 分钟（含 push），8 轮足以排干首轮积压。
 # 幂等：脚本先比对父提交树，字节没变就跳过 push。
 #
+# 2026-10-15 起改走 **LFS**（详见 tools/push-dataset-tree.mjs 顶部说明）：数据集的对象库
+# 已被原始字节撑到上限（repo size 1784479944 > max 1600000000，pre-receive 连拒 18 次），
+# 而 1.6 GB 这条线只量 git 对象、不含 LFS 存量。命中 .gitattributes LFS 表的文件现在只写
+# 130 B 指针、真实字节走 `git lfs push`。⚠ `*.zip` 仍按原始字节进对象库（数据集的 LFS 表
+# 里没有它），所以 max_bytes 的预算仍要按真实体积算，不能按"反正走 LFS"放松。
+#
 # 全流程走索引层（`cat-file --batch` 读源 blob → `hash-object -w` 写对象库 →
 # `update-index --index-info` 挂 index → `write-tree` → `commit-tree` → push），
 # clone 用 `--no-checkout`，不落工作树 —— 否则 `git add` 会报 "not in the current sparse checkout"。
@@ -57,6 +63,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      # 2026-10-15 起素材走 LFS：runner 镜像自带 git-lfs，但不显式装就等于赌默认值；
+      # 缺了它 push 会报 "'git-lfs' is not a git command"（或更糟——lfs push 静默不执行）。
+      - name: ensure git-lfs
+        run: |
+          git lfs version || { sudo apt-get update -qq && sudo apt-get install -y -qq git-lfs; }
+          git lfs version
 
       # 素材树在孤儿分支 assets-raw 上，checkout 不会带它；脚本从本机 git 对象读字节之前先 fetch。
       - name: fetch assets-raw
