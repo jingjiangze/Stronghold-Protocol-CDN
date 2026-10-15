@@ -241,9 +241,9 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
 
 
     <div class="mirror-index" id="mirror-index">
-      <a href="./mirror-selection">多源自动选源 ↗</a>
+      <a href="./sync-chain">完整镜像链路同步 ↗</a>
+      <a href="./docs/多源自动选源.md">多源自动选源 ↗</a>
       <a href="./openi-mirror">第二镜像 OpenI ↗</a>
-      <a href="./modelscope-mirror">第三镜像 ModelScope ↗</a>
       <a href="./ms-edge">边缘分流 ms-edge ↗</a>
     </div>
 
@@ -337,9 +337,17 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="cards" id="mirror-cards"></div>
 
     <div class="cards" style="margin-top:16px">
-      <a class="card" href="./mirror-selection">
+      <a class="card" href="./sync-chain">
+        <div class="card__title">完整镜像链路同步方法（网页版）</div>
+        <div class="card__meta"><span>上游发布 / 后台上传 → 发布轮 → R2 桶（三域名）→ git-art → 孤儿分支 assets-raw → OpenI + 魔搭数据集 + ghfast/jsDelivr/gitcdn；含「同步到镜像源」按钮与逐步验收命令</span></div>
+        <div class="card__stats">
+          <span>整条链 <b>一次讲清</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/多源自动选源.md">
         <div class="card__title">多源自动选源（机制文档）</div>
-        <div class="card__meta"><span>客户端按设备挑最快镜像、换源只改一次清单；含资格过滤表与验收命令（网页版 + 原始 Markdown 同一份）</span></div>
+        <div class="card__meta"><span>客户端按设备挑最快镜像、换源只改一次清单；含资格过滤表与验收命令（原始 Markdown）</span></div>
         <div class="card__stats">
           <span>客户端 TTL <b>6h</b></span>
           <span>换源 <b>只改一次</b></span>
@@ -386,14 +394,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>首载提速 <b>316×</b></span>
           <span>稳态人均 <b>57.5 B/s</b></span>
           <span>10 Mbps 带 <b>≈21,000 人</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/bandwidth-max-compression.md">
-        <div class="card__title">原始 Markdown</div>
-        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
-        <div class="card__stats">
-          <span>含 <b>10 Mbps</b> 前后对比</span>
-          <span>含 <b>验收命令</b></span>
         </div>
       </a>
       <a class="card" href="./docs/ws-link-compression.md">
@@ -464,7 +464,7 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>
-      <a class="card" href="./mirror-selection">
+      <a class="card" href="./docs/多源自动选源.md">
         <div class="card__title">↗ 多源自动选源（机制文档）</div>
         <div class="card__meta"><span>换源是运行时决策：pick.js 测速 + 资格过滤 + 客户端按设备挑源</span></div>
         <div class="card__stats">

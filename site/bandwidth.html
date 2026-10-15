@@ -26,6 +26,7 @@
       <a href="#capacity">10 Mbps 容量</a>
       <a href="#mpub">m.public / 2000 人</a>
       <a href="#compact">常量请出热帧</a>
+      <a href="#rejected">否决方案与教训</a>
       <a href="#verify">验收</a>
     </nav>
   </div>
@@ -560,6 +561,89 @@
     </div>
   </section>
 
+  <!-- ===================== 被否决的方案与 p90 教训 ===================== -->
+  <section class="section" id="rejected">
+    <div class="section-heading">
+      <div><div class="eyebrow">REJECTED · P90 LESSON</div><h2>被否决的方案，与 p90 容量教训</h2></div>
+      <span class="section-status">今天仍成立的两段旁注</span>
+    </div>
+
+    <h3 style="margin-top:6px">已评估但否决的方案</h3>
+    <div class="table-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>方案</th><th>实测结论</th><th>为何不采用</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>brotli 静态压缩</b></td>
+            <td>再省 295 KiB（1.475 → 1.187 MiB，−19.5%），但压缩耗时 <b>92,138 ms vs 2,083 ms = 44.2×</b></td>
+            <td>一次性收益 20%，代价是构建慢 44 倍 + 全站缓存策略改动。<b>用户已决定保持 gzip l6</b></td>
+          </tr>
+          <tr>
+            <td><b>把 5 MB 代码挂 git 镜像源</b><br /><span class="section-note">jsDelivr / Statically / ghfast</span></td>
+            <td><code class="inline">public/vendor/</code> 在 <code class="inline">.gitignore</code> 第 6 行，<code class="inline">git ls-files public/vendor/</code> = <b>0</b> —— 54% 的载荷根本不在 git 里；且所有 raw 类镜像返回 <code class="inline">text/plain</code> + <code class="inline">nosniff</code>，ES module 直接被浏览器拒绝</td>
+            <td>一票否决：源不存在 + MIME 致命</td>
+          </tr>
+          <tr>
+            <td><b>走 CF 隧道承载静态资源</b></td>
+            <td>隧道只中继连接，<b>字节仍从盒子网卡出去</b>，上行瓶颈原地不动</td>
+            <td>不解决目标问题</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="section-note" style="margin-top:12px">
+      ⚠️ 这三条都仍是「不采用的理由」—— brotli 那行的结论明确是「<b>用户已决定保持 gzip l6</b>」，<b>不是</b>推荐 brotli。
+    </p>
+
+    <div class="notice" style="margin-top:14px">
+      <span><b>已从「否决」改判的东西：上下文接管（context takeover）。</b>
+      这一条原本在上表里（理由：当时内存测量三次结果互相矛盾，本轮不下结论），
+      但 <b>2026-10-12 改判</b>：现行 <code class="inline">on</code> 档<b>故意不声明</b>
+      <code class="inline">serverNoContextTakeover</code> —— 即<b>保留上下文接管</b>，并重测到
+      <code class="inline">m.private</code> 4.07× → <b>43.55×</b>。所以它现在是<b>线上在用</b>的配置，不再是「否决项」。<br />
+      参数现状与两个「故意不声明」项见
+      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a> §三
+      （本页 <code class="inline">#compact</code> 节已写明「保留上下文接管」「<code class="inline">m.private</code> 4.07× → 43.55×」的事实，此处只补来龙去脉）。</span>
+    </div>
+
+    <h3 style="margin-top:26px">p90 教训：容量从来由少数长连接决定</h3>
+    <p class="section-note" style="margin-bottom:12px">
+      长连接中按速率排前 10% 的那 <b>151 条</b>，占全部 ws 上行的 <b>90.5%</b>（618.2 / 682.8 MiB，n=1,503）。
+      即<b>容量从来由少数长连接决定，不由中位数决定</b> —— 这个教训今天仍成立。
+    </p>
+
+    <p class="section-note" style="margin-top:0">
+      🔗 <b>与页面 57.5 B/s 的桥梁（别把两组数字当成互相打脸）：</b>
+      本页的 <b>57.5 B/s → 约 21,000 人</b> 与上面那组 90.5% 的分布相差 <b>23×</b>。两者不冲突，差在三件事：
+    </p>
+    <ol style="margin:8px 0 0;padding-left:18px">
+      <li><b>采集窗口早于修复</b>。那条 90.5% 的分布来自 2026-10-09 的 nginx 日志，是<b>修复前基线</b>，不是今天的吞吐。</li>
+      <li><b>口径不同</b>。它是<b>每条连接的平均速率再取分位</b>（样本里混着大量 45 分钟 ~ 3 小时的超长连接）；
+        本页 57.5 B/s 是<b>整局逐字节（人类座位真实会话）</b>的均值，两者不可互换。</li>
+      <li><b>它仍然有用</b>：p90/p99 说明的是<b>头部用户吃掉了 90.5% 的上行</b>，教训保留。
+        ⚠️ 只是其中的 <b>2,048 / 505 B/s 与「98% 是 m.public」已被整局实测推翻</b>。</li>
+    </ol>
+
+    <div class="notice" style="margin-top:14px">
+      <span>⚠️ <b>历史观测，2026-10-09，已被后续改动覆盖：</b>下面这张分位表是那一轮
+      （快照率 20 Hz → 10 Hz、<code class="inline">SP_WS_COMPRESSION=on</code> 落地<b>之前</b>）的线上日志口径，
+      <b>不是当前容量</b>，只作「容量由少数长连接决定」的旁注。
+      口径：分母是<b>全部 <code class="inline">/ws</code> 请求的上行字节</b>（682.8 MiB，长连接占 682.7 MiB），分位取自同一集合；
+      早先并列的 97.9% 与 88.8% 是两套不同分母，已统一为上面的 90.5%。</span>
+    </div>
+    <div class="table-wrap" style="margin-top:12px">
+      <table>
+        <thead><tr><th>分位</th><th class="num">B/s</th><th class="num">10 Mbps 容纳</th></tr></thead>
+        <tbody>
+          <tr><td>p50</td><td class="num">15.2</td><td class="num">82,237 人</td></tr>
+          <tr><td>p75</td><td class="num">97.4</td><td class="num">12,834 人</td></tr>
+          <tr><td><b>p90</b></td><td class="num"><b>1,352.7</b></td><td class="num"><b>924 人</b></td></tr>
+          <tr><td>p99</td><td class="num">3,374.4</td><td class="num">370 人</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- ===================== 验收 ===================== -->
   <section class="section" id="verify">
     <div class="section-heading">
@@ -606,7 +690,6 @@ let b="";s.on("data",d=>{b+=d;if(b.includes("\r\n\r\n")){
         <a href="./docs/ws-link-compression.md">WS 压缩（已上线）</a>
         <a href="./docs/ws-link-compression-next.md">WS 压缩（下一轮）</a>
         <a href="./docs/ws-compression-library-and-pack.md">独立库与工坊包</a>
-        <a href="./docs/bandwidth-max-compression.md">原始 Markdown</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
         <a href="https://arknights.jiangjiangze.icu/" target="_blank" rel="noopener">明日方舟入口</a>

@@ -1,8 +1,18 @@
 User-agent: *
 Disallow: /
 
-# The written guide is content, not an operator surface: let it be indexed and linked.
-# Pages serves it at /bandwidth (it 308s /bandwidth.html there); allow both spellings.
+# The written guides are content, not an operator surface: let them be indexed and linked.
+# Pages serves them at the clean URL (it 308s the .html name there); allow both spellings.
+Allow: /asset-cdn
+Allow: /asset-cdn.html
 Allow: /bandwidth
 Allow: /bandwidth.html
+Allow: /mod
+Allow: /mod.html
+Allow: /ms-edge
+Allow: /ms-edge.html
+Allow: /openi-mirror
+Allow: /openi-mirror.html
+Allow: /sync-chain
+Allow: /sync-chain.html
 Allow: /docs/

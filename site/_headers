@@ -62,12 +62,12 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
-# Same shape: Pages 308s /mirror-selection.html to /mirror-selection, so both need naming.
-/mirror-selection.html
+# Same shape: Pages 308s /sync-chain.html to /sync-chain, so both need naming.
+/sync-chain.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
-/mirror-selection
+/sync-chain
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
@@ -77,15 +77,6 @@
   X-Robots-Tag: all
 
 /openi-mirror
-  Cache-Control: public, max-age=300, stale-while-revalidate=3600
-  X-Robots-Tag: all
-
-# Same shape: Pages 308s /modelscope-mirror.html to /modelscope-mirror, so both need naming.
-/modelscope-mirror.html
-  Cache-Control: public, max-age=300, stale-while-revalidate=3600
-  X-Robots-Tag: all
-
-/modelscope-mirror
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 

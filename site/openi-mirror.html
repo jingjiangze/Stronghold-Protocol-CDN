@@ -88,7 +88,7 @@
 }
 
 <i>// 同时写进 disabled 数组（双写防静默启用）</i>
-"disabled": [ "jsdelivr", "jsdelivr-assets", "openi", "ms-edge" ]</pre>
+"disabled": [ "jsdelivr", "jsdelivr-assets", "openi" ]</pre>
     <div class="notice" style="margin-top:16px">
       <span><b>双写为什么必要：</b>主链读条目自身的 <code class="inline">enabled</code>，多源链读 <code class="inline">disabled</code> 列表。
       只写一处，下一次由另一条链发布的 <code class="inline">mirrors.json</code> 就可能把它当可用源放出。两条都写成，
@@ -166,7 +166,7 @@ curl -sI -H "Origin: https://speedcdn.jiangjiangze.icu" https://openi.pcl.ac.cn/
         <a href="./">CDN 首页</a>
         <a href="./#mirrors">↗ 镜像站</a>
         <a href="./docs/openi-mirror.md">原始 Markdown</a>
-        <a href="./mirror-selection">↗ 多源自动选源</a>
+        <a href="./docs/多源自动选源.md">↗ 多源自动选源</a>
         <a href="./asset-cdn">↗ 素材 CDN 对账</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
