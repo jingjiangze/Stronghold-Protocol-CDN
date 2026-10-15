@@ -229,3 +229,98 @@ test('the default budget is sized for the measured incremental pack, not the old
   assert.ok(DEFAULT_BUDGET_MIB <= 32, `budget ${DEFAULT_BUDGET_MIB} MiB is far above the measured 3.1 MiB slice`);
   assert.ok(DEFAULT_BUDGET_MIB > 0);
 });
+
+// ─── syncByFiles 离线集成 ────────────────────────────────────────────────────────
+// 纯函数测试 import 不到 syncByFiles 内部的任何代码路径 —— 它漏掉过一次真实的 CI 事故：
+// 删 pushCommitInSlices 时把唯一的 `import { execFileSync }` 一起删了，函数体还在用它，
+// 结果 CI 上抛 "execFileSync is not defined"，26/26 单元测试全绿、干跑也绿，因为两者都不
+// 会执行到这里。这里用一个本地 bare repo 当假远端，把整条路径跑一遍。
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { syncByFiles } from '../src/openi-mirror.mjs';
+
+/** 建一对本地仓：src 带一棵目标树，bare 当远端。返回可传给 syncByFiles 的 cwd 与 remote 名。 */
+function fixture() {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'openi-sync-test-'));
+  const src = path.join(base, 'src');
+  const bare = path.join(base, 'bare.git');
+  const g = (args, cwd) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  const commit = (msg) => {
+    g(['add', '-A'], src);
+    return g(['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', 'commit', '-q', '-m', msg], src);
+  };
+
+  execFileSync('git', ['init', '-q', src], { encoding: 'utf8' });
+  execFileSync('git', ['init', '-q', '--bare', bare], { encoding: 'utf8' });
+  g(['remote', 'add', 'origin', bare], src);
+  g(['config', 'user.name', 't'], src);
+  g(['config', 'user.email', 't@t'], src);
+
+  fs.writeFileSync(path.join(src, 'a.txt'), 'a\n');
+  fs.writeFileSync(path.join(src, 'b.txt'), 'b\n');
+  commit('first');
+  g(['push', '-q', 'origin', 'HEAD:refs/heads/art'], src);
+
+  // 目标树：在 first 之上再加两个文件，其中一个是远端还没有的。
+  fs.writeFileSync(path.join(src, 'c.txt'), 'c\n');
+  fs.mkdirSync(path.join(src, 'd'));
+  fs.writeFileSync(path.join(src, 'd', 'e.txt'), 'e\n');
+  commit('second');
+  return { base, src, bare };
+}
+
+test('syncByFiles pushes only the missing files and leaves what the remote has alone', async () => {
+  const { base, src, bare } = fixture();
+  try {
+    const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: src, encoding: 'utf8' }).trim();
+    const remote = 'origin';
+    const branch = 'art';
+
+    const r = await syncByFiles(src, remote, branch, target, 20 * 1024 * 1024);
+    assert.equal(r.total, 2, 'only c.txt and d/e.txt are new');
+    assert.equal(r.pushed, 2);
+    assert.equal(r.partial, false);
+
+    const onRemote = execFileSync('git', ['ls-tree', '-r', '--name-only', branch], {
+      cwd: bare, encoding: 'utf8',
+    }).trim().split('\n').sort();
+    assert.deepEqual(onRemote, ['a.txt', 'b.txt', 'c.txt', 'd/e.txt']);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('syncByFiles is idempotent: a second run finds nothing to do', async () => {
+  const { base, src } = fixture();
+  try {
+    const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: src, encoding: 'utf8' }).trim();
+    await syncByFiles(src, 'origin', 'art', target, 20 * 1024 * 1024);
+    const again = await syncByFiles(src, 'origin', 'art', target, 20 * 1024 * 1024);
+    assert.equal(again.total, 0);
+    assert.equal(again.pushed, 0);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('syncByFiles splits work when the budget forces more than one push', async () => {
+  const { base, src, bare } = fixture();
+  try {
+    const target = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: src, encoding: 'utf8' }).trim();
+    // 2 MiB budget over 4-byte files still pushes everything, just in more than one push.
+    const seen = [];
+    const r = await syncByFiles(src, 'origin', 'art', target, 2, {
+      onProgress: (pushed, total) => seen.push([pushed, total]),
+    });
+    assert.equal(r.pushed, 2);
+    assert.ok(seen.length >= 2, `progress fired ${seen.length} time(s); expected one push per slice`);
+    const onRemote = execFileSync('git', ['ls-tree', '-r', '--name-only', 'art'], {
+      cwd: bare, encoding: 'utf8',
+    }).trim().split('\n').sort();
+    assert.deepEqual(onRemote, ['a.txt', 'b.txt', 'c.txt', 'd/e.txt']);
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+});

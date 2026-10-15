@@ -32,7 +32,12 @@
 //
 // Paths are identical on both hosts, so an origin entry is one line and a path is spelled the same
 // everywhere.
-import { spawn } from 'node:child_process';
+// ⚠ `execFileSync` 必须静态导入：`syncByFiles` 在主流程里同步调它几十次（read-tree /
+// update-index / write-tree / commit-tree / update-ref），动态 import 在这里只会多一次等待，
+// 而且曾经因为只写了 `spawn` 而在 CI 上抛 "execFileSync is not defined" —— 纯函数测试 import
+// 不到这条路径，抓不出来。改这个文件时先看一眼 `node --test tests/openi-mirror.test.mjs` 之外
+// 还跑不跑 `node src/openi-mirror.mjs` 干跑。
+import { spawn, execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -300,10 +305,16 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
   const scratch = path.join(os.tmpdir(), `openi-sync-${process.pid}.index`);
   const env = { ...process.env, GIT_INDEX_FILE: scratch };
   const g = (...a) => execFileSync('git', a, { cwd, encoding: 'utf8', maxBuffer: 1 << 28 }).trim();
-  // `gi` 与 `g` 同参数，但走 scratch index。额外的第 4 参是 stdin —— update-index 的
+  // `gi` 与 `g` 同参数，但走 scratch index。最后一个参数可以是 `{ input }` —— update-index 的
   // --index-info 只能从 stdin 读，没法用命令行传 2000 行。
-  const gi = (args, opts = {}) => execFileSync('git', args, {
-    cwd, env, encoding: 'utf8', maxBuffer: 1 << 28, ...opts,
+  // ⚠ 签名与 `g` 保持一致（spread，字符串参数直接摊开）曾经是坑：写成 `(args, opts)` 数组形式后，
+  // `gi('read-tree', remoteRef)` 这种字符串调用会抛 ERR_INVALID_ARG_TYPE —— 离线集成测试才抓到。
+  const gi = (...a) => execFileSync('git', a, {
+    cwd, env, encoding: 'utf8', maxBuffer: 1 << 28,
+  }).trim();
+  // update-index 的 stdin 变体：args 同上，`input` 是喂进去的 index-info 文本。
+  const giIn = (input, ...a) => execFileSync('git', a, {
+    cwd, env, encoding: 'utf8', maxBuffer: 1 << 28, input,
   }).trim();
   const url = (await run('git', ['remote', 'get-url', remote], { cwd })).trim();
 
@@ -341,7 +352,10 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
           '-c', 'commit.gpgsign=false', 'commit-tree', tree,
           ...(parent ? ['-p', parent] : []), '-m', 'assets: 对齐素材树');
         await g('update-ref', 'refs/heads/_openi_sync', c);
-        await run('git', ['push', '--quiet', url, 'refs/heads/_openi_sync:' + `refs/heads/${branch}`]);
+        // ⚠ `cwd` 必须传：漏了它 push 就在进程自己的工作目录里跑，报
+        // "src refspec refs/heads/_openi_sync does not match any"。CI 上恰好看不出来
+        // （checkout 的 cwd 就是仓库根），是离线集成测试才把它照出来的。
+        await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`], { cwd });
         parent = c;
       }
     }
@@ -363,9 +377,10 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
     for (const slice of planSlices(todo, budgetBytes)) {
       const sliceBytes = slice.reduce((s, r) => s + r.size, 0);
       for (let k = 0; k < slice.length; k += 2000) {
-        await gi(['update-index', '--add', '--index-info'], {
-          input: slice.slice(k, k + 2000).map((r) => `${r.mode} ${r.sha}\t${r.p}`).join('\n') + '\n',
-        });
+        await giIn(
+          slice.slice(k, k + 2000).map((r) => `${r.mode} ${r.sha}\t${r.p}`).join('\n') + '\n',
+          'update-index', '--add', '--index-info',
+        );
       }
       const tree = await gi('write-tree');
       const headTree = parent ? await g('rev-parse', '--verify', `${parent}^{tree}`) : null;
@@ -375,7 +390,7 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
           ...(parent ? ['-p', parent] : []),
           '-m', `assets: 补入素材树（${slice.length} 份，${(sliceBytes / 1048576).toFixed(1)} MiB）`);
         await g('update-ref', 'refs/heads/_openi_sync', c);
-        await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`]);
+        await run('git', ['push', '--quiet', url, `refs/heads/_openi_sync:refs/heads/${branch}`], { cwd });
         parent = c;
         pushed += slice.length;
         if (onProgress) onProgress(pushed, todo.length, sliceBytes);
