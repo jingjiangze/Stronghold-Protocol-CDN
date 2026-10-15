@@ -41,7 +41,13 @@ concurrency:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # 350 而不是 90：90 分钟在追赶期是**绑定约束**，不是安全余量。实测 run 38766930706
+    # 16:11:50Z 起、17:42:17Z 被杀 —— 正好 90.4 分钟，是 timeout 不是失败；那一轮推了
+    # 约 3,700 份（30,664 → 34,340），覆盖 98.85%，**差 401 份没推完就没了**。
+    # 稳态下这个作业几十秒就退出（远端 sha 相同 ⇒ 直接 return），90 分钟从来用不到；
+    # 只有追赶期（积压几万份）才需要长窗口，而那时正好是最需要它跑完的时候。
+    # 350 < GitHub 单作业上限 360，留 10 分钟给 checkout/上传日志。
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
         with:
