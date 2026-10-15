@@ -36897,8 +36897,8 @@
       "what": "时装补充包（skin-supplement）素材：12 套官方时装的头像/立绘/正背面 Spine。含官方素材，版权归鹰角网络 / Yostar，仅非商业。",
       "addedAt": "2026-10-15",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4784,
-      "bytes": 153431679,
+      "files": 4785,
+      "bytes": 153489896,
       "keys": [
         [
           "assets/audio/voice/en/char_003_kalts/cn_019.mp3",
@@ -55887,6 +55887,10 @@
         [
           "packs/skin-supplement/skin/op/char_136_hsguma/char_136_hsguma_summer_16/front/char_136_hsguma_summer_16.skel",
           282493
+        ],
+        [
+          "packs/skin-supplement/skin/op/char_294_ayer/char_294_ayer_boc_3/avatar.png",
+          58217
         ],
         [
           "packs/skin-supplement/skin/op/char_294_ayer/char_294_ayer_boc_3/back/char_294_ayer_boc_3.atlas",
