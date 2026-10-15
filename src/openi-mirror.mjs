@@ -149,11 +149,27 @@ export function totalBytes(rows) {
  *
  * 超时是这里的关键：默认无超时时 git 会挂到 runner 的 90 分钟上限，
  * 而这段等待既推不动任何字节，还会把「分支不存在」的错误结论带给后面所有逻辑。
+ *
+ * ⚠ 但单次超时即抛同样毁掉整轮作业 —— run 38704949047 就是这样死的：ls-remote 在 runner 上
+ * 卡了 120s（同一时刻本机探测只要 0.3–0.55s，OpenI 本身健康），作业 exit 1，一个字节都没推。
+ * 一次网络抖动不该让 90 分钟的预算作废，所以这里和 push 一样重试；单次超时同时放宽到 3 分钟，
+ * 因为 push 侧实测「连接被挂」可以持续 5 分钟以上，探测给少了只会提前误判。
  */
-export async function remoteHead(remote, branch, { timeoutMs = 120000 } = {}) {
-  const out = await run('git', ['ls-remote', remote, `refs/heads/${branch}`], { timeoutMs });
-  const m = out.trim().split(/\s+/)[0];
-  return m || null;
+export async function remoteHead(remote, branch, { timeoutMs = 180000, attempts = 5 } = {}) {
+  let last;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      const out = await run('git', ['ls-remote', remote, `refs/heads/${branch}`], { timeoutMs });
+      const m = out.trim().split(/\s+/)[0];
+      return m || null;
+    } catch (e) {
+      last = e;
+      const backoff = Math.min(15000 * i, 60000);
+      process.stderr.write(`[openi] ls-remote 第 ${i}/${attempts} 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+      if (i < attempts) await new Promise((s) => setTimeout(s, backoff));
+    }
+  }
+  throw last;
 }
 
 /** Resolve a ref in this repository to a commit sha. */
@@ -359,7 +375,25 @@ export async function syncByFiles(cwd, remote, branch, targetRef, budgetBytes, {
 
   // 远端的树。fetch 的是浅 ref：只需要树的形状来算出差集，不需要它的 blob —— 那些字节
   // 已经在 cwd 的对象库里（这棵树就是从这里推出去的），用 ls-tree 的 sha 直接引用即可。
-  await g('fetch', '--quiet', '--depth', '1', '--no-tags', url, `+refs/heads/${branch}:refs/remotes/_openi_mirror/${branch}`);
+  //
+  // ⚠ 这一步也重试：它是 `g()`（同步 execFileSync，没法在调用点退避）里唯一一次碰网络的命令，
+  // 而 run 38704949047 证明 runner↔OpenI 的连接会整段挂掉几分钟。挂在这里同样让整轮作废，
+  // 且比 ls-remote 更贵 —— 差集计算全压在这棵树身上。
+  const fetchRemoteTree = async () => {
+    for (let i = 1; i <= 5; i++) {
+      try {
+        await g('fetch', '--quiet', '--depth', '1', '--no-tags', url,
+          `+refs/heads/${branch}:refs/remotes/_openi_mirror/${branch}`);
+        return;
+      } catch (e) {
+        const backoff = Math.min(15000 * i, 60000);
+        process.stderr.write(`[openi] fetch 远端树第 ${i}/5 次失败（${String(e.message).split('\n').pop().slice(0, 120)}），${backoff / 1000}s 后重试\n`);
+        if (i < 5) await new Promise((s) => setTimeout(s, backoff));
+        else throw e;
+      }
+    }
+  };
+  await fetchRemoteTree();
   const remoteRef = `refs/remotes/_openi_mirror/${branch}`;
   let parent;
   try {
