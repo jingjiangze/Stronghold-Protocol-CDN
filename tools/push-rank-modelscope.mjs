@@ -76,7 +76,9 @@ try {
     process.exit(0);
   }
   console.log('变更内容：');
-  console.log(execFileSync('git', ['-C', 'work', 'diff', '--cached', '--stat', '--', DEST], { encoding: 'utf8' }).trim());
+  // ⚠ 这里必须显式 cwd：tmp ——裸 execFileSync 会在 CI 的检出目录里找 'work'，
+  // 报 fatal: cannot change to 'work'（其余 git 调用都走带 cwd 的 git() helper）。
+  console.log(execFileSync('git', ['-C', 'work', 'diff', '--cached', '--stat', '--', DEST], { cwd: tmp, encoding: 'utf8' }).trim());
   if (DRY) {
     console.log('干跑结束（未推送）。');
     process.exit(0);
