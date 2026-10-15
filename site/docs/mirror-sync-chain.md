@@ -50,7 +50,7 @@
 
 - `git-art-sync.yml` 把 R2 已上线后台上传的字节补提交进孤儿分支 `assets-raw`（一天 4 窗 + 链式触发）。
 - ① `openi-mirror.yml` 把该分支按**文件级增量**推到 OpenI（每天 4 次，单片约 60 MiB；OpenI 平台偶发连接超时，靠重试与多次运行追平）。
-- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`。2026-10-15 已修复：原脚本用 `hash-object -w --no-filters` 绕过 LFS 把 16,702 份原始字节 blob / 1511.7 MiB 灌进对象库顶满 1.6 GB 上限；现改走 LFS——命表文件（png/jpg/jpeg/webp/gif/mp3/wav/ogg/m4a/skel/atlas/ttf/otf/woff/woff2/zip）只写 131 B 指针 blob 进对象库、真实字节经 `git lfs push` 上传，并补 `*.zip filter=lfs diff=lfs merge=lfs -text` 到根 `.gitattributes`。workflow `38715068861` 推送 `df7d76e`（490 份 / 192.8 MiB，481 份走 LFS 指针，对象库仅涨约 62 KB）后，平台内容审核 revert 了其中 1 个文件（`c64e935`）。全量验收 424 条待补路径 423 条已可达（字节数一致，14 份抽下载逐字节 sha256 与源 ref 完全一致）；唯一失败 `assets/skins/char_340_shwaz_snow_1/illustration.png` 系平台审核判敏感自动 revert（历史每次推送都会被 revert，最近一次 c64e935），非推送链缺陷、亦非我方可控。
+- ② `dataset-tree.yml` 把整棵树分批推魔搭数据集 `releases/v1-trial/**`。2026-10-15 已修复：原脚本用 `hash-object -w --no-filters` 绕过 LFS 把 16,702 份原始字节 blob / 1511.7 MiB 灌进对象库顶满 1.6 GB 上限；现改走 LFS——命表文件（png/jpg/jpeg/webp/gif/mp3/wav/ogg/m4a/skel/atlas/ttf/otf/woff/woff2/zip）只写 131 B 指针 blob 进对象库、真实字节经 `git lfs push` 上传，并补 `*.zip filter=lfs diff=lfs merge=lfs -text` 到根 `.gitattributes`。workflow `38715068861` 推送 `df7d76e`（490 份 / 192.8 MiB，481 份走 LFS 指针，对象库仅涨约 62 KB）后，平台内容审核 revert 了其中 1 个文件（`c64e935`）。全量验收 424 条待补路径 423 条已可达（字节数一致，14 份抽下载逐字节 sha256 与源 ref 完全一致）；唯一失败 `assets/skins/char_340_shwaz_snow_1/illustration.png` 系平台审核判敏感自动 revert（历史每次推送都会被 revert，最近一次 c64e935），非推送链缺陷、亦非我方可控。该链 2026-10-15 另补两条自动化：每天 1 次 `0 21 * * *`（21:00 UTC）兜底 cron——原 `dataset-tree.yml` 只有 `workflow_dispatch`、靠 `git-art-sync.yml:76-91` 在 assets-raw 前进时链发，有两盲区（`gh workflow run` 网络抖动静默失败无人兜底、素材树缺口而 assets-raw 未前进时无人触发）；并新增 `PLATFORM_REJECTED` 常量作平台审核豁免表（详见 §7 要点）。
 - ③ ghfast / jsDelivr / gitcdn-own 读 GitHub 的 `assets-raw` / `main` 分支（拉取型，自动跟随，无需推送）。
 
 **链 D · 排名与测速（独立支线）**
@@ -78,7 +78,7 @@
 | B 接口重发 | `sync.mjs --write --interface-only` | 发布轮末尾 | 几十秒 |
 | C git 中枢 | `git-art-sync.yml` | 链式触发 / 一天 4 窗 | 2–25 分钟（视积压） |
 | C→OpenI | `openi-mirror.yml` | 每天 4 次 | 幂等 git push |
-| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / 定时 | 正常（链式触发 / 定时）；原「1.78 GB 超 1.6 GB 上限，连拒 18 次」为 2026-10-14 实测、2026-10-15 已修复（改走 LFS） |
+| C→魔搭数据集 | `dataset-tree.yml` | 链式触发 / **每天 21:00 UTC 兜底 cron** / workflow_dispatch | 正常（链式触发 / 定时）；原「1.78 GB 超 1.6 GB 上限，连拒 18 次」为 2026-10-14 实测、2026-10-15 已修复（改走 LFS） |
 | C→GitHub 代理 | ghfast / jsDelivr / gitcdn-own | 拉取型，自动跟随 | 读 assets-raw / main，无需推送 |
 | D 排名 | `rank.yml` | 每天 4 窗 | Globalping 实测 → rank.json |
 | D 重测 | `network-measure.yml` | 每周一 | 重测并触发 rank |
@@ -127,3 +127,4 @@ curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json | head
 - 2026-10-15 起上传不再自动叫发布轮；后台用「同步到镜像源」一次推整链，定时轮 30 分钟兜底。
 - 接口文件（`/cdn/v1/*.json`）只在 R2 三域名上存在，git 镜像无接口层。
 - 魔搭数据集 2026-10-15 已改走 LFS（LFS 指针进 git 对象库 + `git lfs push` 传字节），1.6 GB 上限已解决；全量实测 424 条待补路径 423 条已可达（14 份抽下载逐字节 sha256 与源 ref 完全一致），唯一失败的是 `assets/skins/char_340_shwaz_snow_1/illustration.png` —— 平台内容审核判敏感自动 revert（最近一次 c64e935），非推送链缺陷、亦非我方可控，该路径在 ms-edge 层走 exceptions 表改道。
+- 魔搭数据集 2026-10-15 补 dataset-tree 自动化三件套：① 兜底 cron 每天 1 次 `0 21 * * *`（21:00 UTC），填原「靠 `git-art-sync.yml:76-91` 链发、自身无定时」两盲区——`gh workflow run` 网络抖动会静默失败（脚本只 echo "触发失败（定时兜底）"）、素材树缺口而 assets-raw 恰好没前进时无人触发；同日链窗 01/06/17/37/43/51（promote→git-art→sync→openi→prune→rank），21 点不与任何一窗重叠、也避整点 GitHub 调度高峰，且脚本首件比对父提交树、无差异即 exit 0，空跑成本极低。② `tools/push-dataset-tree.mjs` 新增 `PLATFORM_REJECTED` 常量作平台审核豁免表，把被平台内容审核单独 revert 的 `assets/skins/char_340_shwaz_snow_1/illustration.png`（3,459 KB，源 blob `ef7cac43`）从 `todo` 排除（**不**塞进 `have`——`have` 是「远端真实有什么」，掺假会让日志与 `ls-tree` 对不上），令 `remain` 归零 → exit 0 正常收敛、不再触发 workflow 自触发续跑（原先无限循环，每轮 clone 约 650 MB 树、跑满 6 轮，白烧 Actions 额度）；维护约定为每轮打印豁免清单，若某条已在远端（平台放行）会显式警告应从表删掉，否则从「永动」静默退化成「静默缺失」。③ push step 把 `last` / `rounds_run` 写进 `GITHUB_OUTPUT`，新增 `summarize result` step 写 job summary（状态：✅ 已与源树一致 / ⏳ 跑满 N 轮仍有剩余、已自触发续跑 / ❌ 失败退出码 / ⚠️ 未取到退出码），异常态同时发 `::warning` 或 `::error` 注解、成功态不刷，不引入任何外部凭据。口径：源树 34,741 条路径中 34,740 条已可达，唯一缺口即上面那 1 份平台审核豁免。

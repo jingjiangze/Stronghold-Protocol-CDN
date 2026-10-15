@@ -120,7 +120,7 @@
         <ul>
           <li><code class="inline">git-art-sync.yml</code> 把 R2 已上线后台上传的字节补提交进孤儿分支 <code class="inline">assets-raw</code>（一天 4 窗 + 链式触发）。</li>
           <li>① <code class="inline">openi-mirror.yml</code> 把该分支按<b>文件级增量</b>推到 OpenI（每天 4 次，单片约 60 MiB；OpenI 平台偶发连接超时，靠重试与多次运行追平）。</li>
-          <li>② <code class="inline">dataset-tree.yml</code> 把整棵树分批推魔搭数据集 <code class="inline">releases/v1-trial/**</code>。2026-10-15 已修复：原脚本用 <code class="inline">hash-object -w --no-filters</code> 绕过 LFS 把 16,702 份原始字节 blob / 1511.7 MiB 灌进对象库顶满 1.6 GB 上限；现改走 LFS——命表文件（png/jpg/jpeg/webp/gif/mp3/wav/ogg/m4a/skel/atlas/ttf/otf/woff/woff2/zip）只写 131 B 指针 blob 进对象库、真实字节经 <code class="inline">git lfs push</code> 上传，并补 <code class="inline">*.zip filter=lfs diff=lfs merge=lfs -text</code> 到根 <code class="inline">.gitattributes</code>。workflow <code class="inline">38715068861</code> 推送 <code class="inline">df7d76e</code>（490 份 / 192.8 MiB，481 份走 LFS 指针，对象库仅涨约 62 KB）后，平台内容审核 revert 了其中 1 个文件（<code class="inline">c64e935</code>）。全量验收 424 条待补路径 423 条已可达（字节数一致，14 份抽下载逐字节 sha256 与源 ref 完全一致）；唯一失败 <code class="inline">assets/skins/char_340_shwaz_snow_1/illustration.png</code> 系平台审核判敏感自动 revert（历史每次推送都会被 revert，最近一次 c64e935），非推送链缺陷、亦非我方可控。</li>
+          <li>② <code class="inline">dataset-tree.yml</code> 把整棵树分批推魔搭数据集 <code class="inline">releases/v1-trial/**</code>。2026-10-15 已修复：原脚本用 <code class="inline">hash-object -w --no-filters</code> 绕过 LFS 把 16,702 份原始字节 blob / 1511.7 MiB 灌进对象库顶满 1.6 GB 上限；现改走 LFS——命表文件（png/jpg/jpeg/webp/gif/mp3/wav/ogg/m4a/skel/atlas/ttf/otf/woff/woff2/zip）只写 131 B 指针 blob 进对象库、真实字节经 <code class="inline">git lfs push</code> 上传，并补 <code class="inline">*.zip filter=lfs diff=lfs merge=lfs -text</code> 到根 <code class="inline">.gitattributes</code>。workflow <code class="inline">38715068861</code> 推送 <code class="inline">df7d76e</code>（490 份 / 192.8 MiB，481 份走 LFS 指针，对象库仅涨约 62 KB）后，平台内容审核 revert 了其中 1 个文件（<code class="inline">c64e935</code>）。全量验收 424 条待补路径 423 条已可达（字节数一致，14 份抽下载逐字节 sha256 与源 ref 完全一致）；唯一失败 <code class="inline">assets/skins/char_340_shwaz_snow_1/illustration.png</code> 系平台审核判敏感自动 revert（历史每次推送都会被 revert，最近一次 c64e935），非推送链缺陷、亦非我方可控。该链 2026-10-15 另补两条自动化：每天 1 次 <code class="inline">0 21 * * *</code>（21:00 UTC）兜底 cron——原 <code class="inline">dataset-tree.yml</code> 只有 <code class="inline">workflow_dispatch</code>、靠 <code class="inline">git-art-sync.yml:76-91</code> 在 assets-raw 前进时链发，有两盲区（<code class="inline">gh workflow run</code> 网络抖动静默失败无人兜底、素材树缺口而 assets-raw 未前进时无人触发）；并新增 <code class="inline">PLATFORM_REJECTED</code> 常量作平台审核豁免表。</li>
           <li>③ ghfast / jsDelivr / gitcdn-own 读 GitHub 的 <code class="inline">assets-raw</code> / <code class="inline">main</code> 分支（拉取型，自动跟随，无需推送）。</li>
         </ul>
       </div>
@@ -155,7 +155,7 @@
           <tr><td class="mono">B 接口重发</td><td class="mono">sync.mjs --write --interface-only</td><td class="mono">发布轮末尾</td><td>几十秒</td></tr>
           <tr><td class="mono">C git 中枢</td><td class="mono">git-art-sync.yml</td><td class="mono">链式触发 / 一天 4 窗</td><td>2–25 分钟（视积压）</td></tr>
           <tr><td class="mono">C→OpenI</td><td class="mono">openi-mirror.yml</td><td class="mono">每天 4 次</td><td>幂等 git push</td></tr>
-          <tr><td class="mono">C→魔搭数据集</td><td class="mono">dataset-tree.yml</td><td class="mono">链式触发 / 定时</td><td>正常（链式触发 / 定时）；原「1.78 GB 超 1.6 GB 上限，连拒 18 次」为 2026-10-14 实测、2026-10-15 已修复（改走 LFS）</td></tr>
+          <tr><td class="mono">C→魔搭数据集</td><td class="mono">dataset-tree.yml</td><td class="mono">链式触发 / <b>每天 21:00 UTC 兜底 cron</b> / workflow_dispatch</td><td>正常（链式触发 / 定时）；原「1.78 GB 超 1.6 GB 上限，连拒 18 次」为 2026-10-14 实测、2026-10-15 已修复（改走 LFS）</td></tr>
           <tr><td class="mono">C→GitHub 代理</td><td class="mono">ghfast / jsDelivr / gitcdn-own</td><td class="mono">拉取型，自动跟随</td><td>读 assets-raw / main，无需推送</td></tr>
           <tr><td class="mono">D 排名</td><td class="mono">rank.yml</td><td class="mono">每天 4 窗</td><td>Globalping 实测 → rank.json</td></tr>
           <tr><td class="mono">D 重测</td><td class="mono">network-measure.yml</td><td class="mono">每周一</td><td>重测并触发 rank</td></tr>
@@ -188,6 +188,7 @@
         <ul>
           <li>「催一次发布」只跑<b>发布轮</b>（不推镜像）——仅想把字节上线、暂不碰 git 链时用。</li>
           <li>定时轮每 <b>30 分钟</b>仍作兜底：即便忘点按钮，暂存区字节也会被定期 promote。</li>
+          <li>魔搭数据集 <code class="inline">dataset-tree.yml</code> 现另有每天 1 次 <code class="inline">0 21 * * *</code>（21:00 UTC）兜底 cron：原只靠 <code class="inline">git-art-sync.yml:76-91</code> 链发、自身无定时，会因 <code class="inline">gh workflow run</code> 网络抖动静默失败或素材树缺口而 assets-raw 未前进时无人触发；21 点不与同日链窗 01/06/17/37/43/51 重叠、也避整点调度高峰，脚本首件比对父提交树、无差异即 exit 0，空跑成本极低。</li>
           <li>命令行等价：<code class="inline">tools/agent-upload.mjs</code> / <code class="inline">agent-upload-batch.mjs</code> 上传，发布轮由事件或定时驱动。</li>
         </ul>
       </div>
