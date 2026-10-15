@@ -358,9 +358,12 @@ export function missingFiles(remoteTree, targetTree) {
  *    只按字节切时 `assets/audio` 那种平均 30.5 KiB 的目录能一片塞 1,446 份，服务端处理长尾全压在
  *    一片里。加上份数上限后单片工作量有界。
  *
- * 另按 size 降序排：字典序下 `assets/packs` 恰好排在最后，run 38707181417 就这么死在大 zip 区；
- * 而降序让小文件先走完（小文件段实测效率是大文件段的 ~300 倍）。⚠ 这一条只是让形状稳定，
- * 真正的保证来自 ①。
+ * ③ **按 size 升序排：小文件先走完。** ⚠ 这里曾写成「降序让小文件先走完」——**自相矛盾，
+ *    而且注释是对的、代码是反的**。降序把最大的 zip 放在第一片，run 38733522903 就这么死的：
+ *    第一片就是 63.4 MiB 单文件，40 分钟只推成 3 份大文件（其中一份连超时 5 次、白烧
+ *    1600s），而缺口里 8,479 份有 8,332 份（98.3%）是小文件 —— 一份都没碰上。
+ *    升序让便宜的大头先落地：覆盖率按「份数」计，小文件段跑完覆盖率就接近满，
+ *    剩下的大 zip 由 ① 单独成片兜着，不会再把小文件一起拖死。
  */
 export const BIG_FILE_BYTES = 8 * 1024 * 1024;   // 超过它单独成片
 export const MAX_FILES_PER_SLICE = 200;          // 单片文件数上限
@@ -368,8 +371,9 @@ export const MAX_FILES_PER_SLICE = 200;          // 单片文件数上限
 export function planSlices(todo, budgetBytes) {
   const big = BIG_FILE_BYTES;
   const maxFiles = MAX_FILES_PER_SLICE;
-  // 降序：小文件先推完。稳定排序，同尺寸保持原字典序。
-  const sorted = [...todo].sort((a, b) => b.size - a.size);
+  // 升序：小文件先推完。稳定排序，同尺寸保持原字典序。
+  // ⚠ 不要改回降序：见上面 ③。降序让最大的 zip 占第一片，一次超时就是 300s 白烧。
+  const sorted = [...todo].sort((a, b) => a.size - b.size);
 
   const slices = [];
   let cur = [];

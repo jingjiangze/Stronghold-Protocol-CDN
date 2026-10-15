@@ -253,17 +253,25 @@ test('no slice holds more than MAX_FILES_PER_SLICE files', () => {
 });
 
 test('small files come first so the cheap bulk of the gap lands before the big zips', () => {
-  // 字典序下 assets/packs 恰好排在最后，run 38707181417 就这么死在大 zip 区。降序让形状
-  // 稳定：先推完小文件段（实测效率是大文件段的 ~300 倍），再啃大文件。
+  // ⚠ 这条断言的方向曾写反过一次（`d4c575871`）：注释说「降序让小文件先走完」而代码真是
+  // 降序 —— 自相矛盾还自我感觉良好。run 38733522903 用降序跑，第一片就是 63.4 MiB 单文件，
+  // 40 分钟只推成 3 份大文件，缺口里 98.3% 的小文件一份没碰上。升序才是对的。
   const todo = [
     { p: 'assets/packs/audio.sfx-1.zip', size: 64 * MB },
     { p: 'assets/voice/a.mp3', size: 25 * 1024 },
     { p: 'assets/ui/b.png', size: 30 * 1024 },
   ];
   const slices = planSlices(todo, 20 * MB);
-  assert.equal(slices[0][0].p, 'assets/packs/audio.sfx-1.zip', 'largest file is its own first slice');
+  // 25 KiB < 30 KiB < 64 MiB ⇒ a.mp3 第一片，b.png 与它同片（都远小于预算），大 zip 垫底单独一片
+  assert.equal(slices[0][0].p, 'assets/voice/a.mp3', 'smallest file opens the run');
+  assert.deepEqual(slices[0].map((r) => r.p), ['assets/voice/a.mp3', 'assets/ui/b.png'], 'both small files share the first slice');
   const last = slices[slices.length - 1];
-  assert.ok(last.every((r) => r.size < BIG_FILE_BYTES), 'small files land in the last slices');
+  assert.deepEqual(last.map((r) => r.p), ['assets/packs/audio.sfx-1.zip'], 'big zip lands last, alone');
+  // 大文件单独成片：绝不能和 25 KiB 的小文件混在一起陪葬
+  for (const s of slices) {
+    const hasBig = s.some((r) => r.size >= BIG_FILE_BYTES);
+    if (hasBig) assert.equal(s.length, 1, 'a slice holding a big file holds nothing else');
+  }
 });
 
 test('planSlices on nothing pushes nothing', () => {
