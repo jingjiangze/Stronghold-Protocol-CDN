@@ -69,7 +69,9 @@ const DRY = args.includes('--dry-run');
 // 默认走 LFS；--no-lfs 回到 2026-10-15 之前的原始字节行为（留作对照与回退）。
 const USE_LFS = !args.includes('--no-lfs');
 const opt = (n, d) => { const h = args.find((a) => a.startsWith(`--${n}=`)); return h ? Number(h.slice(n.length + 3)) : d; };
-const MAX_FILES = opt('max-files', 1500);
+// 单轮文件数默认 400：魔搭 `legacy_scan` 按**文件数**拒收（实测 400/490 过、1500 拒，与字节数无关）。
+// 与 dataset-tree.yml 的 default/兜底三处必须一致——schedule run 没有 inputs，读的就是这里。
+const MAX_FILES = opt('max-files', 400);
 const MAX_BYTES = opt('max-bytes', 400) * 1024 * 1024;
 
 // 与数据集根 .gitattributes 的 LFS 表逐字对齐（releases/v1-trial/.gitattributes 只补
@@ -314,7 +316,13 @@ try {
   applyCacheinfo();
   console.log(`  index 已挂 ${cacheinfo.length} 条`);
 
-  const tree = git(w, 'write-tree');
+  // `--missing-ok`：blobless 克隆里 write-tree 会**懒取整棵既有树的 blob** 去解析属性
+  // （本地复现：根 .gitattributes → 每个 README/rank.json → 一路索取到每个 mp3/png），
+  // 而魔搭对历史 blob 按需取直接拒（`could not fetch … from promisor remote`，
+  // run 38852770221 round 2 即死于此）。未变化的条目本来就来自 `read-tree HEAD`（mode/type/oid
+  // 齐全），新条目是我们自己 hash-object 的 —— 组树不需要读任何一个 blob 的内容，
+  // --missing-ok 写出的 tree 与全物化时字节级相同（run 38798043798/38852770221 实测）。
+  const tree = git(w, 'write-tree', '--missing-ok');
   const parentTree = git(w, 'rev-parse', 'HEAD^{tree}');
   if (tree === parentTree) { console.log('内容与数据集一致，无需推送。'); process.exit(0); }
 
@@ -339,7 +347,7 @@ try {
     parent = remoteHead;
   }
 
-  const tree2 = git(w, 'write-tree');
+  const tree2 = git(w, 'write-tree', '--missing-ok');
   const commit = git(w, '-c', 'user.name=cdn-bot', '-c', 'user.email=cdn-bot@users.noreply.modelscope.cn',
     '-c', 'commit.gpgsign=false', 'commit-tree', tree2, '-p', parent,
     '-m', `assets: 补入素材树（${added} 份，${(bytes / 1048576).toFixed(1)} MiB）`);

@@ -49,8 +49,11 @@ on:
         default: 400
       max_files:
         description: '单轮文件数预算'
+        # 2026-10-16：1500→400。魔搭平台 `legacy_scan` 按**文件数**拒收（实测 1500 份/35 MiB 被拒、
+        # 400 份与 490 份通过 —— 与字节数无关，35 MiB 的 LFS 指针批也被拦），pre-receive hook 回
+        # `result=REJECTED legacy_exit=1`。默认值必须落在通过侧，否则整条链每次 head 前进都全红。
         type: number
-        default: 1500
+        default: 400
       rounds:
         description: '本次运行最多跑几轮'
         type: number
@@ -117,7 +120,7 @@ jobs:
             echo "=== round $i $(date -u +%H:%M:%S) ==="
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
-              --max-files=${{ inputs.max_files || 1500 }}; then
+              --max-files=${{ inputs.max_files || 400 }}; then
               last=0
             else
               last=$?
@@ -149,7 +152,7 @@ jobs:
             echo "::warning:: 跑满 ${{ inputs.rounds || 6 }} 轮仍有剩余，再次触发本作业继续"
             gh workflow run dataset-tree.yml \
               -f max_bytes=${{ inputs.max_bytes || 400 }} \
-              -f max_files=${{ inputs.max_files || 1500 }} \
+              -f max_files=${{ inputs.max_files || 400 }} \
               -f rounds=${{ inputs.rounds || 6 }}
           fi
 
