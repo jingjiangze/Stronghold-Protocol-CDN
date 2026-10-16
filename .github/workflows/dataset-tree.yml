@@ -118,10 +118,15 @@ jobs:
           rounds_run=0
           for i in $(seq 1 ${{ inputs.rounds || 6 }}); do
             echo "=== round $i $(date -u +%H:%M:%S) ==="
+            # --migrate-lfs 只在 round 1 跑：它把旧 raw json 从 have 摘出 → 指针重推（一次性瘦身）。
+            # round 2+ 不能再跑——否则已推过的指针被摘出 have → 重新推 → tree 不变 → exit 0
+            # → workflow 误判「完成」提前 break（run 38910589078 round 2 实测）。
+            migrate_flag=""
+            if [ "$i" -eq 1 ]; then migrate_flag="--migrate-lfs"; fi
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
               --max-files=${{ inputs.max_files || 400 }} \
-              --migrate-lfs; then
+              $migrate_flag; then
               last=0
             else
               last=$?
