@@ -25,13 +25,15 @@
     <nav class="navigation">
       <a href="#players">玩家下载</a>
       <a href="#agents">agent 接入</a>
-      <a href="#mirrors">镜像与选源</a>
+      <a href="#params">拉取参数</a>
+      <a href="#mirrors">镜像站</a>
       <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
+      <a href="#asset-cdn">素材 CDN 对账</a>
+      <a href="#mirror-selection">多源自动选源</a>
       <a href="#server-deploy">服务器部署</a>
       <a href="#p2p">异地联机</a>
-      <a href="#asset-cdn">素材对账</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">读取中…</span></div>
@@ -62,15 +64,28 @@
   <section class="block" id="players">
     <div class="block__head">
       <span class="block__num">1</span>
-      <span class="block__title">玩家：下载整合包，解压即开服</span>
+      <span class="block__title">玩家：两种下载，按你的情况选一个</span>
       <span class="block__who">不写代码 · 解压即用 · 随时撤销</span>
     </div>
     <p class="block__lead">
-      一个包就能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
-      <b>它自带启动脚本与依赖</b>，不管你手上有没有一份能跑的游戏服，下载这一个就行。
+      两条路都能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
+      <b>区别只在于你手上有没有一份能跑的游戏服</b>——有就选 A，没有就选 B。
     </p>
 
     <div class="download">
+      <div class="download__label">A · 你已经有能跑的游戏服</div>
+      <a class="button button-primary" id="dropin-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载侧车包</a>
+      <a class="button button-secondary" id="dropin-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
+      <div class="download__meta">
+        <b id="dropin-name">stronghold-cdn-dropin-<span class="tag">v0.2.2</span>.zip</b>
+        <span id="dropin-meta"> · 正在读取最新版本…</span><br />
+        十几天 KB。内含启动脚本（Windows / Linux）、侧车代理、验收脚本、说明与排错表。
+        <b>它不会改动你部署包里的任何文件</b>，删掉文件夹就完全回到原样。
+      </div>
+    </div>
+
+    <div class="download">
+      <div class="download__label">B · 你还没有游戏服，想直接开一个</div>
       <a class="button button-primary" id="official-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载整合包</a>
       <a class="button button-secondary" id="official-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
       <div class="download__meta">
@@ -84,8 +99,8 @@
     </div>
 
     <div class="notice">
-      <span><b>这个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
-      上游发新版后请重新下整包，<b>不要</b>用官方的 update 增量包升级
+      <span><b>两个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
+      上游发新版后，A 只需重下一次（十几 KB），B 请重新下整包，<b>不要</b>用官方的 update 增量包升级
       （那会把你带回需要本地素材的状态）。</span>
     </div>
 
@@ -147,7 +162,7 @@
           <tr><td>找不到部署目录</td><td>启动脚本会告诉你三种摆放位置；或显式设 <code class="inline">SP_DEPLOY_DIR</code></td></tr>
           <tr><td>页面白块 / 控制台报 CORS</td><td>CDN 响应缺 <code class="inline">Access-Control-Allow-Origin</code>；把浏览器控制台的报错发出来</td></tr>
           <tr><td>端口被占用</td><td><code class="inline">PORT=8080</code> 再启动（内部端口自动跟着变）</td></tr>
-          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；清单只是索引，桶里 <code class="inline">HEAD</code> 实测才是「有没有」的权威（详见《素材 CDN 对账》）</td></tr>
+          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；缺什么补什么，清单是唯一真源</td></tr>
         </tbody>
       </table>
     </div>
@@ -241,14 +256,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/data/assets.json"
 curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
   </section>
 
-
-    <div class="mirror-index" id="mirror-index">
-      <a href="./sync-chain">完整镜像链路同步 ↗</a>
-      <a href="./docs/多源自动选源.md">多源自动选源 ↗</a>
-      <a href="./openi-mirror">第二镜像 OpenI ↗</a>
-      <a href="./ms-edge">边缘分流 ms-edge ↗</a>
-    </div>
-
   <!-- ============================ 参考区 ============================ -->
   <section class="section" id="params">
     <div class="section-heading">
@@ -314,22 +321,37 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         </table>
       </div>
       <div class="notice">
-        <span><b>关于「部分覆盖」这个标记（2026-10-12 更新）：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
+        <span><b>关于「部分覆盖」这个标记：</b>它曾经是对的 —— 素材树从上游发布包解出来后一直不进 git，
         所以 git 挂载源只能给出本仓几十 KB 的工具文件，请求素材只会得到 404。这<b>不是不稳定，是源里当时就没有</b>。
-        <b>现在已解决</b>：素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，2026-10-11 又补入 <b>2,476 个皮肤文件</b>，各源现在都能给出全部素材；
+        <b>现在已解决</b>：素材树已于 2026-10-09 提交到本仓的 <b>assets-raw</b> 孤儿分支，各源现在都能给出全部素材；
         抽样 40 条路径 × 3 个源（jsDelivr / ghfast / gh-proxy）逐字节 sha256 校验一致，MIME、CORS 与 Range 206 均已实测。
-        注意：皮肤已随上游发布包一并进入 R2 / Pages（实测与 assets-raw 字节一致），同时 git 挂载层也以 <code class="inline">coverage:full</code> 提供。
         <b>唯一例外是 docs/</b>（官方文档）：它只发布到 R2 / Pages，不在本仓里，所以 git 挂载源对它 404 ——
-        表格最后一列按实际标注。<br />
-        <b>2026-10-12 逐源复核口径已修正，这里同步更正：</b>本页面的逐源覆盖率实测（30 个探针，只从上游集合
-        <code class="inline">index.json</code> 取样）结论是 —— <b>openi / ghfast / jsDelivr 三个 git 挂载源均 28/30，
-        缺的只有 <code class="inline">docs/</code>；r2 / r2-alt / pages 30/30</b>。
-        <b>pages 是「慢」而不是「缺」</b>：重试 + <code class="inline">HEAD</code> + <code class="inline">Range</code> 交叉验证后，
-        那几个看似超时的路径全部 200 且字节相符（中位 7 s、p90 93 s，854 KB 的音频取到过 612 s）。
-        另：<code class="inline">fonts/</code> <b>在</b> git 挂载源里（早期「docs / fonts 只在 R2 / Pages」的说法，
-        <code class="inline">fonts</code> 那半句已被实测推翻）。详见
-        <a href="./docs/per-source-asset-inventory.md">逐源素材清单</a>。</span>
+        表格最后一列按实际标注。</span>
       </div>
+    </div>
+
+    <div class="block" id="measured-rank">
+      <div class="block__head">
+        <span class="block__num">·</span>
+        <span class="block__title">内地三运营商实测排名</span>
+        <span class="block__who">rank.json · 不是你这条线路的测速结果</span>
+      </div>
+      <p class="block__lead">
+        下面这张表是<b>从内地电信 / 联通 / 移动真实网络</b>测出的首字节时间（Globalping 按 ASN 取样，每格 5 次），
+        用来决定<b>哪些源有资格进入运行时候选</b>，以及客户端测速完成前的默认次序。
+        它<b>不是</b>你当前这条线路的速度 —— 你自己的快慢请用下面的「开始测速」按钮。
+      </p>
+      <div class="table-wrap" style="margin-top:16px">
+        <table id="rank-table">
+          <thead><tr>
+            <th class="num">#</th><th>源</th><th>域名</th>
+            <th class="num">电信</th><th class="num">联通</th><th class="num">移动</th>
+            <th>资格</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="muted">加载中…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="notice" id="rank-note" hidden></div>
     </div>
 
     <div class="toolbar" style="margin-top:26px">
@@ -339,20 +361,20 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="cards" id="mirror-cards"></div>
 
     <div class="cards" style="margin-top:16px">
-      <a class="card" href="./sync-chain">
-        <div class="card__title">完整镜像链路同步方法（网页版）</div>
-        <div class="card__meta"><span>上游发布 / 后台上传 → 发布轮 → R2 桶（三域名）→ git-art → 孤儿分支 assets-raw → OpenI + 魔搭数据集 + ghfast/jsDelivr/gitcdn；含「同步到镜像源」按钮与逐步验收命令</span></div>
+      <a class="card" href="./mirror-selection">
+        <div class="card__title">多源自动选源（机制文档）</div>
+        <div class="card__meta"><span>pick.js 测速 / 资格过滤 / 客户端按设备挑源 / fail-closed 白名单</span></div>
         <div class="card__stats">
-          <span>整条链 <b>一次讲清</b></span>
-          <span>含 <b>验收命令</b></span>
+          <span>换源 <b>只改一次清单</b></span>
+          <span>客户端 TTL <b>6h</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/多源自动选源.md">
-        <div class="card__title">多源自动选源（机制文档）</div>
-        <div class="card__meta"><span>客户端按设备挑最快镜像、换源只改一次清单；含资格过滤表与验收命令（原始 Markdown）</span></div>
+      <a class="card" href="./docs/mirror-selection.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
-          <span>客户端 TTL <b>6h</b></span>
-          <span>换源 <b>只改一次</b></span>
+          <span>含 <b>资格过滤表</b></span>
+          <span>含 <b>验收命令</b></span>
         </div>
       </a>
     </div>
@@ -365,10 +387,12 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
       再套社区镜像前缀加速。<b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），
       对象存储不再存包 —— 同一批 100 MB 的 zip 只保留一份权威副本，避免两处各自漂移。
+      每行右侧是同一个包的几条下载门牌，<b>顺序即实测快慢</b>（本机：gh-proxy ≈ 12 MB/s，ghfast ≈ 10.9 MB/s；
+      GitHub 原站在本机常被墙，放最后作权威校核用）。
     </p>
     <div class="table-wrap">
       <table id="packs">
-        <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th class="num">来源</th></tr></thead>
+        <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th>加速下载（快→慢）</th></tr></thead>
         <tbody><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
@@ -382,112 +406,29 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <p class="section-note" style="margin-bottom:14px">
       如果你的部署机上行很小（家用宽带、4G 路由、小水管 VPS），这一份是为你写的。两件事要分开看：
       <b>首载</b>是「新玩家第一次进场吃掉几百 MiB」（优化前 <b>467.9 MiB</b>，10 Mbps 上占死 6.5 分钟），
-      靠把素材挪到 CDN 解决，优化后 <b>1.48 MiB</b>（<b>316×</b>）；
-      <b>稳态</b>整局实测人均 <b>57.5 B/s</b>，10 Mbps 约 <b>21,000 人</b>——
-      2000 人不再是「刚好够」，而是有约 10 倍余量。
-      <b>真正的瓶颈已经换了</b>：不是 WS 帧，是新玩家冷启动那 <b>5.4 MB</b> 客户端代码
-      （<b>1,573 B/s</b>，比稳态贵 <b>27×</b>）。
+      靠把素材挪到 CDN 解决；<b>稳态</b>实测人均 <b>2,048 B/s</b>，几乎全是 <code class="inline">m.public</code>，
+      压完 <b>505 B/s</b> —— 稳态正是 <b>10 Mbps 带 2000 人</b>的天花板所在（610 → 2,475 人）。
     </p>
     <div class="cards">
       <a class="card" href="./bandwidth">
         <div class="card__title">完整文档（网页版）</div>
-        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / 冷启动才是真瓶颈 / 验收命令</span></div>
+        <div class="card__meta"><span>结论 / 措施 / 10 Mbps 容量表 / m.public 与 2000 人 / 验收命令</span></div>
         <div class="card__stats">
           <span>首载提速 <b>316×</b></span>
-          <span>稳态人均 <b>57.5 B/s</b></span>
-          <span>10 Mbps 带 <b>≈21,000 人</b></span>
+          <span>稳态人均 <b>2,048 B/s</b></span>
+          <span>10 Mbps 带 <b>2,475 人</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/ws-link-compression.md">
-        <div class="card__title">WS 链路压缩（当前已上线 · 2026-10-12）</div>
-        <div class="card__meta"><span>三档 off/on/safe · 两个「故意不声明」的参数 · 白名单 + b.start · 广播漏压的真 bug</span></div>
+      <a class="card" href="./docs/bandwidth-max-compression.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
         <div class="card__stats">
-          <span>每席位 <b>57.5 B/s</b></span>
-          <span>10 Mbps 带 <b>≈21,000 人</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/ws-link-compression-next.md">
-        <div class="card__title">WS 链路压缩（下一轮）</div>
-        <div class="card__meta"><span>真瓶颈是冷启动 5.4 MB · ③④ 已做但没上线 · 隐藏标签页停推</span></div>
-        <div class="card__stats">
-          <span>冷启动 <b>1,573 B/s</b></span>
-          <span>比稳态贵 <b>27×</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/ws-compression-library-and-pack.md">
-        <div class="card__title">独立库与工坊兼容包</div>
-        <div class="card__meta"><span>零依赖库已发布 · 工坊包为什么开不了传输压缩 · 写包格式约定</span></div>
-        <div class="card__stats">
-          <span>MIT · <b>28 项测试</b></span>
-          <span>含 <b>只读接口</b></span>
-        </div>
-      </a>
-    </div>
-    <div class="notice" style="margin-top:16px">
-      <span><b>要落地这套压缩，用零依赖库，不要用旧的 as-built 包：</b>
-      现行实现在
-      <a href="https://github.com/jingjiangze/stronghold-ws-compression" target="_blank" rel="noopener"><b>stronghold-ws-compression</b></a>
-      （MIT·零依赖·<b>28 项测试</b>），用法与写包格式见
-      <a href="./docs/ws-compression-library-and-pack.md">《独立库与工坊兼容包》</a>；
-      线上配置（三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>）见
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>。
-      <br />⚠️ 曾有一个 <code class="inline">ws-link-AS-BUILT.zip</code>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
-      来自 master-play <code class="inline">c587705f</code>）随本站点分发，<b>已于 2026-10-12 废弃并从站点删除</b>：
-      它是 2026-10-10 的旧配置（阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
-      照它合并会装回一套与线上不一致的配置。旧的安装说明页也一并删除了，用上面的独立库。</span>
-    </div>
-  </section>
-
-  <section class="section" id="server-deploy">
-    <div class="section-heading">
-      <div><div class="eyebrow">GUIDE · SERVER DEPLOY</div><h2>服务器部署文档</h2></div>
-      <span class="section-status">ModelScope 创空间 · 从零开始 · 默认配置</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      这份记「游戏服本身怎么跑起来」：在 <b>ModelScope 创空间</b>（Docker 容器）上从零部署卫戍协议游戏服——
-      所需信息清单、创空间创建、默认配置（边缘层 5 文件逐字可用）、推送并触发重新部署、验收与排错。
-      所有默认配置随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上。
-    </p>
-    <div class="cards">
-      <a class="card" href="./docs/server-deploy.md">
-        <div class="card__title">完整文档（Markdown）</div>
-        <div class="card__meta"><span>所需信息 / 架构 / 创建创空间 / 默认配置 / 推送部署 / 验收</span></div>
-        <div class="card__stats">
-          <span>端口 <b>7860 锁死</b></span>
+          <span>含 <b>10 Mbps</b> 前后对比</span>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>
-    </div>
-  </section>
-
-  <section class="section" id="p2p">
-    <div class="section-heading">
-      <div><div class="eyebrow">GUIDE · P2P PLAY</div><h2>openp2p 异地联机</h2></div>
-      <span class="section-status">阿里云 ECS · 经 Cloudflare 隧道 · 玩家无需公网 IP</span>
-    </div>
-    <p class="section-note" style="margin-bottom:14px">
-      玩家分散在各自家里、没有公网 IP 时怎么联机：房主把本地 <b>3000 端口</b>映射出去，
-      每个玩家在本地访问 <code class="inline">127.0.0.1:3000</code> 即等同于访问房主机房里的同一端口。
-      平台跑在阿里云 ECS 上，对外经 Cloudflare 隧道暴露；客户端只要能<b>出站 UDP</b> 即可。
-      有 p2p 直连能力时数据<b>不经过服务器</b>（ECS 默认 <code class="inline">ShareBandwidth=0</code>，只走信令）。
-    </p>
-    <div class="cards">
-      <a class="card" href="./docs/openp2p-platform.md">
-        <div class="card__title">联机平台说明（含 API）</div>
-        <div class="card__meta"><span>开房 / 加入 / 收房 API · Web 零安装入口 · 安卓 APK 接入 · 房主侧</span></div>
-        <div class="card__stats">
-          <span>接口 <b>6 个</b></span>
-          <span>玩家 <b>零安装</b></span>
-        </div>
-      </a>
-      <a class="card" href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">
-        <div class="card__title">平台基址（p2p）</div>
-        <div class="card__meta"><span>主基址 p2p.jiangjiangze.icu · 备用 aliyun.jiangjiangze.icu</span></div>
-        <div class="card__stats">
-          <span>协议 <b>HTTPS</b></span>
-          <span>玩家 <b>零安装</b></span>
-        </div>
-      </a>
+      
+      
     </div>
   </section>
 
@@ -519,7 +460,7 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>含 <b>验收命令</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/多源自动选源.md">
+      <a class="card" href="./mirror-selection">
         <div class="card__title">↗ 多源自动选源（机制文档）</div>
         <div class="card__meta"><span>换源是运行时决策：pick.js 测速 + 资格过滤 + 客户端按设备挑源</span></div>
         <div class="card__stats">
@@ -530,13 +471,97 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
-  
+  <section class="section" id="mirror-selection">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · MULTI-SOURCE</div><h2>多源自动选源（CDN 优化）</h2></div>
+      <span class="section-status">客户端按自身链路挑最快镜像，换源只改一次清单</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      《镜像站》只说「有哪些源、各源分发什么」。这份记「用哪个镜像」怎么从写死域名变成<b>运行时决策</b>：
+      部署机在一个网络、玩家在另一个网络，两边对「谁最快」没有共同答案。<code class="inline">pick.js</code> 给每个镜像
+      测速、选最快的，再用 <code class="inline">rebaseManifest()</code> 把清单基址整体换掉——<b>换源只改一次清单，不动客户端代码</b>。
+      客户端（Android re-apk）每台设备自己挑，6 小时 TTL，fail-closed 白名单兜底。
+    </p>
+    <div class="cards">
+      <a class="card" href="./mirror-selection">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>两份数据 / 测速做法 / 资格过滤表 / 客户端集成 / 验收命令</span></div>
+        <div class="card__stats">
+          <span>客户端 TTL <b>6h</b></span>
+          <span>换源 <b>只改一次</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/mirror-selection.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>资格过滤表</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
 
-  
+  <section class="section" id="server-deploy">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · SERVER DEPLOY</div><h2>服务器部署文档</h2></div>
+      <span class="section-status">ModelScope 创空间 · 从零开始 · 默认配置</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      这份记「游戏服本身怎么跑起来」：在 <b>ModelScope 创空间</b>（Docker 容器）上从零部署卫戍协议游戏服——
+      所需信息清单、创空间创建、默认配置（边缘层 5 文件逐字可用）、推送并触发重新部署、验收与排错。
+      所有默认配置随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上。
+    </p>
+    <div class="cards">
+      <a class="card" href="./server-deploy">
+        <div class="card__title">完整文档（网页版）</div>
+        <div class="card__meta"><span>所需信息 / 架构 / 创建创空间 / 默认配置 / 推送部署 / 验收</span></div>
+        <div class="card__stats">
+          <span>端口 <b>7860 锁死</b></span>
+          <span>源码 <b>已内置</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/server-deploy.md">
+        <div class="card__title">原始 Markdown</div>
+        <div class="card__meta"><span>可复制进自己的仓库 / 文档站</span></div>
+        <div class="card__stats">
+          <span>含 <b>验收命令</b></span>
+          <span>含 <b>状态词</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
 
-  
-
-  
+  <section class="section" id="p2p">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · P2P PLAY</div><h2>openp2p 异地联机</h2></div>
+      <span class="section-status">阿里云 ECS · 经 Cloudflare 隧道 · 玩家无需公网 IP</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      玩家分散在各自家里、没有公网 IP 时怎么联机：房主把本地 <b>3000 端口</b>映射出去，
+      每个玩家在本地访问 <code class="inline">127.0.0.1:3000</code> 即等同于访问房主机房里的同一端口。
+      平台跑在阿里云 ECS 上，对外经 Cloudflare 隧道暴露；客户端只要能<b>出站 UDP</b> 即可。
+      有 p2p 直连能力时数据<b>不经过服务器</b>（ECS 默认 <code class="inline">ShareBandwidth=0</code>，只走信令）。
+    </p>
+    <div class="cards">
+      <a class="card" href="./docs/openp2p-platform.md">
+        <div class="card__title">联机平台说明（含 API）</div>
+        <div class="card__meta"><span>开房 / 加入 / 收房 API · Web 零安装入口 · 安卓 APK 接入 · 房主侧</span></div>
+        <div class="card__stats">
+          <span>接口 <b>6 个</b></span>
+          <span>玩家 <b>零安装</b></span>
+        </div>
+      </a>
+      <a class="card" href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">
+        <div class="card__title">平台基址（p2p）</div>
+        <div class="card__meta"><span>主基址 p2p.jiangjiangze.icu · 备用 aliyun.jiangjiangze.icu</span></div>
+        <div class="card__stats">
+          <span>协议 <b>HTTPS</b></span>
+          <span>依赖 <b>出站 UDP</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
 
   <section class="section" id="layout">
     <div class="section-heading">
@@ -559,16 +584,12 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
-    <section class="section" id="official-docs">
-    <details class="fold">
-      <summary class="fold__summary">
-        <div class="fold__head">
-          <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
-          <span class="section-status">读取中…</span>
-        </div>
-        <span class="fold__chevron" aria-hidden="true">▸</span>
-      </summary>
-<p class="section-lead">
+  <section class="section" id="official-docs">
+    <div class="section-heading">
+      <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
+      <span class="section-status" id="doc-status">读取中…</span>
+    </div>
+    <p class="section-lead">
       上游发布包里的 <code class="inline">docs/**</code>，原样镜像到本 CDN，键就是包内路径。
       这里面是<b>官方自己写的</b>资料：<code class="inline">PLAYING.md</code>（玩家手册）、
       <code class="inline">DEPLOY.md</code>（部署），以及 <code class="inline">docs/research/*.json</code>
@@ -576,15 +597,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <b>这些文件游戏服务器不提供</b>（上游没有 <code class="inline">/docs/</code> 路由），
       以前只能去 GitHub 取；现在和素材一样走这个域名。
     </p>
-    <div class="notice">
-      <span><b>给 agent：怎么保证拿到的是最新版。</b>这批文件<b>随上游每次发布整体更换，但路径不变</b>，
-      而裸路径的浏览器缓存是 1 小时 —— 直接抓 <code class="inline">/docs/&lt;path&gt;</code> 可能读到旧版本。
-      正确顺序：① 读 <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/art.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/art.json</code></a>
-      的 <code class="inline">token</code>（页顶状态行的「缓存令牌」就是同一个值）；
-      ② 请求 <code class="inline">/docs/&lt;path&gt;?v=&lt;token&gt;</code> —— 带令牌的边缘副本不可变（1 年），
-      令牌一变即表示上游发了新版本，应重新取。
-      <b>唯一的源是 R2 / Pages</b>：git 挂载源不含 <code class="inline">docs/</code>，对它返回 404。</span>
-    </div>
     <div class="notice">
       <span><code class="inline">.md</code> 用 <code class="inline">text/plain; charset=utf-8</code> 发送，
       所以点开是<b>直接显示</b>而不是下载，中文也不会变乱码（不带 charset 时浏览器会按 Latin-1 解码，
@@ -597,8 +609,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <tbody id="doc-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
-  
-    </details>
   </section>
 
   <section class="section" id="api">
@@ -607,18 +617,10 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <span class="section-status">基址 <span data-base>https://speedcdn.jiangjiangze.icu</span></span>
     </div>
     <div class="notice">
-      <span><b>接口域名（2026-10-14 口径：本桶的规范门牌是 speedcdn）：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>
-      —— 同一批接口文件另有两个等价入口 <b>https://weishucdn.jiangjiangze.icu</b> 与
-      <b>https://weishucdn2.jiangjiangze.icu</b>：三者指向<b>同一个桶、同一份字节</b>，实测
-      <code class="inline">/cdn/v1/api.json</code> sha256 完全相同；<code class="inline">mirrors.json</code> /
-      <code class="inline">index.json</code> / <code class="inline">tree.json</code> /
-      <code class="inline">data/assets.json</code> 均 200。
+      <span><b>接口只有一个域名：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>。
       上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
       <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
-      所以：<b>接口从这三个域名里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
-      <br />⚠️ 机器可读的那份权威声明是 <code class="inline">/cdn/v1/api.json</code> 的
-      <code class="inline">base</code> 字段（由接口重发生成，迁移期可能仍读到旧门牌 weishucdn / weishucdn2
-      —— 三个门牌同桶同字节）—— 以它为准，本页文字不另立权威。</span>
+      所以：<b>接口一律从这个域名取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -684,6 +686,7 @@ console.log(best.id, best.base, best.ms + "ms");</pre>
         <a href="./mod">Mod 梳理（APK 端 / 服务器端）</a>
         <a href="./admin">素材上传后台（agent）</a>
         <a href="./docs/agent-upload.md">agent 接入说明</a>
+        <a href="./docs/openp2p-platform.md">openp2p 联机平台说明</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
       <a href="https://game.rainya.me/" target="_blank" rel="noopener">联机中转站</a>
       <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>

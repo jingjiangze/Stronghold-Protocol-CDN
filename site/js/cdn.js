@@ -7,14 +7,6 @@
 
 const CDN = (document.body.dataset.cdnBase || '').replace(/\/+$/, '');
 const SNAPSHOT = './data/snapshot.json';
-// 2026-10-13：清单优先读同源（随 Pages 部署落进 ./cdn/v1/），取不到再回 CDN 基址（R2）。
-// 动机：R2 上这些 JSON 不缓存（DYNAMIC），每次访客都实打实读一次 R2；同源由 Pages 边缘直接服务。
-const MANIFEST_BASE = (document.body.dataset.manifestBase || '').replace(/\/+$/, '');
-async function getManifest(path, timeoutMs = 8000) {
-  if (MANIFEST_BASE) return getJson(`${MANIFEST_BASE}${path}`, timeoutMs);
-  try { return await getJson(`.${path}`, timeoutMs); }
-  catch { return await getJson(`${CDN}${path}`, timeoutMs); }
-}
 
 const $ = (id) => document.getElementById(id);
 const setText = (id, text) => { const el = $(id); if (el) el.textContent = text; };
@@ -98,6 +90,63 @@ function renderStatus(art, source) {
  */
 const servesAssets = (mirror) => mirror?.coverage !== 'partial';
 
+/**
+ * The mainland-carrier measurement table (rank.json).
+ *
+ * Why it is shown separately from the cards below: those cards carry the reader's OWN measurement
+ * (wireProbe), this table carries someone else's — Globalping probes from 电信/联通/移动 ASNs.
+ * Mixing them would let a number from another network wear the authority of a test the reader just
+ * ran. Its real job is narrower: it decides which origins are runtime candidates at all, and the
+ * order used before a client has measured anything.
+ *
+ * Nothing here is allowed to break the page: the table is a reference panel, so every failure
+ * path ends in a quiet note.
+ */
+function renderRank(rank) {
+  const body = $('rank-table')?.querySelector('tbody');
+  if (!body) return;
+  const note = $('rank-note');
+  const rows = Array.isArray(rank?.rank) ? rank.rank : [];
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="7" class="muted">暂未发布实测排名。</td></tr>';
+    return;
+  }
+  const CARRIERS = ['电信', '联通', '移动'];
+  const cell = (ms, fail) => {
+    if (typeof ms !== 'number') return `<td class="num muted">${fail || '—'}</td>`;
+    return `<td class="num">${Math.round(ms)} ms</td>`;
+  };
+  body.innerHTML = rows
+    .map((r) => {
+      const ttfb = r.ttfbMs || {};
+      // "measured" means a probe actually ran; "usable" means ≥4/5 succeeded on a carrier.
+      // A source can be measured and still unusable — that is the interesting row, not an error.
+      const badge =
+        r.usable === true
+          ? '<span class="chip chip--mod" title="三个运营商中至少一家达到 4/5 成功率">合格</span>'
+          : r.measured === true
+            ? '<span class="chip chip--warn" title="测过，但没有运营商达到 4/5 成功率">实测不可用</span>'
+            : '<span class="chip chip--warn" title="network.json 里没有这个源的实测数据">未实测</span>';
+      return (
+        `<tr><td class="num">${r.n}</td><td class="mono">${r.id}</td>` +
+        `<td class="mono muted" style="word-break:break-all">${r.host || '—'}</td>` +
+        CARRIERS.map((c) => cell(ttfb[c])).join('') +
+        `<td>${badge}</td></tr>`
+      );
+    })
+    .join('');
+  if (note) {
+    const noData = rows.filter((r) => r.measured !== true).map((r) => r.id);
+    note.hidden = false;
+    note.innerHTML =
+      `<span>实测日期 <b>${rank.measuredAt || '—'}</b>；生成于 <b>${(rank.generatedAt || '—').slice(0, 10)}</b>。` +
+      (noData.length
+        ? ` 其中 <b>${noData.join('、')}</b> 尚未纳入内地实测，因此<b>不进入</b>运行时排序的头部（只按登记顺序排在尾部）。`
+        : ' 全部源均已纳入内地实测。') +
+      ` 排序口径：先按实测可用性，再按各运营商中的<b>最差</b>值 —— 只要有一家运营商慢，就算慢。</span>`;
+  }
+}
+
 function renderMirrors(flat) {
   const host = $('mirror-cards');
   if (!host) return;
@@ -134,6 +183,27 @@ function renderMirrors(flat) {
   }
 }
 
+// Human-readable labels for a pack URL, keyed by the host that serves it. A pack is published once
+// (the GitHub release `assets-<tag>`) and every mirror re-serves the very same bytes, so the
+// interesting thing for a visitor is *which* door to walk through — and they cannot tell
+// `gh-proxy.com/github.com/...` from `ghfast.top/github.com/...` at a glance.
+const PACK_HOST_LABELS = [
+  [/^gh-proxy\.com$/i, 'gh-proxy（实测最快）'],
+  [/^ghfast\.top$/i, 'ghfast'],
+  [/^github\.com$/i, 'GitHub 原站'],
+];
+
+/** Short name for one pack URL: a known host gets its label, anything else falls back to the host. */
+function packHostLabel(url) {
+  try {
+    const { hostname } = new URL(url);
+    const hit = PACK_HOST_LABELS.find(([re]) => re.test(hostname));
+    return hit ? hit[1] : hostname;
+  } catch {
+    return '—';
+  }
+}
+
 function renderPacks(packs) {
   const body = $('packs')?.querySelector('tbody');
   if (!body) return;
@@ -142,12 +212,21 @@ function renderPacks(packs) {
     return;
   }
   body.innerHTML = packs
-    .map(
-      (pack) =>
+    .map((pack) => {
+      const urls = pack.urls || [];
+      // The list is ordered fastest-first at publish time; keeping the order and labelling each
+      // host turns a count into a usable choice.
+      const links = urls.length
+        ? urls
+            .map((u) => `<a class="pack-link" href="${u}" rel="noopener">${packHostLabel(u)}</a>`)
+            .join(' · ')
+        : '<span class="muted">—</span>';
+      return (
         `<tr><td class="mono">${pack.id}.zip</td><td class="mono">${pack.group || '—'}</td>` +
         `<td class="num">${fmtCount(pack.files)}</td><td class="num">${fmtBytes(pack.size)}</td>` +
-        `<td class="num">${(pack.urls || []).length}</td></tr>`,
-    )
+        `<td class="pack-urls">${links}</td></tr>`
+      );
+    })
     .join('');
 }
 
@@ -356,7 +435,7 @@ async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
   let doc = treePromise ? await treePromise : null;
   if (!doc?.dirs) {
     try {
-      doc = await getManifest('/cdn/v1/tree.json', 20000);
+      doc = await getJson(`${CDN}/cdn/v1/tree.json`, 20000);
     } catch {
       /* fall through to the snapshot */
     }
@@ -465,22 +544,19 @@ async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
 }
 
 
-// ---- the download link --------------------------------------------------------------------
+// ---- the two download links --------------------------------------------------------------
 
 /**
  * Each zip is rebuilt whenever the guide, the launchers or the stamped token change, so a link
  * must never name a version. The deploy-time snapshot carries the resolved assets; the page only
  * falls back to the Releases page when that resolution failed.
  *
- * 2026-10-14 用户指令：给玩家的「两种下载，按你的情况选一个」已去掉，只留**整合包**一条路
- * （自给自足：自带启动脚本与依赖，玩家手上有没有游戏服都能直接开）。侧车包 dropin 已从页面
- * 下线，这里同步移除它的渲染项——`renderDownload` 对缺失元素本就 `if (!button) return`，
- * 但留着死配置会让人误以为页面上还有第二个入口。
- *
- * 只剩一个变体后，原先「两个 pattern 刻意不相交（official-cdn 不含 stronghold-cdn 子串）」
- * 的防撞车说明随之作废。
+ * The two variants are the same shape, so they share one renderer. The name patterns are kept
+ * disjoint on purpose: "stronghold-official-cdn-…" does not contain "stronghold-cdn" (the
+ * substring is "official-cdn"), so neither can put the other's zip behind its own button.
  */
 const DOWNLOADS = [
+  { key: 'dropin', id: 'dropin', pattern: /stronghold-cdn[^/]*\.zip$/i },
   { key: 'officialCdn', id: 'official', pattern: /^stronghold-official-cdn[^/]*\.zip$/i },
 ];
 
@@ -758,9 +834,9 @@ async function main() {
   // table comes from it (aggregating 1.3 MB of index on every visit is not worth it), and it is
   // the fallback when the interface is unreachable.
   const [live, snap, contract] = await Promise.all([
-    Promise.all([getManifest('/cdn/v1/art.json'), getManifest('/cdn/v1/mirrors.json')]).catch(() => null),
+    Promise.all([getJson(`${CDN}/cdn/v1/art.json`), getJson(`${CDN}/cdn/v1/mirrors.json`)]).catch(() => null),
     getJson(SNAPSHOT).catch(() => null),
-    getManifest('/cdn/v1/api.json').catch(() => null),
+    getJson(`${CDN}/cdn/v1/api.json`).catch(() => null),
   ]);
   snapshot = snap;
   renderApi(contract);
@@ -775,13 +851,21 @@ async function main() {
   const flat = mirrors?.flat || art?.art?.mirrors || [];
   renderStatus(art, source);
   renderMirrors(flat);
+  // Fire and forget: the carrier table is a reference panel. If rank.json is missing or stale the
+  // page still works — the reader's own speed test below is the one that picks a mirror.
+  getJson(`${CDN}/cdn/v1/rank.json`, 15000)
+    .then(renderRank)
+    .catch(() => {
+      const body = $('rank-table')?.querySelector('tbody');
+      if (body) body.innerHTML = '<tr><td colspan="7" class="muted">实测排名读取失败。</td></tr>';
+    });
   // art.json's pack list is the complete one (id, group, files, size, urls); mirrors.json's copy
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
   // One fetch of the 85 KiB tree feeds both the directory browser and the docs list; neither may
   // hold up the rest of the page, so the promise is handed to each and awaited inside.
-  const treePromise = getManifest('/cdn/v1/tree.json', 20000).catch(() => null);
+  const treePromise = getJson(`${CDN}/cdn/v1/tree.json`, 20000).catch(() => null);
   renderDocs(treePromise).catch(() => {});
   renderTree(snapshot?.dirs || [], snapshot?.totals || null, treePromise).catch(() => {});
   renderDownloads(snapshot);
