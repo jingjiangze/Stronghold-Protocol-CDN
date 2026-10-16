@@ -84,7 +84,20 @@ const MAX_BYTES = opt('max-bytes', 400) * 1024 * 1024;
 // zip 走指针；已有的 16k 份不会被转换也不会被删（gitattributes 只作用于新写入的 blob）。
 // 兼容性已实测：现有 zip 经 resolve 拿回的是 66,407,555 B 真实内容而非 130 B 指针 ——
 // 平台会把 LFS 指针 materialize 成原始字节，所以客户端无感。
+// `json`/`css`/`svg` 是 2026-10-16 补的第三组（用户 0.3.0 裁决：fill 后对象库又顶穿 1.6 GB，
+// repo size(1602462630) > max(1600000000)。元凶 = json 不在 LFS 表 → 12,287 份待补里 5,460 份
+// json / 126.9 MiB 走对象库）。配合 --migrate-lfs 一次性把已有 raw json 替换为指针 →
+// 对象库降回上限内 → 后续推入不再撞墙。
 const LFS_EXTS = new Set([
+  'png', 'jpg', 'jpeg', 'webp', 'gif',
+  'mp3', 'wav', 'ogg', 'm4a',
+  'skel', 'atlas',
+  'ttf', 'otf', 'woff', 'woff2',
+  'zip',
+  'json', 'css', 'svg',
+]);
+// 本轮之前已在 LFS 表里的扩展名——--migrate-lfs 只重推**新纳入**的（已在 LFS 的不用重推）。
+const LEGACY_LFS_EXTS = new Set([
   'png', 'jpg', 'jpeg', 'webp', 'gif',
   'mp3', 'wav', 'ogg', 'm4a',
   'skel', 'atlas',
@@ -160,6 +173,18 @@ try {
   }
   console.log(`  数据集已有 ${have.size} 份`);
 
+  // --migrate-lfs：一次性把「新纳入 LFS 表但当时以原始字节推入」的路径从 `have` 摘出
+  // → 进 todo → 以 130 B 指针重推 → 数据集对象库瘦身回 1.6 GB 内。
+  // 正常增量轮不加此 flag（幂等：推过的指针在下一轮 clone 后被 have 覆盖，不会重复）。
+  if (args.includes('--migrate-lfs')) {
+    let migrated = 0;
+    for (const p of [...have]) {
+      const ext = isLfsPath(p) ? p.slice(p.lastIndexOf('.') + 1).toLowerCase() : '';
+      if (ext && LFS_EXTS.has(ext) && !LEGACY_LFS_EXTS.has(ext)) { have.delete(p); migrated++; }
+    }
+    console.log(`  --migrate-lfs：${migrated} 份 raw → 指针重推（数据集对象库瘦身）`);
+  }
+
   // 平台审核豁免：先摘出来再算待补。**不是**把它塞进 `have` —— `have` 是「远端真实有什么」，
   // 掺假会让下面的日志与 `ls-tree` 对不上；这里直接从 `todo` 排除，树里自然也没有它。
   // 效果：`remain` 归零 → exit 0 正常收敛，不再触发 workflow 自触发续跑。
@@ -210,16 +235,28 @@ try {
   if (USE_LFS && !args.includes('--no-gitattributes')) {
     let attr = '';
     try { attr = git(w, 'cat-file', '-p', 'HEAD:.gitattributes'); } catch { /* 空仓库，从零写 */ }
-    if (!/(^|\n)\*\.zip\s+filter=lfs/m.test(attr)) {
-      const addition = (attr && !attr.endsWith('\n') ? '\n' : '') + '*.zip filter=lfs diff=lfs merge=lfs -text\n';
+    // 确保属性规则 ⊇ LFS_EXTS（不变量：LFS_EXTS 里的每个扩展名都必须有对应的 attr 行，
+    // 否则指针不会被平台 materialize，客户端 resolve 到 130 B 原文）。缺哪条补哪条。
+    // json/css/svg 的规则限 releases/v1-trial/ 子树，不影响 rank.yml 写的 cdn/v1/rank.json。
+    const lines = [];
+    for (const ext of LFS_EXTS) {
+      const pattern = (ext === 'json' || ext === 'css' || ext === 'svg')
+        ? `releases/v1-trial/**/**/*.${ext}`
+        : `*.${ext}`;
+      if (!new RegExp(`(^|\\n)${pattern.replace(/[./*]/g, m => '\\' + m)}\\s+filter=lfs`).test(attr)) {
+        lines.push(`${pattern} filter=lfs diff=lfs merge=lfs -text`);
+      }
+    }
+    if (lines.length) {
+      const addition = (attr && !attr.endsWith('\n') ? '\n' : '') + lines.join('\n') + '\n';
       const p = path.join(stage, 'root-gitattributes');
       fs.writeFileSync(p, attr + addition);
       const h = spawnSync('git', ['hash-object', '-w', p], { cwd: w, encoding: 'utf8' });
       if (h.status) throw new Error(`hash-object(.gitattributes) 退出 ${h.status}: ${h.stderr}`);
       attrCacheinfo.push(`100644 ${h.stdout.trim()}\t.gitattributes`);
-      console.log('  将向数据集根 .gitattributes 追加 *.zip filter=lfs');
+      console.log(`  将向数据集根 .gitattributes 追加 ${lines.length} 条 LFS 规则`);
     } else {
-      console.log('  数据集根 .gitattributes 已含 *.zip 规则，跳过');
+      console.log('  数据集根 .gitattributes 已含全部 LFS 规则，跳过');
     }
   }
   // 分块喂 --batch：一次喂几千条会撞上 Node/管道缓冲，实测第 4119 条开始 head 为空（输出被截）。
