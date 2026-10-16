@@ -120,7 +120,8 @@ jobs:
             echo "=== round $i $(date -u +%H:%M:%S) ==="
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
-              --max-files=${{ inputs.max_files || 400 }}; then
+              --max-files=${{ inputs.max_files || 400 }} \
+              --migrate-lfs; then
               last=0
             else
               last=$?
