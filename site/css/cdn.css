@@ -137,6 +137,11 @@ tbody tr:hover td { background: #a5eccd08; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.mono { font-family: var(--mono); font-size: 11.5px; word-break: break-all; }
 
+/* Pack download links: one cell per pack, several doors to the same bytes. */
+td.pack-urls { min-width: 190px; }
+a.pack-link { display: inline-block; margin: 1px 0; color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; }
+a.pack-link:hover { border-bottom-color: currentColor; }
+
 /* ---- code -------------------------------------------------------------------------------- */
 
 pre.code {

@@ -183,6 +183,27 @@ function renderMirrors(flat) {
   }
 }
 
+// Human-readable labels for a pack URL, keyed by the host that serves it. A pack is published once
+// (the GitHub release `assets-<tag>`) and every mirror re-serves the very same bytes, so the
+// interesting thing for a visitor is *which* door to walk through — and they cannot tell
+// `gh-proxy.com/github.com/...` from `ghfast.top/github.com/...` at a glance.
+const PACK_HOST_LABELS = [
+  [/^gh-proxy\.com$/i, 'gh-proxy（实测最快）'],
+  [/^ghfast\.top$/i, 'ghfast'],
+  [/^github\.com$/i, 'GitHub 原站'],
+];
+
+/** Short name for one pack URL: a known host gets its label, anything else falls back to the host. */
+function packHostLabel(url) {
+  try {
+    const { hostname } = new URL(url);
+    const hit = PACK_HOST_LABELS.find(([re]) => re.test(hostname));
+    return hit ? hit[1] : hostname;
+  } catch {
+    return '—';
+  }
+}
+
 function renderPacks(packs) {
   const body = $('packs')?.querySelector('tbody');
   if (!body) return;
@@ -191,12 +212,21 @@ function renderPacks(packs) {
     return;
   }
   body.innerHTML = packs
-    .map(
-      (pack) =>
+    .map((pack) => {
+      const urls = pack.urls || [];
+      // The list is ordered fastest-first at publish time; keeping the order and labelling each
+      // host turns a count into a usable choice.
+      const links = urls.length
+        ? urls
+            .map((u) => `<a class="pack-link" href="${u}" rel="noopener">${packHostLabel(u)}</a>`)
+            .join(' · ')
+        : '<span class="muted">—</span>';
+      return (
         `<tr><td class="mono">${pack.id}.zip</td><td class="mono">${pack.group || '—'}</td>` +
         `<td class="num">${fmtCount(pack.files)}</td><td class="num">${fmtBytes(pack.size)}</td>` +
-        `<td class="num">${(pack.urls || []).length}</td></tr>`,
-    )
+        `<td class="pack-urls">${links}</td></tr>`
+      );
+    })
     .join('');
 }
 
