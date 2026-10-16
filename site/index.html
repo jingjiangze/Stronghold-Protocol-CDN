@@ -29,6 +29,8 @@
       <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
+      <a href="#server-deploy">服务器部署</a>
+      <a href="#p2p">异地联机</a>
       <a href="#asset-cdn">素材对账</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
@@ -433,6 +435,59 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       来自 master-play <code class="inline">c587705f</code>）随本站点分发，<b>已于 2026-10-12 废弃并从站点删除</b>：
       它是 2026-10-10 的旧配置（阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
       照它合并会装回一套与线上不一致的配置。旧的安装说明页也一并删除了，用上面的独立库。</span>
+    </div>
+  </section>
+
+  <section class="section" id="server-deploy">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · SERVER DEPLOY</div><h2>服务器部署文档</h2></div>
+      <span class="section-status">ModelScope 创空间 · 从零开始 · 默认配置</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      这份记「游戏服本身怎么跑起来」：在 <b>ModelScope 创空间</b>（Docker 容器）上从零部署卫戍协议游戏服——
+      所需信息清单、创空间创建、默认配置（边缘层 5 文件逐字可用）、推送并触发重新部署、验收与排错。
+      所有默认配置随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上。
+    </p>
+    <div class="cards">
+      <a class="card" href="./docs/server-deploy.md">
+        <div class="card__title">完整文档（Markdown）</div>
+        <div class="card__meta"><span>所需信息 / 架构 / 创建创空间 / 默认配置 / 推送部署 / 验收</span></div>
+        <div class="card__stats">
+          <span>端口 <b>7860 锁死</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="p2p">
+    <div class="section-heading">
+      <div><div class="eyebrow">GUIDE · P2P PLAY</div><h2>openp2p 异地联机</h2></div>
+      <span class="section-status">阿里云 ECS · 经 Cloudflare 隧道 · 玩家无需公网 IP</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      玩家分散在各自家里、没有公网 IP 时怎么联机：房主把本地 <b>3000 端口</b>映射出去，
+      每个玩家在本地访问 <code class="inline">127.0.0.1:3000</code> 即等同于访问房主机房里的同一端口。
+      平台跑在阿里云 ECS 上，对外经 Cloudflare 隧道暴露；客户端只要能<b>出站 UDP</b> 即可。
+      有 p2p 直连能力时数据<b>不经过服务器</b>（ECS 默认 <code class="inline">ShareBandwidth=0</code>，只走信令）。
+    </p>
+    <div class="cards">
+      <a class="card" href="./docs/openp2p-platform.md">
+        <div class="card__title">联机平台说明（含 API）</div>
+        <div class="card__meta"><span>开房 / 加入 / 收房 API · Web 零安装入口 · 安卓 APK 接入 · 房主侧</span></div>
+        <div class="card__stats">
+          <span>接口 <b>6 个</b></span>
+          <span>玩家 <b>零安装</b></span>
+        </div>
+      </a>
+      <a class="card" href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">
+        <div class="card__title">平台基址（p2p）</div>
+        <div class="card__meta"><span>主基址 p2p.jiangjiangze.icu · 备用 aliyun.jiangjiangze.icu</span></div>
+        <div class="card__stats">
+          <span>协议 <b>HTTPS</b></span>
+          <span>玩家 <b>零安装</b></span>
+        </div>
+      </a>
     </div>
   </section>
 
