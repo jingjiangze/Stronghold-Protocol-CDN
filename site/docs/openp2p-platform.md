@@ -19,13 +19,14 @@
 平台主址       https://p2p.jiangjiangze.icu
 平台备址       https://aliyun.jiangjiangze.icu
 房间时效       开房后 6 小时过期（expiresAt 是 ISO 8601 UTC）
-hostNode 规则  8–63 位，字符集 [A-Za-z0-9._-]，缺/太短直接 400
+p2p 房间       传 hostNode（8–63 位，[A-Za-z0-9._-]），房主自跑 openp2p 节点，游戏绑 3000
+直连房间       传 upstream（https 源站，*.ms.show / *.modelscope.cn / *.jiangjiangze.icu），平台反代，腐竹零安装
 code 规则      可选，不校验长度（传 2 位也行）；不填返回 null
 可用入口       joinUrl = https://p2p.jiangjiangze.icu/go/<roomId>?room=<code>
 不可用入口     joinUrlHost = https://<roomId>.jiangjiangze.icu/ —— 该子域名当前无 DNS，是死链
-房主游戏端口   必须跑在 3000（与返回的 dstPort 对齐）
-openp2p token  开房返回的 int64 数字，别手写字符串（会被解析成 0）
-客户端前置     需要能出站 UDP（NAT 穿透依赖 UDP）
+p2p 房间端口   房主游戏必须跑在 3000（与返回的 dstPort 对齐）
+openp2p token  开房返回的 int64 数字，别手写字符串（会被解析成 0）；直连房间 token 为 null
+客户端前置     p2p 房间需要能出站 UDP（NAT 穿透依赖 UDP）；直连房间只要能访问平台即可
 ```
 
 ## 接口一览
@@ -43,9 +44,9 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 
 ## 开房 POST /api/room
 
-房主调用，开一个房间并拿到连接参数与 token。
+房主调用，开一个房间并拿到连接参数。两种房间二选一：**p2p 房间**传 `hostNode`（房主自跑 openp2p 节点），**直连房间**传 `upstream`（游戏服已有公网 https 入口，平台反代，腐竹零安装）。
 
-**请求体：**
+**请求体（p2p 房间）：**
 
 ```json
 {
@@ -54,11 +55,21 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 }
 ```
 
-- `hostNode`：**必填**，8–63 位，字符集 `[A-Za-z0-9._-]`。缺或太短返回 `400`，报文：
+**请求体（直连房间）：**
+
+```json
+{
+  "upstream": "https://jingjiangze-stronghold-protocol.ms.show",
+  "code": "ABCD"
+}
+```
+
+- `hostNode`：**p2p 房间必填**，8–63 位，字符集 `[A-Za-z0-9._-]`。缺或太短返回 `400`，报文：
   ```json
-  {"error":"hostNode required: 8-63 chars [A-Za-z0-9._-]"}
+  {"error":"hostNode required: 8-63 chars [A-Za-z0-9._-] (or pass upstream for a direct room)"}
   ```
   节点名太短是最常见的开房失败原因。
+- `upstream`：**直连房间必填**（与 `hostNode` 二选一，传了 `upstream` 就忽略 `hostNode`）。必须是 https 源站（不带路径），主机名限定 `*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`；其他域名返回 `400 {"error":"upstream host not allowed ..."}`，http 或带路径返回 `400 {"error":"upstream must be an https origin (no path)"}`。直连房间不 spawn openp2p 转发进程，平台把玩家请求（含 `/ws` WebSocket）反代到该地址。
 - `code`：**可选**。省略时开房仍然 200，只是返回里 `"code": null`，`joinUrl` 不带 `?room=`（实测：`https://p2p.jiangjiangze.icu/go/1b37e68a`）。
 - `code` **不校验长度**：服务端最多截取前 10 位（`slice(0,10)`），传 2 位的 `"AB"` 照样 200，并原样出现在 `joinUrl` 里。所以「4 位密钥」只是约定，不是服务端约束。
 
@@ -67,7 +78,9 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 ```json
 {
   "roomId": "5f51d1ee",
+  "kind": "p2p",
   "hostNode": "node_zcode_probe",
+  "upstream": null,
   "code": "ABCD",
   "dstPort": 3000,
   "token": "1798913699555900373",
@@ -82,15 +95,19 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 }
 ```
 
+（直连房间对应字段为 `"kind":"direct"`、`"upstream":"https://…"`、`"dstPort":null`、`"token":null`。）
+
 **字段说明：**
 
 | 字段 | 含义 |
 |---|---|
 | `roomId` | 房间 ID，出现在 joinUrl、joinUrlHost、所有后续接口路径里 |
-| `hostNode` | 房主 openp2p 节点名（就是开房时传的那个，已原样回显） |
+| `kind` | 房间类型：`p2p`（传 hostNode，房主自跑节点）或 `direct`（传 upstream，平台反代） |
+| `hostNode` | 房主 openp2p 节点名（p2p 房间回显；直连房间为 `null`） |
+| `upstream` | 直连房间的 https 源站；p2p 房间为 `null` |
 | `code` | 房间密钥；不填时为 `null` |
-| `dstPort` | 房主侧游戏端口，固定 `3000` |
-| `token` | 平台下发的 openp2p token（int64 数字），客户端后续连接拿它鉴权，**不要自己生成** |
+| `dstPort` | 房主侧游戏端口，p2p 房间固定 `3000`；直连房间为 `null` |
+| `token` | 平台下发的 openp2p token（int64 数字），客户端后续连接拿它鉴权，**不要自己生成**；直连房间为 `null` |
 | `serverHost` / `serverPort` | openp2p 信令服务器 `api.openp2p.cn:27183` |
 | `wsPath` | 信令 WebSocket 路径 `/ws` |
 | `protocol` | 转发协议 `tcp` |
@@ -201,15 +218,20 @@ http://127.0.0.1:3000/?room=<密钥>
 
 # 第二部分 · 给腐竹 / 房主安装看（人话、逐步）
 
-一句话说清联机模型：游戏本体**没有**任何 P2P、也没有对外开房 API；异地联机完全靠 openp2p 平台把「房主电脑上的 3000 端口」映射到「每个玩家自己电脑的 3000 端口」。所以腐竹要做的事就三件——**① 本机起游戏服（绑 3000）→ ② 本机跑一个 openp2p 节点（同一个 token）→ ③ 开房拿到 joinUrl 发群里**。玩家点链接零安装进房。
+一句话说清联机模型：游戏本体**没有**任何 P2P、也没有对外开房 API；异地联机完全靠 openp2p 平台。两种玩法：
+
+- **p2p 房间**（方案 A/B）：平台把「房主电脑上的 3000 端口」映射到「每个玩家自己电脑的 3000 端口」，腐竹要**① 本机起游戏服（绑 3000）→ ② 本机跑一个 openp2p 节点（同一个 token）→ ③ 开房拿到 joinUrl 发群里**。
+- **直连房间**（方案 C）：游戏服挂云端（魔搭），本身有公网入口——腐竹**只发一条开房命令**告诉平台游戏服地址，平台把玩家请求反代过去，**零安装零节点**。
+
+两种房间的玩家体验完全一致：点 `joinUrl` 零安装进房。
 
 下面给三种方案，按省事程度从难到易：
 
 | 方案 | 适合谁 | 难度 | 说明 |
 |---|---|---|---|
-| A · 本地手动装 | 想完全自己掌控、Linux 服 / VPS 房主 | 中 | 全程命令行，最通用 |
-| B · Windows 启动器 | 纯 Windows、不想碰命令行 | 易 | 双击即用，内置 openp2p、自动下游戏 |
-| C · Docker / 云部署 | 不想本机装 Node、想挂云端 | 中 | 走 ModelScope Docker，端口 7860 |
+| A · 本地手动装 | 想完全自己掌控、Linux 服 / VPS 房主 | 中 | 全程命令行，最通用；数据 p2p 直连不过服务器 |
+| B · Windows 启动器 | 纯 Windows、不想碰命令行 | 易 | 双击即用，内置 openp2p、自动下游戏；数据 p2p 直连 |
+| C · 云端 + 直连房间 | 不想装任何东西、想挂云端 | **最易** | 魔搭 Docker 部署 + 一条开房命令，腐竹零安装零节点；流量经平台中转 |
 
 ## 方案 A · 本地手动装（Windows / Linux，最详细）
 
@@ -313,19 +335,36 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 
 > 这是 Windows 专属方案；非 Windows 房主请走方案 A 或 C。
 
-## 方案 C · 云端部署（魔搭 / ModelScope 创空间，server-deploy.md）
+## 方案 C · 云端部署 + 直连房间（魔搭 / ModelScope 创空间，腐竹零安装）
 
-不想本机装 Node、想把游戏服挂到云端的腐竹，走 **魔搭（ModelScope）创空间 Docker 部署**：对外只暴露一个端口 **7860**，配套仓库已写好零叠加层最简 Dockerfile，素材直接走 CDN 绝对地址、不过容器。
+不想本机装 Node、想把游戏服挂云端的腐竹，走 **魔搭（ModelScope）创空间 Docker 部署**：对外只暴露一个端口 **7860**，配套仓库已写好零叠加层最简 Dockerfile，素材直接走 CDN 绝对地址、不过容器。
 
-> 关键点：无论游戏服跑在你本机（方案 A）、Windows 启动器（方案 B）还是这台魔搭云端容器（方案 C），**openp2p 节点都必须装在「跑游戏服的那台机器」上**，并把那台机器的 3000 端口（云端是容器内的 3000）暴露给平台。也就是说：云端部署只解决「服务器在哪跑」，联机这一步仍然回到本页第一部分——在那台服务器上 `openp2p install -node <节点名> -token <int64> -sharebandwidth 20` 并 `POST /api/room` 开房，再把 `joinUrl` 发出去。
+部署完之后，联机这一步**比方案 A/B 更省**——不用装 openp2p、不用跑节点、不用开端口转发：
 
-完整步骤（准备什么、怎么建创空间、零域名·零叠加层最简 Dockerfile、怎么验收）见姊妹文档： [./server-deploy.md](./server-deploy.md)
+**为什么腐竹什么都不用装**：魔搭容器跑不了 openp2p 节点（无 systemd/root、端口锁 7860），但它自带公网 HTTPS 入口（`https://<你的创空间>.ms.show`，WAF 对浏览器 UA 放行）。所以平台支持一种**「直连房间」**：腐竹只调一次开房接口，把魔搭地址告诉平台；平台从此把 `p2p.jiangjiangze.icu/go/<id>` 收到的玩家请求（含 WebSocket）直接反代到那个地址。打洞都不需要——魔搭本来就有公网入口。
+
+**腐竹的全部操作（一条命令）：**
+
+```bash
+curl -X POST https://p2p.jiangjiangze.icu/api/room \
+  -H 'content-type: application/json' \
+  -d '{"upstream":"https://jingjiangze-stronghold-protocol.ms.show","code":"ABCD"}'
+```
+
+- `upstream`：游戏服的 **https 源站**（只允许 `*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`，不带路径；其他域名返回 400）。
+- 返回里的 `kind` 是 `"direct"`、`token` 为 `null`（不需要 openp2p 鉴权）、`joinUrl` 照常生成——把 `joinUrl` 发给玩家即可，玩家侧体验与 p2p 房间完全一致。
+- 房间照旧 **6 小时过期**；`DELETE /api/room/{id}` 收房。
+
+**实测链路（2026-10-16 全部通过）**：`/go/<id>` → 302 + `o2proom` cookie；带 cookie 访问平台根路径 → 返回魔搭真实游戏页（标题「卫戍协议：盟约」）；`/data/assets.json`（132 KB 清单）反代 200；`/ws` WebSocket 握手 → `101 Switching Protocols`。
+
+> 取舍：直连房间的流量**经 ECS 中转**（不再是 p2p 直连），素材字节仍由浏览器直连 CDN、不过平台；游戏会话字节走 ECS（受阿里云出口额度约束，见 server-deploy.md 的量级估算）。相比方案 A/B「数据不过服务器」，直连房间用平台带宽换腐竹的零安装。另外魔搭 WAF 会拦截无浏览器 UA 的请求——经平台反代时平台已带浏览器 UA 转发，玩家无感。
+
+完整部署步骤（准备什么、怎么建创空间、零域名·零叠加层最简 Dockerfile、怎么验收）见姊妹文档： [./server-deploy.md](./server-deploy.md)
 
 ## 房主侧通用提醒
 
-- **ECS 默认 `ShareBandwidth=0`**：平台侧只走信令、不中转流量，省下阿里云约 18G/月的出口额度；有 p2p 直连能力时数据不经过服务器。你本地 `-sharebandwidth 20` 是节点侧声明，不影响平台侧的默认行为。
-- **游戏端口必须 3000**：与 `dstPort:3000` 对齐，否则玩家映射端口对不上。
-- **客户端需要能出站 UDP**：openp2p 的 NAT 穿透依赖 UDP（公司网常封 27183 信令端口），封了就打不通。
+- **两种房间的约束不同**：p2p 房间（方案 A/B）要求数据 p2p 直连——**游戏端口必须 3000**、客户端要能**出站 UDP**（NAT 穿透依赖 UDP，公司网常封 27183 信令端口）；直连房间（方案 C）只要游戏服有公网 https 入口即可，上述两条都不适用，但会话流量经 ECS 中转。
+- **ECS 默认 `ShareBandwidth=0`**：p2p 房间平台侧只走信令、不中转流量，省下阿里云约 18G/月的出口额度；有 p2p 直连能力时数据不经过服务器。你本地 `-sharebandwidth 20` 是节点侧声明，不影响平台侧的默认行为。直连房间不走 openp2p，不受此项影响。
 - **房间 6 小时过期**：过期后 `GET /api/room/{id}` 会 404，玩家链接失效，需房主重新开房重发。
 
 ---
@@ -336,9 +375,10 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 
 - **房间 6 小时过期**：`expiresAt` 是 ISO 8601 UTC，实测开房后正好 6.00 小时。过期后 `GET /api/room/{roomId}` 会 404，玩家链接失效，需房主重新开房。
 - **`hostNode` 有硬校验**：8–63 位、`[A-Za-z0-9._-]`；不满足直接 400。这是最常见的报错来源。
+- **`upstream` 只收白名单域名**：`*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`，https 源站不带路径；其他域名 / http / 带路径都 400。
 - **`code` 很宽松**：可省略、长度不限（服务端最多截 10 位），只是约定 4 位，服务端不强制。
 - **`joinUrlHost` 当前不可用的死链**：子域名无 DNS，别用它；只用 `joinUrl`。
-- **ECS 默认 `ShareBandwidth=0`**：只走信令不中转，省阿里云约 18G/月出口；有 p2p 直连时数据不过服务器。
-- **`token` 是 int64 数字，不是字符串**：由平台 API 下发，客户端不要自己造；传给 openp2p CLI 时**绝不能加引号**（加了被解析成 0、登录失败）。这是最高频踩坑点。
-- 客户端需要能**出站 UDP**（openp2p 的 NAT 穿透依赖 UDP），否则无法建立直连。
+- **ECS 默认 `ShareBandwidth=0`**：p2p 房间只走信令不中转，省阿里云约 18G/月出口；有 p2p 直连时数据不过服务器。**直连房间的会话流量经 ECS 中转**（素材字节仍由浏览器直连 CDN）。
+- **`token` 是 int64 数字，不是字符串**：由平台 API 下发，客户端不要自己造；传给 openp2p CLI 时**绝不能加引号**（加了被解析成 0、登录失败）。这是最高频踩坑点。直连房间 `token` 为 `null`，无需 openp2p。
+- p2p 房间客户端需要能**出站 UDP**（openp2p 的 NAT 穿透依赖 UDP），否则无法建立直连；直连房间不需要 UDP，只要能访问平台。
 - 零安装 Web 入口同一浏览器一次只能在一个房间（cookie 按浏览器维度）。
