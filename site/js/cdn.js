@@ -139,9 +139,9 @@ function renderMirrors(flat) {
 // interesting thing for a visitor is *which* door to walk through — and they cannot tell
 // `gh-proxy.com/github.com/...` from `ghfast.top/github.com/...` at a glance.
 const PACK_HOST_LABELS = [
-  [/^gh-proxy\.com$/i, 'gh-proxy（实测最快）'],
-  [/^ghfast\.top$/i, 'ghfast'],
-  [/^github\.com$/i, 'GitHub 原站'],
+  [/^gh-proxy\.com$/i, 'gh-proxy（≈11 MB/s）'],
+  [/^ghfast\.top$/i, 'ghfast（≈10 MB/s）'],
+  [/^github\.com$/i, 'GitHub 原站（权威）'],
 ];
 
 /** Short name for one pack URL: a known host gets its label, anything else falls back to the host. */

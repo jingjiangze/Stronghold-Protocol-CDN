@@ -365,12 +365,11 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
       再套社区镜像前缀加速。<b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），
       对象存储不再存包 —— 同一批 100 MB 的 zip 只保留一份权威副本，避免两处各自漂移。
-      每行右侧是同一个包的几条下载门牌，<b>顺序即实测快慢</b>（本机：gh-proxy ≈ 12 MB/s，ghfast ≈ 10.9 MB/s；
-      GitHub 原站在本机常被墙，放最后作权威校核用）。
+      每行右侧是同一个包的几条下载门牌：<b>第一条是 GitHub 上的权威副本</b>，后面是套了镜像前缀的加速入口（本机实测 gh-proxy ≈ 11.2 MB/s、ghfast ≈ 10.3 MB/s、GitHub 原站 ≈ 6.6 MB/s）。
     </p>
     <div class="table-wrap">
       <table id="packs">
-        <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th>加速下载（快→慢）</th></tr></thead>
+        <thead><tr><th>包</th><th>分组</th><th class="num">文件</th><th class="num">体积</th><th>下载（权威源在前）</th></tr></thead>
         <tbody><tr><td colspan="5" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
