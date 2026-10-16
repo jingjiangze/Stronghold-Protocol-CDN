@@ -46,8 +46,15 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** The branch holding the art tree in this repository. */
 export const ASSETS_REF = process.env.OPENI_ASSETS_REF || 'assets-raw';
 
-/** Refuse to mirror anything this large: a guard against pushing the wrong ref by mistake. */
-export const MAX_BYTES = 4 * 1024 * 1024 * 1024;
+/**
+ * Refuse to mirror anything this large: a guard against pushing the wrong ref by mistake.
+ *
+ * 2026-10-16 抬升 4→6 GiB：fill 第二腿把上游树补进 assets-raw 后，分支实测 48,463 键 /
+ * 4,147.5 MiB —— 真数越了 4 GiB，把「拿错 ref」误报到了正确 ref 上（run 38798047841 拒推）。
+ * 这条守卫拦的是 --assets-ref 指错（master/文档树都是百 MiB 量级，差一个数量级才抓得住），
+ * 不是容量合同；单次 push 的上游约束由下面的 slice 预算各自管，与总量无关。
+ */
+export const MAX_BYTES = 6 * 1024 * 1024 * 1024;
 
 /**
  * Ceiling for one push, in MiB, measured as the slice's **blob bytes**.
