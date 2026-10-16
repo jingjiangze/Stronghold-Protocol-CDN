@@ -18,13 +18,15 @@
 ```
 平台主址       https://p2p.jiangjiangze.icu
 平台备址       https://aliyun.jiangjiangze.icu
+平台语义       v3「仅握手」：平台绝不中转任何游戏流量，只下发连接参数 + /go/<roomId> 发一条 302 决定玩家去哪
 房间时效       开房后 6 小时过期（expiresAt 是 ISO 8601 UTC）
 p2p 房间       传 hostNode（8–63 位，[A-Za-z0-9._-]），房主自跑 openp2p 节点，游戏绑 3000
-直连房间       传 upstream（https 源站，*.ms.show / *.modelscope.cn / *.jiangjiangze.icu），平台反代，腐竹零安装
+直连房间       传 upstream（https 源站，*.ms.show / *.modelscope.cn / *.jiangjiangze.icu），平台纯 302 直连，腐竹零安装
 code 规则      可选，不校验长度（传 2 位也行）；不填返回 null
 可用入口       joinUrl = https://p2p.jiangjiangze.icu/go/<roomId>?room=<code>
-不可用入口     joinUrlHost = https://<roomId>.jiangjiangze.icu/ —— 该子域名当前无 DNS，是死链
-p2p 房间端口   房主游戏必须跑在 3000（与返回的 dstPort 对齐）
+直连房间跳转   /go/<id> 直接 302 到 upstream（如 https://jingjiangze-stronghold-protocol.ms.show/?room=CODE），浏览器自连，无 cookie
+p2p 房间跳转   /go/<id>：隧道通 → 302 到 http://127.0.0.1:<srcPort>/?room=CODE（加入方本机映射端口）；不通 → 302 到 fallback（带 &o2pfallback=1）或本机带 &o2pretry=1
+p2p 房间端口   房主游戏必须跑在 3000（与返回的 dstPort 对齐）；srcPort 默认为 3000，建房可传 srcPort 指定（整数 1024–65535，否则 400）
 openp2p token  开房返回的 int64 数字，别手写字符串（会被解析成 0）；直连房间 token 为 null
 客户端前置     p2p 房间需要能出站 UDP（NAT 穿透依赖 UDP）；直连房间只要能访问平台即可
 ```
@@ -35,7 +37,7 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 
 | 方法 | 路径 | 实测行为 |
 |---|---|---|
-| `POST` | `/api/room` | 房主开房。body `{hostNode, code?}`。返回完整房间对象（200） |
+| `POST` | `/api/room` | 房主开房。body `{hostNode, code?, srcPort?}`（或 `{upstream, code?, srcPort?}`）。返回完整房间对象（200） |
 | `GET` | `/api/room/{roomId}` | 加入方拉参数，返回与开房完全相同的对象（200）；房间不存在返回 404 |
 | `DELETE` | `/api/room/{roomId}` | 房主收房，返回 `{"closed":"<roomId>"}`；房间不存在返回 404 `{"error":"no such room"}` |
 | `GET` | `/api/rooms` | 返回 `{"rooms":[...]}`；当前没人开房时就是空数组 |
@@ -44,7 +46,7 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
 
 ## 开房 POST /api/room
 
-房主调用，开一个房间并拿到连接参数。两种房间二选一：**p2p 房间**传 `hostNode`（房主自跑 openp2p 节点），**直连房间**传 `upstream`（游戏服已有公网 https 入口，平台反代，腐竹零安装）。
+房主调用，开一个房间并拿到连接参数。两种房间二选一：**p2p 房间**传 `hostNode`（房主自跑 openp2p 节点），**直连房间**传 `upstream`（游戏服已有公网 https 入口，平台纯 302 直连、不反代、不中转任何游戏流量，腐竹零安装）。
 
 **请求体（p2p 房间）：**
 
@@ -69,7 +71,8 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
   {"error":"hostNode required: 8-63 chars [A-Za-z0-9._-] (or pass upstream for a direct room)"}
   ```
   节点名太短是最常见的开房失败原因。
-- `upstream`：**直连房间必填**（与 `hostNode` 二选一，传了 `upstream` 就忽略 `hostNode`）。必须是 https 源站（不带路径），主机名限定 `*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`；其他域名返回 `400 {"error":"upstream host not allowed ..."}`，http 或带路径返回 `400 {"error":"upstream must be an https origin (no path)"}`。直连房间不 spawn openp2p 转发进程，平台把玩家请求（含 `/ws` WebSocket）反代到该地址。
+- `upstream`：**直连房间必填**（与 `hostNode` 二选一，传了 `upstream` 就忽略 `hostNode`）。必须是 https 源站（不带路径），主机名限定 `*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`；其他域名返回 `400 {"error":"upstream host not allowed ..."}`，http 或带路径返回 `400 {"error":"upstream must be an https origin (no path)"}`。直连房间不 spawn openp2p 转发进程、平台不反代；开房后 `GET /go/<id>` 只对玩家浏览器发一条 302，让它**直连**到该 upstream（含 `/ws` WebSocket 也由浏览器直连，平台字节不过手）。
+- `srcPort`：**可选**（p2p 房间用）。建房时指定加入方把房主游戏端口映射到自己本机的哪个端口；整数 `1024–65535`，越界或非整数返回 `400`。省略时默认为 `3000`（与 `dstPort` 对齐）。注意这是「加入方本机端口」，不是房主侧端口。
 - `code`：**可选**。省略时开房仍然 200，只是返回里 `"code": null`，`joinUrl` 不带 `?room=`（实测：`https://p2p.jiangjiangze.icu/go/1b37e68a`）。
 - `code` **不校验长度**：服务端最多截取前 10 位（`slice(0,10)`），传 2 位的 `"AB"` 照样 200，并原样出现在 `joinUrl` 里。所以「4 位密钥」只是约定，不是服务端约束。
 
@@ -83,36 +86,38 @@ openp2p token  开房返回的 int64 数字，别手写字符串（会被解析�
   "upstream": null,
   "code": "ABCD",
   "dstPort": 3000,
+  "srcPort": 3000,
   "token": "1798913699555900373",
   "serverHost": "api.openp2p.cn",
   "serverPort": 27183,
   "wsPath": "/ws",
   "protocol": "tcp",
   "joinUrl": "https://p2p.jiangjiangze.icu/go/5f51d1ee?room=ABCD",
-  "joinUrlHost": "https://5f51d1ee.jiangjiangze.icu/?room=ABCD",
+  "fallback": "https://jingjiangze-stronghold-protocol.ms.show",
   "expiresAt": "2026-10-16T00:10:26.001Z",
   "ready": true
 }
 ```
 
-（直连房间对应字段为 `"kind":"direct"`、`"upstream":"https://…"`、`"dstPort":null`、`"token":null`。）
+（直连房间对应字段为 `"kind":"direct"`、`"upstream":"https://…"`、`"dstPort":null`、`"srcPort":null`、`"fallback":null`、`"token":null`；`GET /go/<id>` 直接 302 到 `upstream`。）
 
 **字段说明：**
 
 | 字段 | 含义 |
 |---|---|
-| `roomId` | 房间 ID，出现在 joinUrl、joinUrlHost、所有后续接口路径里 |
-| `kind` | 房间类型：`p2p`（传 hostNode，房主自跑节点）或 `direct`（传 upstream，平台反代） |
+| `roomId` | 房间 ID，出现在 joinUrl、所有后续接口路径里 |
+| `kind` | 房间类型：`p2p`（传 hostNode，房主自跑节点）或 `direct`（传 upstream，平台纯 302 直连、不反代） |
 | `hostNode` | 房主 openp2p 节点名（p2p 房间回显；直连房间为 `null`） |
 | `upstream` | 直连房间的 https 源站；p2p 房间为 `null` |
 | `code` | 房间密钥；不填时为 `null` |
 | `dstPort` | 房主侧游戏端口，p2p 房间固定 `3000`；直连房间为 `null` |
+| `srcPort` | 加入方本机映射端口（p2p 房间使用），默认 `3000`；建房可传 `srcPort` 指定（整数 1024–65535，否则 400）；直连房间为 `null` |
 | `token` | 平台下发的 openp2p token（int64 数字），客户端后续连接拿它鉴权，**不要自己生成**；直连房间为 `null` |
 | `serverHost` / `serverPort` | openp2p 信令服务器 `api.openp2p.cn:27183` |
 | `wsPath` | 信令 WebSocket 路径 `/ws` |
 | `protocol` | 转发协议 `tcp` |
-| `joinUrl` | 给玩家的零安装入口（走 `/go/<roomId>` 路径），**当前唯一可用入口** |
-| `joinUrlHost` | 形如 `https://<roomId>.jiangjiangze.icu/`，**当前子域名无 DNS 记录、实测不存在，不可用** |
+| `joinUrl` | 给玩家的零安装入口（走 `/go/<roomId>` 路径），**当前唯一可用入口**；`/go/<id>` 只发一条 302，平台不中转任何游戏流量 |
+| `fallback` | p2p 房间回显的 upstream（打洞失败时 `/go/<id>` 带 `&o2pfallback=1` 回退到该游戏服）；无 fallback 时为 `null` |
 | `expiresAt` | 过期时间，ISO 8601 UTC；实测开房后正好 6 小时 |
 | `ready` | 房间是否就绪，`true` |
 
@@ -170,11 +175,16 @@ curl -X DELETE https://p2p.jiangjiangze.icu/api/room/5f51d1ee
 
 玩家无需安装任何东西：浏览器直接打开 `joinUrl`（形如 `https://p2p.jiangjiangze.icu/go/<roomId>?room=ABCD`）。
 
-实测 `GET /go/<roomId>` 返回 **302**，`location` 是个**相对路径** `/?room=ABCD`（带 room 查询串），平台下发 cookie 后跳进游戏。
+实测 `GET /go/<roomId>` 返回 **302**，平台**不发任何 cookie、不反代、不中转游戏流量**，只决定「玩家浏览器最终去哪」：
 
-> **同一浏览器一次只能在一个房间里**：cookie 按浏览器维度下发，不按标签页。开着 A 房间再开 B 房间，前面的会被挤掉。
+- **直连房间**：`location` 直接是 `upstream`（如 `https://jingjiangze-stronghold-protocol.ms.show/?room=CODE`）。玩家浏览器自己连那个公网游戏服，平台字节不过手。实测 `https://jingjiangze-stronghold-protocol.ms.show/?room=PUB1` → 200（标题「卫戍协议：盟约 · STRONGHOLD PROTOCOL」），`/ws` → `101 Switching Protocols`。
+- **p2p 房间（隧道通）**：`location` 为 `http://127.0.0.1:<srcPort>/?room=CODE`（加入方自己本机的 openp2p 端口映射，默认 `srcPort=3000`）。
+- **p2p 房间（隧道不通，有 fallback）**：`location` 为 `https://<upstream>/?room=CODE&o2pfallback=1`，玩家回退到游戏服自带联机服务器。
+- **p2p 房间（隧道不通，无 fallback）**：`location` 为 `http://127.0.0.1:3000/?room=CODE&o2pretry=1`，提示本机重试。
 
-**`joinUrlHost` 是死链，别用。** 它形如 `https://<roomId>.jiangjiangze.icu/`（例如 `https://5f51d1ee.jiangjiangze.icu/`），但 `<roomId>.jiangjiangze.icu` 这个子域名**当前没有 DNS 记录、实测解析不到任何地址**，所以 `joinUrlHost` 现在点不开。能用的只有 `joinUrl`（走 `/go/<roomId>` 那条路径）。
+> **「同一浏览器一次只能在一个房间」的限制已不适用**：v3 不再下发 cookie，`/go/<id>` 是纯 302 跳走，玩家浏览器直接连目标服。想同时开多个房间、用不同标签页/浏览器都行，互不挤占。
+
+> 平台根路径 `/` 现在是纯文本帮助信息（实测 `grep -c '<script\|<title'` = 0，不是游戏页），不再吐游戏页面。
 
 ## 安卓 APK 接入
 
@@ -211,7 +221,7 @@ http://127.0.0.1:3000/?room=<密钥>
 ```
 
 - `token` 来自开房接口的返回，**不要硬编码**（特别是别写成字符串，见上节 int64 的坑）。
-- `dstport 3000` / `srcport 3000`：房主侧游戏端口映射到本机 3000，和 Web 入口的 `127.0.0.1:3000` 对齐。
+- `dstport 3000` / `srcport 3000`：房主侧游戏端口映射到本机 3000，和 Web 入口的 `127.0.0.1:3000` 对齐。这里的 `srcport 3000` 对应平台返回的 `srcPort` 默认值；建房时若通过 `POST /api/room` 传了 `srcPort`，APK 侧 `srcport` 要改成同一个值，否则映射端口对不上。
 - ECS 平台侧默认 `ShareBandwidth=0`（只走信令、不中转流量）；APK 侧只要能直连即可，无需声明带宽。
 
 ---
@@ -221,7 +231,7 @@ http://127.0.0.1:3000/?room=<密钥>
 一句话说清联机模型：游戏本体**没有**任何 P2P、也没有对外开房 API；异地联机完全靠 openp2p 平台。两种玩法：
 
 - **p2p 房间**（方案 A/B）：平台把「房主电脑上的 3000 端口」映射到「每个玩家自己电脑的 3000 端口」，腐竹要**① 本机起游戏服（绑 3000）→ ② 本机跑一个 openp2p 节点（同一个 token）→ ③ 开房拿到 joinUrl 发群里**。
-- **直连房间**（方案 C）：游戏服挂云端（魔搭），本身有公网入口——腐竹**只发一条开房命令**告诉平台游戏服地址，平台把玩家请求反代过去，**零安装零节点**。
+- **直连房间**（方案 C）：游戏服挂云端（魔搭），本身有公网入口——腐竹**只发一条开房命令**告诉平台游戏服地址，平台只对玩家发一条 302 让他直连魔搭，**零安装零节点、平台不中转流量**。
 
 两种房间的玩家体验完全一致：点 `joinUrl` 零安装进房。
 
@@ -231,7 +241,7 @@ http://127.0.0.1:3000/?room=<密钥>
 |---|---|---|---|
 | A · 本地手动装 | 想完全自己掌控、Linux 服 / VPS 房主 | 中 | 全程命令行，最通用；数据 p2p 直连不过服务器 |
 | B · Windows 启动器 | 纯 Windows、不想碰命令行 | 易 | 双击即用，内置 openp2p、自动下游戏；数据 p2p 直连 |
-| C · 云端 + 直连房间 | 不想装任何东西、想挂云端 | **最易** | 魔搭 Docker 部署 + 一条开房命令，腐竹零安装零节点；流量经平台中转 |
+| C · 云端 + 直连房间 | 不想装任何东西、想挂云端 | **最易** | 魔搭 Docker 部署 + 一条开房命令，腐竹零安装零节点；流量不经平台（玩家浏览器按 302 直连魔搭） |
 
 ## 方案 A · 本地手动装（Windows / Linux，最详细）
 
@@ -341,7 +351,7 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 
 部署完之后，联机这一步**比方案 A/B 更省**——不用装 openp2p、不用跑节点、不用开端口转发：
 
-**为什么腐竹什么都不用装**：魔搭容器跑不了 openp2p 节点（无 systemd/root、端口锁 7860），但它自带公网 HTTPS 入口（`https://<你的创空间>.ms.show`，WAF 对浏览器 UA 放行）。所以平台支持一种**「直连房间」**：腐竹只调一次开房接口，把魔搭地址告诉平台；平台从此把 `p2p.jiangjiangze.icu/go/<id>` 收到的玩家请求（含 WebSocket）直接反代到那个地址。打洞都不需要——魔搭本来就有公网入口。
+**为什么腐竹什么都不用装**：魔搭容器跑不了 openp2p 节点（无 systemd/root、端口锁 7860），但它自带公网 HTTPS 入口（`https://<你的创空间>.ms.show`，WAF 对浏览器 UA 放行）。所以平台支持一种**「直连房间」**：腐竹只调一次开房接口，把魔搭地址告诉平台；平台从此只对 `p2p.jiangjiangze.icu/go/<id>` 的玩家发一条 **302**，让玩家浏览器**直连**到那个地址（含 WebSocket 也由浏览器直连）。平台不反代、不中转任何游戏字节——打洞都不需要，魔搭本来就有公网入口。
 
 **腐竹的全部操作（一条命令）：**
 
@@ -355,16 +365,18 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 - 返回里的 `kind` 是 `"direct"`、`token` 为 `null`（不需要 openp2p 鉴权）、`joinUrl` 照常生成——把 `joinUrl` 发给玩家即可，玩家侧体验与 p2p 房间完全一致。
 - 房间照旧 **6 小时过期**；`DELETE /api/room/{id}` 收房。
 
-**实测链路（2026-10-16 全部通过）**：`/go/<id>` → 302 + `o2proom` cookie；带 cookie 访问平台根路径 → 返回魔搭真实游戏页（标题「卫戍协议：盟约」）；`/data/assets.json`（132 KB 清单）反代 200；`/ws` WebSocket 握手 → `101 Switching Protocols`。
+**实测链路（2026-10-17 全部通过）**：`POST /api/room {"upstream":"https://jingjiangze-stronghold-protocol.ms.show","code":"MST2"}` → 200，`"kind":"direct"`, `"token":null`，`"joinUrl":"https://p2p.jiangjiangze.icu/go/<id>?room=MST2"`；`GET /go/<id>` → `302 Found`，`location: https://jingjiangze-stronghold-protocol.ms.show/?room=MST2`，**无 set-cookie**；目标站实测可用（`/?room=PUB1` → 200 标题「卫戍协议：盟约」，'/ws' → 101 Switching Protocols）；本机经 CF 隧道打公共入口 → 302 + location ms.show + `CF-RAY` 头，平台根路径只有纯文本、没有任何 `<script>/<title>`。
 
-> 取舍：直连房间的流量**经 ECS 中转**（不再是 p2p 直连），素材字节仍由浏览器直连 CDN、不过平台；游戏会话字节走 ECS（受阿里云出口额度约束，见 server-deploy.md 的量级估算）。相比方案 A/B「数据不过服务器」，直连房间用平台带宽换腐竹的零安装。另外魔搭 WAF 会拦截无浏览器 UA 的请求——经平台反代时平台已带浏览器 UA 转发，玩家无感。
+> 取舍：**直连房间的游戏流量完全不经平台、不经 ECS 中转**——玩家浏览器按 302 直连魔搭，平台只发跳转、字节不过手。素材字节仍由浏览器直连 CDN；游戏会话字节走魔搭公网入口（受魔搭自身额度约束，与阿里云 ECS 出口无关，见 server-deploy.md 的量级估算）。相比方案 A/B「数据不过服务器」，直连房间用「玩家浏览器直连」换腐竹的零安装，平台零带宽开销。魔搭 WAF 对浏览器 UA 放行，玩家直连时无感。
 
 完整部署步骤（准备什么、怎么建创空间、零域名·零叠加层最简 Dockerfile、怎么验收）见姊妹文档： [./server-deploy.md](./server-deploy.md)
 
 ## 房主侧通用提醒
 
-- **两种房间的约束不同**：p2p 房间（方案 A/B）要求数据 p2p 直连——**游戏端口必须 3000**、客户端要能**出站 UDP**（NAT 穿透依赖 UDP，公司网常封 27183 信令端口）；直连房间（方案 C）只要游戏服有公网 https 入口即可，上述两条都不适用，但会话流量经 ECS 中转。
-- **ECS 默认 `ShareBandwidth=0`**：p2p 房间平台侧只走信令、不中转流量，省下阿里云约 18G/月的出口额度；有 p2p 直连能力时数据不经过服务器。你本地 `-sharebandwidth 20` 是节点侧声明，不影响平台侧的默认行为。直连房间不走 openp2p，不受此项影响。
+- **两种房间的约束不同**：p2p 房间（方案 A/B）要求数据 p2p 直连——**游戏端口必须 3000**、客户端要能**出站 UDP**（NAT 穿透依赖 UDP，公司网常封 27183 信令端口）；直连房间（方案 C）只要游戏服有公网 https 入口即可，上述两条都不适用，且游戏流量由玩家浏览器按 302 直连、不经平台、不经 ECS 中转。
+- **ECS 默认 `ShareBandwidth=0`**：平台 v3 是「仅握手」模式——**任何房间都不吃 ECS 流量（信令除外）**，p2p 房间平台侧只走信令、不中转字节，省下阿里云约 18G/月的出口额度；有 p2p 直连能力时数据不经过服务器。你本地 `-sharebandwidth 20` 是节点侧声明，不影响平台侧的默认行为。直连房间玩家浏览器直连魔搭，完全不经过 ECS。
+- **p2p 打不穿时的回退语义**：p2p 隧道建立失败时，`/go/<id>` 会带 `&o2pfallback=1` 回退到游戏服自带的联机服务器（建房时填的 `fallback` / `upstream`）。但**对局状态存在游戏服内存里、不能迁移**——回退不是无缝续上，而是「所有人用同一个 code 重新开一局」。这是 v3 仅握手的固有限制，房主发链接时应提醒玩家：打洞失败要重开，不是接着打。
+- **`srcPort` 端口**：p2p 房间返回 `srcPort`（默认 3000），是「加入方本机映射端口」；建房可传 `srcPort` 指定（整数 1024–65535，否则 400）。APK 侧 `srcport` 要与它一致，否则映射对不上。
 - **房间 6 小时过期**：过期后 `GET /api/room/{id}` 会 404，玩家链接失效，需房主重新开房重发。
 
 ---
@@ -377,8 +389,9 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 - **`hostNode` 有硬校验**：8–63 位、`[A-Za-z0-9._-]`；不满足直接 400。这是最常见的报错来源。
 - **`upstream` 只收白名单域名**：`*.ms.show` / `*.modelscope.cn` / `*.jiangjiangze.icu`，https 源站不带路径；其他域名 / http / 带路径都 400。
 - **`code` 很宽松**：可省略、长度不限（服务端最多截 10 位），只是约定 4 位，服务端不强制。
-- **`joinUrlHost` 当前不可用的死链**：子域名无 DNS，别用它；只用 `joinUrl`。
-- **ECS 默认 `ShareBandwidth=0`**：p2p 房间只走信令不中转，省阿里云约 18G/月出口；有 p2p 直连时数据不过服务器。**直连房间的会话流量经 ECS 中转**（素材字节仍由浏览器直连 CDN）。
+- **`srcPort` 可选**：p2p 房间建房可传（整数 1024–65535，否则 400），指定「加入方本机映射端口」；省略默认 3000。直连房间没有此字段（返回 `null`）。
+- **ECS 默认 `ShareBandwidth=0`**：平台 v3 是「仅握手」——**任何房间都不吃 ECS 流量（信令除外）**。p2p 房间只走信令不中转，省阿里云约 18G/月出口；有 p2p 直连时数据不过服务器；直连房间玩家浏览器按 302 直连魔搭，游戏字节完全不经 ECS。
 - **`token` 是 int64 数字，不是字符串**：由平台 API 下发，客户端不要自己造；传给 openp2p CLI 时**绝不能加引号**（加了被解析成 0、登录失败）。这是最高频踩坑点。直连房间 `token` 为 `null`，无需 openp2p。
 - p2p 房间客户端需要能**出站 UDP**（openp2p 的 NAT 穿透依赖 UDP），否则无法建立直连；直连房间不需要 UDP，只要能访问平台。
-- 零安装 Web 入口同一浏览器一次只能在一个房间（cookie 按浏览器维度）。
+- **v3 不再下发 cookie，无「单浏览器单房间」限制**：`/go/<id>` 是纯 302 跳走到目标服，可同时开多个房间、不同标签页/浏览器互不挤占。平台根路径 `/` 现为纯文本帮助信息，不是游戏页。
+- **p2p 打不穿 → 回退游戏服自带联机，但状态不迁移**：隧道失败时 `/go/<id>` 带 `&o2pfallback=1` 回退到建房时填的 `fallback`/`upstream`（无 fallback 则 `&o2pretry=1` 回本机重试）。对局状态在游戏服内存里、无法迁移，所以回退是「所有人用同一 code 重新开一局」，不是无缝续上。发链接时应提醒玩家。
