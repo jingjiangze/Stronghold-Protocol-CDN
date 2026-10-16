@@ -102,6 +102,7 @@ jobs:
         id: push
         env:
           MODELSCOPE_URL: ${{ secrets.MODELSCOPE_DATASET_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -z "${MODELSCOPE_URL}" ]; then
             echo "::warning:: MODELSCOPE_DATASET_URL 未配置，跳过数据集素材树推送"
