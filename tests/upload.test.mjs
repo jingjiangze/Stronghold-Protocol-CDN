@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   HOSTED_INDEX_KEY,
+  LINEUP_PREFIX,
   LOG_KEY,
   STAGING_PREFIX,
   UPLOAD_PREFIXES,
@@ -15,6 +16,7 @@ import {
   cleanSource,
   collectReferences,
   emptyLog,
+  formatVerdict,
   hostedGroupFor,
   makeId,
   mergeHosted,
@@ -47,6 +49,25 @@ test('path tricks and executable content are refused', () => {
     assert.equal(validateKey(key).ok, false, `${JSON.stringify(key)} 必须被拒绝`);
   }
   assert.equal(validateKey(`assets/${'x'.repeat(1030)}.png`).ok, false, '键长超 R2 上限');
+});
+
+// AI 布阵学习库（服务器仓 server/lineupPublish.js）走 packs/lineup-library/，不在素材树里。
+// 它的直发是一条「落点 + 扩展名同时命中」的窄例外：整棵 packs/ 仍然不直发。
+test('the lineup library publishes directly, and only under its own prefix', () => {
+  assert.equal(LINEUP_PREFIX, 'packs/lineup-library/');
+  const day = 'packs/lineup-library/mode_single_normal-2026-10-17.jsonl';
+  assert.equal(validateKey(day).ok, true, '.jsonl 必须在暂存白名单里，否则连 begin 都过不去');
+  assert.equal(formatVerdict(day).tier, 'asset', '学习库的日期文件要直发，不能停在暂存区等人工放行');
+
+  // 同前缀下的其它格式：仍然 hold（这条例外只认得一种字节）。
+  assert.equal(formatVerdict('packs/lineup-library/manifest.json').tier, 'hold');
+  assert.equal(formatVerdict('packs/lineup-library/README.txt').tier, 'hold');
+  // 同扩展名、别的落点：仍然 hold（不能因为 .jsonl 就让任意 packs/ 子目录直发）。
+  assert.equal(formatVerdict('packs/mod-set-1/list.jsonl').tier, 'hold');
+  assert.equal(formatVerdict('assets/x/list.jsonl').tier, 'hold');
+  // 可执行内容位在整棵 packs/ 下都不进白名单，学习库前缀也不例外。
+  assert.equal(validateKey('packs/lineup-library/index.html').ok, false);
+  assert.equal(validateKey('packs/lineup-library/x.svg').ok, false);
 });
 
 test('digest, size, source and note are validated before anything is written', () => {

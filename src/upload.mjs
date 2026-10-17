@@ -22,7 +22,7 @@ export const UPLOAD_PREFIXES = ['assets/', 'fonts/', 'packs/'];
  * 可执行内容位（SVG 能带脚本）。素材面不需要那种东西，所以默认拒绝、按名单放行。
  */
 export const UPLOAD_EXTENSIONS = new Set([
-  'png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'json', 'txt',
+  'png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'json', 'jsonl', 'txt',
   'mp3', 'ogg', 'wav', 'm4a',
   'woff', 'woff2', 'ttf', 'otf',
   'zip', 'bin', 'data', 'xml',
@@ -46,6 +46,17 @@ export const ASSET_EXTENSIONS = new Set([
 export const ASSET_TREE_PREFIXES = ['assets/', 'fonts/'];
 
 /**
+ * AI 布阵学习库的专用落点（服务器仓 server/lineupPublish.js 发布到 `packs/lineup-library/`）。
+ *
+ * 它不在素材树里，却是纯数据：`<modeId>-<YYYY-MM-DD>.jsonl`，一行一条 JSON，按行流式读，
+ * 与 `.json` 同一个安全级别（不构成可执行内容位）。放行条件是**落点 + 扩展名同时命中**
+ * （见 formatVerdict）：只放行这一个前缀下的 `.jsonl`，packs/ 里其它东西（zip 包、mod 清单
+ * 这类元数据）仍然落到暂存区等审计。不把 `.jsonl` 全局放行、也不放行整棵 `packs/`：
+ * 前者会让任意落点凭空多一个纯数据可写面，后者会把 mod 清单一起直接上线。
+ */
+export const LINEUP_PREFIX = 'packs/lineup-library/';
+
+/**
  * 这一份算「静态素材」还是「先暂存、审计后放行」。
  *
  * 为什么判据必须是 格式 + 落点 两条，不能只看扩展名：`.json` / `.bin` / `.obj` 两边都是 ——
@@ -59,6 +70,9 @@ export function formatVerdict(rawKey) {
   const ext = (key.split('.').pop() || '').toLowerCase();
   const inAssetTree = ASSET_TREE_PREFIXES.some((p) => key.startsWith(p));
   if (inAssetTree && ASSET_EXTENSIONS.has(ext)) return { ok: true, tier: 'asset', ext };
+  // 学习库：专用落点 + `.jsonl` 两条同时命中才直发。前缀里出现别的格式（清单、说明、zip）
+  // 仍然落到 hold，走人工审计——这条例外只认得一种字节。
+  if (key.startsWith(LINEUP_PREFIX) && ext === 'jsonl') return { ok: true, tier: 'asset', ext };
   return {
     ok: true,
     tier: 'hold',
