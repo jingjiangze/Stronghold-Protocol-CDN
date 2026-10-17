@@ -309,10 +309,10 @@
     {
       "id": "sp-fusion-mod-assets",
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
-      "addedAt": "2026-10-12",
+      "addedAt": "2026-10-17",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 2758,
-      "bytes": 211203096,
+      "files": 2818,
+      "bytes": 219500984,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -863,6 +863,10 @@
           7959
         ],
         [
+          "assets/band/band_kaituo.png",
+          59038
+        ],
+        [
           "assets/band/band_wuyouyoumeng.png",
           425488
         ],
@@ -897,6 +901,10 @@
         [
           "assets/bond/icon_aveMujica.png",
           24022
+        ],
+        [
+          "assets/bond/icon_rimBilliton.png",
+          23306
         ],
         [
           "assets/bond/rainbowShip.png",
@@ -1003,6 +1011,14 @@
           75465
         ],
         [
+          "assets/char/avatar/char_193_frostl.png",
+          46470
+        ],
+        [
+          "assets/char/avatar/char_193_frostl_2.png",
+          56337
+        ],
+        [
           "assets/char/avatar/char_194_leto.png",
           49063
         ],
@@ -1025,6 +1041,14 @@
         [
           "assets/char/avatar/char_219_meteo_2.png",
           52150
+        ],
+        [
+          "assets/char/avatar/char_230_savage.png",
+          53574
+        ],
+        [
+          "assets/char/avatar/char_230_savage_2.png",
+          54525
         ],
         [
           "assets/char/avatar/char_242_otter.png",
@@ -1117,6 +1141,14 @@
         [
           "assets/char/avatar/char_4224_turdus_2.png",
           69853
+        ],
+        [
+          "assets/char/avatar/char_449_glider.png",
+          59231
+        ],
+        [
+          "assets/char/avatar/char_449_glider_2.png",
+          59484
         ],
         [
           "assets/char/avatar/char_457_blitz.png",
@@ -1227,6 +1259,14 @@
           145121
         ],
         [
+          "assets/char/portrait/char_193_frostl_1.png",
+          102730
+        ],
+        [
+          "assets/char/portrait/char_193_frostl_2.png",
+          109216
+        ],
+        [
           "assets/char/portrait/char_194_leto_1.png",
           109981
         ],
@@ -1249,6 +1289,14 @@
         [
           "assets/char/portrait/char_219_meteo_2.png",
           112598
+        ],
+        [
+          "assets/char/portrait/char_230_savage_1.png",
+          102962
+        ],
+        [
+          "assets/char/portrait/char_230_savage_2.png",
+          92080
         ],
         [
           "assets/char/portrait/char_242_otter_1.png",
@@ -1355,6 +1403,14 @@
           135131
         ],
         [
+          "assets/char/portrait/char_449_glider_1.png",
+          115409
+        ],
+        [
+          "assets/char/portrait/char_449_glider_2.png",
+          120508
+        ],
+        [
           "assets/char/portrait/char_457_blitz_1.png",
           97774
         ],
@@ -1415,8 +1471,16 @@
           58478
         ],
         [
+          "assets/char/skin_avatar/char_1033_swire2_nlc_1.png",
+          67528
+        ],
+        [
           "assets/char/skin_avatar/char_1036_fang2_snow_8.png",
           59156
+        ],
+        [
+          "assets/char/skin_avatar/char_1040_blaze2_nlc_1.png",
+          77247
         ],
         [
           "assets/char/skin_avatar/char_120_hibisc_nian_1.png",
@@ -1439,6 +1503,10 @@
           57790
         ],
         [
+          "assets/char/skin_avatar/char_2025_shu_nlc_1.png",
+          66467
+        ],
+        [
           "assets/char/skin_avatar/char_4124_iana_rainbow6_2.png",
           59653
         ],
@@ -1449,6 +1517,18 @@
         [
           "assets/char/skin_avatar/char_459_tachak_rainbow6_1.png",
           49114
+        ],
+        [
+          "assets/char/skin_portrait_shop/char_1033_swire2_nlc_1.png",
+          288353
+        ],
+        [
+          "assets/char/skin_portrait_shop/char_1040_blaze2_nlc_1.png",
+          330118
+        ],
+        [
+          "assets/char/skin_portrait_shop/char_2025_shu_nlc_1.png",
+          277318
         ],
         [
           "assets/char/skin_portrait_shop/char_4217_makoto_p3r_1.png",
@@ -3471,6 +3551,14 @@
           28570
         ],
         [
+          "assets/item/trap_2001_mod_happy.png",
+          53107
+        ],
+        [
+          "assets/item/trap_2002_mod_greens.png",
+          39779
+        ],
+        [
           "assets/item/trap_c_06.png",
           175087
         ],
@@ -4007,12 +4095,28 @@
           25416
         ],
         [
+          "assets/skill/skchr_frostl_1.png",
+          18178
+        ],
+        [
+          "assets/skill/skchr_frostl_2.png",
+          12914
+        ],
+        [
           "assets/skill/skchr_fuze_1.png",
           20800
         ],
         [
           "assets/skill/skchr_fuze_2.png",
           13519
+        ],
+        [
+          "assets/skill/skchr_glider_1.png",
+          18783
+        ],
+        [
+          "assets/skill/skchr_glider_2.png",
+          17096
         ],
         [
           "assets/skill/skchr_greyy2_1.png",
@@ -4109,6 +4213,10 @@
         [
           "assets/skill/skchr_rfrost_2.png",
           14183
+        ],
+        [
+          "assets/skill/skchr_savage_2.png",
+          20383
         ],
         [
           "assets/skill/skchr_tachak_1.png",
@@ -10475,6 +10583,30 @@
           285883
         ],
         [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/back/char_1033_swire2_nlc_1.atlas",
+          12252
+        ],
+        [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/back/char_1033_swire2_nlc_1.png",
+          286563
+        ],
+        [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/back/char_1033_swire2_nlc_1.skel",
+          368302
+        ],
+        [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/front/char_1033_swire2_nlc_1.atlas",
+          16026
+        ],
+        [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/front/char_1033_swire2_nlc_1.png",
+          333381
+        ],
+        [
+          "assets/spine/op/char_1033_swire2/char_1033_swire2_nlc_1/front/char_1033_swire2_nlc_1.skel",
+          540167
+        ],
+        [
           "assets/spine/op/char_1036_fang2/back/char_1036_fang2.atlas",
           3537
         ],
@@ -10521,6 +10653,30 @@
         [
           "assets/spine/op/char_1036_fang2/front/char_1036_fang2.skel",
           242821
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/back/char_1040_blaze2_nlc_1.atlas",
+          13455
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/back/char_1040_blaze2_nlc_1.png",
+          273151
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/back/char_1040_blaze2_nlc_1.skel",
+          747147
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/front/char_1040_blaze2_nlc_1.atlas",
+          18076
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/front/char_1040_blaze2_nlc_1.png",
+          318810
+        ],
+        [
+          "assets/spine/op/char_1040_blaze2/char_1040_blaze2_nlc_1/front/char_1040_blaze2_nlc_1.skel",
+          889081
         ],
         [
           "assets/spine/op/char_115_headbr/back/char_115_headbr.atlas",
@@ -10775,6 +10931,30 @@
           288214
         ],
         [
+          "assets/spine/op/char_193_frostl/back/char_193_frostl.atlas",
+          3177
+        ],
+        [
+          "assets/spine/op/char_193_frostl/back/char_193_frostl.png",
+          64854
+        ],
+        [
+          "assets/spine/op/char_193_frostl/back/char_193_frostl.skel",
+          80768
+        ],
+        [
+          "assets/spine/op/char_193_frostl/front/char_193_frostl.atlas",
+          4315
+        ],
+        [
+          "assets/spine/op/char_193_frostl/front/char_193_frostl.png",
+          77959
+        ],
+        [
+          "assets/spine/op/char_193_frostl/front/char_193_frostl.skel",
+          174342
+        ],
+        [
           "assets/spine/op/char_194_leto/back/char_194_leto.atlas",
           5780
         ],
@@ -10823,6 +11003,30 @@
           117064
         ],
         [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/back/char_2025_shu_nlc_1.atlas",
+          8136
+        ],
+        [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/back/char_2025_shu_nlc_1.png",
+          234304
+        ],
+        [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/back/char_2025_shu_nlc_1.skel",
+          292380
+        ],
+        [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/front/char_2025_shu_nlc_1.atlas",
+          12084
+        ],
+        [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/front/char_2025_shu_nlc_1.png",
+          257565
+        ],
+        [
+          "assets/spine/op/char_2025_shu/char_2025_shu_nlc_1/front/char_2025_shu_nlc_1.skel",
+          490793
+        ],
+        [
           "assets/spine/op/char_219_meteo/back/char_219_meteo.atlas",
           2988
         ],
@@ -10845,6 +11049,14 @@
         [
           "assets/spine/op/char_219_meteo/front/char_219_meteo.skel",
           114845
+        ],
+        [
+          "assets/spine/op/char_230_savage/back/char_230_savage.png",
+          44122
+        ],
+        [
+          "assets/spine/op/char_230_savage/front/char_230_savage.png",
+          57401
         ],
         [
           "assets/spine/op/char_242_otter/back/char_242_otter.atlas",
@@ -11219,6 +11431,14 @@
           339998
         ],
         [
+          "assets/spine/op/char_449_glider/back/char_449_glider.png",
+          75206
+        ],
+        [
+          "assets/spine/op/char_449_glider/front/char_449_glider.png",
+          87506
+        ],
+        [
           "assets/spine/op/char_457_blitz/back/char_457_blitz.atlas",
           3321
         ],
@@ -11345,6 +11565,26 @@
         [
           "assets/token/avatar/token_10016_rfrost_mine.png",
           16998
+        ],
+        [
+          "assets/token/avatar/ws_solopact_crawler.png",
+          42286
+        ],
+        [
+          "assets/token/avatar/ws_solopact_drifter.png",
+          43085
+        ],
+        [
+          "assets/token/avatar/ws_solopact_piercer.png",
+          44247
+        ],
+        [
+          "assets/token/avatar/ws_solopact_spitter.png",
+          42637
+        ],
+        [
+          "assets/ui/shopLevelSprite/shop_level_icon_7.png",
+          2169
         ]
       ]
     },
