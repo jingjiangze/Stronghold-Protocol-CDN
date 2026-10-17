@@ -31,7 +31,6 @@
       <a href="#bandwidth">上行带宽压缩</a>
       <a href="#server-deploy">服务器部署</a>
       <a href="#p2p">异地联机</a>
-      <a href="./p2p-platform">服务端接入</a>
       <a href="#asset-cdn">素材对账</a>
       <a href="./bandwidth">↗ 文档</a>
     </nav>
@@ -245,7 +244,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
 
     <div class="mirror-index" id="mirror-index">
       <a href="./sync-chain">完整镜像链路同步 ↗</a>
-      <a href="./p2p-platform">openp2p 服务端接入 ↗</a>
       <a href="./docs/多源自动选源.md">多源自动选源 ↗</a>
       <a href="./openi-mirror">第二镜像 OpenI ↗</a>
       <a href="./ms-edge">边缘分流 ms-edge ↗</a>
@@ -417,6 +415,14 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>比稳态贵 <b>27×</b></span>
         </div>
       </a>
+      <a class="card" href="./docs/official-effects.md">
+        <div class="card__title">官方战斗特效（素材与清单）</div>
+        <div class="card__meta"><span>4,518 prefab · 3,388 贴图 · 1,279 mesh · local-fx.json 清单格式与降级行为</span></div>
+        <div class="card__stats">
+          <span>约 <b>184 MiB</b></span>
+          <span>缺失即退回 <b>程序化特效</b></span>
+        </div>
+      </a>
       <a class="card" href="./docs/ws-compression-library-and-pack.md">
         <div class="card__title">独立库与工坊兼容包</div>
         <div class="card__meta"><span>零依赖库已发布 · 工坊包为什么开不了传输压缩 · 写包格式约定</span></div>
@@ -481,15 +487,6 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <div class="card__stats">
           <span>接口 <b>6 个</b></span>
           <span>玩家 <b>零安装</b></span>
-        </div>
-      </a>
-      <a class="card" href="./p2p-platform">
-        <div class="card__title">服务端内置接入（网页版）</div>
-        <div class="card__meta"><span>服务器自己接入平台，玩家只跟服务器打交道：整条链路 · 每步拆解 · 三个环境变量 · 失败隔离 · 验收命令</span></div>
-        <div class="card__stats">
-          <span>补丁 <b>6 个文件</b></span>
-          <span>冒烟 <b>30/30</b></span>
-          <span>协议版本 <b>不变</b></span>
         </div>
       </a>
       <a class="card" href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">
