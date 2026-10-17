@@ -56325,6 +56325,20 @@
           137329
         ]
       ]
+    },
+    {
+      "id": "official-fx",
+      "what": "官方战斗特效清单（4518 prefab / 3388 贴图 / 1279 mesh，含尺寸），供任意部署直接取用",
+      "addedAt": "2026-10-17",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 1007006,
+      "keys": [
+        [
+          "assets/local/fx/local-fx.json",
+          1007006
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
