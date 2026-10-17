@@ -6,11 +6,11 @@
 // 摘要不在边缘算（免费档每次调用 10 ms CPU，算不动几十 MB），状态留 queued，由发布机逐字节核对。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, sameOriginOrNone } from './_http.js';
-import { claimKeyFor, cleanSource, cleanWhat, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, assertSourceKeyPair, cleanSource, cleanWhat, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const MAX_BODY = 64 * 1024 * 1024;
 
-export async function onRequestPut(context) {
+export async function onRequestPut(context, options = {}) {
   const { request, env } = context;
   const originProblem = sameOriginOrNone(request);
   if (originProblem) return deny(originProblem, 403);
@@ -23,7 +23,8 @@ export async function onRequestPut(context) {
   const declaredKey = q.get('key') || '';
   const declaredSha = q.get('sha256') || '';
   const declaredSize = q.get('size') || '';
-  const rawSource = q.get('source') || '';
+  // forcedSource：专用通道用它把来源钉死，调用方的 source 参数被忽略。
+  const rawSource = options.forcedSource || q.get('source') || '';
   // 收字节之前就验说明：太短的 what 之后会把发布轮的 hosted.json 校验打红（见 src/upload.mjs 的 cleanWhat）。
   const w = cleanWhat(q.get('what') || '');
 
@@ -35,6 +36,10 @@ export async function onRequestPut(context) {
   if (!z.ok) return deny(z.reason, 400);
   const src = cleanSource(rawSource);
   if (!src.ok) return deny(src.reason, 400);
+  // 后台给学习库单开一个区域：那个区域固定 source=lineup-library，只收 packs/lineup-library/*.jsonl。
+  // 前端只是方便，真正的约束在这里 —— agent 通道绕过页面也走同一条判定。
+  const pair = assertSourceKeyPair(src.source, k.key);
+  if (!pair.ok) return deny(pair.reason, 400);
   if (!w.ok) return deny(w.reason, 400);
   if (Number(z.size) > MAX_BODY) {
     return deny(`本页面单次上限 ${MAX_BODY / 1024 / 1024} MiB，${(z.size / 1048576).toFixed(1)} MiB 请用 tools/agent-upload.mjs（走 presigned 直传，不受这个限制）`, 413);

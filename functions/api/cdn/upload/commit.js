@@ -7,11 +7,11 @@
 // 逐字节算 —— 边缘 10 ms CPU 与 128 MB 内存撑不起 600 MB 的哈希，别在这儿假充。
 import { headKey, r2Config, s3fetch, sha256Hex } from './_edge.js';
 import { actorHash, checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
-import { claimKeyFor, cleanWhat, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { claimKeyFor, assertSourceKeyPair, cleanWhat, formatVerdict, validateSha, validateSize } from '../../../../src/upload.mjs';
 
 const EDGE_HASH_LIMIT = 4 * 1024 * 1024;
 
-export async function onRequestPost(context) {
+export async function onRequestPost(context, options = {}) {
   const { request, env } = context;
 
   const originProblem = sameOriginOrNone(request);
@@ -39,6 +39,11 @@ export async function onRequestPost(context) {
   // 只接受 begin 生成的那一对键，避免调用方把 claim 指到别的对象上。
   if (!stagingKey.startsWith(`cdn/incoming/${id}/`)) return deny('stagingKey 与 id 不匹配', 400);
   if (!finalKey || finalKey.includes('..')) return deny('key 缺失或不合法', 400);
+  // commit 是另一条能自己拼 key 的入口（presigned 通道）：学习库那条 source↔落点规则必须在这里也拦一次，
+  // 只拦 put.js 等于给 agent 通道留了个后门。
+  const source = String(options.forcedSource || doc.source || '').trim().slice(0, 60);
+  const pair = assertSourceKeyPair(source, finalKey);
+  if (!pair.ok) return deny(pair.reason, 400);
 
   let staged;
   try {
@@ -84,7 +89,7 @@ export async function onRequestPost(context) {
     stagingKey,
     size: staged.size,
     sha256: s.sha256,
-    source: String(doc.source || '').slice(0, 60),
+    source,
     what: w.what,
     // state 只用老promotion认得的两个值：待审靠 tier 表达，不用新状态位。
     // 换新状态值会让部署间隙里还在跑的旧发布轮把它当成「不合格的 claim」，而那一条的处理是删暂存字节。

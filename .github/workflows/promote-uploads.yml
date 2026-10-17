@@ -63,7 +63,7 @@ jobs:
 
       # 契约层出问题就别碰桶了 —— 与 sync.yml 同一道闸，两边不能一边严一边松。
       - name: unit tests
-        run: node --test tests/upload.test.mjs tests/hosted.test.mjs tests/tree-index.test.mjs
+        run: node --test tests/upload.test.mjs tests/hosted.test.mjs tests/tree-index.test.mjs tests/lineup-alias.test.mjs tests/lineup-channel.test.mjs
 
       - name: promote
         env:

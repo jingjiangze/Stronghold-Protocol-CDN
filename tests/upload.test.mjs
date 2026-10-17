@@ -4,10 +4,12 @@ import assert from 'node:assert/strict';
 import {
   HOSTED_INDEX_KEY,
   LINEUP_PREFIX,
+  LINEUP_SOURCE,
   LOG_KEY,
   STAGING_PREFIX,
   UPLOAD_PREFIXES,
   appendToLog,
+  assertSourceKeyPair,
   buildHostedIndex,
   claimIsPublishable,
   claimKeyFor,
@@ -18,6 +20,7 @@ import {
   emptyLog,
   formatVerdict,
   hostedGroupFor,
+  isLineupKey,
   makeId,
   mergeHosted,
   removeKeysFromHosted,
@@ -68,6 +71,29 @@ test('the lineup library publishes directly, and only under its own prefix', () 
   // 可执行内容位在整棵 packs/ 下都不进白名单，学习库前缀也不例外。
   assert.equal(validateKey('packs/lineup-library/index.html').ok, false);
   assert.equal(validateKey('packs/lineup-library/x.svg').ok, false);
+});
+
+// 后台给学习库单开一个区域，那个区域固定 source=lineup-library。前端的固定前缀只是方便，
+// 真正的约束在服务端：agent 通道与 commit 端点都能自己拼 key。
+test('source=lineup-library accepts only the lineup key shape, and only for that source', () => {
+  assert.equal(LINEUP_SOURCE, 'lineup-library');
+  const day = 'packs/lineup-library/mode_single_normal-2026-10-17.jsonl';
+  assert.equal(isLineupKey(day), true);
+  assert.equal(assertSourceKeyPair(LINEUP_SOURCE, day).ok, true);
+
+  // 同前缀、别的扩展名：拒绝
+  assert.equal(assertSourceKeyPair(LINEUP_SOURCE, 'packs/lineup-library/manifest.json').ok, false);
+  // 同扩展名、别的落点：拒绝
+  assert.equal(assertSourceKeyPair(LINEUP_SOURCE, 'packs/mod-set-1/list.jsonl').ok, false);
+  assert.equal(assertSourceKeyPair(LINEUP_SOURCE, 'assets/x/list.jsonl').ok, false);
+  // 可执行内容位：拒绝
+  assert.equal(assertSourceKeyPair(LINEUP_SOURCE, 'packs/lineup-library/x.html').ok, false);
+
+  // 别的 source 完全不受这条规则影响（既有产品线不能被打扰）
+  assert.equal(assertSourceKeyPair('mod-makoto-p3r', 'assets/char/x.png').ok, true);
+  assert.equal(assertSourceKeyPair('mod-makoto-p3r', 'packs/mod-set-1.zip').ok, true);
+  // 空 source 也不受影响：规则只在明确等于 LINEUP_SOURCE 时生效
+  assert.equal(assertSourceKeyPair('', 'assets/char/x.png').ok, true);
 });
 
 test('digest, size, source and note are validated before anything is written', () => {

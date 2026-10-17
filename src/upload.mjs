@@ -57,6 +57,35 @@ export const ASSET_TREE_PREFIXES = ['assets/', 'fonts/'];
 export const LINEUP_PREFIX = 'packs/lineup-library/';
 
 /**
+ * 学习库专属的来源标识。`source` 会成为 hosted.json 的分组 id；后台给学习库单开一个区域，
+ * 那个区域固定用这个 source，并由 `assertSourceKeyPair` 强制它只能落在 `LINEUP_PREFIX` 下的 `.jsonl`。
+ * 为什么要在服务端强制：前端固定前缀只是方便，agent 通道与 commit 端点都能自己拼 key，
+ * 只靠页面就等于没约束。
+ */
+export const LINEUP_SOURCE = 'lineup-library';
+
+/** 这个键是不是学习库的日期文件（`packs/lineup-library/<mode>-<YYYY-MM-DD>.jsonl` 的落点与扩展名都命中）。 */
+export function isLineupKey(rawKey) {
+  const key = String(rawKey || '').trim().replace(/^\/+/, '');
+  const ext = (key.split('.').pop() || '').toLowerCase();
+  return key.startsWith(LINEUP_PREFIX) && ext === 'jsonl';
+}
+
+/**
+ * 来源与落点必须成对：`source=lineup-library` 只允许学习库的键，别的 source 不受影响。
+ *
+ * 为什么单独一个函数而不是塞进 formatVerdict：formatVerdict 是 key-only 的纯函数（tier 决策，
+ * 多个调用点没有 source 上下文），而这条是授权门禁。两者正交，混在一起会让每个调用点都得透传 source。
+ * @returns {{ok:true} | {ok:false, reason:string}}
+ */
+export function assertSourceKeyPair(source, key) {
+  if (String(source || '').trim() === LINEUP_SOURCE && !isLineupKey(key)) {
+    return { ok: false, reason: `source=${LINEUP_SOURCE} 只允许 ${LINEUP_PREFIX}<模式>-<YYYY-MM-DD>.jsonl（只能传学习库，别的都不行）` };
+  }
+  return { ok: true };
+}
+
+/**
  * 这一份算「静态素材」还是「先暂存、审计后放行」。
  *
  * 为什么判据必须是 格式 + 落点 两条，不能只看扩展名：`.json` / `.bin` / `.obj` 两边都是 ——
@@ -72,7 +101,7 @@ export function formatVerdict(rawKey) {
   if (inAssetTree && ASSET_EXTENSIONS.has(ext)) return { ok: true, tier: 'asset', ext };
   // 学习库：专用落点 + `.jsonl` 两条同时命中才直发。前缀里出现别的格式（清单、说明、zip）
   // 仍然落到 hold，走人工审计——这条例外只认得一种字节。
-  if (key.startsWith(LINEUP_PREFIX) && ext === 'jsonl') return { ok: true, tier: 'asset', ext };
+  if (isLineupKey(key)) return { ok: true, tier: 'asset', ext };
   return {
     ok: true,
     tier: 'hold',

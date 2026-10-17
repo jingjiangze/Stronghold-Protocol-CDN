@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { HOSTED_FILE } from './hosted.mjs';
+import { syncLineupAliases } from './lineup-alias.mjs';
 import {
   r2Config,
   getObject,
@@ -451,6 +452,16 @@ export async function main(argv = process.argv.slice(2)) {
   }
   report.removals = removals;
 
+  // 稳定别名：每轮无条件跑一遍。promote() 只处理 staging，没积压时会在 `if (!report.published.length)`
+  // 提前返回，所以别名不能挂在它里面；这里失败也只进 errors，不阻塞下面的收尾与上报。
+  let aliases = { targets: [], copied: [], skipped: 0, errors: [] };
+  try {
+    aliases = await syncLineupAliases({ config: r2Config(process.env), dry: opts.dry, log });
+  } catch (error) {
+    aliases.errors.push({ error: `别名阶段整体失败：${error.message}` });
+  }
+  report.aliases = aliases;
+
   console.log(`\n== 发布结果${opts.dry ? '（dry-run）' : ''} ==`);
   console.log(`staging 对象 ${report.scanned} 个；未提交 claim ${report.skippedNoClaim} 组`);
   console.log(`published ${report.published.length}，already ${report.already.length}，rejected ${report.rejected.length}，待审计保留 ${report.held.length}，errors ${report.errors.length}`);
@@ -466,6 +477,12 @@ export async function main(argv = process.argv.slice(2)) {
   if (report.hosted) console.log('hosted.json：', report.hosted.map((h) => `${h.source} +${h.added}`).join(', '));
   if (report.hostedIndexTotals) console.log('hosted-index.json：', JSON.stringify(report.hostedIndexTotals));
   if (removals.hostedIndexTotals) console.log('hosted-index.json（撤销后）：', JSON.stringify(removals.hostedIndexTotals));
+  if (report.aliases) {
+    console.log(`\n== 学习库稳定别名 ==`);
+    console.log(`模式 ${report.aliases.targets.length} 个；copied ${report.aliases.copied.length}，skipped ${report.aliases.skipped}，errors ${report.aliases.errors.length}`);
+    for (const a of report.aliases.copied) console.log(`  → ${a.destKey}${a.dry ? '（干跑）' : ''}  ${a.date}`);
+    for (const e of report.aliases.errors) console.log(`  ! ${e.destKey || ''} ${e.error}`);
+  }
   // 供工作流判断「要不要接着提交 hosted.json / 刷 tree.json / 部署站点」
   console.log(`PUBLISHED_COUNT=${report.published.length}`);
   console.log(`REMOVED_COUNT=${removals.removed.length}`);

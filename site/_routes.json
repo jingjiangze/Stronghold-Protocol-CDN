@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/api/cdn/upload/*"],
+  "include": ["/api/cdn/upload/*", "/api/lineup/*"],
   "exclude": []
 }

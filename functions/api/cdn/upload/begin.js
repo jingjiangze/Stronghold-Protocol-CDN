@@ -5,9 +5,9 @@
 // 只增不改不删在这里的体现：begin 会 HEAD 最终键，已存在就 409 —— 后台没有覆盖入口。
 import { headKey, presignPut, r2Config } from './_edge.js';
 import { checkAuth, deny, json, readBody, sameOriginOrNone } from './_http.js';
-import { cleanNote, cleanSource, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
+import { assertSourceKeyPair, cleanNote, cleanSource, formatVerdict, makeId, stagingKeyFor, validateKey, validateSha, validateSize } from '../../../../src/upload.mjs';
 
-export async function onRequestPost(context) {
+export async function onRequestPost(context, options = {}) {
   const { request, env } = context;
 
   const originProblem = sameOriginOrNone(request);
@@ -24,8 +24,13 @@ export async function onRequestPost(context) {
   if (!s.ok) return deny(s.reason, 400);
   const z = validateSize(doc.size);
   if (!z.ok) return deny(z.reason, 400);
-  const src = cleanSource(doc.source);
+  // forcedSource：专用通道（/api/lineup/* 之类）用它把来源钉死，调用方传什么都不算数。
+  const src = cleanSource(options.forcedSource || doc.source);
   if (!src.ok) return deny(src.reason, 400);
+  // 提前拒：begin 只签地址、不写 claim，所以这里不是充分条件（put/commit 各自还有一次），
+  // 但让调用方在传字节之前就知道「这个来源只收学习库」体验最好。
+  const pair = assertSourceKeyPair(src.source, k.key);
+  if (!pair.ok) return deny(pair.reason, 400);
 
   let cfg;
   try {
