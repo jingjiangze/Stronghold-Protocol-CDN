@@ -224,6 +224,34 @@ http://127.0.0.1:3000/?room=<密钥>
 - `dstport 3000` / `srcport 3000`：房主侧游戏端口映射到本机 3000，和 Web 入口的 `127.0.0.1:3000` 对齐。这里的 `srcport 3000` 对应平台返回的 `srcPort` 默认值；建房时若通过 `POST /api/room` 传了 `srcPort`，APK 侧 `srcport` 要改成同一个值，否则映射端口对不上。
 - ECS 平台侧默认 `ShareBandwidth=0`（只走信令、不中转流量）；APK 侧只要能直连即可，无需声明带宽。
 
+## 服务端内置接入（推荐：玩家只跟服务器打交道）
+
+游戏服务器自己就是接入方：开房时由**服务器**向平台登记，把返回的 `joinUrl` 通过 `room.state.inviteUrl` 发给房内所有人；玩家在游戏里点「复制链接」拿到的就是平台入口，点开由平台 302 决定去哪。**不需要启动器、不需要玩家装任何东西**，玩家只跟服务器打交道。
+
+实现见游戏仓库的 `server/platform.js`，接线在 `server/lobby.js`（开房即登记、销毁即释放）与 `public/js/screens/room.js`（邀请框优先用服务端下发的链接）。
+
+**三个环境变量，都不设 = 功能关闭（行为与未接入时完全一致）：**
+
+| 变量 | 作用 |
+|---|---|
+| `SP_PLATFORM_URL` | 平台基址，默认 `https://p2p.jiangjiangze.icu`；`0` / `off` 显式关闭 |
+| `SP_PLATFORM_HOSTNODE` | 房主机器的 openp2p 节点名（8–63 位 `[A-Za-z0-9._-]`）。设了就走 **p2p 优先** |
+| `SP_PLATFORM_UPSTREAM` | 打不穿时回退的服务器地址（https 源站）。**p2p 模式下是回退目标**；direct 模式下就是自己 |
+
+**两种模式的选择**（由上面两个变量决定，同一套代码）：
+
+- **p2p（优先）**：设了 `SP_PLATFORM_HOSTNODE` ⇒ 登记 `{hostNode, upstream, code}`。玩家点链接后，隧道通就 302 到玩家本机映射端口（p2p 直连，游戏流量不经平台）；打不穿则 302 到 `SP_PLATFORM_UPSTREAM`（服务器联机），带 `&o2pfallback=1`。
+- **direct（线上 ms.show 默认）**：没设 hostNode ⇒ 登记 `{upstream, code}`。平台只发一条 302 让玩家直连本服务器，零安装、零节点。`SP_PLATFORM_UPSTREAM` 缺省时会用 ModelScope 注入的 `STUDIO_HOST` / `SPACE_HOST` 推出自己的公网地址。
+
+**行为约定（都已实测）：**
+
+- **开房即登记**：`room.create` 成功后异步 `POST /api/room`，成功后重播一次 `room.state`，其中多一个 `inviteUrl` 字段（字符串或 `null`）。solo 房不登记。
+- **销毁即释放**：`disposeRoom` 时 `DELETE /api/room/<roomId>`；释放失败也不重试，平台侧 6 小时后自行过期。
+- **失败不影响开房**：平台不可达 / 超时（4 s）/ 返回非 2xx ⇒ `inviteUrl` 保持 `null`，房间照常创建与联机，前端「复制链接」回落到本地 `?room=` 链接。这条已用「平台指向死端口」实测。
+- **不升协议版本**：`room.state.inviteUrl` 是纯展示字段，旧客户端会忽略未知键（`validateC2S` 跳过未知字段），`PROTOCOL_VERSION` 保持 1。
+- **诊断**：`GET /api/platform` 返回 `{enabled, mode, base, upstream, hostNode, rooms, lastOkAt, lastError}`（只有计数与配置，无玩家数据）；未配置时是 `{"enabled":false}`。
+
+
 ---
 
 # 第二部分 · 给腐竹 / 房主安装看（人话、逐步）
