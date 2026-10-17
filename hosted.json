@@ -56311,6 +56311,20 @@
           25304
         ]
       ]
+    },
+    {
+      "id": "prts-skins-2026-10-17",
+      "what": "批量上传（agent-upload-batch）",
+      "addedAt": "2026-10-17",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 137329,
+      "keys": [
+        [
+          "assets/skins/char_4204_mantra_sightseer_4/portrait.png",
+          137329
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
