@@ -89,6 +89,16 @@
   Cache-Control: public, max-age=300, stale-while-revalidate=3600
   X-Robots-Tag: all
 
+# Same shape: the openp2p server-integration page. Both names are required because Pages
+# 308s /p2p-platform.html to /p2p-platform (see /bandwidth above).
+/p2p-platform.html
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
+/p2p-platform
+  Cache-Control: public, max-age=300, stale-while-revalidate=3600
+  X-Robots-Tag: all
+
 # Same shape: the agent upload console is an operator surface, not public content.
 /admin.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600

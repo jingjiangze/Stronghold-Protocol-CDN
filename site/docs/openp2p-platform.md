@@ -9,6 +9,9 @@
 - **第一部分 · 给 Agent / 程序接入看**：接口字段、返回结构、接入契约，复制顶部代码块给 agent 即可干活。
 - **第二部分 · 给腐竹 / 房主安装看**：房主怎么把服务器接进来的逐步人话教程，含三种方案（本地手动装 / Windows 启动器 / Docker 云部署）。
 
+> 只想让**自己的服务器**接入平台（玩家只跟服务器打交道、不装启动器）？直接看第一部分的
+> 「服务端内置接入」一节，或网页版 <https://downcdn.jiangjiangze.icu/p2p-platform>。
+
 ---
 
 # 第一部分 · 给 Agent / 程序接入看
@@ -230,6 +233,8 @@ http://127.0.0.1:3000/?room=<密钥>
 
 实现见游戏仓库的 `server/platform.js`，接线在 `server/lobby.js`（开房即登记、销毁即释放）与 `public/js/screens/room.js`（邀请框优先用服务端下发的链接）。
 
+> **网页版入口（推荐先看这个）**：<https://downcdn.jiangjiangze.icu/p2p-platform> —— 整条链路图、每步拆解、三个环境变量、失败隔离表、验收命令，一页可看完，可从卡片跳转到本文与《服务器部署文档》。
+
 **三个环境变量，都不设 = 功能关闭（行为与未接入时完全一致）：**
 
 | 变量 | 作用 |
@@ -238,18 +243,46 @@ http://127.0.0.1:3000/?room=<密钥>
 | `SP_PLATFORM_HOSTNODE` | 房主机器的 openp2p 节点名（8–63 位 `[A-Za-z0-9._-]`）。设了就走 **p2p 优先** |
 | `SP_PLATFORM_UPSTREAM` | 打不穿时回退的服务器地址（https 源站）。**p2p 模式下是回退目标**；direct 模式下就是自己 |
 
+`SP_PLATFORM_UPSTREAM` 缺省时，direct 模式会用 ModelScope 注入的 `STUDIO_HOST` / `SPACE_HOST` 推出自己的公网地址；两个都没有且 hostNode 也没设 ⇒ 整体关闭（`GET /api/platform` 返回 `{"enabled":false}`）。
+
 **两种模式的选择**（由上面两个变量决定，同一套代码）：
 
 - **p2p（优先）**：设了 `SP_PLATFORM_HOSTNODE` ⇒ 登记 `{hostNode, upstream, code}`。玩家点链接后，隧道通就 302 到玩家本机映射端口（p2p 直连，游戏流量不经平台）；打不穿则 302 到 `SP_PLATFORM_UPSTREAM`（服务器联机），带 `&o2pfallback=1`。
-- **direct（线上 ms.show 默认）**：没设 hostNode ⇒ 登记 `{upstream, code}`。平台只发一条 302 让玩家直连本服务器，零安装、零节点。`SP_PLATFORM_UPSTREAM` 缺省时会用 ModelScope 注入的 `STUDIO_HOST` / `SPACE_HOST` 推出自己的公网地址。
+- **direct（线上 ms.show 默认）**：没设 hostNode ⇒ 登记 `{upstream, code}`。平台只发一条 302 让玩家直连本服务器，零安装、零节点。
 
 **行为约定（都已实测）：**
 
-- **开房即登记**：`room.create` 成功后异步 `POST /api/room`，成功后重播一次 `room.state`，其中多一个 `inviteUrl` 字段（字符串或 `null`）。solo 房不登记。
+- **开房即登记**：`room.create` 成功后异步 `POST /api/room`，成功后重播一次 `room.state`，其中多一个 `inviteUrl` 字段（字符串或 `null`）。solo 房不登记（没有人要邀请）。
 - **销毁即释放**：`disposeRoom` 时 `DELETE /api/room/<roomId>`；释放失败也不重试，平台侧 6 小时后自行过期。
 - **失败不影响开房**：平台不可达 / 超时（4 s）/ 返回非 2xx ⇒ `inviteUrl` 保持 `null`，房间照常创建与联机，前端「复制链接」回落到本地 `?room=` 链接。这条已用「平台指向死端口」实测。
 - **不升协议版本**：`room.state.inviteUrl` 是纯展示字段，旧客户端会忽略未知键（`validateC2S` 跳过未知字段），`PROTOCOL_VERSION` 保持 1。
+- **登记去重**：同一房间 5 分钟内重复登记复用上一次结果；并发登记只发一次请求（`pending` 去重）。
 - **诊断**：`GET /api/platform` 返回 `{enabled, mode, base, upstream, hostNode, rooms, lastOkAt, lastError}`（只有计数与配置，无玩家数据）；未配置时是 `{"enabled":false}`。
+
+### 同步到服务器（补丁包）
+
+现成补丁包按 **`ms/master`**（线上 ModelScope 创空间实际运行的那棵树，app 0.3.0）重打过，1 个新增文件 + 5 处接线，解压覆盖后重启即可：
+
+| 文件 | 动作 | 作用 |
+|---|---|---|
+| `server/platform.js` | **新增** | 接入模块：登记 / 释放 / 状态，失败隔离 |
+| `server/index.js` | 改 | 启动时建实例，把诊断端点交给 HTTP 层 |
+| `server/lobby.js` | 改 | 开房即登记、销毁即释放、`toState()` 多一个 `inviteUrl` |
+| `server/http/routes.js` | 改 | `GET /api/platform` 诊断端点 |
+| `public/js/screens/room.js` | 改 | 「复制链接」优先用服务端下发的链接 |
+| `shared/protocol.js` | 改 | 注释说明 `inviteUrl` 是可选展示字段 |
+
+```bash
+unzip -o stronghold-server-platform-patch.zip -d /tmp/sp-patch
+cp -a /tmp/sp-patch/server-integration-patch/. <游戏仓库>/
+node --check <游戏仓库>/server/platform.js    # 无输出 = 语法 OK
+# 然后重启；设不设环境变量见上一节
+```
+
+上线 ms.show（direct 模式）三个变量一个都不用设——默认基址就是主基址，direct 模式自己推出 upstream；自建机房 / VPS 想走 p2p 优先，设 `SP_PLATFORM_HOSTNODE` + `SP_PLATFORM_UPSTREAM`，房主侧另跑一个 openp2p 节点（同名 + 开房返回的 int64 token，别加引号）。
+
+> 补丁相对 `ms/master` 是 +67 / −5 行的干净增量（包内附 `ms-platform-only.diff`）。本机在干净基座上实测：能启动、冒烟 30/30、eslint 0 error（仅 2 条 warning 与 `ms/master` 原版逐字相同，非补丁引入）。
+
 
 
 ---

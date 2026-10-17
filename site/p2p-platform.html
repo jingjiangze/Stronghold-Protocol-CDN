@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="theme-color" content="#101719" />
+  <meta name="description" content="openp2p 异地联机 · 服务端内置接入：平台 v3 仅握手 → 服务器登记 → room.state.inviteUrl → 玩家复制链接 → 302 → p2p 直连或回退（非官方同人作品）" />
+  <title>服务端内置接入 · openp2p 异地联机 · 卫戍协议 CDN</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/cdn.css" />
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">SP<span></span></span>
+      <div>素材 CDN<small>STRONGHOLD PROTOCOL</small></div>
+    </div>
+    <nav class="navigation">
+      <a href="./">CDN 首页</a>
+      <a href="#chain">整条链路</a>
+      <a href="#steps">每步拆解</a>
+      <a href="#env">三个变量</a>
+      <a href="#isolate">失败隔离</a>
+      <a href="#accept">验收</a>
+      <a href="#patch">同步到服务器</a>
+      <a href="#docs">文档</a>
+    </nav>
+    <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">异地联机</span></div>
+  </div>
+</div>
+
+<main class="container">
+
+  <section class="hero">
+    <div>
+      <h1>服务端内置接入 · openp2p 异地联机</h1>
+      <p class="hero-description">
+        玩家分散在各自家里、没有公网 IP 时怎么联机。<b>由服务器自己接入平台</b>：开房时向
+        <code class="inline">p2p.jiangjiangze.icu</code> 登记，拿回一条 <code class="inline">joinUrl</code>，
+        通过 <code class="inline">room.state.inviteUrl</code> 下发给房内所有人。玩家在游戏里点「复制链接」，
+        点开由平台发<b>一条 302</b> 决定去哪——隧道通就 p2p 直连，打不穿就回退到服务器。
+        <b>不需要启动器，不需要玩家装任何东西。</b>
+      </p>
+    </div>
+    <div class="quick-stats">
+      <span>平台 <strong>仅握手</strong></span>
+      <span>游戏流量 <strong>不过平台</strong></span>
+      <span>补丁 <strong>6 个文件</strong></span>
+      <span>冒烟 <strong>30/30</strong></span>
+    </div>
+  </section>
+
+  <!-- ===================== 结论 ===================== -->
+  <section class="block" id="chain">
+    <div class="block__head">
+      <span class="block__num">1</span>
+      <span class="block__title">整条链路一次讲清</span>
+      <span class="block__who">服务器登记 → 下发链接 → 平台 302 → p2p 或回退</span>
+    </div>
+    <p class="block__lead">
+      六个环节，从左到右。<b>平台只在第 ⑤ 步出手一次</b>——发一条 302，然后就不管了：
+      玩家浏览器自己连目标，游戏字节（含 WebSocket）从头到尾不经过平台、不经过阿里云 ECS。
+    </p>
+    <pre class="code"><i>① 玩家开房（游戏客户端）</i>
+   room.create ─────────────────────────────────────────────► 服务器
+                                                                    │
+<i>② 服务器异步登记（server/platform.js，4 s 超时）</i>                │
+   POST /api/room {hostNode, upstream, code} ────────────────► 平台
+                                                              ◄──── roomId + joinUrl
+                                                                    │
+<i>③ 服务器重播一次房间状态</i>                                              │
+   room.state.inviteUrl = https://p2p.jiangjiangze.icu/go/&lt;id&gt;?room=CODE
+                                                                    │
+<i>④ 房主点「复制链接」发给朋友</i>                                          │
+   前端优先用 room.inviteUrl（没有就回落到本地 ?room= 链接）             │
+                                                                    ▼
+<i>⑤ 玩家点开链接</i>                                                        平台
+   GET /go/&lt;id&gt; ────────────────────────────────────────────►  302
+        │
+        ├─ p2p 隧道通 ────────► http://127.0.0.1:&lt;srcPort&gt;/?room=CODE
+        │                        （玩家自己本机的 openp2p 映射端口，游戏流量不经平台）
+        │
+        ├─ 隧道不通·有回退 ───► https://&lt;upstream&gt;/?room=CODE<b>&amp;o2pfallback=1</b>
+        │                        （回退到服务器联机；<b>是重开一局，不是续局</b>）
+        │
+        └─ 隧道不通·无回退 ───► http://127.0.0.1:3000/?room=CODE<b>&amp;o2pretry=1</b>
+                                 （提示本机重试）
+
+<i>⑥ 房间销毁</i>
+   disposeRoom ─ DELETE /api/room/&lt;id&gt;（尽力而为；平台侧 6 小时后自行过期）</pre>
+    <div class="notice">
+      <span><b>「仅握手」是什么意思：</b>平台 v3 不中转任何游戏流量、不下发 cookie、不反代。
+      ECS 默认 <code class="inline">ShareBandwidth=0</code>，只走信令，省下阿里云约 18G/月的出口额度。
+      代价是<b>对局状态不能迁移</b>——它只存在于游戏服进程内存里，所以 p2p 打不穿回退时，
+      所有人用同一个 code <b>重新开一局</b>。发链接时记得提醒玩家。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 每步拆解 ===================== -->
+  <section class="section" id="steps">
+    <div class="section-heading">
+      <div><div class="eyebrow">STEPS</div><h2>每步在哪个文件、发生什么</h2></div>
+      <span class="section-status">1 个新增文件 + 5 处接线</span>
+    </div>
+
+    <ol class="steps">
+      <li class="step">
+        <span class="step__n">1</span>
+        <div class="step__body">
+          <div class="step__title">启动：读环境变量，建接入实例</div>
+          <div class="step__note">
+            <code class="inline">server/index.js</code> 调 <code class="inline">platformConfigFromEnv(process.env)</code>。
+            三个变量都不设 ⇒ 返回 null ⇒ <code class="inline">platform = null</code>，整条链路静默关闭，
+            行为与未接入时<b>逐字节一致</b>。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">2</span>
+        <div class="step__body">
+          <div class="step__title">开房：异步登记，fire-and-forget</div>
+          <div class="step__note">
+            <code class="inline">server/lobby.js</code> 的 <code class="inline">announcePlatformRoom()</code>：
+            <code class="inline">room.create</code> 成功后<b>不阻塞</b>地 <code class="inline">POST /api/room</code>。
+            solo 房跳过（没有人要邀请）。登记失败只写一行 warn，房间照常建。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">3</span>
+        <div class="step__body">
+          <div class="step__title">下发：重播一次 room.state</div>
+          <div class="step__note">
+            登记成功才把 <code class="inline">room.inviteUrl</code> 写上并 <code class="inline">broadcastState()</code>；
+            <code class="inline">toState()</code> 里它是可选字段（字符串或 <code class="inline">null</code>）。
+            旧客户端忽略未知键，所以 <b>PROTOCOL_VERSION 保持 1</b>。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">4</span>
+        <div class="step__body">
+          <div class="step__title">复制：前端优先用平台链接</div>
+          <div class="step__note">
+            <code class="inline">public/js/screens/room.js</code> 的「复制链接」改成
+            <code class="inline">room.inviteUrl || inviteLink(room.code)</code>。
+            没有平台时这个表达式<b>就是原来的本地链接</b>，一处改动两种行为。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">5</span>
+        <div class="step__body">
+          <div class="step__title">跳转：平台只发一条 302</div>
+          <div class="step__note">
+            <code class="inline">GET /go/&lt;id&gt;</code> 按房间类型决定 location：p2p 通 ⇒ 玩家本机映射端口；
+            不通 ⇒ 带 <code class="inline">&amp;o2pfallback=1</code> 回退 upstream；无回退 ⇒ 本机
+            <code class="inline">&amp;o2pretry=1</code>。平台不反代、不中转、不发 cookie。
+          </div>
+        </div>
+      </li>
+      <li class="step">
+        <span class="step__n">6</span>
+        <div class="step__body">
+          <div class="step__title">销毁：释放房间</div>
+          <div class="step__note">
+            <code class="inline">disposeRoom()</code> 第一行 <code class="inline">this.platform?.release(room.code)</code>
+            ⇒ <code class="inline">DELETE /api/room/&lt;id&gt;</code>，失败不重试（平台 6 小时自行过期）。
+          </div>
+        </div>
+      </li>
+    </ol>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>登记时发什么</h4>
+        <ul>
+          <li><b>p2p 模式</b>：<code class="inline">{hostNode, code, upstream}</code>（hostNode 是房主节点名）</li>
+          <li><b>direct 模式</b>：<code class="inline">{upstream, code}</code>（upstream 就是自己）</li>
+          <li>同一房间 5 分钟内重复登记<b>复用</b>上次结果；并发登记只发一次请求</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>诊断端点</h4>
+        <ul>
+          <li><code class="inline">GET /api/platform</code> ⇒
+            <code class="inline">{enabled, mode, base, upstream, hostNode, rooms, lastOkAt, lastError}</code></li>
+          <li>只有计数与配置，<b>无玩家数据</b></li>
+          <li>没配过平台时是 <code class="inline">{"enabled":false}</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 三个变量 ===================== -->
+  <section class="section" id="env">
+    <div class="section-heading">
+      <div><div class="eyebrow">CONFIG</div><h2>三个环境变量</h2></div>
+      <span class="section-status">都不设 = 功能关闭，行为与未接入时完全一致</span>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card__title">SP_PLATFORM_URL<span class="chip">基址</span></div>
+        <div class="card__meta"><span>平台基址，启动时读一次</span></div>
+        <div class="card__stats">
+          <span>默认 <b>p2p.jiangjiangze.icu</b></span>
+          <span><b>0</b> / off 关闭</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__title">SP_PLATFORM_HOSTNODE<span class="chip">p2p 开关</span></div>
+        <div class="card__meta"><span>房主机器的 openp2p 节点名</span></div>
+        <div class="card__stats">
+          <span><b>8–63</b> 位</span>
+          <span>字符集 <b>[A-Za-z0-9._-]</b></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card__title">SP_PLATFORM_UPSTREAM<span class="chip">回退目标</span></div>
+        <div class="card__meta"><span>打不穿时玩家去哪</span></div>
+        <div class="card__stats">
+          <span>p2p 模式 <b>回退</b></span>
+          <span>direct 模式 <b>就是自己</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="mini">
+        <h4>p2p 优先（设了 hostNode）</h4>
+        <ul>
+          <li>登记 <code class="inline">{hostNode, upstream, code}</code></li>
+          <li>隧道通 ⇒ 302 到玩家本机 <code class="inline">127.0.0.1:&lt;srcPort&gt;</code>，游戏流量 p2p 直连、<b>不经平台</b></li>
+          <li>打不穿 ⇒ 302 到 <code class="inline">SP_PLATFORM_UPSTREAM</code>，带 <code class="inline">&amp;o2pfallback=1</code></li>
+          <li>房主侧仍需跑一个 openp2p 节点（同名 + 开房返回的 token）</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>direct（线上 ms.show 默认）</h4>
+        <ul>
+          <li>没设 hostNode ⇒ 登记 <code class="inline">{upstream, code}</code></li>
+          <li>平台只发一条 302 让玩家<b>直连本服务器</b>，腐竹零安装零节点</li>
+          <li><code class="inline">SP_PLATFORM_UPSTREAM</code> 缺省时用 ModelScope 注入的
+            <code class="inline">STUDIO_HOST</code> / <code class="inline">SPACE_HOST</code> 推出自己的公网地址</li>
+          <li>游戏会话字节走你自己的公网入口，<b>不经 ECS 中转</b></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 失败隔离 ===================== -->
+  <section class="section" id="isolate">
+    <div class="section-heading">
+      <div><div class="eyebrow">ISOLATION</div><h2>平台挂了，房间照常能打</h2></div>
+      <span class="section-status">接入是纯增益：坏的情况只损失一条远程链接</span>
+    </div>
+
+    <p class="section-note" style="margin-bottom:14px">
+      接入模块的每一条失败路径都指向同一个结果：<b><code class="inline">inviteUrl</code> 保持 null</b>。
+      房间创建、加入、对局、断线重连全都不经过平台——它只负责「把一条链接递给玩家」。
+      这一条已用「平台指向死端口」实测过。
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>失败场景</th><th>房间会怎样</th><th>玩家看到什么</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>平台不可达 / DNS 失败</td>
+            <td><b>照常创建与联机</b>，登记记 <code class="inline">lastError</code></td>
+            <td>「复制链接」拿到本地 <code class="inline">?room=</code> 链接</td>
+          </tr>
+          <tr>
+            <td>平台超时（4 s）</td>
+            <td>同上；登记是异步的，<b>不阻塞开房</b></td>
+            <td>同上</td>
+          </tr>
+          <tr>
+            <td>平台返回非 2xx / 响应里没有 joinUrl</td>
+            <td>同上，<code class="inline">inviteUrl</code> 仍为 null</td>
+            <td>同上</td>
+          </tr>
+          <tr>
+            <td>收房时 DELETE 失败</td>
+            <td><b>不重试、不影响销毁</b>，平台侧 6 小时后自行过期</td>
+            <td>无感</td>
+          </tr>
+          <tr>
+            <td>没配任何环境变量</td>
+            <td><code class="inline">platform = null</code>，代码路径完全不进</td>
+            <td>与未接入时逐字节一致</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="notice" style="margin-top:16px">
+      <span><b>协议不变：</b><code class="inline">room.state.inviteUrl</code> 是纯展示字段。
+      旧客户端会忽略未知键（<code class="inline">validateC2S</code> 跳过未知字段），
+      <code class="inline">PROTOCOL_VERSION</code> 保持 <b>1</b>——接入不需要客户端升级，也不需要房主升级。</span>
+    </div>
+  </section>
+
+  <!-- ===================== 验收 ===================== -->
+  <section class="section" id="accept">
+    <div class="section-heading">
+      <div><div class="eyebrow">VERIFY</div><h2>怎么核对</h2></div>
+      <span class="section-status">四条命令，从开关到玩家视角</span>
+    </div>
+    <pre class="code"><i># 1) 开关与模式（未配置时应为 {"enabled":false}）</i>
+curl -s http://127.0.0.1:3000/api/platform
+
+<i># 2) 平台侧能看到服务器登记的房間</i>
+curl -s https://p2p.jiangjiangze.icu/api/rooms
+
+<i># 3) 链接对不对：应是平台地址，而不是本机地址</i>
+<i>#    浏览器进房 → 点「复制链接」→ 粘出来看</i>
+<i>#    期望 https://p2p.jiangjiangze.icu/go/&lt;id&gt;?room=&lt;4位密钥&gt;</i>
+
+<i># 4) 关掉平台重启，房间照常能开、链接回落到本地 ?room=</i>
+SP_PLATFORM_URL=0 node server/index.js</pre>
+    <div class="two-col">
+      <div class="mini">
+        <h4>上线 ms.show（direct，最省事）</h4>
+        <ul>
+          <li>三个变量<b>一个都不用设</b>——默认基址就是主基址，direct 模式自己推 upstream</li>
+          <li>覆盖 6 个文件 → 重启 → <code class="inline">curl /api/platform</code> 看到 <code class="inline">"mode":"direct"</code></li>
+          <li>腐竹零安装零节点，玩家点链接即达</li>
+        </ul>
+      </div>
+      <div class="mini">
+        <h4>自建机房 / VPS（p2p 优先）</h4>
+        <ul>
+          <li>设 <code class="inline">SP_PLATFORM_HOSTNODE</code>（8–63 位节点名）</li>
+          <li>设 <code class="inline">SP_PLATFORM_UPSTREAM</code>（打不穿时回退到哪）</li>
+          <li>房主侧另跑 openp2p 节点：同名 + 开房返回的 int64 token（<b>别加引号</b>）</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 同步到服务器 ===================== -->
+  <section class="section" id="patch">
+    <div class="section-heading">
+      <div><div class="eyebrow">PATCH</div><h2>同步到服务器</h2></div>
+      <span class="section-status">6 个文件 · 相对 ms/master 的干净增量</span>
+    </div>
+    <p class="section-note" style="margin-bottom:14px">
+      补丁按 <code class="inline">ms/master</code>（线上创空间实际运行的那棵树）重打过，
+      本机已在干净基座上实测：能启动、冒烟 <b>30/30</b>、eslint <b>0 error</b>。
+      解压覆盖 → <code class="inline">node --check</code> → 重启，三步。
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>动作</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">server/platform.js</td><td><b>新增</b></td><td>接入模块：登记 / 释放 / 状态，失败隔离</td></tr>
+          <tr><td class="mono">server/index.js</td><td>改</td><td>启动时建实例，把诊断端点交给 HTTP 层</td></tr>
+          <tr><td class="mono">server/lobby.js</td><td>改</td><td>开房即登记、销毁即释放、<code class="inline">toState()</code> 多一个 inviteUrl</td></tr>
+          <tr><td class="mono">server/http/routes.js</td><td>改</td><td><code class="inline">GET /api/platform</code> 诊断端点</td></tr>
+          <tr><td class="mono">public/js/screens/room.js</td><td>改</td><td>「复制链接」优先用服务端下发的链接</td></tr>
+          <tr><td class="mono">shared/protocol.js</td><td>改</td><td>注释说明 inviteUrl 是可选展示字段</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="toolbar" style="margin-top:16px">
+      <a class="button button-primary" href="./docs/openp2p-platform.md">读完整平台契约</a>
+      <a class="button button-secondary" href="./docs/server-deploy.md">读服务器部署文档</a>
+    </div>
+  </section>
+
+  <!-- ===================== 文档跳转 ===================== -->
+  <section class="section" id="docs">
+    <div class="section-heading">
+      <div><div class="eyebrow">DOCS</div><h2>接着读哪一份</h2></div>
+      <span class="section-status">按你接下来要做什么选</span>
+    </div>
+    <div class="cards">
+      <a class="card" href="./docs/openp2p-platform.md">
+        <div class="card__title">联机平台说明（含 API）<span class="chip">Markdown</span></div>
+        <div class="card__meta"><span>开房 / 加入 / 收房接口字段与返回结构 · Web 零安装入口 · 安卓 APK 接入 · 房主三种方案（本地手动 / Windows 启动器 / 云端直连）</span></div>
+        <div class="card__stats">
+          <span>房间 <b>6h</b></span>
+          <span>玩家 <b>零安装</b></span>
+          <span>接口 <b>6 个</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/server-deploy.md">
+        <div class="card__title">服务器部署文档<span class="chip">Markdown</span></div>
+        <div class="card__meta"><span>游戏服本身怎么跑起来：ModelScope 创空间 Docker 部署、所需信息清单、零叠加层最简 Dockerfile、推送触发重新部署、验收与排错</span></div>
+        <div class="card__stats">
+          <span>端口 <b>7860</b></span>
+          <span>素材走 <b>CDN</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+      <a class="card" href="./#p2p">
+        <div class="card__title">CDN 首页 · 异地联机板块<span class="chip">首页</span></div>
+        <div class="card__meta"><span>从站点总览进入：平台基址、p2p 与直连两种房间、以及其它所有板块的入口</span></div>
+        <div class="card__stats">
+          <span>基址 <b>p2p.jiangjiangze.icu</b></span>
+          <span>备用 <b>aliyun.*</b></span>
+        </div>
+      </a>
+      <a class="card" href="./docs/asset-cdn-reconcile.md">
+        <div class="card__title">素材 CDN 对账<span class="chip">Markdown</span></div>
+        <div class="card__meta"><span>部署服常见的第一件麻烦：index.json 滞后、按清单会少卸 178 MiB，判定必须以 HEAD 实测为权威</span></div>
+        <div class="card__stats">
+          <span>HEAD 反查 <b>+1294 个</b></span>
+          <span>含 <b>验收命令</b></span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div>
+        非官方同人作品，仅供学习交流，素材版权归 Hypergryph / Yostar 所有。
+        本页数字来自服务器源码实测与本机冒烟，随代码变更可能漂移。
+      </div>
+      <div class="footer-links">
+        <a href="./">CDN 首页</a>
+        <a href="./#p2p">↗ 异地联机</a>
+        <a href="./docs/openp2p-platform.md">联机平台说明</a>
+        <a href="./docs/server-deploy.md">服务器部署</a>
+        <a href="./bandwidth">↗ 上行带宽压缩</a>
+        <a href="https://p2p.jiangjiangze.icu/" target="_blank" rel="noopener">平台基址</a>
+        <a href="https://github.com/jingjiangze/Stronghold-Protocol-CDN" target="_blank" rel="noopener">CDN 仓库</a>
+      </div>
+    </div>
+  </footer>
+
+</main>
+</body>
+</html>
