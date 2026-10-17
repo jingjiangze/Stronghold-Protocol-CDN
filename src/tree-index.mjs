@@ -82,8 +82,16 @@ export function buildTree(files, { hosted = new Map(), token = '' } = {}) {
   return { doc, json: JSON.stringify(doc), overlap };
 }
 
-/** Read the flat index and hosted list from a repo root, then build the tree. */
-export function readTree(root, indexFiles, { token = '' } = {}) {
+/**
+ * Read the flat index and hosted list from a repo root, then build the tree.
+ *
+ * `extraHosted` carries the upload channel's keys (published as cdn/v1/hosted-index.json). They are
+ * neither in the upstream index nor in this repository's curated hosted.json, so without them the
+ * tree silently omits everything uploaded through the channel — which is what made it report 1,856
+ * skin files while the bucket served 2,477 (2026-10-17).
+ */
+export function readTree(root, indexFiles, { token = '', extraHosted = null } = {}) {
   const { sizes } = readHosted(root);
+  if (extraHosted) for (const [key, size] of extraHosted) if (!sizes.has(key)) sizes.set(key, size);
   return buildTree(indexFiles, { hosted: sizes, token });
 }

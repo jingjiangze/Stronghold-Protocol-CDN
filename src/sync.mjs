@@ -46,7 +46,7 @@ import { readSources, fetchSourcePackage, extractSourceTree, readSource, readOve
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu';
+const DEFAULT_BASE = process.env.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu';
 const DEFAULT_PAGES_BASE = process.env.SP_PAGES_BASE || 'https://spages.jiangjiangze.icu';
 const DEFAULT_REPO = process.env.GITHUB_REPOSITORY || 'jingjiangze/Stronghold-Protocol-CDN';
 
@@ -403,7 +403,30 @@ async function main() {
       const res = await fetch(`${opts.base}/cdn/v1/index.json`, { signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const idx = await res.json();
-      const built = readTree(ROOT, idx.files || idx, { token: published.art.token });
+      // The upload channel's keys live in hosted-index.json, not in index.json (which mirrors the
+      // upstream package) and not in this repo's curated hosted.json. Without this merge the
+      // browsable tree cannot see them at all: on 2026-10-17 it listed 1,856 skin files while the
+      // bucket served 2,477, so every consumer that answers "does the CDN have this asset?" from
+      // tree.json answered no.
+      let extraHosted = null;
+      try {
+        const hres = await fetch(`${opts.base}/cdn/v1/hosted-index.json`, { signal: AbortSignal.timeout(60000) });
+        if (hres.ok) {
+          const hi = await hres.json();
+          const list = Array.isArray(hi.files) ? hi.files : Object.entries(hi.files || {}).map(([path, v]) => ({ path, size: v && v.size }));
+          extraHosted = new Map();
+          for (const f of list) {
+            const key = f && (f.path || f.key);
+            if (typeof key === 'string' && key) extraHosted.set(key, Number(f.size) || 0);
+          }
+          log(`tree: merged ${extraHosted.size} uploaded keys from hosted-index.json`);
+        } else {
+          log(`tree: hosted-index.json unavailable (HTTP ${hres.status}); the tree lists upstream + curated hosted keys only`);
+        }
+      } catch (error) {
+        log(`tree: hosted-index.json not merged (${error.message})`);
+      }
+      const built = readTree(ROOT, idx.files || idx, { token: published.art.token, extraHosted });
       await putObject(config, 'cdn/v1/tree.json', Buffer.from(built.json, 'utf8'), {
         contentType: 'application/json',
         cacheControl: SHORT,
@@ -467,13 +490,17 @@ async function main() {
       upstreamTag: published.upstream.tag,
       mirrorsJson: mirrorsDoc,
     });
+    await putObject(config, `packs/assets-${published.upstream.tag}/${dropin.name}`, fs.readFileSync(dropin.file), {
+      contentType: 'application/zip',
+      cacheControl: IMMUTABLE,
+    });
     const uploaded = spawnSync(
       'gh',
       ['release', 'upload', `assets-${published.upstream.tag}`, dropin.file, '--clobber', '-R', opts.repo],
       { encoding: 'utf8' },
     );
     if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-    log(`rebuilt the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → release only (packs are GitHub-only)`);
+    log(`rebuilt the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → R2 + release`);
 
     // The official-CDN variant rebuilds here too: it needs the upstream release's lite asset, not
     // the extracted tree, so it fits the fast path exactly like the drop-in does.
@@ -488,13 +515,17 @@ async function main() {
       });
       const check = await verifyOfficialCdn(variant.file);
       if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
+      await putObject(config, `packs/assets-${release.tag}/${variant.name}`, fs.readFileSync(variant.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
       const up = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (up.status !== 0) throw new Error((up.stderr || 'gh release upload failed').slice(0, 200));
-      log(`rebuilt the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → release only (packs are GitHub-only)`);
+      log(`rebuilt the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → R2 + release`);
     } catch (error) {
       console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
     }
@@ -842,6 +873,9 @@ async function main() {
         repo: opts.repo,
         workDir: packDir,
         mirrorPrefixes: readMirrorPrefixes(ROOT),
+        // The R2 copy of each pack, so the URL list offers our own domain and not only github and
+        // third-party mirrors.
+        ownBase: opts.base,
       });
       report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
     } catch (error) {
@@ -900,14 +934,19 @@ async function main() {
         upstreamTag: release.tag,
         mirrorsJson: mirrorsDoc,
       });
+      const key = `packs/assets-${release.tag}/${dropin.name}`;
+      await putObject(config, key, fs.readFileSync(dropin.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
       const uploaded = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, dropin.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-      report.dropin = { name: dropin.name, size: dropin.size, release: `assets-${release.tag}` };
-      log(`published the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB) → release only (packs are GitHub-only)`);
+      report.dropin = { name: dropin.name, size: dropin.size, key };
+      log(`published the drop-in zip: ${dropin.name} (${(dropin.size / 1024).toFixed(0)} KB)`);
     } catch (error) {
       console.error(`[sync] drop-in zip FAILED: ${error.message}`);
       report.dropin = { error: error.message };
@@ -926,14 +965,19 @@ async function main() {
       });
       const check = await verifyOfficialCdn(variant.file);
       if (!check.ok) throw new Error(`self-check failed: ${check.problems.join('; ').slice(0, 200)}`);
+      const key = `packs/assets-${release.tag}/${variant.name}`;
+      await putObject(config, key, fs.readFileSync(variant.file), {
+        contentType: 'application/zip',
+        cacheControl: IMMUTABLE,
+      });
       const uploaded = spawnSync(
         'gh',
         ['release', 'upload', `assets-${release.tag}`, variant.file, '--clobber', '-R', opts.repo],
         { encoding: 'utf8' },
       );
       if (uploaded.status !== 0) throw new Error((uploaded.stderr || 'gh release upload failed').slice(0, 200));
-      report.officialCdn = { name: variant.name, size: variant.size, release: `assets-${release.tag}`, refs: variant.refs };
-      log(`published the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB) → release only (packs are GitHub-only)`);
+      report.officialCdn = { name: variant.name, size: variant.size, key, refs: variant.refs };
+      log(`published the official-CDN variant: ${variant.name} (${(variant.size / 1048576).toFixed(1)} MB)`);
     } catch (error) {
       console.error(`[sync] official-CDN variant FAILED: ${error.message}`);
       report.officialCdn = { error: error.message };
