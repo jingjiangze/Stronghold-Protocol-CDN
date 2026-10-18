@@ -217,32 +217,30 @@ test('parking still works: openi stays parked in the shipped disabled list (CORS
   assert.ok((raw.disabled || []).includes('openi'), 'openi stays parked — reachable only through the ms-edge ?sp_source=openi channel');
 });
 
-// The dataset mirror was measured 2026-10-12 as the one source satisfying all three requirements
-// at once (ACAO usable, Range 206, ~3x faster TTFB than the current primary). On 2026-10-13 it was
-// found to be missing its whole assets/local/ subtree (~1,611 files) and was PARKED while the tree
-// was re-fed; the same day the subtree was pushed back through git-lfs (byte-verified), so it ships
-// enabled again and back at the head of `order`.
-test('the shipped origins.json carries the ModelScope dataset as a selectable full source', () => {
+// 2026-10-18: the dataset was switched to private (Visibility=1). Anonymous access now answers
+// 404 on the dataset API / resolve, and 403 ("无权访问该数据集") on repo/tree. It can no longer be
+// a public mirror, so it is RETIRED rather than parked: `retired` removes it from the published
+// interface, while parking would keep advertising a source that can only fail.
+test('the shipped origins.json retires the ModelScope dataset instead of offering it', () => {
+  const raw = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8'));
   const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
-  const ds = origins.find((o) => o.id === 'ms-dataset');
-  assert.ok(ds, 'the dataset mirror must be listed');
-  assert.equal(ds.coverage, 'full');
-  assert.notEqual(ds.enabled, false, 'assets/local/ was re-fed 2026-10-13, so it is selectable again');
-  assert.match(ds.root, /^https:\/\/modelscope\.cn\/datasets\/.+\/resolve\/.+\/releases\//);
-  // The derived base must land on the mirror's own asset tree, not the resolve root: the tree lives
-  // under releases/v1-trial/assets/, and `<root>/assets/` is exactly that.
-  assert.equal(ds.base, `${ds.root}/assets/`);
-  assert.match(ds.probe, /^\/assets\//);
-  const disabled = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8')).disabled || [];
-  assert.ok(!disabled.includes('ms-dataset'), 'un-parked: it must not be in the disabled list either');
+  assert.equal(
+    origins.find((o) => o.id === 'ms-dataset'),
+    undefined,
+    'a private dataset must not be advertised as a public mirror',
+  );
+  assert.ok(
+    (raw.retired || []).includes('ms-dataset'),
+    'retired is what stops carryForwardOrigins from resurrecting it from the previous contract',
+  );
 });
 
 test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
   const order = readPreferredOrder(path.resolve(process.cwd(), '.'));
-  // 2026-10-13: local/ re-fed, ms-dataset back at the head; then ms-edge.
-  assert.deepEqual(order.slice(0, 2), ['ms-dataset', 'ms-edge'], 'local/ 补齐后：ms-dataset 最快、其次 ms-edge');
+  // 2026-10-18: ms-dataset retired (private), so ms-edge leads and r2-alt follows.
+  assert.deepEqual(order.slice(0, 2), ['ms-edge', 'r2-alt'], 'ms-dataset 停用后：ms-edge 最快、其次 r2-alt');
   const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'r2-alt' }];
-  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['ms-dataset', 'r2-alt', 'r2', 'ghfast-assets']);
+  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['r2-alt', 'r2', 'ghfast-assets', 'ms-dataset']);
   // 空 order = 原样返回（不改动历史行为）
   assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'r2-alt']);
 });
