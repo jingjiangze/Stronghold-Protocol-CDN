@@ -57457,6 +57457,24 @@
           302834
         ]
       ]
+    },
+    {
+      "id": "sp-resource-repair-20261018",
+      "what": "Restore exact v0.3.0 snow enemy atlas/texture bytes under immutable keys; preserve newer shared CDN resources",
+      "addedAt": "2026-10-18",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 2,
+      "bytes": 28814,
+      "keys": [
+        [
+          "assets/local/sp-resource-repair-20261018/72f3d384da451d5c/enemy_10138_xdsnow.png",
+          26989
+        ],
+        [
+          "assets/local/sp-resource-repair-20261018/be7d0a13094953be/enemy_10138_xdsnow.atlas",
+          1825
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
