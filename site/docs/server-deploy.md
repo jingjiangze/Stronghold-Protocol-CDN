@@ -83,7 +83,9 @@ sources.json 默认（节选；2026-10-18 起 `modelscope` 已移出 `order`）�
 ```
 
 > `modelscope` 条目（`modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial`）
-> 已于 2026-10-18 停用：数据集转为私有后匿名访问 404/403，边缘再 302 过去只会把必然失败的源放大出去。
+> 已于 2026-10-18 从公开 `order` 里摘除：数据集转为私有后**匿名**访问 404/403，而边缘 302 是匿名通道，
+> 再指过去只会把必然失败的源放大出去。**数据集本身没有失效** —— 所有者会话（token 换 cookie）实测
+> `resolve` 仍返回 200 / 56,617 字节真 PNG，同步链与自用工具照常可用；玩家侧公开字节由 `r2` 承接（同一份对象）。
 ```
 
 - `order` 是静态顺序，不是实时测速：容器在 ModelScope 机房，量不出玩家那边的链路。真正按玩家网络选最快是**客户端** `pick.js` 的事，两者分工。新增镜像后要核对覆盖率——平台审核会拒收个别文件（如上面的 `exceptions` 路径），这些必须点名改道，否则玩家 404。

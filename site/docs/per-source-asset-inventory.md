@@ -233,16 +233,27 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 
 会话 `doker服务器审计` 里的魔搭文件是**两个不同的东西**，上线状态完全相反：
 
-### 6.1 数据集 `Stronghold-Protocol-Assets` —— ⛔ 2026-10-18 起转私有，不再公开可用
+### 6.1 数据集 `Stronghold-Protocol-Assets` —— 🔒 2026-10-18 起转私有；所有者会话仍可用，公开字节走 speedcdn
 
 > **2026-10-18 变更**：数据集已按用户指令转为私有（`Visibility: 1`），描述同步更新。
-> 匿名访问实测：数据集 API 返回 `404 不存在的数据集`、`repo/tree` 返回 `403 无权访问该数据集`、
-> `resolve` 直链同样 404。因此它**不再具备公开镜像资格**，已从 `origins.json` 的候选列表移入 `retired`。
-> 下面这一节的实测结论保留作历史记录，**其中「无鉴权直取字节」的部分已失效**。
+>
+> **可用性实测（2026-10-19 复核）**：
+>
+> | 通道 | 结果 |
+> |---|---|
+> | 匿名 `resolve` / `api/repo` | **404** `不存在的数据集` |
+> | 匿名 `repo/tree` | **403** `无权访问该数据集` |
+> | 所有者会话（token 换 cookie 后）`resolve` / `api/repo` | **200**，`char_003_kalts.png` = 56,617 字节真 PNG |
+> | 所有者会话 `repo/tree` | **200** |
+> | 公开分发（speedcdn / weishucdn / weishucdn2） | **200**，同路径同 56,617 字节 |
+>
+> 结论：**数据集对所有者与同步链仍然可用**，只是不再作为匿名可取的公开镜像 —— 所以它已从
+> `origins.json` 的**公开候选列表**移入 `retired`，玩家侧统一走 speedcdn（同一份对象、同字节）。
+> 下面这一节保留作历史记录，**其中「无鉴权直取字节」现在只对所有者会话成立**。
 
 - 页面 `modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets` → **200**（转私有前）
-- API `Visibility: 5`（公开）、`Downloads: 1,316`（转私有前）
-- **无鉴权直取字节**：200，`char_1016_agoat2.png` = 65,270 字节
+- API `Visibility: 5`（公开）、`Downloads: 1,316`（转私有前；现为 `Visibility: 1`）
+- **无鉴权直取字节**：200，`char_1016_agoat2.png` = 65,270 字节（转私有前）
 - **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
   = r2 `index.json` 里记录的值 ✅
 - 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`

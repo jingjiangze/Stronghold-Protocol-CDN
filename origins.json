@@ -27,7 +27,7 @@
       "root": "https://speedcdn.jiangjiangze.icu",
       "probe": "/cdn/v1/probe.bin",
       "coverage": "full",
-      "note": "同一个桶 stronghold-assets 的第三个自定义域名（与 weishucdn / weishucdn2 同桶同文）。此前一直靠 carryForwardOrigins 复活、未在 origins.json 登记，属于「已生效但未被登记」的幽灵源：字节与 r2 逐字节一致（实测 /cdn/v1/probe.bin 均 262144 字节、ETag 相同），但因此无法被 network.json 实测、也无法被排序。2026-10-14 正式登记，使其进入候选项并可被内地实测纳入。"
+      "note": "同一个桶 stronghold-assets 的第三个自定义域名（与 weishucdn / weishucdn2 同桶同文）。此前一直靠 carryForwardOrigins 复活、未在 origins.json 登记，属于「已生效但未被登记」的幽灵源：字节与 r2 逐字节一致（实测 /cdn/v1/probe.bin 均 262144 字节、ETag 相同），但因此无法被 network.json 实测、也无法被排序。2026-10-14 正式登记，使其进入候选项并可被内地实测纳入。**2026-10-19 用户指令：提到 order 第一位（最优先）。**"
     }
   ],
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 14,741-file / 2.14 GiB art tree (incl. 2,476 skins) lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Skins are served from this git-mount layer (assets-raw); R2/Pages also carries them now because the upstream release zip bundles assets/skins/** (verified byte-identical on weishucdn vs assets-raw). Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
@@ -89,12 +89,12 @@
     "ms-dataset"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
-  "_order_comment": "发布顺序（实测最快打头，2026-10-12 单文件探针：ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。ms-dataset 已于 2026-10-18 转私有后移出（匿名 403），不再参与排序。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。",
+  "_order_comment": "发布顺序（2026-10-19 用户指令：speedcdn 最优先；其后按 2026-10-12 单文件探针 ms-edge 0.566s < weishucdn2 0.808s < weishucdn 0.865s ≪ gitcdn 5.55s）。ms-dataset 已于 2026-10-18 转私有后移出（匿名 403；所有者会话仍可用），不再参与排序。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。",
   "order": [
+    "speedcdn",
     "ms-edge",
     "r2-alt",
-    "r2",
-    "speedcdn"
+    "r2"
   ],
   "disabled": [
     "jsdelivr",
