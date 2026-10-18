@@ -65,7 +65,7 @@ jobs:
       # 绿灯回答。tests/tree-verify.test.mjs 里带了一组**必须失败**的对照（陈旧 token、hosted
       # 计数不符、index 有树没有的键），校验器对它们必须报错——先让对照红过，绿灯才有意义。
       - name: unit tests
-        run: node --test tests/tree-verify.test.mjs tests/tree-index.test.mjs
+        run: node --test tests/tree-verify.test.mjs tests/tree-index.test.mjs tests/verify-served.test.mjs
 
       - name: rebuild + verify the tree
         env:
@@ -82,6 +82,9 @@ jobs:
       # 独立于上一步再核一次现网字节：上一步校验的是「刚重建的那份」，这一步校验的是「CDN 现在
       #  serving 的那份」。两者之间隔着边缘缓存，而 tree.json 的 cache-control 是 max-age=300——
       # 所以这一步必须绕过缓存直取桶，否则它复述的只是 5 分钟前的旧结论。
+      # 逻辑放在 src/verify-served.mjs 而不是内联 node -e：内联那次挂在 `await` 上——`node -e`
+      # 按 CommonJS 求值，回调里的顶层 await 直接是语法错误，而这类错只在有凭据的 runner 上才暴露。
+      # 落成模块还能被单测 import，守卫分支（argv vs import.meta.url）本机就能验，不必再烧一轮 CI。
       - name: verify what the bucket is actually serving
         env:
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
@@ -91,29 +94,7 @@ jobs:
           SP_CDN_BASE: ${{ inputs.base || vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }}
         run: |
           set -euo pipefail
-          node -e '
-          import("./src/r2.mjs").then(async ({ r2Config, getObject }) => {
-            import("./src/tree-verify.mjs").then(({ verifyTreeAndIndex }) => {
-              const config = r2Config();
-              const [indexBytes, treeBytes] = await Promise.all([
-                getObject(config, "cdn/v1/index.json"),
-                getObject(config, "cdn/v1/tree.json"),
-              ]);
-              if (!indexBytes) throw new Error("桶里没有 cdn/v1/index.json —— sync 从未发布过？");
-              if (!treeBytes) throw new Error("桶里没有 cdn/v1/tree.json —— 上一步失败了？");
-              const index = JSON.parse(indexBytes.toString("utf8"));
-              const tree = JSON.parse(treeBytes.toString("utf8"));
-              const { ok, failures } = verifyTreeAndIndex({ indexBytes, index, tree });
-              console.log(`[tree-refresh] index ${index.tag} / tree ${tree.token}`);
-              console.log(`[tree-refresh] totals ${JSON.stringify(tree.totals)}`);
-              if (!ok) {
-                for (const f of failures) console.error(`[tree-refresh] FAIL ${f}`);
-                process.exit(1);
-              }
-              console.log("[tree-refresh] PASS: 桶里 serving 的 tree 与 index 一致");
-            });
-          });
-          '
+          node src/verify-served.mjs
 
       - name: step summary
         if: always()
