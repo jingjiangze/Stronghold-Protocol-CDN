@@ -164,3 +164,82 @@ test('CONTROL: the token is checked against the raw bytes, not a re-serializatio
   assert.equal(ok, false);
   assert.match(failures.join('\n'), /tree\.token is/);
 });
+
+// ---------------------------------------------------------------------------
+// The upload channel, and why overlap is not fatal
+//
+// CI caught this on 2026-10-18: the fast path merges the upload channel's keys
+// (published as cdn/v1/hosted-index.json) through `extraHosted`, and the first run of the new
+// workflow failed because I had escalated the pre-existing overlap *warning* into a hard failure.
+// The merge is what makes the upload channel visible at all — before it, the tree listed 1,856 skin
+// files while the bucket served 2,477 — and a large share of those keys are files upstream later
+// absorbed. Measured on the live bucket that day: 5,082 of the 15,007 uploaded keys are also
+// upstream's, and hosted.json itself carries 4,724 such entries. Neither number is an anomaly.
+//
+// So the invariant this test pins is narrower than "no overlap": merging uploaded keys must not
+// change what the index↔tree consistency check concludes. The tree still has to satisfy all three
+// assertions, and the overlap count is reported, not thrown.
+import { readTree } from '../src/tree-index.mjs';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SYNC_SRC = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'src', 'sync.mjs'), 'utf8');
+
+test('merging uploaded keys keeps the tree consistent, even when they overlap upstream', () => {
+  const files = idx(UPSTREAM);
+  const indexBytes = Buffer.from(JSON.stringify({ schema: 1, tag: 'v0.3.1', count: UPSTREAM.length, bytes: 0, files }), 'utf8');
+  const index = JSON.parse(indexBytes.toString('utf8'));
+  const token = expectedToken(indexBytes, 'v0.3.1');
+
+  // The upload channel: keys the curated hosted.json never listed, some of them new and some of
+  // them files upstream has since absorbed. readTree is what the fast path calls, with the same
+  // repo root, so this exercises the real code path rather than a re-implementation of it. The repo
+  // root also brings in the real hosted.json (14k keys), so every assertion below is a delta
+  // against the same call without the merge — absolute counts would just restate hosted.json.
+  const uploaded = new Map([
+    ['assets/char/skin/upload_only.png', 4242],   // upload channel only — the reason the merge exists
+    ['assets/audio/bgm/a.mp3', 854143],           // upstream's — absorbed
+    ['assets/spine/op/a/front/a.skel', 100],      // upstream's — absorbed
+  ]);
+  const before = readTree(process.cwd(), index.files, { token });
+  const built = readTree(process.cwd(), index.files, { token, extraHosted: uploaded });
+
+  // The consistency check has to pass with those keys in the tree. Merging the channel must not be
+  // what makes the tree "wrong" — before the merge the same tree was published for weeks.
+  assert.equal(built.overlap.length - before.overlap.length, 2, 'the two absorbed keys are reported');
+  const { ok, failures } = verifyTreeAndIndex({ indexBytes, index, tree: built.doc });
+  assert.deepEqual(failures, []);
+  assert.equal(ok, true);
+
+  // And the merge must actually be visible: a tree that dropped the upload channel would also pass
+  // the consistency check, because the check is one-way. That is the whole reason the channel was
+  // merged in, so pin it or a future refactor can silently undo it.
+  const { sizes, hosted } = flattenTree(built.doc);
+  assert.equal(sizes.has('assets/char/skin/upload_only.png'), true, 'the upload channel is browsable');
+  assert.equal(built.doc.totals.hosted, before.doc.totals.hosted + 1, 'mod=1 counts the upload-only key, not the absorbed ones');
+  assert.equal([...hosted].includes('assets/audio/bgm/a.mp3'), false, 'an absorbed key is not flagged as hosted on purpose');
+
+  // The part that actually broke in CI, and why this assertion reads the source: overlap is a plain
+  // return value from tree-index.mjs — that module throws on malformed keys and nothing else — so
+  // whether it is fatal is decided entirely by how sync.mjs handles it. A test on readTree alone
+  // would stay green through exactly the regression I shipped (verified: reinstate the throw and
+  // this file is still 12/12). The steady state of this bucket is thousands of overlaps, so the
+  // handling must be a log line; `throw` next to an overlap check is what reds the run every time.
+  //
+  // The body is cut at the next statement that starts at the same indent as the `if`, rather than by
+  // matching to a closing brace: a non-greedy `[\s\S]*?}` stops at the first `}` it sees, which in a
+  // body containing a comment with a brace would truncate the check and let a real throw through.
+  // Both spellings are matched — the fast path reads `built.overlap`, publishCore destructures it to
+  // a bare `overlap` — because a check that only knows one form is a check that can be evaded by
+  // renaming the binding.
+  const overlapSites = [];
+  const re = /\n( +)if \(((?:\w+\.)?overlap)\.length\) \{\n([\s\S]*?)(?=\n\1\S|\n\1\}$)/g;
+  let m;
+  while ((m = re.exec(SYNC_SRC)) !== null) overlapSites.push({ variable: m[2], body: m[3] });
+  assert.ok(overlapSites.length >= 2, `expected both publish points to check overlap, found ${overlapSites.length}: ${overlapSites.map((s) => s.variable).join(', ')}`);
+  for (const [i, site] of overlapSites.entries()) {
+    assert.doesNotMatch(site.body, /\bthrow\b/, `overlap site ${i} (${site.variable}) treats a steady-state condition as fatal`);
+    assert.match(site.body, /\blog\(/, `overlap site ${i} (${site.variable}) must still report it, not stay silent`);
+  }
+});
