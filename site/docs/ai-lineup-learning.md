@@ -2,9 +2,9 @@
 
 > 这篇讲服务器怎么把真人玩家的最终布阵攒成本地库，并让 AI 队友在整备时检索同玩法 / 同关卡 / 同难度的真人布阵作额外候选。它是 `server/lineupLibrary.js` / `lineupSync.js` / `lineupPublish.js` 三件套的行为说明，续「服务器部署」里「AI 布阵学习库」两节。常量直接取自源码；代码已实现，但真实玩家数据尚未产生——首次真实数据要等某台服务器跑够一局并正常结算。
 
-## 一、它是什么，默认是关的
+## 一、它是什么，默认是开的（`SP_LINEUP_MODE=local`）
 
-学习库是「可选增强」，由一个环境变量开关：`SP_LINEUP_LIBRARY` 未设置或为空 → 功能完全关闭，不记录、不读取，bot 的布阵路径与默认逐字节相同，对局行为无差异；设了它（一个目录、一个文件路径，或一条 `remote:...` 远端说明）→ 才记录、才读取。没有这个变量，本篇整条链路都不会发生，AI 只会用内置默认方案与参数化变体。
+学习库由 `SP_LINEUP_MODE` 决定形态（2026-10-18 起**默认 `local`**）：`local` = 本机记录真人布阵并走专用通道上传（`SP_LINEUP_PUBLISH_URL` 默认 downcdn，即 R2 前置）；`public` = 只读远端（R2 稳定别名优先、GitHub 镜像兜底，适合魔搭等易失容器）；`off` = 彻底关闭（不记录、不读、不上传）。显式设了 `SP_LINEUP_LIBRARY`（目录 / 文件 / `remote:...`）时以它为准。上传时机是**对局结算后立即**（3 秒合并窗口），15 分钟定时器只作兜底。
 
 ## 二、数据从哪来（记录时机）
 
@@ -52,7 +52,7 @@ const USABLE_REASONS = new Set(['victory', 'defeat']);
 
 ## 七、存储布局与上限
 
-**推荐布局（分模式目录）**：`SP_LINEUP_LIBRARY=/app/lineups` 指向目录时，库写成 `<dir>/lineups_<modeId>.jsonl`——**每个模式一个文件，互不串味**，模式间不共享关卡池（`data/config.json` 的 `modes[*].stages`）与难度阶级。**兼容布局（单文件）**：指向具体文件路径时，不分模式、写进同一文件，检索键里 `modeId` 为空（`NO_MODE = ''`）。这是分模式拆分前的旧布局，升级部署后仍能读回自己写的东西。
+**推荐布局（分玩法 + 分难度目录）**：`SP_LINEUP_LIBRARY=/app/lineups` 指向目录时，库写成 `<dir>/lineups_<modeId>__<DIFFICULTY>.jsonl`（例：`lineups_mode_single_hard__HARD.jsonl`）——**每个「玩法 + 难度」组合一个文件，互不串味**；双下划线是因为 `modeId` 自身含单下划线。老布局（每模式一个文件）仍可读，升级用 `node tools/migrate-lineups.mjs <库目录> --apply` 拆分。**兼容布局（单文件）**：指向具体文件路径时，不分模式、写进同一文件，检索键里 `modeId` 为空（`NO_MODE = ''`）。这是分模式拆分前的旧布局，升级部署后仍能读回自己写的东西。
 
 **滚动窗口（库不会写满磁盘）**：
 
@@ -104,7 +104,7 @@ SP_LINEUP_LIBRARY=remote:<镜像或CDN地址>|/tmp/lineups
 SP_LINEUP_LIBRARY=remote:<url1,url2,...>|<cacheDir>
 ```
 
-行为细节：对每个待同步 mode 拉 `<url>/lineups_<modeId>.jsonl`（与本地分模式布局同前缀）；多个 URL 逗号分隔、按序回退、第一个完整取到的即停；默认 `6` 小时一次（`SP_LINEUP_SYNC_MS` 可改；底层 `DEFAULT_INTERVAL_MS = 6 * 60 * 60 * 1000`），带 ETag / `304`；先写 `<dest>.partial` 再 `rename`，半截文件不会被 `lineupLibrary` 看见；每次拉到新字节后 `reloadLibrary()` 丢缓存，下次 bot 查询直接读新字节、无需重启；`SP_LINEUP_SYNC=0` 关掉本模块（本地路径语义不受影响）；默认同步 `DEFAULT_SYNC_MODES` 六个 mode（`mode_single(_normal|_hard|_abyss)`、`mode_multi(_normal|_hard|_abyss)`），可用 `SP_LINEUP_SYNC_MODES` 覆盖。
+行为细节：对每个待同步库键拉 `<url>/lineups_<modeId>__<DIFFICULTY>.jsonl`（与本地布局同前缀）；多个 URL 逗号分隔、按序回退、第一个完整取到的即停；默认 `6` 小时一次（`SP_LINEUP_SYNC_MS` 可改；底层 `DEFAULT_INTERVAL_MS = 6 * 60 * 60 * 1000`），带 ETag / `304`；先写 `<dest>.partial` 再 `rename`，半截文件不会被 `lineupLibrary` 看见；每次拉到新字节后 `reloadLibrary()` 丢缓存，下次 bot 查询直接读新字节、无需重启；`SP_LINEUP_SYNC=0` 关掉本模块（本地路径语义不受影响）；默认同步 `DEFAULT_SYNC_KEYS` 六个「模式__难度」键（`mode_single_normal__NORMAL` … `mode_multi_abyss__ABYSS`），可用 `SP_LINEUP_SYNC_KEYS` 覆盖（旧名 `SP_LINEUP_SYNC_MODES` 仍兼容）。
 
 ## 十、写回 CDN（R2 promote 通道）
 
@@ -139,7 +139,7 @@ SP_LINEUP_LIBRARY=remote:<url1,url2,...>|<cacheDir>
 ```bash
 # 1) 造一个假库：两条同模式同关同难度同回合、且能通过 validCells 过滤的记录
 mkdir -p /tmp/fake-lineups
-cat > /tmp/fake-lineups/lineups_mode_single_normal.jsonl <<'EOF'
+cat > /tmp/fake-lineups/lineups_mode_single_normal__NORMAL.jsonl <<'EOF'
 {"t":"lineup","modeId":"mode_single_normal","stageId":"stage1","difficulty":"normal","round":1,"cells":[{"id":"a","row":10,"col":3,"dir":"RIGHT"},{"id":"b","row":11,"col":4,"dir":"UP"}]}
 {"t":"lineup","modeId":"mode_single_normal","stageId":"stage1","difficulty":"normal","round":1,"cells":[{"id":"c","row":9,"col":5,"dir":"LEFT"},{"id":"d","row":12,"col":6,"dir":"DOWN"}]}
 EOF
@@ -156,7 +156,7 @@ curl -I https://downcdn.jiangjiangze.icu/docs/ai-lineup-learning.md
 #    预期 Content-Type 含 text/plain，且不 404。
 ```
 
-要验证「远端只读」链，把第 2 步换成 `SP_LINEUP_LIBRARY=remote:http://127.0.0.1:<静态服务>/lineups|/tmp/lineup-cache`，再起静态服务把假库挂在 `/lineups/lineups_mode_single_normal.jsonl`，观察 `[lineup-sync]` 拉取日志。验证「写回 CDN」需另配 `SP_LINEUP_PUBLISH`（非 `0`）与 `CDN_ADMIN_KEY`——真实口令不在本机，这一步需部署到有凭据的服务器执行。
+要验证「远端只读」链，把第 2 步换成 `SP_LINEUP_LIBRARY=remote:http://127.0.0.1:<静态服务>/lineups|/tmp/lineup-cache`，再起静态服务把假库挂在 `/lineups/lineups_mode_single_normal__NORMAL.jsonl`，观察 `[lineup-sync]` 拉取日志。验证「写回 CDN」需另配 `SP_LINEUP_PUBLISH`（非 `0`）与 `CDN_ADMIN_KEY`——真实口令不在本机，这一步需部署到有凭据的服务器执行。
 
 ## 状态词
 
