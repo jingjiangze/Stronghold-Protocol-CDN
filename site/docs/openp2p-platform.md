@@ -456,3 +456,71 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 - p2p 房间客户端需要能**出站 UDP**（openp2p 的 NAT 穿透依赖 UDP），否则无法建立直连；直连房间不需要 UDP，只要能访问平台。
 - **v3 不再下发 cookie，无「单浏览器单房间」限制**：`/go/<id>` 是纯 302 跳走到目标服，可同时开多个房间、不同标签页/浏览器互不挤占。平台根路径 `/` 现为纯文本帮助信息，不是游戏页。
 - **p2p 打不穿 → 回退游戏服自带联机，但状态不迁移**：隧道失败时 `/go/<id>` 带 `&o2pfallback=1` 回退到建房时填的 `fallback`/`upstream`（无 fallback 则 `&o2pretry=1` 回本机重试）。对局状态在游戏服内存里、无法迁移，所以回退是「所有人用同一 code 重新开一局」，不是无缝续上。发链接时应提醒玩家。
+
+---
+
+# 2026-10 新增（部署方必读）
+
+本节全部是**部署侧**开关，默认都不改变现有行为；任何一项都不需要在文档里写密钥。
+
+## 建房令牌（可选）
+
+平台可以要求「建房/收房」带令牌，玩家的浏览器不受影响：
+
+| 端 | 变量 | 作用 |
+|---|---|---|
+| ECS 平台 | `O2P_CREATE_TOKEN` | 设了以后 `POST /api/room` 与 `DELETE /api/room/<id>` 必须带 `Authorization: Bearer <令牌>`（也接受 `x-o2p-token`）；不设 = 谁能访问谁就能建房 |
+| 游戏服务器 | `SP_PLATFORM_TOKEN` | 登记房间时发同一个令牌 |
+
+读取类接口（`/api/health`、`/api/config`、`/api/rooms`、`/api/room/<id>`）和 `/go/<id>` 永远不需要令牌——玩家跟着邀请链接进来时手里没有密钥。
+
+轮换顺序：**先改平台，再改游戏服**。反了只会让登记返回 401，房间本身照常可玩，只是没有远端邀请链接。
+
+## 房间子域名（`<roomId>.jiangjiangze.icu`）
+
+平台可以给每个房间发一个自己的主机名，而不是共用 `p2p.jiangjiangze.icu/go/<id>`：
+
+1. 平台环境变量：`ROOM_BASE_DOMAIN=jiangjiangze.icu`、`O2P_ROOM_HOSTS=1`，重启；
+2. DNS：一条泛解析 `*.jiangjiangze.icu`（CNAME 到隧道，**开启代理**）；
+3. 隧道 ingress：加一条 `*.jiangjiangze.icu → http://127.0.0.1:8080`，放在 `http_status:404` 之前（具体主机名的规则优先匹配，不受影响）。
+
+生效后 `joinUrl` 变成 `https://<roomId>.jiangjiangze.icu/?room=<code>`，`/go/<id>` 仍然可用。
+
+**证书**：Cloudflare 的通用证书只覆盖**一级**子域（`*.jiangjiangze.icu`）。所以房间名必须正好是 `abc123.jiangjiangze.icu` 这一层；想用 `abc123.rom.jiangjiangze.icu` 这种两级写法，需要额外的 advanced 证书，否则 TLS 握手直接失败。**没有把握就只用一级。**
+
+## 平台令牌在磁盘上怎么放
+
+`/etc/systemd/system/o2p-platform.service` 默认 644，把 `O2P_TOKEN=` 写在里面等于同机任何账号可读。正确姿势：
+
+```sh
+sudo chmod 600 /etc/systemd/system/o2p-platform.service   # 立刻关闭本地可读，不需要重启
+sudo install -m 600 /dev/null /etc/o2p-platform/env        # 再把 O2P_TOKEN=... 写进去
+# unit 里一行： EnvironmentFile=/etc/o2p-platform/env
+sudo systemctl daemon-reload && sudo systemctl restart o2p-platform
+```
+
+想连磁盘上的字节也加密，用 systemd 凭据（systemd ≥ 250，绑 TPM2 或主机密钥）：
+
+```sh
+printf %s "$O2P_TOKEN" | sudo systemd-creds encrypt --name=o2p-token - /etc/o2p-platform/o2p-token.cred
+```
+
+unit 里改用 `LoadCredentialEncrypted=o2p-token:/etc/o2p-platform/o2p-token.cred`，再用一小段包装脚本把
+`$CREDENTIALS_DIRECTORY/o2p-token` 读成环境变量后 `exec node`。
+
+**它防什么**：文件被拷走、备份/镜像泄露（换一台机器解不开，因为主机密钥/TPM 不同）。
+**它不防什么**：拿到那台机器 root 的人（可以 `systemd-creds decrypt`），以及运行期进程环境（root 可读）。
+
+## 升级平台脚本
+
+```sh
+# 上传新脚本到 /tmp/o2p-new.mjs 之后
+node --check /tmp/o2p-new.mjs
+cp -a /usr/local/sbin/o2p-platform.mjs /usr/local/sbin/o2p-platform.mjs.bak-$(date +%Y%m%dT%H%M%S)
+install -m 755 /tmp/o2p-new.mjs /usr/local/sbin/o2p-platform.mjs
+systemctl restart o2p-platform && sleep 2 && curl -s http://127.0.0.1:8081/api/health
+```
+
+## 许可
+
+平台服务端源码以 **AGPL-3.0-or-later** 发布。
