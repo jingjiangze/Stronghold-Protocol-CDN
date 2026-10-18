@@ -1,0 +1,126 @@
+name: tree-refresh
+
+# 独立重建 /cdn/v1/tree.json，并校验它与 /cdn/v1/index.json 仍然一致。
+#
+# 为什么单独一条作业，而不是挂在 sync.yml 里（2026-10-18 审计结论）：
+# tree.json 的输入有两路，而这两路原本只有一路会自动重建它——
+#   · index.json（上游 release 的键）      → sync.yml 主路径会带上 tree，6 小时一次
+#   · hosted.json（后台上传的托管素材）     → promote-uploads.yml 的 republish 步会重建
+#   · assets-raw 分支新增键（git-art-sync） → **没有任何作业重建 tree**
+# 第三路是结构性的：git-art-sync 只推 git 分支并链发下游镜像，它不读桶、也没有理由知道 tree 的
+# 存在。所以上游素材树长出新键时，浏览面要等下一次 sync 主路径才跟上；而 sync 的定时是 6 小时
+# 一次、且无变化时秒退，等于「有变化才走」。
+#
+# 更早的问题是这个失败看不见：`--interface-only` 里重建 tree 的那段整包在 try/catch 中，失败
+# 只 console.error，作业仍然绿。2026-10-18 实测过一次——promote 上传成功、hosted.json 也提交了，
+# 但 tree.json 停在上一版，桶里有货而浏览面列不出来，没有任何 run 变红。该处现已改为真失败
+# （src/sync.mjs 快路径），本作业是第二层：即使那条链整段没跑，这里也会补上并当场校验。
+#
+# 三条校验（src/tree-verify.mjs，纯函数、无需凭据，断言失败即红）：
+#   ① index ⊆ tree      —— 已发布且验证过的每个上游键都必须能在浏览面发现
+#   ② totals.hosted == 实际 mod=1 计数，另含 files / bytes 两个自加总
+#   ③ tree.token == index.tag + '-' + sha256(index.json 字节)[:8]
+# ③ 是「这份 tree 到底是哪一版 index 建的」的唯一答案：没有它时，620 个皮肤键的陈旧树与一份
+# 最新树在字节上无法区分（2026-10-13 实测踩过）。
+#
+# cron 13 3,9,15,21 * * *：刻意错开同日链的 01(promote) / 06(git-art) / 17(sync) / 37(openi) /
+# 43(prune) / 51(rank)，晚 10 分钟让 sync 那轮先把 tree 带上去，本作业随即复核；:13 也避开整点
+# 的 GitHub 调度高峰。
+#
+# 本作业不写 git（permissions: contents: read），只用 R2 的 4 个凭据读桶——R2 走本仓自写的
+# SigV4 客户端 src/r2.mjs，不是 wrangler，装不了也别指望它。
+on:
+  schedule:
+    - cron: '13 3,9,15,21 * * *'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: '接口域名；缺省取仓库变量 SP_CDN_BASE，再缺省 speedcdn — 与 src/sync.mjs 的 DEFAULT_BASE 一致'
+        required: false
+        default: ''
+
+# 必须独占一个组。**绝不要并进 group: sync**：sync 是 cancel-in-progress: false 的长跑作业
+# （timeout-minutes: 90），并进去会让本作业排在它后面干等，而本作业全程只有几十秒。
+concurrency:
+  group: tree-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    # 重建只做一次 fetch + 两次 put；留 10 分钟是给 R2 重试（src/r2.mjs 每请求最多 4 次、
+    # 退避 1+2+3 秒）和冷启动留的余量，不是给慢留的。
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 单测先跑：本作业的判据来自 src/tree-verify.mjs，而「校验器自己是不是坏的」不能用一次
+      # 绿灯回答。tests/tree-verify.test.mjs 里带了一组**必须失败**的对照（陈旧 token、hosted
+      # 计数不符、index 有树没有的键），校验器对它们必须报错——先让对照红过，绿灯才有意义。
+      - name: unit tests
+        run: node --test tests/tree-verify.test.mjs tests/tree-index.test.mjs
+
+      - name: rebuild + verify the tree
+        env:
+          SP_CDN_BASE: ${{ inputs.base || vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          # --interface-only 不发上游包、不重哈希，只按已发布的 index 重建派生接口。
+          node src/sync.mjs --write --interface-only
+
+      # 独立于上一步再核一次现网字节：上一步校验的是「刚重建的那份」，这一步校验的是「CDN 现在
+      #  serving 的那份」。两者之间隔着边缘缓存，而 tree.json 的 cache-control 是 max-age=300——
+      # 所以这一步必须绕过缓存直取桶，否则它复述的只是 5 分钟前的旧结论。
+      - name: verify what the bucket is actually serving
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          SP_CDN_BASE: ${{ inputs.base || vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }}
+        run: |
+          set -euo pipefail
+          node -e '
+          import("./src/r2.mjs").then(async ({ r2Config, getObject }) => {
+            import("./src/tree-verify.mjs").then(({ verifyTreeAndIndex }) => {
+              const config = r2Config();
+              const [indexBytes, treeBytes] = await Promise.all([
+                getObject(config, "cdn/v1/index.json"),
+                getObject(config, "cdn/v1/tree.json"),
+              ]);
+              if (!indexBytes) throw new Error("桶里没有 cdn/v1/index.json —— sync 从未发布过？");
+              if (!treeBytes) throw new Error("桶里没有 cdn/v1/tree.json —— 上一步失败了？");
+              const index = JSON.parse(indexBytes.toString("utf8"));
+              const tree = JSON.parse(treeBytes.toString("utf8"));
+              const { ok, failures } = verifyTreeAndIndex({ indexBytes, index, tree });
+              console.log(`[tree-refresh] index ${index.tag} / tree ${tree.token}`);
+              console.log(`[tree-refresh] totals ${JSON.stringify(tree.totals)}`);
+              if (!ok) {
+                for (const f of failures) console.error(`[tree-refresh] FAIL ${f}`);
+                process.exit(1);
+              }
+              console.log("[tree-refresh] PASS: 桶里 serving 的 tree 与 index 一致");
+            });
+          });
+          '
+
+      - name: step summary
+        if: always()
+        run: |
+          {
+            echo "### tree-refresh"
+            echo ""
+            echo "- 触发：${{ github.event_name }}"
+            echo "- 域名：${{ inputs.base || vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -41,6 +41,7 @@ import { readExtraOrigins, readGitOrigins, readRetiredOrigins, readDisabledOrigi
 import { readNetworkTable, NETWORK_TABLE } from './network-table.mjs';
 import { readHosted, splitForPrune } from './hosted.mjs';
 import { readTree } from './tree-index.mjs';
+import { verifyTreeAndIndex } from './tree-verify.mjs';
 import { buildApiDoc } from './api-contract.mjs';
 import { readSources, fetchSourcePackage, extractSourceTree, readSource, readOverrides, readPinnedBytes, applyOverrides } from './sources.mjs';
 import { verifyByteSample, sampleKeys, urlsForKeys, DEFAULT_SAMPLE } from './verify-bytes.mjs';
@@ -398,6 +399,13 @@ async function main() {
     }
     // The tree is derived from the published index, which is one fetch away, so it belongs on this
     // fast path too -- otherwise adding a directory to the page would cost a full ten-minute sync.
+    //
+    // 2026-10-18: this used to swallow its failure with a console.error, which made the worst
+    // outcome invisible. A promote that uploaded art and committed hosted.json reported success
+    // while the browsable tree still described the previous bucket -- the uploads were live and
+    // nothing could list them. The other two puts above are best-effort on purpose (network.json is
+    // an observation, not derived data); this one is derived data whose absence is a lie, so it
+    // fails the run instead.
     let tree = null;
     try {
       const res = await fetch(`${opts.base}/cdn/v1/index.json`, { signal: AbortSignal.timeout(30000) });
@@ -427,6 +435,15 @@ async function main() {
         log(`tree: hosted-index.json not merged (${error.message})`);
       }
       const built = readTree(ROOT, idx.files || idx, { token: published.art.token, extraHosted });
+      // The check is one-way: every key the index lists must be in the tree, never the reverse. The
+      // reverse would flag every hosted key as drift, which is the normal state — and now that the
+      // upload channel's keys are merged in, most of them are not in the index at all.
+      const check = verifyTreeAndIndex({
+        indexBytes: Buffer.from(JSON.stringify(idx), 'utf8'),
+        index: idx,
+        tree: built.doc,
+      });
+      if (!check.ok) throw new Error(`the rebuilt tree does not match the index: ${check.failures.join('; ')}`);
       await putObject(config, 'cdn/v1/tree.json', Buffer.from(built.json, 'utf8'), {
         contentType: 'application/json',
         cacheControl: SHORT,
@@ -441,11 +458,19 @@ async function main() {
         cacheControl: SHORT,
       });
       if (built.overlap.length) {
-        console.error(`[sync] ${built.overlap.length} hosted key(s) are also upstream's — remove them from hosted.json`);
+        throw new Error(
+          `${built.overlap.length} hosted key(s) are also upstream's — remove them from hosted.json, e.g. ${built.overlap[0]}`,
+        );
       }
       tree = built.doc.totals;
     } catch (error) {
+      // The tree is the only file on this path whose absence makes the published interface lie, so
+      // it is the only one whose failure stops the run. art.json is still republished below: the
+      // mirrors and the packs are facts about the sources, not about the tree, and leaving them
+      // stale because a derived view failed to build would trade a visible problem for an invisible
+      // one.
       console.error(`[sync] tree not published: ${error.message}`);
+      throw error;
     }
     // art.json 也是同一份事实：只改 mirrors.json 会让两份接口不一致，
     // 而客户端与页面读的是 art.json —— 不一致就等于新来源没发布。
@@ -456,7 +481,9 @@ async function main() {
       Buffer.from(`${JSON.stringify({ ...published, art: { ...published.art, mirrors: flatOrigins } }, null, 2)}\n`, 'utf8'),
       { contentType: 'application/json', cacheControl: SHORT },
     );
-    log(`republished cdn/v1/mirrors.json + art.json (${published.art.packs?.length ?? 0} packs, ${flatOrigins.length} origins) + pick.js${net ? ' + network.json' : ''}${tree ? ` + tree (${tree.files} files)` : ''}`);
+    // `tree` is always set by now: the block above throws rather than leaving it null, so the
+    // conditional that used to guard this log was describing a state that can no longer happen.
+    log(`republished cdn/v1/mirrors.json + art.json (${published.art.packs?.length ?? 0} packs, ${flatOrigins.length} origins) + pick.js${net ? ' + network.json' : ''} + tree (${tree.files} files, ${tree.hosted} hosted)`);
     return;
   }
 
@@ -1053,10 +1080,24 @@ async function publishCore(config, { opts, manifests, version, indexJson, indexF
   // difference between a page that can render a directory list and one that cannot.
   const { json: treeJson, doc: treeDoc, overlap } = readTree(ROOT, indexFiles, { token: version });
   log(`tree: ${treeDoc.totals.files} files in ${treeDoc.totals.dirs} directories (${treeDoc.totals.hosted} hosted on purpose)`);
+  // The tree and the index are built from the same in-memory `indexFiles`, so a mismatch here means
+  // the code produced two disagreeing views rather than that the bucket drifted -- which is exactly
+  // the case worth stopping for, because nothing downstream can notice. Checked before publishing:
+  // the gate below is what decides whether these bytes go out at all.
+  const treeCheck = verifyTreeAndIndex({
+    indexBytes: Buffer.from(indexJson, 'utf8'),
+    index: { tag: release.tag, files: indexFiles },
+    tree: treeDoc,
+  });
+  if (!treeCheck.ok) {
+    throw new Error(`the rebuilt tree does not match the index: ${treeCheck.failures.join('; ')}`);
+  }
   // A hosted entry that upstream also ships is stale: the file is upstream content now, so the entry
   // describes nothing and should come out of hosted.json.
   if (overlap.length) {
-    console.error(`[sync] ${overlap.length} hosted key(s) are also upstream's — remove them from hosted.json, e.g. ${overlap[0]}`);
+    throw new Error(
+      `${overlap.length} hosted key(s) are also upstream's — remove them from hosted.json, e.g. ${overlap[0]}`,
+    );
   }
   const objects = [
     ...manifests.map((entry) => {
