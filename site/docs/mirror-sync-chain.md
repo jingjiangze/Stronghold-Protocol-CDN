@@ -63,7 +63,7 @@
 **镜像源清单（2026-10-15 实测）**
 
 - ① R2 桶（三域名，字节真源）；
-- ② 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/`（容器边缘默认跳转目标；2026-10-15 已改走 LFS，1.6 GB 上限已解决，全量实测 424 条待补路径 423 条已可达、缺口仅剩 1 个被平台内容审核自动 revert 的文件 `assets/skins/char_340_shwaz_snow_1/illustration.png`，该路径在 ms-edge 层走 exceptions 表改道）；
+- ② ⛔ **（2026-10-18 停用）** 魔搭数据集 `jingjiangze/Stronghold-Protocol-Assets@master:releases/v1-trial/` —— 数据集已转私有（`Visibility: 1`），匿名 `resolve` 404、`repo/tree` 403，**不再是公开镜像、也不再是容器边缘的默认跳转目标**；已从 `origins.json` 移入 `retired`。以下为停用前的记录：曾为容器边缘默认跳转目标；2026-10-15 已改走 LFS，1.6 GB 上限已解决，全量实测 424 条待补路径 423 条已可达、缺口仅剩 1 个被平台内容审核自动 revert 的文件 `assets/skins/char_340_shwaz_snow_1/illustration.png`，该路径在 ms-edge 层走 exceptions 表改道；
 - ③ OpenI 启智（`openi.pcl.ac.cn/.../raw/branch/assets-raw`，最快但 CORS 写死第三方域不可用，仅 `?sp_source=openi` 点名可达）；
 - ④ ghfast / jsDelivr（GitHub 代理，可用率低）；
 - ⑤ gitcdn-own（自有中转 Worker）；

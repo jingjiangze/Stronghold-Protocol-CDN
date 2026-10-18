@@ -67,14 +67,12 @@ ENV NODE_ENV=production \
     HOST=127.0.0.1
 ```
 
-sources.json 默认（节选）：
+sources.json 默认（节选；2026-10-18 起 `modelscope` 已移出 `order`）：
 
 ```json
 {
-  "order": ["modelscope", "r2"],
+  "order": ["r2"],
   "sources": [
-    { "id": "modelscope",
-      "base": "https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial" },
     { "id": "r2",
       "base": "https://weishucdn.jiangjiangze.icu" }
   ],
@@ -82,6 +80,10 @@ sources.json 默认（节选）：
     "/assets/skins/char_340_shwaz_snow_1/illustration.png": "r2"
   }
 }
+```
+
+> `modelscope` 条目（`modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial`）
+> 已于 2026-10-18 停用：数据集转为私有后匿名访问 404/403，边缘再 302 过去只会把必然失败的源放大出去。
 ```
 
 - `order` 是静态顺序，不是实时测速：容器在 ModelScope 机房，量不出玩家那边的链路。真正按玩家网络选最快是**客户端** `pick.js` 的事，两者分工。新增镜像后要核对覆盖率——平台审核会拒收个别文件（如上面的 `exceptions` 路径），这些必须点名改道，否则玩家 404。
