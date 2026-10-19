@@ -24921,14 +24921,18 @@
     {
       "id": "sp-four-emotes",
       "what": "Chat sticker update; stable IDs, animated originals and small previews",
-      "addedAt": "2026-10-14",
+      "addedAt": "2026-10-19",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 120,
-      "bytes": 28777491,
+      "files": 124,
+      "bytes": 34169671,
       "keys": [
         [
           "assets/local/sp-four-emotes/011b78a293456c47b7c0.preview.webp",
           2098
+        ],
+        [
+          "assets/local/sp-four-emotes/01484c7c646a02193556.gif",
+          5322995
         ],
         [
           "assets/local/sp-four-emotes/02cb46135457832da391.jpg",
@@ -25035,6 +25039,10 @@
           1596
         ],
         [
+          "assets/local/sp-four-emotes/3968ff2c67961837e124.preview.webp",
+          2620
+        ],
+        [
           "assets/local/sp-four-emotes/3d16c9ba8acd0ec577bc.preview.webp",
           1716
         ],
@@ -25073,6 +25081,10 @@
         [
           "assets/local/sp-four-emotes/4ee5c012eedbeb5f5226.preview.webp",
           2932
+        ],
+        [
+          "assets/local/sp-four-emotes/526b7a1134f55d5eee70.preview.webp",
+          3056
         ],
         [
           "assets/local/sp-four-emotes/533b364fb30c6afbffab.preview.webp",
@@ -25253,6 +25265,10 @@
         [
           "assets/local/sp-four-emotes/b23b8ed23e3fac88a361.gif",
           226778
+        ],
+        [
+          "assets/local/sp-four-emotes/b2bffa8cc4a3265fc2b0.jpg",
+          63509
         ],
         [
           "assets/local/sp-four-emotes/badc7bde5e163b5fc169.preview.webp",
