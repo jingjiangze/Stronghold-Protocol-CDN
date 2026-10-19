@@ -248,7 +248,7 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 > | 公开分发（speedcdn / weishucdn / weishucdn2） | **200**，同路径同 56,617 字节 |
 >
 > 结论：**数据集对所有者与同步链仍然可用**，只是不再作为匿名可取的公开镜像 —— 所以它已从
-> `origins.json` 的**公开候选列表**移入 `retired`，玩家侧统一走 speedcdn（同一份对象、同字节）。
+> `origins.json` 的 `order` 里移出，并以 `enabled:false` **保留在候选列表中**（不是 retired）：CDN 的服务端链路仍在调用它，玩家侧统一走 speedcdn（同一份对象、同字节）。
 > 下面这一节保留作历史记录，**其中「无鉴权直取字节」现在只对所有者会话成立**。
 
 - 页面 `modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets` → **200**（转私有前）

@@ -217,22 +217,20 @@ test('parking still works: openi stays parked in the shipped disabled list (CORS
   assert.ok((raw.disabled || []).includes('openi'), 'openi stays parked — reachable only through the ms-edge ?sp_source=openi channel');
 });
 
-// 2026-10-18: the dataset was switched to private (Visibility=1). Anonymous access now answers
-// 404 on the dataset API / resolve, and 403 ("无权访问该数据集") on repo/tree. It can no longer be
-// a public mirror, so it is RETIRED rather than parked: `retired` removes it from the published
-// interface, while parking would keep advertising a source that can only fail.
-test('the shipped origins.json retires the ModelScope dataset instead of offering it', () => {
+// 2026-10-18: the dataset was switched to private (Visibility=1). Anonymous access answers 404 on
+// the dataset API / resolve and 403 ("无权访问该数据集") on repo/tree, so it can no longer be a
+// mirror an anonymous client can fetch. It is PARKED, not retired: the CDN's server-side path
+// still calls it through ModelScope's built-in private auth, so the entry must stay in the
+// interface (with `enabled:false`) rather than disappear from it.
+test('the shipped origins.json parks the private dataset and keeps it listed', () => {
   const raw = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8'));
   const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
-  assert.equal(
-    origins.find((o) => o.id === 'ms-dataset'),
-    undefined,
-    'a private dataset must not be advertised as a public mirror',
-  );
-  assert.ok(
-    (raw.retired || []).includes('ms-dataset'),
-    'retired is what stops carryForwardOrigins from resurrecting it from the previous contract',
-  );
+  const ds = origins.find((o) => o.id === 'ms-dataset');
+  assert.ok(ds, 'the dataset stays listed: the CDN still calls it server-side with ModelScope private auth');
+  assert.equal(ds.enabled, false, 'anonymous clients cannot fetch a private dataset, so it must not be selectable');
+  assert.ok((raw.disabled || []).includes('ms-dataset'), 'enabled:false must survive into the interface for both branches');
+  assert.ok(!(raw.retired || []).includes('ms-dataset'), 'retired would erase it from the interface — it is parked, not dead');
+  assert.ok(!(raw.order || []).includes('ms-dataset'), 'a source anonymous clients cannot fetch must not sit in the preferred order');
 });
 
 test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
