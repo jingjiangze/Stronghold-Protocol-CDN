@@ -59904,11 +59904,11 @@
     },
     {
       "id": "sp-extra-voices-20261019",
-      "what": "Verified English, Korean and native operator dubs; restore missing CDN mappings",
+      "what": "Verified additional English, Korean and native operator dubs; restore missing CDN mappings",
       "addedAt": "2026-10-19",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 639,
-      "bytes": 19020411,
+      "files": 710,
+      "bytes": 21051895,
       "keys": [
         [
           "assets/local/sp-extra-voices-20261019/008fde7b6a05731c/cn_021.mp3",
@@ -59943,6 +59943,10 @@
           43903
         ],
         [
+          "assets/local/sp-extra-voices-20261019/043b07b227efb400/cn_031.mp3",
+          14855
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/04991960d9cff2a3/cn_030.mp3",
           44948
         ],
@@ -59951,8 +59955,16 @@
           47456
         ],
         [
+          "assets/local/sp-extra-voices-20261019/04b3ac25a7883ef2/cn_032.mp3",
+          30320
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/05296a2e2a695031/cn_020.mp3",
           65637
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/05db6a569409ab89/cn_023.mp3",
+          32618
         ],
         [
           "assets/local/sp-extra-voices-20261019/0687e66def141c60/cn_029.mp3",
@@ -59965,6 +59977,10 @@
         [
           "assets/local/sp-extra-voices-20261019/06f11037f3568b22/cn_021.mp3",
           20289
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/07441e5501ba6b3d/cn_025.mp3",
+          28857
         ],
         [
           "assets/local/sp-extra-voices-20261019/07478998963488dc/cn_025.mp3",
@@ -59983,6 +59999,14 @@
           26349
         ],
         [
+          "assets/local/sp-extra-voices-20261019/08531e48bb242456/cn_032.mp3",
+          25513
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/08539233320c9804/cn_031.mp3",
+          52680
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/088126d316182093/cn_021.mp3",
           31782
         ],
@@ -59993,6 +60017,10 @@
         [
           "assets/local/sp-extra-voices-20261019/09bc22da36149bf4/cn_019.mp3",
           32200
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/09c48a843e14b24f/cn_024.mp3",
+          10258
         ],
         [
           "assets/local/sp-extra-voices-20261019/0a420ab619630ff8/cn_032.mp3",
@@ -60023,6 +60051,10 @@
           31364
         ],
         [
+          "assets/local/sp-extra-voices-20261019/0d2adeafe1175b28/cn_019.mp3",
+          40978
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/0d32e6283dc72a89/cn_021.mp3",
           16318
         ],
@@ -60037,6 +60069,10 @@
         [
           "assets/local/sp-extra-voices-20261019/0dc7a6c2598e6060/cn_020.mp3",
           33036
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/0dd178092e28e64e/cn_021.mp3",
+          25513
         ],
         [
           "assets/local/sp-extra-voices-20261019/0e0c497daab97c2f/cn_028.mp3",
@@ -60159,6 +60195,10 @@
           29066
         ],
         [
+          "assets/local/sp-extra-voices-20261019/185581397d00ee20/cn_020.mp3",
+          21960
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/18aec1b4c86f2906/cn_019.mp3",
           42231
         ],
@@ -60203,6 +60243,10 @@
           13183
         ],
         [
+          "assets/local/sp-extra-voices-20261019/1b30c30b6ee776bf/cn_023.mp3",
+          7750
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/1c309991ae690dcd/cn_030.mp3",
           101164
         ],
@@ -60233,6 +60277,10 @@
         [
           "assets/local/sp-extra-voices-20261019/1dd0862b2ae07446/cn_022.mp3",
           30111
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/1dd6ff795abb90cc/cn_031.mp3",
+          40978
         ],
         [
           "assets/local/sp-extra-voices-20261019/1ececf954a026964/cn_023.mp3",
@@ -60275,6 +60323,10 @@
           20289
         ],
         [
+          "assets/local/sp-extra-voices-20261019/20adac722fbc36a6/cn_026.mp3",
+          18408
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/21b13b52a766f28a/cn_029.mp3",
           35962
         ],
@@ -60287,8 +60339,16 @@
           16318
         ],
         [
+          "assets/local/sp-extra-voices-20261019/2267338831e1030d/cn_024.mp3",
+          27603
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/22742db1bd7a25fd/cn_027.mp3",
           19453
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/2294a624c68a517d/cn_022.mp3",
+          12974
         ],
         [
           "assets/local/sp-extra-voices-20261019/2296a191b7635318/cn_027.mp3",
@@ -60415,6 +60475,10 @@
           15691
         ],
         [
+          "assets/local/sp-extra-voices-20261019/308f94b5ff92ea46/cn_022.mp3",
+          15482
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/318f7cf5222b8777/cn_029.mp3",
           60204
         ],
@@ -60439,8 +60503,16 @@
           36589
         ],
         [
+          "assets/local/sp-extra-voices-20261019/340c554ed711f3b6/cn_025.mp3",
+          3779
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/34b804134607d5ea/cn_023.mp3",
           34081
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/34d7e953efe79f33/cn_026.mp3",
+          16109
         ],
         [
           "assets/local/sp-extra-voices-20261019/35fc6614523f5267/cn_026.mp3",
@@ -60467,12 +60539,20 @@
           14855
         ],
         [
+          "assets/local/sp-extra-voices-20261019/380527cd053b63e6/cn_024.mp3",
+          30738
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/3888c1a8095e3875/cn_024.mp3",
           14437
         ],
         [
           "assets/local/sp-extra-voices-20261019/38fed84ff679eca8/cn_021.mp3",
           6914
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/39c5bb8c4879cd85/cn_020.mp3",
+          26558
         ],
         [
           "assets/local/sp-extra-voices-20261019/39dffff3a23caaf2/cn_024.mp3",
@@ -60497,6 +60577,10 @@
         [
           "assets/local/sp-extra-voices-20261019/3d8e1d08384a7bfc/cn_022.mp3",
           6287
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/3e0536b952d68e0e/cn_029.mp3",
+          33454
         ],
         [
           "assets/local/sp-extra-voices-20261019/3ebc85cfcb2dbf42/cn_020.mp3",
@@ -60555,6 +60639,14 @@
           22796
         ],
         [
+          "assets/local/sp-extra-voices-20261019/41b00f993a7ad7b3/cn_027.mp3",
+          11929
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/41ef0e626acf0cae/cn_032.mp3",
+          20080
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/42cc95b5523a9468/cn_023.mp3",
           20498
         ],
@@ -60575,6 +60667,10 @@
           19871
         ],
         [
+          "assets/local/sp-extra-voices-20261019/4479bd798a65ba88/cn_023.mp3",
+          28021
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/44c592f8abf4a1e3/cn_031.mp3",
           30738
         ],
@@ -60587,6 +60683,10 @@
           44739
         ],
         [
+          "assets/local/sp-extra-voices-20261019/4564e4f027832664/cn_026.mp3",
+          38470
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/459f90830552a3a2/cn_020.mp3",
           26140
         ],
@@ -60597,6 +60697,10 @@
         [
           "assets/local/sp-extra-voices-20261019/468f78004ac8214a/cn_031.mp3",
           31364
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/468f9d952bdbebe3/cn_029.mp3",
+          16109
         ],
         [
           "assets/local/sp-extra-voices-20261019/46a244e29c371ff4/cn_019.mp3",
@@ -60739,6 +60843,14 @@
           12556
         ],
         [
+          "assets/local/sp-extra-voices-20261019/5245d4c28a1cda42/cn_028.mp3",
+          11302
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/525e7c94b6a922e1/cn_026.mp3",
+          25722
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/5270b056d82c5715/cn_024.mp3",
           15482
         ],
@@ -60831,6 +60943,10 @@
           6705
         ],
         [
+          "assets/local/sp-extra-voices-20261019/5c2b657b7fc1ecaa/cn_020.mp3",
+          38888
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/5c886809e86cd968/cn_028.mp3",
           37007
         ],
@@ -60883,6 +60999,10 @@
           23423
         ],
         [
+          "assets/local/sp-extra-voices-20261019/60d0f24938ce1dc2/cn_024.mp3",
+          20289
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/60d187adfc229340/cn_019.mp3",
           16527
         ],
@@ -60901,6 +61021,10 @@
         [
           "assets/local/sp-extra-voices-20261019/61e130285aaf57e7/cn_029.mp3",
           34290
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/61ea8a3f1728b6ed/cn_027.mp3",
+          44321
         ],
         [
           "assets/local/sp-extra-voices-20261019/6201e4979763d00e/cn_026.mp3",
@@ -60963,6 +61087,10 @@
           9422
         ],
         [
+          "assets/local/sp-extra-voices-20261019/68976b16e7b18334/cn_030.mp3",
+          52889
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/68ae458dfe5226ea/cn_032.mp3",
           48501
         ],
@@ -60983,12 +61111,20 @@
           31782
         ],
         [
+          "assets/local/sp-extra-voices-20261019/6a5748e864cf31b5/cn_020.mp3",
+          35962
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/6a7e9ea595d3a5e8/cn_026.mp3",
           33454
         ],
         [
           "assets/local/sp-extra-voices-20261019/6aa10b82e0bb4295/cn_028.mp3",
           23005
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/6b4eb3b43a2b28dd/cn_024.mp3",
+          12556
         ],
         [
           "assets/local/sp-extra-voices-20261019/6b69e09470410f8a/cn_026.mp3",
@@ -61021,6 +61157,10 @@
         [
           "assets/local/sp-extra-voices-20261019/6f815cddb4171e48/cn_032.mp3",
           18408
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/6f87219a9d412463/cn_031.mp3",
+          37425
         ],
         [
           "assets/local/sp-extra-voices-20261019/6f94cdc4e15306a4/cn_019.mp3",
@@ -61203,6 +61343,10 @@
           35335
         ],
         [
+          "assets/local/sp-extra-voices-20261019/7e37faa9297aeed0/cn_031.mp3",
+          36380
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/7e7c3ffaaa4787a7/cn_029.mp3",
           28648
         ],
@@ -61299,8 +61443,16 @@
           23423
         ],
         [
+          "assets/local/sp-extra-voices-20261019/881189838e167366/cn_022.mp3",
+          11511
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/88b3d2e1e17cecc0/cn_027.mp3",
           43485
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/891d48f88d7aa914/cn_024.mp3",
+          17363
         ],
         [
           "assets/local/sp-extra-voices-20261019/8a52bcd59c3bf523/cn_032.mp3",
@@ -61435,6 +61587,14 @@
           15900
         ],
         [
+          "assets/local/sp-extra-voices-20261019/955514ac9a84b1e9/cn_029.mp3",
+          21124
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/95d4372f64ac9376/cn_025.mp3",
+          20289
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/95df4b5e7992c457/cn_030.mp3",
           50591
         ],
@@ -61459,6 +61619,10 @@
           29066
         ],
         [
+          "assets/local/sp-extra-voices-20261019/9877585d316a98c1/cn_020.mp3",
+          34499
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/988c11919fc79794/cn_019.mp3",
           13183
         ],
@@ -61473,6 +61637,10 @@
         [
           "assets/local/sp-extra-voices-20261019/99abec42a31595a9/cn_027.mp3",
           20498
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/99b59a9694e83f29/cn_019.mp3",
+          7123
         ],
         [
           "assets/local/sp-extra-voices-20261019/99c7df3227a99322/cn_024.mp3",
@@ -61523,6 +61691,10 @@
           81311
         ],
         [
+          "assets/local/sp-extra-voices-20261019/9e0d88dff5f8f444/cn_029.mp3",
+          87580
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/9e13bc2e403e6db0/cn_028.mp3",
           38470
         ],
@@ -61557,6 +61729,10 @@
         [
           "assets/local/sp-extra-voices-20261019/9faefa8e856605b0/cn_031.mp3",
           102627
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/a04d97ebbfa99407/cn_032.mp3",
+          43067
         ],
         [
           "assets/local/sp-extra-voices-20261019/a053ac70f63d7a0b/cn_029.mp3",
@@ -61663,6 +61839,14 @@
           19244
         ],
         [
+          "assets/local/sp-extra-voices-20261019/a6dc926cd1a5b104/cn_027.mp3",
+          28439
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/a7ae9201fbcebd61/cn_022.mp3",
+          15273
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/a81f4e554f2b843b/cn_031.mp3",
           28021
         ],
@@ -61689,6 +61873,10 @@
         [
           "assets/local/sp-extra-voices-20261019/a9dfa71a1a52edc3/cn_030.mp3",
           24468
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/aa8d5c67efb67ac0/cn_032.mp3",
+          58323
         ],
         [
           "assets/local/sp-extra-voices-20261019/aabe1db7b6d7b6a3/cn_025.mp3",
@@ -61731,6 +61919,10 @@
           9631
         ],
         [
+          "assets/local/sp-extra-voices-20261019/ae8c26bcede07900/cn_028.mp3",
+          19662
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/af7547d5c58ba238/cn_019.mp3",
           28021
         ],
@@ -61755,6 +61947,10 @@
           25095
         ],
         [
+          "assets/local/sp-extra-voices-20261019/b13fa5726c3e4669/cn_023.mp3",
+          20080
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/b15b550d0bbc3dd1/cn_021.mp3",
           7750
         ],
@@ -61769,6 +61965,10 @@
         [
           "assets/local/sp-extra-voices-20261019/b3e27332712877cf/cn_026.mp3",
           36589
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/b41b6170985069a8/cn_032.mp3",
+          47038
         ],
         [
           "assets/local/sp-extra-voices-20261019/b4cd77f415d12c57/cn_020.mp3",
@@ -61799,6 +61999,10 @@
           17572
         ],
         [
+          "assets/local/sp-extra-voices-20261019/b7b86b0a4d3ba199/cn_026.mp3",
+          25931
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/b7dbc65c67aeebb2/cn_020.mp3",
           30947
         ],
@@ -61825,6 +62029,10 @@
         [
           "assets/local/sp-extra-voices-20261019/b97d1ca35ec34252/cn_030.mp3",
           58323
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/ba3a1150a0e5d132/cn_020.mp3",
+          48083
         ],
         [
           "assets/local/sp-extra-voices-20261019/bb73ce19369eeeda/cn_025.mp3",
@@ -61895,6 +62103,10 @@
           54770
         ],
         [
+          "assets/local/sp-extra-voices-20261019/c2eff2a1d44f6be7/cn_031.mp3",
+          117046
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/c2f8a3503250065b/cn_031.mp3",
           64174
         ],
@@ -61939,12 +62151,20 @@
           29693
         ],
         [
+          "assets/local/sp-extra-voices-20261019/ca07cb41fe18afa5/cn_021.mp3",
+          26140
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/ca1b28c26617733c/cn_020.mp3",
           33663
         ],
         [
           "assets/local/sp-extra-voices-20261019/ca4f1d15da56557f/cn_028.mp3",
           32618
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/ca665e9729cd457e/cn_025.mp3",
+          21960
         ],
         [
           "assets/local/sp-extra-voices-20261019/caa90969eebde579/cn_026.mp3",
@@ -62009,6 +62229,10 @@
         [
           "assets/local/sp-extra-voices-20261019/d055cb01d225e4bb/cn_030.mp3",
           62711
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/d084b782ae83471b/cn_024.mp3",
+          9840
         ],
         [
           "assets/local/sp-extra-voices-20261019/d168819fcf751112/cn_030.mp3",
@@ -62147,12 +62371,20 @@
           29066
         ],
         [
+          "assets/local/sp-extra-voices-20261019/dcecf46e08296083/cn_019.mp3",
+          39724
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/dd330979be5c7aac/cn_030.mp3",
           142751
         ],
         [
           "assets/local/sp-extra-voices-20261019/dda9d20c32d438a9/cn_019.mp3",
           33454
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/de09fad5e07e37a6/cn_019.mp3",
+          40142
         ],
         [
           "assets/local/sp-extra-voices-20261019/df802bd2d151cbb0/cn_027.mp3",
@@ -62167,8 +62399,16 @@
           3988
         ],
         [
+          "assets/local/sp-extra-voices-20261019/e01c9177016dc36a/cn_020.mp3",
+          26976
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/e08d0157ecc15f7a/cn_032.mp3",
           69399
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/e0ad609b460d7e4d/cn_021.mp3",
+          8795
         ],
         [
           "assets/local/sp-extra-voices-20261019/e123121ccfff64bd/cn_026.mp3",
@@ -62177,6 +62417,10 @@
         [
           "assets/local/sp-extra-voices-20261019/e225c11021d0a148/cn_029.mp3",
           33036
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/e2265961e4350c9d/cn_029.mp3",
+          34499
         ],
         [
           "assets/local/sp-extra-voices-20261019/e27444c391e3ced3/cn_028.mp3",
@@ -62215,6 +62459,14 @@
           19453
         ],
         [
+          "assets/local/sp-extra-voices-20261019/e7f32b9246d0f188/cn_024.mp3",
+          43067
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/e82de64fce11b928/cn_026.mp3",
+          25513
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/e86adcbb8b7a3e06/cn_022.mp3",
           15064
         ],
@@ -62225,6 +62477,10 @@
         [
           "assets/local/sp-extra-voices-20261019/e8eb69ba070db8da/cn_023.mp3",
           24050
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/e922ffb1b58fe158/cn_031.mp3",
+          37216
         ],
         [
           "assets/local/sp-extra-voices-20261019/e9a245d3ca34b44c/cn_024.mp3",
@@ -62279,6 +62535,10 @@
           18617
         ],
         [
+          "assets/local/sp-extra-voices-20261019/ee060876d4c2e211/cn_019.mp3",
+          24677
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/eec2865454ec0a0b/cn_028.mp3",
           19453
         ],
@@ -62299,6 +62559,10 @@
           4406
         ],
         [
+          "assets/local/sp-extra-voices-20261019/f054f6c3e036d3c7/cn_026.mp3",
+          14646
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/f0bb39621e14a7fc/cn_022.mp3",
           20498
         ],
@@ -62317,6 +62581,10 @@
         [
           "assets/local/sp-extra-voices-20261019/f22439816370acd5/cn_025.mp3",
           26140
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/f23887eab29f9f77/cn_023.mp3",
+          7959
         ],
         [
           "assets/local/sp-extra-voices-20261019/f29b53f20fb9c52c/cn_024.mp3",
@@ -62387,6 +62655,10 @@
           6496
         ],
         [
+          "assets/local/sp-extra-voices-20261019/f97080ec53d76ac5/cn_022.mp3",
+          29902
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/f98e68c51e14c8b5/cn_027.mp3",
           29693
         ],
@@ -62403,12 +62675,20 @@
           9631
         ],
         [
+          "assets/local/sp-extra-voices-20261019/faa89fc67919c108/cn_022.mp3",
+          12765
+        ],
+        [
           "assets/local/sp-extra-voices-20261019/fb0f6639e0921e69/cn_026.mp3",
           9840
         ],
         [
           "assets/local/sp-extra-voices-20261019/fb2df3f94a317df8/cn_029.mp3",
           33663
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/fbc131ef14b81cb3/cn_027.mp3",
+          5660
         ],
         [
           "assets/local/sp-extra-voices-20261019/fbeb59ca67f10246/cn_019.mp3",
@@ -62453,6 +62733,10 @@
         [
           "assets/local/sp-extra-voices-20261019/ff05c425449cd33d/cn_026.mp3",
           24468
+        ],
+        [
+          "assets/local/sp-extra-voices-20261019/ff43e4cbe2906e46/cn_029.mp3",
+          51844
         ],
         [
           "assets/local/sp-extra-voices-20261019/ff5fe6e7e925428f/cn_028.mp3",
