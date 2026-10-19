@@ -1091,7 +1091,7 @@ async function publishCore(config, { opts, manifests, version, indexJson, indexF
   // the gate below is what decides whether these bytes go out at all.
   const treeCheck = verifyTreeAndIndex({
     indexBytes: Buffer.from(indexJson, 'utf8'),
-    index: { tag: version, files: indexFiles },
+    index: { tag: JSON.parse(indexJson).tag, files: indexFiles },
     tree: treeDoc,
   });
   if (!treeCheck.ok) {
