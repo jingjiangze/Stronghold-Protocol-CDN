@@ -201,30 +201,6 @@
       "note": "时延最好看，成功率最差：三网一律 3/5。典型 DNS 污染——连得上劫持 IP，取不到字节。**不得进入运行时候选。**"
     },
     {
-      "id": "r2-alt",
-      "host": "weishucdn2.jiangjiangze.icu",
-      "probe": "/cdn/v1/probe.bin",
-      "kind": "cdn",
-      "http": {
-        "电信": {
-          "ok": 4,
-          "bad": 1,
-          "ttfbMs": 264
-        },
-        "联通": {
-          "ok": 5,
-          "bad": 0,
-          "ttfbMs": 245
-        },
-        "移动": {
-          "ok": 5,
-          "bad": 0,
-          "ttfbMs": 192
-        }
-      },
-      "note": "自动补测（2026-10-14，Globalping 内地三运营商 HTTP GET /cdn/v1/probe.bin）"
-    },
-    {
       "id": "ms-edge",
       "host": "jingjiangze-stronghold-protocol.ms.show",
       "probe": "/assets/char/avatar/char_003_kalts.png",
@@ -304,10 +280,8 @@
     }
   ],
   "defaultOrderHint": [
-    "r2-primary",
-    "pages",
-    "gh-proxy",
-    "gitcdn"
+    "speedcdn",
+    "ms-edge"
   ],
-  "_defaultOrderHint_note": "仅在客户端测速**完成之前**作为初始次序；测速完成后一律以现场结果为准。r2-primary/pages 排前是因为它们 15/15 全绿——先出内容，再让测速把更快的源顶上来。"
+  "_defaultOrderHint_note": "2026-10-20 起与 origins.json 用同一套 id。原值 [\"r2-primary\",\"pages\",\"gh-proxy\",\"gitcdn\"] 是network.json 自己的旧词汇表，与 origins.json（speedcdn/ms-edge/r2/…）从来对不上；校验只要求 id在本文件的 sources 里，所以从不报错，于是一直烂着。映射：r2-primary→r2（都指 R2 规范门牌）。pages / gh-proxy / gitcdn 三个不在 origins.json 的候选表里（前者是部署目标、后两者是第三方），按 origins.json 的 order 取能用的那部分。"
 }
