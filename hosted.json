@@ -311,8 +311,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-20",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 3637,
-      "bytes": 290045538,
+      "files": 3869,
+      "bytes": 310844880,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -367,6 +367,14 @@
           130838
         ],
         [
+          "assets/audio/voice/cn/char_1051_headb2/cn_005.mp3",
+          89251
+        ],
+        [
+          "assets/audio/voice/cn/char_1051_headb2/cn_007.mp3",
+          149228
+        ],
+        [
           "assets/audio/voice/cn/char_1051_headb2/cn_008.mp3",
           200010
         ],
@@ -399,6 +407,10 @@
           12764
         ],
         [
+          "assets/audio/voice/cn/char_1051_headb2/cn_034.mp3",
+          33662
+        ],
+        [
           "assets/audio/voice/cn/char_1051_headb2/cn_038.mp3",
           89669
         ],
@@ -429,6 +441,14 @@
         [
           "assets/audio/voice/cn/char_115_headbr/cn_009.mp3",
           92387
+        ],
+        [
+          "assets/audio/voice/cn/char_115_headbr/cn_010.mp3",
+          10467
+        ],
+        [
+          "assets/audio/voice/cn/char_115_headbr/cn_011.mp3",
+          104507
         ],
         [
           "assets/audio/voice/cn/char_115_headbr/cn_012.mp3",
@@ -483,6 +503,14 @@
           3361
         ],
         [
+          "assets/audio/voice/cn/char_115_headbr/cn_036.mp3",
+          47874
+        ],
+        [
+          "assets/audio/voice/cn/char_115_headbr/cn_038.mp3",
+          153200
+        ],
+        [
           "assets/audio/voice/cn/char_115_headbr/cn_043.mp3",
           134182
         ],
@@ -493,6 +521,10 @@
         [
           "assets/audio/voice/cn/char_188_helage/cn_001.mp3",
           66682
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_002.mp3",
+          127495
         ],
         [
           "assets/audio/voice/cn/char_188_helage/cn_003.mp3",
@@ -511,8 +543,24 @@
           121017
         ],
         [
+          "assets/audio/voice/cn/char_188_helage/cn_007.mp3",
+          150901
+        ],
+        [
           "assets/audio/voice/cn/char_188_helage/cn_008.mp3",
           192697
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_009.mp3",
+          198757
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_010.mp3",
+          35335
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_014.mp3",
+          125614
         ],
         [
           "assets/audio/voice/cn/char_188_helage/cn_017.mp3",
@@ -533,6 +581,14 @@
         [
           "assets/audio/voice/cn/char_188_helage/cn_036.mp3",
           39933
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_042.mp3",
+          13392
+        ],
+        [
+          "assets/audio/voice/cn/char_188_helage/cn_044.mp3",
+          168664
         ],
         [
           "assets/audio/voice/cn/char_194_leto/cn_001.mp3",
@@ -559,6 +615,14 @@
           160305
         ],
         [
+          "assets/audio/voice/cn/char_194_leto/cn_009.mp3",
+          149229
+        ],
+        [
+          "assets/audio/voice/cn/char_194_leto/cn_012.mp3",
+          7750
+        ],
+        [
           "assets/audio/voice/cn/char_194_leto/cn_013.mp3",
           16736
         ],
@@ -567,12 +631,24 @@
           129376
         ],
         [
+          "assets/audio/voice/cn/char_194_leto/cn_017.mp3",
+          14019
+        ],
+        [
+          "assets/audio/voice/cn/char_194_leto/cn_019.mp3",
+          5869
+        ],
+        [
           "assets/audio/voice/cn/char_194_leto/cn_020.mp3",
           9631
         ],
         [
           "assets/audio/voice/cn/char_194_leto/cn_021.mp3",
           7750
+        ],
+        [
+          "assets/audio/voice/cn/char_194_leto/cn_022.mp3",
+          10467
         ],
         [
           "assets/audio/voice/cn/char_194_leto/cn_023.mp3",
@@ -589,6 +665,10 @@
         [
           "assets/audio/voice/cn/char_194_leto/cn_028.mp3",
           9840
+        ],
+        [
+          "assets/audio/voice/cn/char_194_leto/cn_029.mp3",
+          65219
         ],
         [
           "assets/audio/voice/cn/char_194_leto/cn_030.mp3",
@@ -611,12 +691,20 @@
           6914
         ],
         [
+          "assets/audio/voice/cn/char_194_leto/cn_038.mp3",
+          115374
+        ],
+        [
           "assets/audio/voice/cn/char_194_leto/cn_042.mp3",
           11929
         ],
         [
           "assets/audio/voice/cn/char_194_leto/cn_043.mp3",
           175351
+        ],
+        [
+          "assets/audio/voice/cn/char_195_glassb/cn_003.mp3",
+          194787
         ],
         [
           "assets/audio/voice/cn/char_195_glassb/cn_004.mp3",
@@ -695,8 +783,16 @@
           30111
         ],
         [
+          "assets/audio/voice/cn/char_195_glassb/cn_032.mp3",
+          25513
+        ],
+        [
           "assets/audio/voice/cn/char_195_glassb/cn_033.mp3",
           35962
+        ],
+        [
+          "assets/audio/voice/cn/char_195_glassb/cn_034.mp3",
+          5869
         ],
         [
           "assets/audio/voice/cn/char_195_glassb/cn_037.mp3",
@@ -705,6 +801,10 @@
         [
           "assets/audio/voice/cn/char_195_glassb/cn_038.mp3",
           207534
+        ],
+        [
+          "assets/audio/voice/cn/char_195_glassb/cn_042.mp3",
+          14646
         ],
         [
           "assets/audio/voice/cn/char_196_sunbr/cn_001.mp3",
@@ -717,6 +817,10 @@
         [
           "assets/audio/voice/cn/char_196_sunbr/cn_006.mp3",
           100537
+        ],
+        [
+          "assets/audio/voice/cn/char_196_sunbr/cn_007.mp3",
+          26140
         ],
         [
           "assets/audio/voice/cn/char_196_sunbr/cn_008.mp3",
@@ -747,6 +851,10 @@
           54561
         ],
         [
+          "assets/audio/voice/cn/char_196_sunbr/cn_037.mp3",
+          7541
+        ],
+        [
           "assets/audio/voice/cn/char_196_sunbr/cn_038.mp3",
           153618
         ],
@@ -775,6 +883,10 @@
           155707
         ],
         [
+          "assets/audio/voice/cn/char_197_poca/cn_013.mp3",
+          46620
+        ],
+        [
           "assets/audio/voice/cn/char_197_poca/cn_014.mp3",
           168873
         ],
@@ -785,6 +897,14 @@
         [
           "assets/audio/voice/cn/char_197_poca/cn_033.mp3",
           19871
+        ],
+        [
+          "assets/audio/voice/cn/char_197_poca/cn_034.mp3",
+          4824
+        ],
+        [
+          "assets/audio/voice/cn/char_197_poca/cn_036.mp3",
+          15273
         ],
         [
           "assets/audio/voice/cn/char_197_poca/cn_037.mp3",
@@ -807,12 +927,20 @@
           113075
         ],
         [
+          "assets/audio/voice/cn/char_405_absin/cn_006.mp3",
+          186427
+        ],
+        [
           "assets/audio/voice/cn/char_405_absin/cn_007.mp3",
           136690
         ],
         [
           "assets/audio/voice/cn/char_405_absin/cn_008.mp3",
           183084
+        ],
+        [
+          "assets/audio/voice/cn/char_405_absin/cn_010.mp3",
+          108269
         ],
         [
           "assets/audio/voice/cn/char_405_absin/cn_011.mp3",
@@ -843,6 +971,10 @@
           20498
         ],
         [
+          "assets/audio/voice/cn/char_405_absin/cn_025.mp3",
+          4406
+        ],
+        [
           "assets/audio/voice/cn/char_405_absin/cn_028.mp3",
           15273
         ],
@@ -865,6 +997,10 @@
         [
           "assets/audio/voice/cn/char_405_absin/cn_043.mp3",
           151946
+        ],
+        [
+          "assets/audio/voice/cn/char_405_absin/cn_044.mp3",
+          105134
         ],
         [
           "assets/audio/voice/cn/char_4123_ela/cn_019.mp3",
@@ -931,6 +1067,10 @@
           292797
         ],
         [
+          "assets/audio/voice/cn/char_4207_branch/cn_008.mp3",
+          333966
+        ],
+        [
           "assets/audio/voice/cn/char_4207_branch/cn_009.mp3",
           350893
         ],
@@ -951,6 +1091,10 @@
           18825
         ],
         [
+          "assets/audio/voice/cn/char_4207_branch/cn_033.mp3",
+          25930
+        ],
+        [
           "assets/audio/voice/cn/char_4207_branch/cn_034.mp3",
           25094
         ],
@@ -961,6 +1105,10 @@
         [
           "assets/audio/voice/cn/char_4207_branch/cn_043.mp3",
           247448
+        ],
+        [
+          "assets/audio/voice/cn/char_4207_branch/cn_044.mp3",
+          270227
         ],
         [
           "assets/audio/voice/cn/char_4224_turdus/cn_002.mp3",
@@ -987,6 +1135,10 @@
           181202
         ],
         [
+          "assets/audio/voice/cn/char_4224_turdus/cn_014.mp3",
+          140242
+        ],
+        [
           "assets/audio/voice/cn/char_4224_turdus/cn_017.mp3",
           41812
         ],
@@ -1007,8 +1159,16 @@
           12346
         ],
         [
+          "assets/audio/voice/cn/char_4224_turdus/cn_024.mp3",
+          10674
+        ],
+        [
           "assets/audio/voice/cn/char_4224_turdus/cn_025.mp3",
           42230
+        ],
+        [
+          "assets/audio/voice/cn/char_4224_turdus/cn_026.mp3",
+          53724
         ],
         [
           "assets/audio/voice/cn/char_4224_turdus/cn_027.mp3",
@@ -1021,6 +1181,10 @@
         [
           "assets/audio/voice/cn/char_4224_turdus/cn_030.mp3",
           25512
+        ],
+        [
+          "assets/audio/voice/cn/char_4224_turdus/cn_031.mp3",
+          57695
         ],
         [
           "assets/audio/voice/cn/char_4224_turdus/cn_032.mp3",
@@ -1039,12 +1203,20 @@
           10257
         ],
         [
+          "assets/audio/voice/cn/char_4224_turdus/cn_038.mp3",
+          144003
+        ],
+        [
           "assets/audio/voice/cn/char_4224_turdus/cn_042.mp3",
           117463
         ],
         [
           "assets/audio/voice/cn/char_4224_turdus/cn_044.mp3",
           196248
+        ],
+        [
+          "assets/audio/voice/cn/char_4226_veen/cn_001.mp3",
+          129166
         ],
         [
           "assets/audio/voice/cn/char_4226_veen/cn_002.mp3",
@@ -1063,6 +1235,10 @@
           165946
         ],
         [
+          "assets/audio/voice/cn/char_4226_veen/cn_007.mp3",
+          141078
+        ],
+        [
           "assets/audio/voice/cn/char_4226_veen/cn_010.mp3",
           60621
         ],
@@ -1079,6 +1255,10 @@
           128748
         ],
         [
+          "assets/audio/voice/cn/char_4226_veen/cn_017.mp3",
+          6913
+        ],
+        [
           "assets/audio/voice/cn/char_4226_veen/cn_018.mp3",
           11510
         ],
@@ -1089,6 +1269,10 @@
         [
           "assets/audio/voice/cn/char_4226_veen/cn_036.mp3",
           21959
+        ],
+        [
+          "assets/audio/voice/cn/char_4226_veen/cn_037.mp3",
+          10883
         ],
         [
           "assets/audio/voice/cn/char_4226_veen/cn_038.mp3",
@@ -1167,12 +1351,24 @@
           23214
         ],
         [
+          "assets/audio/voice/en/char_115_headbr/cn_004.mp3",
+          52262
+        ],
+        [
           "assets/audio/voice/en/char_115_headbr/cn_005.mp3",
           43276
         ],
         [
           "assets/audio/voice/en/char_115_headbr/cn_006.mp3",
           57278
+        ],
+        [
+          "assets/audio/voice/en/char_115_headbr/cn_007.mp3",
+          58532
+        ],
+        [
+          "assets/audio/voice/en/char_115_headbr/cn_008.mp3",
+          98238
         ],
         [
           "assets/audio/voice/en/char_115_headbr/cn_009.mp3",
@@ -1199,6 +1395,10 @@
           88625
         ],
         [
+          "assets/audio/voice/en/char_115_headbr/cn_017.mp3",
+          21960
+        ],
+        [
           "assets/audio/voice/en/char_115_headbr/cn_019.mp3",
           8377
         ],
@@ -1207,8 +1407,16 @@
           16318
         ],
         [
+          "assets/audio/voice/en/char_115_headbr/cn_023.mp3",
+          16945
+        ],
+        [
           "assets/audio/voice/en/char_115_headbr/cn_024.mp3",
           4197
+        ],
+        [
+          "assets/audio/voice/en/char_115_headbr/cn_025.mp3",
+          12347
         ],
         [
           "assets/audio/voice/en/char_115_headbr/cn_026.mp3",
@@ -1223,8 +1431,16 @@
           20707
         ],
         [
+          "assets/audio/voice/en/char_115_headbr/cn_033.mp3",
+          12765
+        ],
+        [
           "assets/audio/voice/en/char_115_headbr/cn_034.mp3",
           2943
+        ],
+        [
+          "assets/audio/voice/en/char_115_headbr/cn_036.mp3",
+          58741
         ],
         [
           "assets/audio/voice/en/char_115_headbr/cn_037.mp3",
@@ -1235,12 +1451,28 @@
           10258
         ],
         [
+          "assets/audio/voice/en/char_188_helage/cn_001.mp3",
+          74205
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_002.mp3",
+          127495
+        ],
+        [
           "assets/audio/voice/en/char_188_helage/cn_003.mp3",
           170127
         ],
         [
           "assets/audio/voice/en/char_188_helage/cn_004.mp3",
           115165
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_005.mp3",
+          146721
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_006.mp3",
+          165111
         ],
         [
           "assets/audio/voice/en/char_188_helage/cn_007.mp3",
@@ -1255,8 +1487,16 @@
           50173
         ],
         [
+          "assets/audio/voice/en/char_188_helage/cn_012.mp3",
+          34708
+        ],
+        [
           "assets/audio/voice/en/char_188_helage/cn_013.mp3",
           71907
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_014.mp3",
+          123942
         ],
         [
           "assets/audio/voice/en/char_188_helage/cn_033.mp3",
@@ -1267,8 +1507,20 @@
           4615
         ],
         [
+          "assets/audio/voice/en/char_188_helage/cn_037.mp3",
+          9422
+        ],
+        [
           "assets/audio/voice/en/char_188_helage/cn_038.mp3",
           216729
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_042.mp3",
+          16527
+        ],
+        [
+          "assets/audio/voice/en/char_188_helage/cn_043.mp3",
+          189770
         ],
         [
           "assets/audio/voice/en/char_188_helage/cn_044.mp3",
@@ -1279,12 +1531,20 @@
           107015
         ],
         [
+          "assets/audio/voice/en/char_194_leto/cn_003.mp3",
+          226551
+        ],
+        [
           "assets/audio/voice/en/char_194_leto/cn_004.mp3",
           257480
         ],
         [
           "assets/audio/voice/en/char_194_leto/cn_005.mp3",
           149647
+        ],
+        [
+          "assets/audio/voice/en/char_194_leto/cn_006.mp3",
+          154244
         ],
         [
           "assets/audio/voice/en/char_194_leto/cn_007.mp3",
@@ -1339,6 +1599,14 @@
           16736
         ],
         [
+          "assets/audio/voice/en/char_194_leto/cn_026.mp3",
+          13601
+        ],
+        [
+          "assets/audio/voice/en/char_194_leto/cn_027.mp3",
+          12974
+        ],
+        [
           "assets/audio/voice/en/char_194_leto/cn_029.mp3",
           83609
         ],
@@ -1371,8 +1639,16 @@
           162604
         ],
         [
+          "assets/audio/voice/en/char_194_leto/cn_043.mp3",
+          230103
+        ],
+        [
           "assets/audio/voice/en/char_194_leto/cn_044.mp3",
           173680
+        ],
+        [
+          "assets/audio/voice/en/char_195_glassb/cn_001.mp3",
+          85072
         ],
         [
           "assets/audio/voice/en/char_195_glassb/cn_002.mp3",
@@ -1443,6 +1719,14 @@
           13392
         ],
         [
+          "assets/audio/voice/en/char_195_glassb/cn_030.mp3",
+          42858
+        ],
+        [
+          "assets/audio/voice/en/char_195_glassb/cn_031.mp3",
+          35335
+        ],
+        [
           "assets/audio/voice/en/char_195_glassb/cn_032.mp3",
           25722
         ],
@@ -1475,6 +1759,14 @@
           45784
         ],
         [
+          "assets/audio/voice/en/char_196_sunbr/cn_004.mp3",
+          122898
+        ],
+        [
+          "assets/audio/voice/en/char_196_sunbr/cn_005.mp3",
+          85072
+        ],
+        [
           "assets/audio/voice/en/char_196_sunbr/cn_006.mp3",
           105761
         ],
@@ -1491,6 +1783,10 @@
           179531
         ],
         [
+          "assets/audio/voice/en/char_196_sunbr/cn_011.mp3",
+          100537
+        ],
+        [
           "assets/audio/voice/en/char_196_sunbr/cn_012.mp3",
           44948
         ],
@@ -1499,8 +1795,20 @@
           14019
         ],
         [
+          "assets/audio/voice/en/char_196_sunbr/cn_018.mp3",
+          27603
+        ],
+        [
+          "assets/audio/voice/en/char_196_sunbr/cn_034.mp3",
+          11929
+        ],
+        [
           "assets/audio/voice/en/char_196_sunbr/cn_036.mp3",
           44948
+        ],
+        [
+          "assets/audio/voice/en/char_196_sunbr/cn_038.mp3",
+          133138
         ],
         [
           "assets/audio/voice/en/char_196_sunbr/cn_042.mp3",
@@ -1523,8 +1831,16 @@
           140661
         ],
         [
+          "assets/audio/voice/en/char_197_poca/cn_004.mp3",
+          121644
+        ],
+        [
           "assets/audio/voice/en/char_197_poca/cn_005.mp3",
           166574
+        ],
+        [
+          "assets/audio/voice/en/char_197_poca/cn_006.mp3",
+          173262
         ],
         [
           "assets/audio/voice/en/char_197_poca/cn_007.mp3",
@@ -1563,6 +1879,10 @@
           15482
         ],
         [
+          "assets/audio/voice/en/char_197_poca/cn_037.mp3",
+          7750
+        ],
+        [
           "assets/audio/voice/en/char_197_poca/cn_042.mp3",
           19035
         ],
@@ -1577,6 +1897,10 @@
         [
           "assets/audio/voice/en/char_405_absin/cn_002.mp3",
           97611
+        ],
+        [
+          "assets/audio/voice/en/char_405_absin/cn_003.mp3",
+          103880
         ],
         [
           "assets/audio/voice/en/char_405_absin/cn_004.mp3",
@@ -1601,6 +1925,14 @@
         [
           "assets/audio/voice/en/char_405_absin/cn_013.mp3",
           106806
+        ],
+        [
+          "assets/audio/voice/en/char_405_absin/cn_017.mp3",
+          19453
+        ],
+        [
+          "assets/audio/voice/en/char_405_absin/cn_020.mp3",
+          49546
         ],
         [
           "assets/audio/voice/en/char_405_absin/cn_021.mp3",
@@ -1635,12 +1967,20 @@
           21542
         ],
         [
+          "assets/audio/voice/en/char_405_absin/cn_032.mp3",
+          42440
+        ],
+        [
           "assets/audio/voice/en/char_405_absin/cn_034.mp3",
           15691
         ],
         [
           "assets/audio/voice/en/char_405_absin/cn_036.mp3",
           49128
+        ],
+        [
+          "assets/audio/voice/en/char_405_absin/cn_037.mp3",
+          6705
         ],
         [
           "assets/audio/voice/en/char_405_absin/cn_038.mp3",
@@ -1657,6 +1997,10 @@
         [
           "assets/audio/voice/en/char_4207_branch/cn_002.mp3",
           184128
+        ],
+        [
+          "assets/audio/voice/en/char_4207_branch/cn_003.mp3",
+          305127
         ],
         [
           "assets/audio/voice/en/char_4207_branch/cn_005.mp3",
@@ -1679,6 +2023,14 @@
           388301
         ],
         [
+          "assets/audio/voice/en/char_4207_branch/cn_010.mp3",
+          95938
+        ],
+        [
+          "assets/audio/voice/en/char_4207_branch/cn_011.mp3",
+          116627
+        ],
+        [
           "assets/audio/voice/en/char_4207_branch/cn_012.mp3",
           56023
         ],
@@ -1691,6 +2043,14 @@
           226759
         ],
         [
+          "assets/audio/voice/en/char_4207_branch/cn_017.mp3",
+          17153
+        ],
+        [
+          "assets/audio/voice/en/char_4207_branch/cn_033.mp3",
+          31990
+        ],
+        [
           "assets/audio/voice/en/char_4207_branch/cn_034.mp3",
           30319
         ],
@@ -1699,12 +2059,28 @@
           24258
         ],
         [
+          "assets/audio/voice/en/char_4207_branch/cn_038.mp3",
+          329577
+        ],
+        [
+          "assets/audio/voice/en/char_4207_branch/cn_042.mp3",
+          75667
+        ],
+        [
           "assets/audio/voice/en/char_4207_branch/cn_044.mp3",
           370537
         ],
         [
           "assets/audio/voice/jp/char_1051_headb2/cn_001.mp3",
           47455
+        ],
+        [
+          "assets/audio/voice/jp/char_1051_headb2/cn_002.mp3",
+          177022
+        ],
+        [
+          "assets/audio/voice/jp/char_1051_headb2/cn_003.mp3",
+          159886
         ],
         [
           "assets/audio/voice/jp/char_1051_headb2/cn_004.mp3",
@@ -1719,6 +2095,14 @@
           171589
         ],
         [
+          "assets/audio/voice/jp/char_1051_headb2/cn_008.mp3",
+          271899
+        ],
+        [
+          "assets/audio/voice/jp/char_1051_headb2/cn_009.mp3",
+          177022
+        ],
+        [
           "assets/audio/voice/jp/char_1051_headb2/cn_012.mp3",
           17362
         ],
@@ -1729,6 +2113,10 @@
         [
           "assets/audio/voice/jp/char_1051_headb2/cn_014.mp3",
           141705
+        ],
+        [
+          "assets/audio/voice/jp/char_1051_headb2/cn_018.mp3",
+          13809
         ],
         [
           "assets/audio/voice/jp/char_1051_headb2/cn_033.mp3",
@@ -1775,6 +2163,10 @@
           16527
         ],
         [
+          "assets/audio/voice/jp/char_115_headbr/cn_014.mp3",
+          102209
+        ],
+        [
           "assets/audio/voice/jp/char_115_headbr/cn_017.mp3",
           31155
         ],
@@ -1801,6 +2193,10 @@
         [
           "assets/audio/voice/jp/char_115_headbr/cn_026.mp3",
           13810
+        ],
+        [
+          "assets/audio/voice/jp/char_115_headbr/cn_027.mp3",
+          17572
         ],
         [
           "assets/audio/voice/jp/char_115_headbr/cn_028.mp3",
@@ -1915,8 +2311,16 @@
           219237
         ],
         [
+          "assets/audio/voice/jp/char_194_leto/cn_006.mp3",
+          184964
+        ],
+        [
           "assets/audio/voice/jp/char_194_leto/cn_007.mp3",
           252674
+        ],
+        [
+          "assets/audio/voice/jp/char_194_leto/cn_009.mp3",
+          213595
         ],
         [
           "assets/audio/voice/jp/char_194_leto/cn_012.mp3",
@@ -1951,6 +2355,10 @@
           84445
         ],
         [
+          "assets/audio/voice/jp/char_194_leto/cn_030.mp3",
+          41395
+        ],
+        [
           "assets/audio/voice/jp/char_194_leto/cn_031.mp3",
           27603
         ],
@@ -1959,8 +2367,20 @@
           35126
         ],
         [
+          "assets/audio/voice/jp/char_194_leto/cn_033.mp3",
+          44321
+        ],
+        [
           "assets/audio/voice/jp/char_194_leto/cn_034.mp3",
           6914
+        ],
+        [
+          "assets/audio/voice/jp/char_194_leto/cn_037.mp3",
+          7541
+        ],
+        [
+          "assets/audio/voice/jp/char_194_leto/cn_038.mp3",
+          178277
         ],
         [
           "assets/audio/voice/jp/char_194_leto/cn_042.mp3",
@@ -2051,6 +2471,10 @@
           32827
         ],
         [
+          "assets/audio/voice/jp/char_195_glassb/cn_032.mp3",
+          31782
+        ],
+        [
           "assets/audio/voice/jp/char_195_glassb/cn_034.mp3",
           4824
         ],
@@ -2065,6 +2489,10 @@
         [
           "assets/audio/voice/jp/char_195_glassb/cn_044.mp3",
           207534
+        ],
+        [
+          "assets/audio/voice/jp/char_196_sunbr/cn_001.mp3",
+          82773
         ],
         [
           "assets/audio/voice/jp/char_196_sunbr/cn_002.mp3",
@@ -2099,12 +2527,20 @@
           88625
         ],
         [
+          "assets/audio/voice/jp/char_196_sunbr/cn_018.mp3",
+          21751
+        ],
+        [
           "assets/audio/voice/jp/char_196_sunbr/cn_034.mp3",
           13601
         ],
         [
           "assets/audio/voice/jp/char_196_sunbr/cn_037.mp3",
           9422
+        ],
+        [
+          "assets/audio/voice/jp/char_196_sunbr/cn_038.mp3",
+          196249
         ],
         [
           "assets/audio/voice/jp/char_196_sunbr/cn_042.mp3",
@@ -2127,6 +2563,10 @@
           202937
         ],
         [
+          "assets/audio/voice/jp/char_197_poca/cn_004.mp3",
+          167410
+        ],
+        [
           "assets/audio/voice/jp/char_197_poca/cn_007.mp3",
           226760
         ],
@@ -2141,6 +2581,10 @@
         [
           "assets/audio/voice/jp/char_197_poca/cn_012.mp3",
           26976
+        ],
+        [
+          "assets/audio/voice/jp/char_197_poca/cn_014.mp3",
+          219028
         ],
         [
           "assets/audio/voice/jp/char_197_poca/cn_017.mp3",
@@ -2159,12 +2603,24 @@
           6496
         ],
         [
+          "assets/audio/voice/jp/char_197_poca/cn_036.mp3",
+          19662
+        ],
+        [
           "assets/audio/voice/jp/char_197_poca/cn_037.mp3",
           10258
         ],
         [
+          "assets/audio/voice/jp/char_197_poca/cn_038.mp3",
+          241807
+        ],
+        [
           "assets/audio/voice/jp/char_197_poca/cn_042.mp3",
           23214
+        ],
+        [
+          "assets/audio/voice/jp/char_197_poca/cn_044.mp3",
+          230731
         ],
         [
           "assets/audio/voice/jp/char_3001_doloris/cn_019.mp3",
@@ -2355,12 +2811,20 @@
           123733
         ],
         [
+          "assets/audio/voice/jp/char_405_absin/cn_013.mp3",
+          120599
+        ],
+        [
           "assets/audio/voice/jp/char_405_absin/cn_014.mp3",
           144004
         ],
         [
           "assets/audio/voice/jp/char_405_absin/cn_018.mp3",
           47038
+        ],
+        [
+          "assets/audio/voice/jp/char_405_absin/cn_020.mp3",
+          51844
         ],
         [
           "assets/audio/voice/jp/char_405_absin/cn_022.mp3",
@@ -2385,6 +2849,10 @@
         [
           "assets/audio/voice/jp/char_405_absin/cn_027.mp3",
           26767
+        ],
+        [
+          "assets/audio/voice/jp/char_405_absin/cn_029.mp3",
+          30947
         ],
         [
           "assets/audio/voice/jp/char_405_absin/cn_030.mp3",
@@ -2587,6 +3055,10 @@
           49754
         ],
         [
+          "assets/audio/voice/jp/char_4207_branch/cn_004.mp3",
+          266466
+        ],
+        [
           "assets/audio/voice/jp/char_4207_branch/cn_005.mp3",
           319755
         ],
@@ -2619,8 +3091,20 @@
           34080
         ],
         [
+          "assets/audio/voice/jp/char_4207_branch/cn_034.mp3",
+          39723
+        ],
+        [
           "assets/audio/voice/jp/char_4207_branch/cn_036.mp3",
           126449
+        ],
+        [
+          "assets/audio/voice/jp/char_4207_branch/cn_037.mp3",
+          33662
+        ],
+        [
+          "assets/audio/voice/jp/char_4207_branch/cn_038.mp3",
+          337728
         ],
         [
           "assets/audio/voice/jp/char_4207_branch/cn_044.mp3",
@@ -2629,6 +3113,14 @@
         [
           "assets/audio/voice/jp/char_4224_turdus/cn_002.mp3",
           172216
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_005.mp3",
+          189561
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_006.mp3",
+          202936
         ],
         [
           "assets/audio/voice/jp/char_4224_turdus/cn_007.mp3",
@@ -2663,8 +3155,20 @@
           83399
         ],
         [
+          "assets/audio/voice/jp/char_4224_turdus/cn_021.mp3",
+          22377
+        ],
+        [
           "assets/audio/voice/jp/char_4224_turdus/cn_022.mp3",
           22168
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_024.mp3",
+          8585
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_027.mp3",
+          35961
         ],
         [
           "assets/audio/voice/jp/char_4224_turdus/cn_028.mp3",
@@ -2679,12 +3183,28 @@
           92177
         ],
         [
+          "assets/audio/voice/jp/char_4224_turdus/cn_032.mp3",
+          99491
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_034.mp3",
+          84444
+        ],
+        [
           "assets/audio/voice/jp/char_4224_turdus/cn_037.mp3",
           9630
         ],
         [
+          "assets/audio/voice/jp/char_4224_turdus/cn_038.mp3",
+          230939
+        ],
+        [
           "assets/audio/voice/jp/char_4224_turdus/cn_042.mp3",
           138988
+        ],
+        [
+          "assets/audio/voice/jp/char_4224_turdus/cn_044.mp3",
+          253718
         ],
         [
           "assets/audio/voice/jp/char_4226_veen/cn_001.mp3",
@@ -2707,6 +3227,14 @@
           190606
         ],
         [
+          "assets/audio/voice/jp/char_4226_veen/cn_008.mp3",
+          223207
+        ],
+        [
+          "assets/audio/voice/jp/char_4226_veen/cn_009.mp3",
+          215892
+        ],
+        [
           "assets/audio/voice/jp/char_4226_veen/cn_010.mp3",
           90087
         ],
@@ -2723,6 +3251,14 @@
           12137
         ],
         [
+          "assets/audio/voice/jp/char_4226_veen/cn_018.mp3",
+          19661
+        ],
+        [
+          "assets/audio/voice/jp/char_4226_veen/cn_033.mp3",
+          21123
+        ],
+        [
           "assets/audio/voice/jp/char_4226_veen/cn_036.mp3",
           33871
         ],
@@ -2733,6 +3269,10 @@
         [
           "assets/audio/voice/jp/char_4226_veen/cn_038.mp3",
           257688
+        ],
+        [
+          "assets/audio/voice/jp/char_4226_veen/cn_043.mp3",
+          201891
         ],
         [
           "assets/audio/voice/jp/char_456_ash/cn_019.mp3",
@@ -2839,6 +3379,10 @@
           10675
         ],
         [
+          "assets/audio/voice/kr/char_115_headbr/cn_022.mp3",
+          14646
+        ],
+        [
           "assets/audio/voice/kr/char_115_headbr/cn_023.mp3",
           9840
         ],
@@ -2887,6 +3431,10 @@
           159678
         ],
         [
+          "assets/audio/voice/kr/char_188_helage/cn_004.mp3",
+          140034
+        ],
+        [
           "assets/audio/voice/kr/char_188_helage/cn_005.mp3",
           149856
         ],
@@ -2895,12 +3443,24 @@
           129167
         ],
         [
+          "assets/audio/voice/kr/char_188_helage/cn_007.mp3",
+          166365
+        ],
+        [
           "assets/audio/voice/kr/char_188_helage/cn_008.mp3",
           217774
         ],
         [
+          "assets/audio/voice/kr/char_188_helage/cn_009.mp3",
+          215684
+        ],
+        [
           "assets/audio/voice/kr/char_188_helage/cn_011.mp3",
           145049
+        ],
+        [
+          "assets/audio/voice/kr/char_188_helage/cn_012.mp3",
+          53725
         ],
         [
           "assets/audio/voice/kr/char_188_helage/cn_017.mp3",
@@ -2915,6 +3475,10 @@
           3779
         ],
         [
+          "assets/audio/voice/kr/char_188_helage/cn_036.mp3",
+          59577
+        ],
+        [
           "assets/audio/voice/kr/char_188_helage/cn_038.mp3",
           195831
         ],
@@ -2925,6 +3489,10 @@
         [
           "assets/audio/voice/kr/char_194_leto/cn_001.mp3",
           81520
+        ],
+        [
+          "assets/audio/voice/kr/char_194_leto/cn_002.mp3",
+          194578
         ],
         [
           "assets/audio/voice/kr/char_194_leto/cn_004.mp3",
@@ -2963,6 +3531,10 @@
           45366
         ],
         [
+          "assets/audio/voice/kr/char_194_leto/cn_019.mp3",
+          9840
+        ],
+        [
           "assets/audio/voice/kr/char_194_leto/cn_021.mp3",
           12765
         ],
@@ -2971,12 +3543,24 @@
           17363
         ],
         [
+          "assets/audio/voice/kr/char_194_leto/cn_025.mp3",
+          18617
+        ],
+        [
+          "assets/audio/voice/kr/char_194_leto/cn_027.mp3",
+          18826
+        ],
+        [
           "assets/audio/voice/kr/char_194_leto/cn_030.mp3",
           36589
         ],
         [
           "assets/audio/voice/kr/char_194_leto/cn_031.mp3",
           25722
+        ],
+        [
+          "assets/audio/voice/kr/char_194_leto/cn_032.mp3",
+          33663
         ],
         [
           "assets/audio/voice/kr/char_194_leto/cn_033.mp3",
@@ -3039,12 +3623,20 @@
           116210
         ],
         [
+          "assets/audio/voice/kr/char_195_glassb/cn_012.mp3",
+          30947
+        ],
+        [
           "assets/audio/voice/kr/char_195_glassb/cn_014.mp3",
           106597
         ],
         [
           "assets/audio/voice/kr/char_195_glassb/cn_017.mp3",
           7750
+        ],
+        [
+          "assets/audio/voice/kr/char_195_glassb/cn_020.mp3",
+          29902
         ],
         [
           "assets/audio/voice/kr/char_195_glassb/cn_021.mp3",
@@ -3055,12 +3647,24 @@
           16527
         ],
         [
+          "assets/audio/voice/kr/char_195_glassb/cn_025.mp3",
+          4406
+        ],
+        [
           "assets/audio/voice/kr/char_195_glassb/cn_026.mp3",
           9840
         ],
         [
           "assets/audio/voice/kr/char_195_glassb/cn_027.mp3",
           9004
+        ],
+        [
+          "assets/audio/voice/kr/char_195_glassb/cn_028.mp3",
+          11929
+        ],
+        [
+          "assets/audio/voice/kr/char_195_glassb/cn_029.mp3",
+          77549
         ],
         [
           "assets/audio/voice/kr/char_195_glassb/cn_031.mp3",
@@ -3073,6 +3677,14 @@
         [
           "assets/audio/voice/kr/char_195_glassb/cn_036.mp3",
           44530
+        ],
+        [
+          "assets/audio/voice/kr/char_195_glassb/cn_037.mp3",
+          8377
+        ],
+        [
+          "assets/audio/voice/kr/char_195_glassb/cn_038.mp3",
+          268347
         ],
         [
           "assets/audio/voice/kr/char_195_glassb/cn_042.mp3",
@@ -3109,6 +3721,10 @@
         [
           "assets/audio/voice/kr/char_196_sunbr/cn_009.mp3",
           196249
+        ],
+        [
+          "assets/audio/voice/kr/char_196_sunbr/cn_012.mp3",
+          40978
         ],
         [
           "assets/audio/voice/kr/char_196_sunbr/cn_014.mp3",
@@ -3183,8 +3799,16 @@
           160096
         ],
         [
+          "assets/audio/voice/kr/char_197_poca/cn_017.mp3",
+          14855
+        ],
+        [
           "assets/audio/voice/kr/char_197_poca/cn_034.mp3",
           5242
+        ],
+        [
+          "assets/audio/voice/kr/char_197_poca/cn_036.mp3",
+          15482
         ],
         [
           "assets/audio/voice/kr/char_197_poca/cn_037.mp3",
@@ -3201,6 +3825,10 @@
         [
           "assets/audio/voice/kr/char_197_poca/cn_043.mp3",
           193950
+        ],
+        [
+          "assets/audio/voice/kr/char_197_poca/cn_044.mp3",
+          193533
         ],
         [
           "assets/audio/voice/kr/char_405_absin/cn_001.mp3",
@@ -3239,12 +3867,24 @@
           150274
         ],
         [
+          "assets/audio/voice/kr/char_405_absin/cn_018.mp3",
+          47456
+        ],
+        [
           "assets/audio/voice/kr/char_405_absin/cn_019.mp3",
           21960
         ],
         [
+          "assets/audio/voice/kr/char_405_absin/cn_020.mp3",
+          50173
+        ],
+        [
           "assets/audio/voice/kr/char_405_absin/cn_021.mp3",
           13601
+        ],
+        [
+          "assets/audio/voice/kr/char_405_absin/cn_022.mp3",
+          4197
         ],
         [
           "assets/audio/voice/kr/char_405_absin/cn_023.mp3",
@@ -3267,8 +3907,20 @@
           30529
         ],
         [
+          "assets/audio/voice/kr/char_405_absin/cn_031.mp3",
+          30111
+        ],
+        [
           "assets/audio/voice/kr/char_405_absin/cn_034.mp3",
           22378
+        ],
+        [
+          "assets/audio/voice/kr/char_405_absin/cn_036.mp3",
+          32618
+        ],
+        [
+          "assets/audio/voice/kr/char_405_absin/cn_037.mp3",
+          8168
         ],
         [
           "assets/audio/voice/kr/char_405_absin/cn_042.mp3",
@@ -3307,6 +3959,18 @@
           356118
         ],
         [
+          "assets/audio/voice/kr/char_4207_branch/cn_010.mp3",
+          142332
+        ],
+        [
+          "assets/audio/voice/kr/char_4207_branch/cn_011.mp3",
+          120180
+        ],
+        [
+          "assets/audio/voice/kr/char_4207_branch/cn_012.mp3",
+          66890
+        ],
+        [
           "assets/audio/voice/kr/char_4207_branch/cn_013.mp3",
           125404
         ],
@@ -3327,12 +3991,20 @@
           31572
         ],
         [
+          "assets/audio/voice/kr/char_4207_branch/cn_036.mp3",
+          110567
+        ],
+        [
           "assets/audio/voice/kr/char_4207_branch/cn_038.mp3",
           290707
         ],
         [
           "assets/audio/voice/kr/char_4207_branch/cn_042.mp3",
           84026
+        ],
+        [
+          "assets/audio/voice/kr/char_4207_branch/cn_043.mp3",
+          245777
         ],
         [
           "assets/audio/voice/kr/char_4207_branch/cn_044.mp3",
@@ -3359,12 +4031,24 @@
           164483
         ],
         [
+          "assets/audio/voice/ru/char_1051_headb2/cn_009.mp3",
+          160722
+        ],
+        [
           "assets/audio/voice/ru/char_1051_headb2/cn_010.mp3",
           33244
         ],
         [
+          "assets/audio/voice/ru/char_1051_headb2/cn_011.mp3",
+          75249
+        ],
+        [
           "assets/audio/voice/ru/char_1051_headb2/cn_013.mp3",
           101372
+        ],
+        [
+          "assets/audio/voice/ru/char_1051_headb2/cn_014.mp3",
+          129584
         ],
         [
           "assets/audio/voice/ru/char_1051_headb2/cn_017.mp3",
@@ -3373,6 +4057,10 @@
         [
           "assets/audio/voice/ru/char_1051_headb2/cn_018.mp3",
           16526
+        ],
+        [
+          "assets/audio/voice/ru/char_1051_headb2/cn_019.mp3",
+          11928
         ],
         [
           "assets/audio/voice/ru/char_1051_headb2/cn_020.mp3",
@@ -3411,8 +4099,16 @@
           19870
         ],
         [
+          "assets/audio/voice/ru/char_1051_headb2/cn_037.mp3",
+          10048
+        ],
+        [
           "assets/audio/voice/ru/char_1051_headb2/cn_038.mp3",
           95102
+        ],
+        [
+          "assets/audio/voice/ru/char_1051_headb2/cn_042.mp3",
+          14018
         ],
         [
           "assets/audio/voice/ru/char_1051_headb2/cn_043.mp3",
@@ -3447,6 +4143,10 @@
           20915
         ],
         [
+          "assets/audio/voice/ru/char_115_headbr/cn_011.mp3",
+          110359
+        ],
+        [
           "assets/audio/voice/ru/char_115_headbr/cn_012.mp3",
           13601
         ],
@@ -3465,6 +4165,10 @@
         [
           "assets/audio/voice/ru/char_115_headbr/cn_019.mp3",
           9840
+        ],
+        [
+          "assets/audio/voice/ru/char_115_headbr/cn_020.mp3",
+          6078
         ],
         [
           "assets/audio/voice/ru/char_115_headbr/cn_021.mp3",
@@ -3503,12 +4207,28 @@
           14646
         ],
         [
+          "assets/audio/voice/ru/char_115_headbr/cn_032.mp3",
+          30320
+        ],
+        [
           "assets/audio/voice/ru/char_115_headbr/cn_036.mp3",
           53516
         ],
         [
+          "assets/audio/voice/ru/char_115_headbr/cn_037.mp3",
+          9631
+        ],
+        [
           "assets/audio/voice/ru/char_115_headbr/cn_042.mp3",
           15482
+        ],
+        [
+          "assets/audio/voice/ru/char_115_headbr/cn_043.mp3",
+          138571
+        ],
+        [
+          "assets/audio/voice/ru/char_188_helage/cn_002.mp3",
+          131884
         ],
         [
           "assets/audio/voice/ru/char_188_helage/cn_003.mp3",
@@ -3519,8 +4239,16 @@
           118091
         ],
         [
+          "assets/audio/voice/ru/char_188_helage/cn_007.mp3",
+          129585
+        ],
+        [
           "assets/audio/voice/ru/char_188_helage/cn_008.mp3",
           236373
+        ],
+        [
+          "assets/audio/voice/ru/char_188_helage/cn_010.mp3",
+          45993
         ],
         [
           "assets/audio/voice/ru/char_188_helage/cn_012.mp3",
@@ -3537,6 +4265,10 @@
         [
           "assets/audio/voice/ru/char_188_helage/cn_018.mp3",
           27603
+        ],
+        [
+          "assets/audio/voice/ru/char_188_helage/cn_019.mp3",
+          40978
         ],
         [
           "assets/audio/voice/ru/char_188_helage/cn_021.mp3",
@@ -3639,6 +4371,10 @@
           15064
         ],
         [
+          "assets/audio/voice/ru/char_194_leto/cn_021.mp3",
+          11093
+        ],
+        [
           "assets/audio/voice/ru/char_194_leto/cn_022.mp3",
           9631
         ],
@@ -3653,6 +4389,10 @@
         [
           "assets/audio/voice/ru/char_194_leto/cn_026.mp3",
           15273
+        ],
+        [
+          "assets/audio/voice/ru/char_194_leto/cn_027.mp3",
+          23005
         ],
         [
           "assets/audio/voice/ru/char_194_leto/cn_030.mp3",
@@ -3671,6 +4411,10 @@
           48710
         ],
         [
+          "assets/audio/voice/ru/char_194_leto/cn_034.mp3",
+          19662
+        ],
+        [
           "assets/audio/voice/ru/char_194_leto/cn_036.mp3",
           30111
         ],
@@ -3679,8 +4423,24 @@
           118509
         ],
         [
+          "assets/audio/voice/ru/char_194_leto/cn_042.mp3",
+          12138
+        ],
+        [
+          "assets/audio/voice/ru/char_194_leto/cn_044.mp3",
+          135436
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_001.mp3",
+          74414
+        ],
+        [
           "assets/audio/voice/ru/char_195_glassb/cn_002.mp3",
           70862
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_003.mp3",
+          120599
         ],
         [
           "assets/audio/voice/ru/char_195_glassb/cn_004.mp3",
@@ -3707,6 +4467,10 @@
           50173
         ],
         [
+          "assets/audio/voice/ru/char_195_glassb/cn_011.mp3",
+          88416
+        ],
+        [
           "assets/audio/voice/ru/char_195_glassb/cn_012.mp3",
           16736
         ],
@@ -3715,8 +4479,32 @@
           93849
         ],
         [
+          "assets/audio/voice/ru/char_195_glassb/cn_017.mp3",
+          9631
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_022.mp3",
+          9422
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_023.mp3",
+          11720
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_024.mp3",
+          21124
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_026.mp3",
+          12765
+        ],
+        [
           "assets/audio/voice/ru/char_195_glassb/cn_027.mp3",
           15064
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_030.mp3",
+          51009
         ],
         [
           "assets/audio/voice/ru/char_195_glassb/cn_031.mp3",
@@ -3755,6 +4543,10 @@
           115165
         ],
         [
+          "assets/audio/voice/ru/char_196_sunbr/cn_003.mp3",
+          53934
+        ],
+        [
           "assets/audio/voice/ru/char_196_sunbr/cn_004.mp3",
           144631
         ],
@@ -3771,8 +4563,16 @@
           120390
         ],
         [
+          "assets/audio/voice/ru/char_196_sunbr/cn_010.mp3",
+          52889
+        ],
+        [
           "assets/audio/voice/ru/char_196_sunbr/cn_012.mp3",
           38888
+        ],
+        [
+          "assets/audio/voice/ru/char_196_sunbr/cn_014.mp3",
+          86535
         ],
         [
           "assets/audio/voice/ru/char_196_sunbr/cn_019.mp3",
@@ -3783,12 +4583,20 @@
           10258
         ],
         [
+          "assets/audio/voice/ru/char_196_sunbr/cn_023.mp3",
+          9422
+        ],
+        [
           "assets/audio/voice/ru/char_196_sunbr/cn_026.mp3",
           9004
         ],
         [
           "assets/audio/voice/ru/char_196_sunbr/cn_028.mp3",
           15900
+        ],
+        [
+          "assets/audio/voice/ru/char_196_sunbr/cn_029.mp3",
+          35962
         ],
         [
           "assets/audio/voice/ru/char_196_sunbr/cn_030.mp3",
@@ -3831,6 +4639,10 @@
           148393
         ],
         [
+          "assets/audio/voice/ru/char_197_poca/cn_007.mp3",
+          154244
+        ],
+        [
           "assets/audio/voice/ru/char_197_poca/cn_008.mp3",
           155498
         ],
@@ -3839,8 +4651,16 @@
           138989
         ],
         [
+          "assets/audio/voice/ru/char_197_poca/cn_010.mp3",
+          26976
+        ],
+        [
           "assets/audio/voice/ru/char_197_poca/cn_011.mp3",
           131257
+        ],
+        [
+          "assets/audio/voice/ru/char_197_poca/cn_013.mp3",
+          49128
         ],
         [
           "assets/audio/voice/ru/char_197_poca/cn_014.mp3",
@@ -3859,6 +4679,10 @@
           13183
         ],
         [
+          "assets/audio/voice/ru/char_197_poca/cn_021.mp3",
+          9631
+        ],
+        [
           "assets/audio/voice/ru/char_197_poca/cn_023.mp3",
           27185
         ],
@@ -3873,6 +4697,10 @@
         [
           "assets/audio/voice/ru/char_197_poca/cn_026.mp3",
           24259
+        ],
+        [
+          "assets/audio/voice/ru/char_197_poca/cn_027.mp3",
+          22378
         ],
         [
           "assets/audio/voice/ru/char_197_poca/cn_028.mp3",
@@ -3915,6 +4743,14 @@
           97402
         ],
         [
+          "assets/audio/voice/ru/char_405_absin/cn_004.mp3",
+          108687
+        ],
+        [
+          "assets/audio/voice/ru/char_405_absin/cn_005.mp3",
+          122898
+        ],
+        [
           "assets/audio/voice/ru/char_405_absin/cn_006.mp3",
           188308
         ],
@@ -3931,8 +4767,16 @@
           113911
         ],
         [
+          "assets/audio/voice/ru/char_405_absin/cn_011.mp3",
+          109314
+        ],
+        [
           "assets/audio/voice/ru/char_405_absin/cn_012.mp3",
           16736
+        ],
+        [
+          "assets/audio/voice/ru/char_405_absin/cn_017.mp3",
+          15900
         ],
         [
           "assets/audio/voice/ru/char_405_absin/cn_019.mp3",
@@ -3943,8 +4787,20 @@
           54352
         ],
         [
+          "assets/audio/voice/ru/char_405_absin/cn_021.mp3",
+          10049
+        ],
+        [
+          "assets/audio/voice/ru/char_405_absin/cn_023.mp3",
+          27394
+        ],
+        [
           "assets/audio/voice/ru/char_405_absin/cn_024.mp3",
           17363
+        ],
+        [
+          "assets/audio/voice/ru/char_405_absin/cn_025.mp3",
+          6078
         ],
         [
           "assets/audio/voice/ru/char_405_absin/cn_026.mp3",
@@ -3955,8 +4811,16 @@
           23632
         ],
         [
+          "assets/audio/voice/ru/char_405_absin/cn_028.mp3",
+          21333
+        ],
+        [
           "assets/audio/voice/ru/char_405_absin/cn_032.mp3",
           39306
+        ],
+        [
+          "assets/audio/voice/ru/char_405_absin/cn_037.mp3",
+          8168
         ],
         [
           "assets/audio/voice/ru/char_405_absin/cn_038.mp3",
@@ -3987,6 +4851,14 @@
           284229
         ],
         [
+          "assets/audio/voice/ru/char_4207_branch/cn_004.mp3",
+          211086
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_005.mp3",
+          279840
+        ],
+        [
           "assets/audio/voice/ru/char_4207_branch/cn_006.mp3",
           264376
         ],
@@ -4015,12 +4887,20 @@
           144839
         ],
         [
+          "assets/audio/voice/ru/char_4207_branch/cn_014.mp3",
+          227595
+        ],
+        [
           "assets/audio/voice/ru/char_4207_branch/cn_017.mp3",
           20079
         ],
         [
           "assets/audio/voice/ru/char_4207_branch/cn_019.mp3",
           44111
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_023.mp3",
+          14854
         ],
         [
           "assets/audio/voice/ru/char_4207_branch/cn_024.mp3",
@@ -4035,8 +4915,20 @@
           12764
         ],
         [
+          "assets/audio/voice/ru/char_4207_branch/cn_029.mp3",
+          22168
+        ],
+        [
           "assets/audio/voice/ru/char_4207_branch/cn_030.mp3",
           29692
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_031.mp3",
+          32617
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_032.mp3",
+          66472
         ],
         [
           "assets/audio/voice/ru/char_4207_branch/cn_034.mp3",
@@ -4045,6 +4937,18 @@
         [
           "assets/audio/voice/ru/char_4207_branch/cn_037.mp3",
           21332
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_038.mp3",
+          345460
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_042.mp3",
+          64173
+        ],
+        [
+          "assets/audio/voice/ru/char_4207_branch/cn_043.mp3",
+          219027
         ],
         [
           "assets/audio/voice/ru/char_4224_turdus/cn_001.mp3",
@@ -4059,12 +4963,28 @@
           188098
         ],
         [
+          "assets/audio/voice/ru/char_4224_turdus/cn_004.mp3",
+          227595
+        ],
+        [
           "assets/audio/voice/ru/char_4224_turdus/cn_005.mp3",
           140033
         ],
         [
           "assets/audio/voice/ru/char_4224_turdus/cn_006.mp3",
           164274
+        ],
+        [
+          "assets/audio/voice/ru/char_4224_turdus/cn_008.mp3",
+          228431
+        ],
+        [
+          "assets/audio/voice/ru/char_4224_turdus/cn_009.mp3",
+          191233
+        ],
+        [
+          "assets/audio/voice/ru/char_4224_turdus/cn_010.mp3",
+          76503
         ],
         [
           "assets/audio/voice/ru/char_4224_turdus/cn_012.mp3",
@@ -4103,6 +5023,10 @@
           23840
         ],
         [
+          "assets/audio/voice/ru/char_4224_turdus/cn_023.mp3",
+          14436
+        ],
+        [
           "assets/audio/voice/ru/char_4224_turdus/cn_026.mp3",
           36379
         ],
@@ -4137,6 +5061,10 @@
         [
           "assets/audio/voice/ru/char_4224_turdus/cn_042.mp3",
           126658
+        ],
+        [
+          "assets/audio/voice/ru/char_4224_turdus/cn_044.mp3",
+          185172
         ],
         [
           "assets/band/band_kaituo.png",
