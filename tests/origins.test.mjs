@@ -235,10 +235,11 @@ test('the shipped origins.json parks the private dataset and keeps it listed', (
 
 test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
   const order = readPreferredOrder(path.resolve(process.cwd(), '.'));
-  // 2026-10-19 用户指令：speedcdn 最优先；其后 ms-edge、r2-alt、r2。
+  // 2026-10-19 用户指令：speedcdn 最优先。2026-10-20 weishucdn2 删域，r2-alt 移出。
   assert.deepEqual(order.slice(0, 2), ['speedcdn', 'ms-edge'], 'speedcdn 最优先，其次 ms-edge');
-  const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'r2-alt' }];
-  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['r2-alt', 'r2', 'ghfast-assets', 'ms-dataset']);
+  const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'retired-alt' }];
+  // 未点名的 id 保持**原相对次序**（retired-alt 在 fixture 里排最后，就仍在最后）
+  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'retired-alt']);
   // 空 order = 原样返回（不改动历史行为）
-  assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'r2-alt']);
+  assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'retired-alt']);
 });
