@@ -311,8 +311,8 @@
       "what": "卫戍协议：盟约 · 融合版本体（0.2.1-fusion）里第三方模组的专属素材",
       "addedAt": "2026-10-20",
       "source": "admin upload（只增不删；撤销请改本文件走 review）",
-      "files": 4326,
-      "bytes": 349349541,
+      "files": 4330,
+      "bytes": 349707385,
       "keys": [
         [
           "assets/audio/sfx/player/p_atk/p_atk_mjckyrdnt.mp3",
@@ -3079,6 +3079,10 @@
           235329
         ],
         [
+          "assets/audio/voice/jp/char_194_leto/cn_004.mp3",
+          224880
+        ],
+        [
           "assets/audio/voice/jp/char_194_leto/cn_005.mp3",
           219237
         ],
@@ -3781,6 +3785,10 @@
         [
           "assets/audio/voice/jp/char_405_absin/cn_020.mp3",
           51844
+        ],
+        [
+          "assets/audio/voice/jp/char_405_absin/cn_021.mp3",
+          9004
         ],
         [
           "assets/audio/voice/jp/char_405_absin/cn_022.mp3",
@@ -4577,6 +4585,10 @@
         [
           "assets/audio/voice/kr/char_115_headbr/cn_044.mp3",
           206489
+        ],
+        [
+          "assets/audio/voice/kr/char_188_helage/cn_001.mp3",
+          112031
         ],
         [
           "assets/audio/voice/kr/char_188_helage/cn_002.mp3",
@@ -6137,6 +6149,10 @@
         [
           "assets/audio/voice/ru/char_195_glassb/cn_038.mp3",
           197921
+        ],
+        [
+          "assets/audio/voice/ru/char_195_glassb/cn_042.mp3",
+          11929
         ],
         [
           "assets/audio/voice/ru/char_195_glassb/cn_043.mp3",
