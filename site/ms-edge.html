@@ -72,7 +72,7 @@
     </div>
     <div class="notice">
       <span><b>已上线（2026-10-11 晚）：</b><code class="inline">/assets/**</code> 302 实测通过（默认 → 数据集镜像、
-      <code class="inline">?sp_source=r2</code> → weishucdn、<code class="inline">?sp_source=openi</code> → OpenI），游戏页面仍由容器回答。
+      <code class="inline">?sp_source=r2</code> → speedcdn、<code class="inline">?sp_source=openi</code> → OpenI），游戏页面仍由容器回答。
       CDN 仓的 <code class="inline">origins.json</code> 已把 ms-edge 从 <code class="inline">enabled:false</code> 与
       <code class="inline">disabled</code> 两处移除（同批接口重发）。</span>
     </div>
@@ -150,7 +150,7 @@
         <tbody>
           <tr><td class="mono">origins.json / src/origins.mjs</td><td><b>IMPLEMENTED</b>：ms-edge 条目 + probe/coverage/enabled 透传 + 测试</td></tr>
           <tr><td class="mono">容器重建</td><td><b>DONE</b>：<code class="inline">PUT …/reset_restart</code> 即可让平台按当前提交重建并部署（约 2–4 分钟，触发前确认空场）；线上跑 <code class="inline">ImageId=…-6f2d2941-…</code></td></tr>
-          <tr><td class="mono">线上生效</td><td><b>PASS</b>：/assets/** 302 实测（默认 → 数据集、?sp_source=r2 → weishucdn、?sp_source=openi → OpenI）；清单 gzip TTFB 0.43s、整链 0.82s</td></tr>
+          <tr><td class="mono">线上生效</td><td><b>PASS</b>：/assets/** 302 实测（默认 → 数据集、?sp_source=r2 → speedcdn、?sp_source=openi → OpenI）；清单 gzip TTFB 0.43s、整链 0.82s</td></tr>
           <tr><td class="mono">镜像源 apk</td><td><b>已实现</b>：仅用于 Docker build 期换 alpine 源（<code class="inline">dl-cdn.alpinelinux.org → mirrors.aliyun.com</code>），与运行时 302 目标无关</td></tr>
         </tbody>
       </table>

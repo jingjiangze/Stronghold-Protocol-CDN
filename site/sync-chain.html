@@ -80,7 +80,7 @@
 <i>排名支线（D，独立）</i>
 [rank.yml] Globalping 实测 → rank.json → 写 R2 + 镜像进魔搭数据集
 [network-measure.yml] 每周一重测并触发 rank
-容器边缘 asset-jump.js 每 5 分钟读 rank.json（主门牌=魔搭数据集 API，兜底 weishucdn）把合格源排头部</pre>
+容器边缘 asset-jump.js 每 5 分钟读 rank.json（主门牌 = speedcdn，同桶 weishucdn 等价；魔搭数据集已转私有，仅服务端链路可用，不再作匿名客户端门牌）把合格源排头部</pre>
     <div class="notice">
       <span><b>时延（2026-10-15）：</b>上传端到端——点了「同步到镜像源」后，发布轮 <b>1–3 分钟</b> → git 链 <b>2–25 分钟</b>（视积压）→ OpenI / 数据集随之跟上；上游发布走 cron 4 窗（最长 6 小时）。魔搭数据集 2026-10-15 已改走 LFS（LFS 指针进 git 对象库 + <code class="inline">git lfs push</code> 传字节），1.6 GB 上限已解决；全量实测 424 条待补路径 423 条已可达（14 份抽下载逐字节 sha256 与源 ref 完全一致），唯一失败的是 <code class="inline">assets/skins/char_340_shwaz_snow_1/illustration.png</code> —— 平台内容审核判敏感自动 revert（最近一次 c64e935），非推送链缺陷、亦非我方可控，该路径在 ms-edge 层走 exceptions 表改道。</span>
     </div>
@@ -128,7 +128,7 @@
         <h4>链 D · 排名与测速</h4>
         <ul>
           <li><code class="inline">rank.yml</code>（每天 4 窗）生成 <code class="inline">rank.json</code>（Globalping 内地三运营商实测）→ 写 R2 + 镜像进魔搭数据集。</li>
-          <li>容器边缘 <code class="inline">asset-jump.js</code> 每 5 分钟读它（主门牌 = 魔搭数据集 API，兜底 weishucdn）把合格的实测源排在头部。</li>
+          <li>容器边缘 <code class="inline">asset-jump.js</code> 每 5 分钟读它（主门牌 = speedcdn，同桶 weishucdn 等价；魔搭数据集已转私有，仅服务端链路可用，不再作匿名客户端门牌）把合格的实测源排在头部。</li>
           <li><code class="inline">network-measure.yml</code> 每周一重测并触发 rank。</li>
           <li>与字节流解耦：只排顺序，不搬运素材。</li>
         </ul>
@@ -218,7 +218,7 @@ curl -sI https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/asse
 <i># 5. 魔搭数据集补齐进度：resolve 链接能拉到对应路径</i>
 curl -sI "https://www.modelscope.cn/api/v1/datasets/jingjiangze/Stronghold-Protocol-Assets/repo?Revision=master&FilePath=releases/v1-trial/assets/char/avatar/char_1016_agoat2.png" | grep -iE "HTTP|location"
 
-<i># 6. rank 支线：rank.json 已写、边缘读到（主门牌=数据集 API，兜底 weishucdn）</i>
+<i># 6. rank 支线：rank.json 已写、边缘读到（主门牌 = speedcdn，同桶 weishucdn 等价；魔搭数据集已转私有，仅服务端链路可用）</i>
 curl -s https://speedcdn.jiangjiangze.icu/cdn/v1/rank.json | head</pre>
     <div class="notice">
       <span><b>接口文件只在 R2 桶域名上：</b><code class="inline">/cdn/v1/*.json</code> 只挂在 weishucdn / weishucdn2 / speedcdn，不挂在 git 镜像（OpenI / 数据集 / jsDelivr 等）。核对接口层一律用主门牌或三域名之一，别去 git 镜像找接口。</span>

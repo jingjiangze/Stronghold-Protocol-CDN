@@ -120,18 +120,16 @@ const objects = [
   ['/docs/research/03-operators.json', 'application/json', 1000000],
 ];
 const A = 'weishucdn.jiangjiangze.icu';
-const B = 'weishucdn2.jiangjiangze.icu';
 // 2026-10-19 用户指令：speedcdn 是最优先门牌，健康扫描必须覆盖它 ——
 // 原来只测 A/B 两个门牌，最优先的那个反而是盲区。
+// 2026-10-20：weishucdn2（r2-alt）已删域，仅返 Cloudflare 的 639 B 占位外壳，不再作门牌，移除 B 门的扫描与比对。
 const C = 'speedcdn.jiangjiangze.icu';
 for (const [p, type, min] of objects) {
   check(`${A.split('.')[0]}${p}`, `https://${A}${p}${cb()}`, { code: '200', type, min, acao: '*' });
-  check(`${B.split('.')[0]}${p}`, `https://${B}${p}${cb()}`, { code: '200', type, min, acao: '*' });
   check(`${C.split('.')[0]}${p}`, `https://${C}${p}${cb()}`, { code: '200', type, min, acao: '*' });
 }
-console.log('  —— 三域名逐对象比内容哈希（不是比长度）——');
+console.log('  —— 两域名逐对象比内容哈希（不是比长度）——');
 for (const [p] of objects) {
-  sameContent(`A/B ${p}`, `https://${A}${p}${cb()}`, `https://${B}${p}${cb()}`);
   sameContent(`A/C ${p}`, `https://${A}${p}${cb()}`, `https://${C}${p}${cb()}`);
 }
 

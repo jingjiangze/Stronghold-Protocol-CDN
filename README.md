@@ -2,7 +2,7 @@
 
 把上游（[`sganggs/Stronghold-Protocol`](https://github.com/sganggs/Stronghold-Protocol)）**最新 Release 里的静态素材**自动镜像到 Cloudflare R2，并对外提供一套可校验、可引用的素材接口。
 
-本仓是 `weishucdn.jiangjiangze.icu`（R2 桶 `stronghold-assets`）**素材部分的唯一发布者**。
+本仓是 R2 桶 `stronghold-assets` 的素材发布者；对外主门牌 `speedcdn.jiangjiangze.icu`（2026-10-19 起 `order` 最优先），`weishucdn.jiangjiangze.icu` 为同桶规范门牌（`weishucdn2` 即 r2-alt 已于 2026-10-20 删域、retired，不再作接口门牌）。
 
 ## 为什么需要它
 
@@ -83,7 +83,7 @@ gh 取上游 latest release（或 --tag 指定）
 与上面三个「镜像」不同，ms-edge **不是素材树的又一份拷贝**，而是站在字节源前面的**分流边缘层**：跑在
 [ModelScope 创空间](https://www.modelscope.cn/studios/jingjiangze/Stronghold-Protocol.git) 的容器里
 （`https://jingjiangze-stronghold-protocol.ms.show`，平台强制端口 `:7860`），由 nginx 把 `/assets/**`、`/fonts/**`
-**302 跳转**到真实字节源（当前指向自建 ModelScope 数据集镜像），**字节不经容器**；其余路径（页面 / data / js / ws）
+**302 跳转**到真实字节源（当前指向 R2 规范门牌 `weishucdn`；另有自建 ModelScope 数据集镜像，但该数据集 2026-10-18 已转私有，匿名 404/403，仅供 CDN 服务端带私有会话调用，不是匿名客户端可用的源 —— 见 `origins.json` 的 ms-dataset 条目），**字节不经容器**；其余路径（页面 / data / js / ws）
 由容器里的游戏服务器回答。原 nginx+lua 方案已改为普通 nginx + Node sidecar，sidecar 挂掉时 nginx 兜底 `return 302` 主源。
 
 它作为一条 `extraOrigin` 进入 `art.json` / `mirrors.json`（`src/origins.mjs` 透传 `probe` 与 `coverage`）。
@@ -94,7 +94,7 @@ gh 取上游 latest release（或 --tag 指定）
 
 ## 接口
 
-基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`
+基址 `<CDN>` = `https://speedcdn.jiangjiangze.icu/`（规范门牌、order 第一位；同桶 `weishucdn.jiangjiangze.icu` 亦可；实际最优先门牌以 `origins.json` 的 `order` 为准）
 
 **完整清单以 `<CDN>/cdn/v1/api.json` 为准**（字段 `{ schema, base, token, endpoints[] }`，
 由 `src/api-contract.mjs` 维护，`tests/api-contract.test.mjs` 保证它不漏掉 sync 实际发布的键）。
@@ -104,7 +104,9 @@ gh 取上游 latest release（或 --tag 指定）
 |---|---|
 | `<CDN>/assets/**` | 素材本体（键 = 上游 `public/assets/**` 去掉 `public/`） |
 
-同一个桶还有第二个入口 <https://weishucdn2.jiangjiangze.icu>（`origins.json` 里的 `r2-alt`）：
+`weishucdn2`（<https://weishucdn2.jiangjiangze.icu>，即 `origins.json` 里的 `r2-alt`）**已于 2026-10-20 删域**：域名还在，但只返回 Cloudflare 的 639 B 占位外壳（/cdn/v1/index.json 与不存在的路径都返 200），不能当源用，已在 `origins.json` 登记 `retired` 并移出 `order`。可用的同桶入口是 `speedcdn`（规范门牌、order 第一位）与 `weishucdn`：
+
+（以下为历史说明，针对仍可用的 `speedcdn` / `weishucdn` 两个入口：）
 零额外存储、不占额度，只多一条路。两者的响应头必须逐字一致（200/206、ACAO `*`、
 `expose Content-Length, Content-Range, ETag`、`immutable`），因为 ACAO 是 **zone 级改写规则**加的、
 不是 R2 自带的 —— 那条规则的表达式按 host 匹配，**换/加域名时必须同步改它**，

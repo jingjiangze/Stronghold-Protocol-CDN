@@ -9,7 +9,7 @@
   - 其余（页面 / data / js / ws / healthz）→ 游戏本体回答。
 - **本站不持有任何美术字节**，只做「把请求指到正确的源」。
 - 为什么是 302 而不是反代：字节直接 302 出网，容器只承担一次重定向的极轻开销，不被几百 MB 素材流量拖垮；且创空间对容器有单实例端口与流量约束，让字节绕开容器最稳。
-- **已上线**：`/assets/**` 302 实测通过（默认 → 数据集、`?sp_source=r2` → weishucdn、`?sp_source=openi` → OpenI）；CDN 仓已把 ms-edge 从 `enabled:false` 与 `disabled` 两处移出。重建入口：`PUT /api/v1/studio/jingjiangze/Stronghold-Protocol/reset_restart`（约 2–4 分钟，触发前确认空场）。
+- **已上线**：`/assets/**` 302 实测通过（默认 → 数据集、`?sp_source=r2` → speedcdn、`?sp_source=openi` → OpenI）；CDN 仓已把 ms-edge 从 `enabled:false` 与 `disabled` 两处移出。重建入口：`PUT /api/v1/studio/jingjiangze/Stronghold-Protocol/reset_restart`（约 2–4 分钟，触发前确认空场）。
 
 ## 2. 容器内分流架构
 
@@ -55,7 +55,7 @@
 |---|---|
 | `origins.json` / `src/origins.mjs` | **IMPLEMENTED**：ms-edge 条目 + probe/coverage/enabled 透传 + 测试 |
 | 容器重建 | **DONE**：`PUT …/reset_restart` 即可让平台按当前提交重建并部署（约 2–4 分钟）；线上跑 `ImageId=…-6f2d2941-…` |
-| 线上生效 | **PASS**：/assets/** 302 实测（默认 → 数据集、?sp_source=r2 → weishucdn、?sp_source=openi → OpenI）；清单 gzip TTFB 0.43s |
+| 线上生效 | **PASS**：/assets/** 302 实测（默认 → 数据集、?sp_source=r2 → speedcdn、?sp_source=openi → OpenI）；清单 gzip TTFB 0.43s |
 | 镜像源 apk | **已实现**：仅用于 Docker build 期换 alpine 源（`dl-cdn.alpinelinux.org → mirrors.aliyun.com`），与运行时 302 目标无关 |
 
 ## 5. 验收

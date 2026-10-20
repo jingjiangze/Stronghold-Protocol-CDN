@@ -14,7 +14,7 @@
 | 大素材包一次传 300 MB | ❌ 会被截 | 引擎读侧硬上限：解后总和 64 MiB / 4096 条 / 单条 32 MiB ⇒ 分片，每片解后 ≤52 MiB |
 | 直接指别人已经传过的同一张图 | ✅ 应该这么做 | 先查权威键索引（§2），命中就指 canonical 键，**别再传一份** |
 
-基址只有一个：`https://weishucdn.jiangjiangze.icu`（同桶第二入口 `https://weishucdn2.jiangjiangze.icu`，响应头逐字一致）。
+基址只有一个：`https://speedcdn.jiangjiangze.icu`（规范门牌、order 第一位；同桶 `https://weishucdn.jiangjiangze.icu` 亦可；`weishucdn2` 即 r2-alt 已于 2026-10-20 删域、retired，不再可用）。
 **`downcdn.jiangjiangze.icu` 是门户站点**：它任何子路径都回 `200 text/html`，不要拿它验字节，也不要写进 mod。
 
 ## 1. 路径规则
@@ -155,7 +155,7 @@ node tools/agent-upload-batch.mjs --manifest=list.json --source=my-group \
 ## 9. 一页速查
 
 ```
-基址          https://weishucdn.jiangjiangze.icu     （第二入口 weishucdn2，同桶）
+基址          https://speedcdn.jiangjiangze.icu     （规范门牌、order 第一位；同桶 weishucdn 亦可；weishucdn2 即 r2-alt 已 2026-10-20 删域、retired）
 令牌          GET /cdn/v1/art.json → art.token      URL 一律带 ?v=<token>
 有什么        GET /cdn/v1/tree.json                  GET /cdn/v1/index.json（上游键+sha256）
 托管件摘要    GET /cdn/v1/hosted-index.json          GET /cdn/v1/upload-log.json（谁传的）

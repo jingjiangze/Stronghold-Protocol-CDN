@@ -27,10 +27,11 @@ test('rank.mjs 的 r2 探针路径是桶里真实存在的对象', () => {
   assert.match(probe, /^\/cdn\/v1\/probe\.bin$/, `r2 的探针必须是桶里的接口对象，实际是 ${probe}`);
 });
 
-test('rank.mjs 与 network-measure.mjs 给 r2 用同一个探针路径', () => {
+test('rank.mjs 与 network-measure.mjs 给 r2 用同一个探针路径与同一个 host', () => {
   const a = hardcodedR2(RANK_SRC);
   const b = hardcodedR2(NET_SRC);
   assert.equal(a.probe, b.probe, `两条链的 r2 探针不一致：rank=${a.probe} network=${b.probe}`);
+  assert.equal(a.host, b.host, `两条链的 r2 host 不一致：rank=${a.host} network=${b.host}（两条链必须指向 order 第一位的同一个门牌）`);
 });
 
 test('rank.mjs 的 r2 host 与 origins.json 的 order 第一位一致', () => {

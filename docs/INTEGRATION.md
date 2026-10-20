@@ -1,6 +1,6 @@
 # 接入说明
 
-CDN 基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu/`
+CDN 基址 `<CDN>` = `https://speedcdn.jiangjiangze.icu/`（规范门牌、order 第一位；同桶 `weishucdn.jiangjiangze.icu` 亦可；实际最优先门牌以 `origins.json` 的 `order` 为准）
 
 素材本身是**上游清单里的同一批文件**，只是换了个更快的边缘、并且完整（逐文件校验过）。所以接入方式都很轻。
 
@@ -127,7 +127,7 @@ const ops = await (await fetch(`${CDN}/docs/research/03-operators.json`)).json()
 
 ### 6.4 当前托管在这里的 mod 产物
 
-基址 `<CDN>` = `https://weishucdn.jiangjiangze.icu`（第二入口 `https://weishucdn2.jiangjiangze.icu`，同桶、响应头逐字一致；**`downcdn.jiangjiangze.icu` 是门户站点，任何子路径都回 `200 text/html`，不要拿它验字节**）。
+基址 `<CDN>` = `https://speedcdn.jiangjiangze.icu`（规范门牌、order 第一位；同桶 `https://weishucdn.jiangjiangze.icu` 亦可；`weishucdn2` 即 r2-alt 已于 2026-10-20 删域、retired，不再可用；**`downcdn.jiangjiangze.icu` 是门户站点，任何子路径都回 `200 text/html`，不要拿它验字节**）。
 
 | 对象 | 用途 |
 |---|---|

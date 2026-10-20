@@ -106,7 +106,7 @@ index.json (12,583)  ⊂  tree.json (20,130)
 | **ms-edge** | cdn | **28/30**（同 ms-dataset） | 315 ms | 2.2 s | full | ✅ 见 3.2 |
 | **pages** | pages | **30/30**（字节全对） | **7.0 s** | **93.1 s** | （pages 无 coverage 字段） | ⚠️ 慢，不缺 |
 | **gitcdn-own** | git | **17/30**（13 条超时） | **10.6 s** | **30.0 s** | full | ⚠️ 见 3.3 |
-| **speedcdn** | （未注册） | 与 r2 字节全同 | — | — | — | 见第五节 |
+| **speedcdn** | r2 | 与 r2 字节全同 | — | — | — | 见第五节（2026-10-13 已登记，order 第一位） |
 
 ### 3.1 唯一真正的缺口：`docs/`
 
@@ -194,7 +194,7 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 | 2 | **`ms-dataset` / `ms-edge` 声明 `full`，实测曾 26/30** | 缺 2 个 `docs` + **整类 `assets/local/`**（1,611 文件，从未进数据集） | 客户端选源曾导向整类 404 的源；2026-10-13 已补传 local 并恢复 |
 | 3 | **四个 git/cdn 源都缺 `docs/`**（声明 full 者亦含） | `docs/` 从未进 `assets-raw` 分支 | `docs/` 只能走 r2 / r2-alt / pages |
 | 4 | **`src/rank.mjs:28` 把 r2 写成 `coverage:'full'`，而 `mirrors.json` 里 r2 没有 coverage 字段** | 代码 vs 已发布清单 | 两份口径打架；线上 `rank.json` 里 r2 确实是 `full`，r2-alt 是空 |
-| 5 | **speedcdn 已可用但未登记** | 见第五节 | 客户端不会自动挑它 |
+| 5 | ~~speedcdn 已可用但未登记~~（2026-10-13 已登记进 `origins.json` `extraOrigins`，并提为 `order` 第一位） | 见第五节 | 客户端自动挑它；与 r2 同桶同字节 |
 
 第 4 条：`rank.mjs` 是**发布到线上 `rank.json` 的生成器**，它硬编码 r2 为 `full`，
 而 `mirrors.json` 的 r2 条目没有 `coverage`（r2-alt 同样没有）。实测证明 r2/r2-alt **确实是 full**，
@@ -204,9 +204,9 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 
 ## 五、speedcdn：已登记为发布源（2026-10-13 收口）
 
-**结论：dns/http 层面完全可用，2026-10-13 已登记进 `origins.json`。**
+**结论：dns/http 层面完全可用，2026-10-13 已登记进 `origins.json`，并提为 `order` 第一位。**
 
-- **可用**：`speedcdn.jiangjiangze.icu` 与 `weishucdn2` 解析到同一个 IP
+- **可用**：`speedcdn.jiangjiangze.icu` 与 `weishucdn` 解析到同一个 IP
   （`2606:4700:3035::6815:5782`）。
 - **同桶同字节**：7 个文件逐个比对 sha256 全部一致（含 `index.json` 1,770,937 字节）：
 
@@ -223,9 +223,11 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 - **2026-10-13 已登记**：`origins.json` 的 `extraOrigins` 新增 `speedcdn`（kind:r2、root 指向 speedcdn.jiangjiangze.icu），
   `order` 末位追加 `speedcdn`。重发 `mirrors.json` 后，它会进入 `flat[]`，客户端与站点测速都能看到它；
   `rank.json` 也会为它排名（与 r2 同桶，实测并列）。**它不是 docker 中转 CDN**，就是同一个桶的第三个门牌。
+- **2026-10-19 变动**：`speedcdn` 提为 `order` 第一位（最优先）。`r2-alt`（weishucdn2）于 2026-10-20 删域，
+  现只返回 Cloudflare 的 639 B 占位外壳，已从 `order` 摘除并登记 `retired`，不再作为可用门牌。
 
 > **此前状态（已更正）**：域名早已生效但从未进源清单，客户端不会自动挑它、`rank.json` 也不会为它排名。
-> 2026-10-13 补登后，三个 R2 入口（weishucdn / weishucdn2 / speedcdn）在清单里并列，客户端按实测任选其一（**2026-10-14 口径：speedcdn 为规范门牌**）。
+> 2026-10-13 补登后，两个可用 R2 入口（weishucdn / speedcdn）在清单里并列，客户端按实测任选其一（**2026-10-14 口径：speedcdn 为规范门牌**）。weishucdn2（r2-alt）曾并列，2026-10-20 删域后已下线与 retired。
 
 ---
 
@@ -235,28 +237,25 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
 
 ### 6.1 数据集 `Stronghold-Protocol-Assets` —— 🔒 2026-10-18 起转私有；所有者会话仍可用，公开字节走 speedcdn
 
-> **2026-10-18 变更**：数据集已按用户指令转为私有（`Visibility: 1`），描述同步更新。
->
-> **可用性实测（2026-10-19 复核）**：
->
+> **2026-10-18 变更**：数据集已转为私有（`Visibility: 1`），描述同步更新。
+
+> **可用性（2026-10-19 复核）**：
 > | 通道 | 结果 |
 > |---|---|
 > | 匿名 `resolve` / `api/repo` | **404** `不存在的数据集` |
 > | 匿名 `repo/tree` | **403** `无权访问该数据集` |
 > | 所有者会话（token 换 cookie 后）`resolve` / `api/repo` | **200**，`char_003_kalts.png` = 56,617 字节真 PNG |
 > | 所有者会话 `repo/tree` | **200** |
-> | 公开分发（speedcdn / weishucdn / weishucdn2） | **200**，同路径同 56,617 字节 |
+> | 公开分发（speedcdn / weishucdn） | **200**，同路径同 56,617 字节 |
 >
-> 结论：**数据集对所有者与同步链仍然可用**，只是不再作为匿名可取的公开镜像 —— 所以它已从
-> `origins.json` 的 `order` 里移出，并以 `enabled:false` **保留在候选列表中**（不是 retired）：CDN 的服务端链路仍在调用它，玩家侧统一走 speedcdn（同一份对象、同字节）。
-> 下面这一节保留作历史记录，**其中「无鉴权直取字节」现在只对所有者会话成立**。
-
-- 页面 `modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets` → **200**（转私有前）
-- API `Visibility: 5`（公开）、`Downloads: 1,316`（转私有前；现为 `Visibility: 1`）
-- **无鉴权直取字节**：200，`char_1016_agoat2.png` = 65,270 字节（转私有前）
-- **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
-  = r2 `index.json` 里记录的值 ✅
-- 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`
+> 结论：数据集对所有者与同步链仍然可用，只是不再作为匿名可取的公开镜像——所以它已从 `origins.json` 的 `order` 里移出，并以 `enabled:false` **保留在候选列表中**（不是 retired）：CDN 的服务端链路仍在调用它，玩家侧统一走 speedcdn（同一份对象、同字节）。下面这一节保留作历史记录，**其中「无鉴权直取字节」现在只对所有者会话成立**。
+>
+> - 页面 `modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets` → **200**（转私有前）
+> - API `Visibility: 5`（公开）、`Downloads: 1,316`（转私有前；现为 `Visibility: 1`）
+> - **无鉴权直取字节**：200，`char_1016_agoat2.png` = 65,270 字节（转私有前）
+> - **字节真实性核过**：sha256 = `77f17e188890a775b16769f63f1423f6b2b0c2df745c5bd04e9eec552ef922d3`
+>   = r2 `index.json` 里记录的值 ✅
+> - 顶层结构：`releases/v1-trial/assets/`、`state/`、`.gitattributes`、`dataset_infos.json`、`README.md`
 - **实测缺口（2026-10-13 更正并已修复）**：曾缺 2 个 `docs/` + **整棵 `assets/local/`（1,611 个文件，从未进数据集）**（见 3.2）。
   **是整类缺口，不是零星缺失**；当日已用 git-lfs 补传（`aef2493c..cf52aabb`）并恢复选源。现仅缺 2 个 `docs/`（`docs/` 从未进 `assets-raw`）。
 
@@ -273,7 +272,7 @@ ms-dataset / ms-edge：额外还缺 assets/local/emoticon/basic/pic_cooperate_ba
   | 请求 | 302 目标 |
   |---|---|
   | 默认 | `modelscope.cn/datasets/…/v1-trial/assets/…`（数据集） |
-  | `?sp_source=r2` | `weishucdn.jiangjiangze.icu/assets/…` |
+  | `?sp_source=r2` | `speedcdn.jiangjiangze.icu/assets/…` |
   | `?sp_source=openi` | `openi.pcl.ac.cn/…/assets-raw/assets/…` |
 
 - **不带 UA / 用 SDK token 风格请求** → 403，返回
@@ -338,7 +337,7 @@ node ms-ds-verify.mjs         # 数据集字节 vs index.json sha256
 | 声明 vs 实测 | 每个源的 `coverage` 声明 == 30 探针实测 | ⚠️ 4 处不符：gitcdn-own（超时） / ms-dataset / ms-edge / 四个源共缺 `docs/` |
 | 代码 vs 发布清单 | `rank.mjs` 的 coverage == `mirrors.json` 的 | ⚠️ r2 一处写法不一致（实测都是 full） |
 | 域名可用性 | 接口+素材均 200 | ✅ PASS（r2 / r2-alt / speedcdn / pages） |
-| 已注册性 | 已用域名是否在 `origins.json` 登记 | ❌ FAIL：speedcdn 未登记 |
+| 已注册性 | 已用域名是否在 `origins.json` 登记 | ✅ PASS：speedcdn 已登记（2026-10-13，order 第一位），r2-alt（weishucdn2）已 retired |
 
 ### 7.4 建议的修复顺序（按风险从高到低）
 
@@ -348,7 +347,7 @@ node ms-ds-verify.mjs         # 数据集字节 vs index.json sha256
 3. **gitcdn-own**：中位 10.6 s / p90 30 s，不适合做运行时主源；
    要么修回源链路，要么在文档写明「仅作兜底」。
 4. **ms-dataset / ms-edge**：补那 2 个 `local` 文件，或在 note 里点名列名。
-5. **把 speedcdn 登记进 `origins.json`**（或明确决定不登记，并在文档写明它是别名）。
+5. ~~把 speedcdn 登记进 `origins.json`~~（2026-10-13 已完成：登记为 `extraOrigins` 并提为 `order` 第一位）。
 6. **修正文档里「`docs` / `fonts` 只在 R2/Pages」** —— `fonts` 那半句已被实测推翻（git 源也给）。
 7. **ModelScope 部署仓**：提交那 24 行 README，并修正 404 的公告源地址。
 

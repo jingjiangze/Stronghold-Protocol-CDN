@@ -616,18 +616,18 @@ curl "<b>https://speedcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       <span class="section-status">基址 <span data-base>https://speedcdn.jiangjiangze.icu</span></span>
     </div>
     <div class="notice">
-      <span><b>接口域名（2026-10-14 口径：本桶的规范门牌是 speedcdn）：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>
-      —— 同一批接口文件另有两个等价入口 <b>https://weishucdn.jiangjiangze.icu</b> 与
-      <b>https://weishucdn2.jiangjiangze.icu</b>：三者指向<b>同一个桶、同一份字节</b>，实测
+      <span><b>接口域名（2026-10-19 口径：本桶的规范门牌、order 第一位是 speedcdn）：<span data-base>https://speedcdn.jiangjiangze.icu</span></b>
+      —— 同一批接口文件另有等价入口 <b>https://weishucdn.jiangjiangze.icu</b>（同桶同字节，仍可用）。
+      <code class="inline">weishucdn2</code>（r2-alt）已于 2026-10-20 删域，仅返 Cloudflare 的 639 B 占位外壳，已登记 <code class="inline">retired</code>，不再作为接口门牌。实测
       <code class="inline">/cdn/v1/api.json</code> sha256 完全相同；<code class="inline">mirrors.json</code> /
       <code class="inline">index.json</code> / <code class="inline">tree.json</code> /
       <code class="inline">data/assets.json</code> 均 200。
       上面「来源」表里的其它主机名是<b>素材镜像</b>，不是第二个接口——它们只镜像素材树，
       <b>没有</b> <code class="inline">/cdn/v1/</code> 这套接口文件（实测：Pages 源对该路径 404、git 源 502）。
-      所以：<b>接口从这三个域名里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
+      所以：<b>接口从 speedcdn / weishucdn 里任选一个取</b>，素材再从各镜像里挑最快的那个（下载页已按实测自动选）。
       <br />⚠️ 机器可读的那份权威声明是 <code class="inline">/cdn/v1/api.json</code> 的
-      <code class="inline">base</code> 字段（由接口重发生成，迁移期可能仍读到旧门牌 weishucdn / weishucdn2
-      —— 三个门牌同桶同字节）—— 以它为准，本页文字不另立权威。</span>
+      <code class="inline">base</code> 字段（由接口重发生成，迁移期可能仍读到旧门牌 weishucdn
+      —— 同桶同字节）—— 以它为准，本页文字不另立权威。</span>
     </div>
     <div class="table-wrap">
       <table>

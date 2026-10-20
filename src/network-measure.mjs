@@ -59,7 +59,7 @@ const headers = { 'content-type': 'application/json', ...(TOKEN ? { authorizatio
 function targets(existingHosts) {
   const parked = readDisabledOrigins(ROOT);
   const rows = [
-    { id: 'r2', host: 'weishucdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin' },
+    { id: 'r2', host: 'speedcdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin' },
     ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, host: hostOf(o.root), probe: absProbe(o) })),
     ...readGitOrigins(ROOT).map((o) => ({ id: o.id, host: hostOf(o.root), probe: absProbe(o) })),
   ].filter((r) => r.host && r.probe && !parked.has(r.id));

@@ -52,7 +52,7 @@ jobs:
       - name: snapshot
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
+        run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
 
       # This zone's /js/* Cache Rule ignores the query string, so ?v= cannot bust it. Rename the
       # files to carry their content hash instead.
