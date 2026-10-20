@@ -1,0 +1,90 @@
+name: pack-full
+
+# 把一个素材 release 里的分卷（assets-*.zip / fonts-*.zip）合成**一个整包**，
+# 单独发到 pack-<tag> 这个 release，供玩家「一次下载 → 游戏内『导入素材包』」。
+#
+# 为什么需要它：分卷是为上传和断点续传切的，玩家侧一次导入 22 个文件不现实；
+# 客户端 public/js/assetPack.js 的 zip 读取器是**按 slice 流式**读的（整包 700 MB 不进内存），
+# 单文件整包是它设计里支持的形状。
+#
+# 手工触发：Actions → pack-full → Run workflow（tag 默认取最新一档素材 release）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '素材 release tag（形如 assets-v0.3.1）'
+        required: true
+        default: 'assets-v0.3.1'
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pack-full-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  pack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Download the split parts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p parts
+          gh release download "${{ inputs.tag }}" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'assets-*.zip' --pattern 'fonts-*.zip' --dir parts
+          ls -la parts | head -30
+          du -sh parts
+
+      - name: Unpack into one tree
+        run: |
+          set -euo pipefail
+          mkdir -p pack
+          for z in parts/*.zip; do
+            echo "unzip $z"
+            unzip -q -o "$z" -d pack
+          done
+          find pack -name '__MACOSX' -prune -exec rm -rf {} + 2>/dev/null || true
+          du -sh pack
+          # 闸门：整棵树里必须同时有 assets/ 与 fonts/，且文件数过万 —— 分卷漏一个会在这里现形
+          test -d pack/assets
+          test -d pack/fonts
+          n=$(find pack -type f | wc -l)
+          echo "files=$n"
+          test "$n" -gt 10000
+
+      - name: Zip the whole tree
+        run: |
+          set -euo pipefail
+          out="stronghold-assets-${{ inputs.tag }}-full.zip"
+          ( cd pack && zip -q -9 -r "../$out" . )
+          ls -l "$out"
+          # zip 完整性 + 条目数双关
+          unzip -t "$out" > /dev/null
+          entries=$(unzip -Z1 "$out" | grep -vc '/$')
+          echo "entries=$entries"
+          test "$entries" -gt 10000
+
+      - name: Publish to pack-<tag>
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          tag="pack-${{ inputs.tag }}"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "素材整包 ${{ inputs.tag }}" \
+              --notes "由 \`${{ inputs.tag }}\` 的分卷合成。下载这个 zip，在游戏首页 →『导入素材包』里选中它即可离线加载全部素材。"
+          fi
+          gh release upload "$tag" stronghold-assets-*.zip --repo "$GITHUB_REPOSITORY" --clobber
+          gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets \
+            --jq '.assets[] | "\(.name)\t\(.size)"'
