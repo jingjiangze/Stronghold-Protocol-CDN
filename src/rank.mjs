@@ -25,7 +25,12 @@ const excluded = new Set((net.excluded || []).map((e) => e.id));
 /** 每个启用源的候选项：来自 origins.json（r2 + extras + git origins），按 order 排好。 */
 function candidates() {
   const list = [
-    { id: 'r2', kind: 'r2', host: 'weishucdn.jiangjiangze.icu', probe: '/probe/cdn-probe.bin', coverage: 'full' },
+    // 2026-10-19 修两处：① probe 用 `/cdn/v1/probe.bin`（桶里真实存在的对象，262,144 B；
+    // 原来写的 `/probe/cdn-probe.bin` 只活在 git 仓库里，R2 桶上 404 —— liveProbe 每次都在
+    // 量一个必然失败的路径，实时测试等于装饰）；② host 跟 origins.json 的 order 第一位
+    // 保持一致（speedcdn，2026-10-19 用户指令），否则 rank 表里 r2 与 speedcdn 两个同源
+    // 条目会各报一个不同门牌，看起来像两个源在竞争排名。
+    { id: 'r2', kind: 'r2', host: 'speedcdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin', coverage: 'full' },
     ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
     ...readGitOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
   ];
