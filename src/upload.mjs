@@ -24,6 +24,9 @@ export const UPLOAD_PREFIXES = ['assets/', 'fonts/', 'packs/'];
 export const UPLOAD_EXTENSIONS = new Set([
   'png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'json', 'jsonl', 'txt',
   'mp3', 'ogg', 'wav', 'm4a',
+  // 2026-10-20：mp4 是二进制媒体容器，与 mp3/m4a 同一安全级别（不是 html/svg 那种可执行内容位）。
+  // 它只扩大「暂存区收不收」；能不能直发由 ASSET_EXTENSIONS 与落点共同决定。
+  'mp4',
   'woff', 'woff2', 'ttf', 'otf',
   'zip', 'bin', 'data', 'xml',
 ]);
@@ -39,6 +42,9 @@ export const ASSET_EXTENSIONS = new Set([
   'png', 'jpg', 'jpeg', 'webp', 'gif',
   'atlas', 'skel', 'obj', 'bin', 'json',
   'mp3',
+  // 2026-10-20 用户指令：站点上传通道支持 mp4。它和 mp3 同属「按 URL 直接取字节的媒体素材」，
+  // 落到 assets/** 即直发；不在素材树里的落点仍然落 hold（判据是格式 × 落点两条）。
+  'mp4',
   'woff2', 'otf', 'ttf',
 ]);
 

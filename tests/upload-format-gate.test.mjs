@@ -57,6 +57,9 @@ test('format and landing place together decide the tier', () => {
     'assets/local/map/common/materials.json',
     'assets/local/scene/act1autochess_m01/scene.bin',
     'assets/local/map/fx/Start_back.obj',
+    // 2026-10-20：上传通道开了 mp4（用户指令）。它与 mp3 同属「按 URL 直接取字节的媒体素材」，
+    // 所以素材树内必须直发；下面那组用同一扩展名但落在树外来反证「格式 × 落点」这条判据没被放宽。
+    'assets/audio/voice/mod_intro.mp4',
     'fonts/noto-sans-sc.ttf',
   ]) {
     assert.equal(formatVerdict(key).tier, 'asset', `${key} is art the client loads by URL`);
@@ -77,6 +80,9 @@ test('format and landing place together decide the tier', () => {
     'assets/local/x.txt',
     'packs/mod-assets/README.txt',
     'assets/local/x.ogg',
+    // 反证：mp4 只在素材树里直发。同一个扩展名落到 packs/ 仍然要等人工放行 ——
+    // 否则「开了 mp4」会被误读成「任何位置都能发视频」。
+    'packs/mod-assets/intro.mp4',
   ]) {
     assert.equal(formatVerdict(key).tier, 'hold', `${key} is not a static asset format`);
   }

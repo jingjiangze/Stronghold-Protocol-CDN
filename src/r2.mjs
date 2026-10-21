@@ -189,6 +189,9 @@ export const MIME = {
   ogg: 'audio/ogg',
   wav: 'audio/wav',
   m4a: 'audio/mp4',
+  // 2026-10-20：上传通道开了 mp4。这里必须点名，否则 mimeFor 回落
+  // application/octet-stream —— 浏览器拿到不会当视频播，<video> 直接报不支持。
+  mp4: 'video/mp4',
   woff: 'font/woff',
   woff2: 'font/woff2',
   ttf: 'font/ttf',

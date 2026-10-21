@@ -10,7 +10,9 @@
 必须自带   size（字节）与 sha256（64 位十六进制）——发布机会逐字节核对，不符就不上线
 禁止       覆盖已存在的键、删除键、写 cdn/ data/ apk/ site/ scout/ 这些契约与其它产品线的键
            （.html/.svg/.js 一律拒：这个域名对全世界发 ACAO *，放可执行内容等于在自己的域上开 XSS 位）
-扩展名     能直发对外键的静态素材：png jpg jpeg webp gif atlas skel obj bin json mp3 woff2 otf ttf
+扩展名     能直发对外键的静态素材：png jpg jpeg webp gif atlas skel obj bin json mp3 mp4 woff2 otf ttf
+           （mp4 自 2026-10-20 起支持，服务端按 video/mp4 发；浏览器上传通道单文件仍受 64 MiB 限制，
+           更大的视频走 agent 通道直传，上限 5 GiB）
            且必须落在 assets/ 或 fonts/ 之下 —— 判据是「格式 × 落点」两条一起，只看扩展名不够：
            .json/.bin/.obj 两边都是（assets/local/map/common/materials.json 是素材，
            packs/mod-assets/index.json 是清单）

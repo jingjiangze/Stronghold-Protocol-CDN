@@ -38,6 +38,8 @@ test('only the asset prefixes are writable, and only with an allowed extension',
   assert.equal(validateKey('/assets/char/avatar/mod_1.png').ok, true, '前导斜杠应当被规范化掉');
   assert.equal(validateKey('fonts/mod.ttf').ok, true);
   assert.equal(validateKey('packs/mod-set-1.zip').ok, true);
+  // 2026-10-20：mp4 进白名单（用户指令：站点上传支持 mp4）。这条锁住「别哪天又被收回去」。
+  assert.equal(validateKey('assets/audio/voice/mod_intro.mp4').ok, true, 'mp4 必须被接受');
 
   // 契约与其它产品线的键，从这里写不进去。
   for (const key of ['cdn/v1/index.json', 'data/assets.json', 'apk/stronghold-v0.2.2.apk', 'site/manifest.json', 'scout/state.json']) {

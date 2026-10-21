@@ -109,7 +109,7 @@
    * status 接口回的是 claim 的 state，不含 tier，而待审的字节在页面上必须看得见 —— 看不见就等于
    * 没人会去放行。万一两边判得不一致，放行端点自己会说「这一份是静态素材，不需要放行」，不会误上线。
    */
-  const ASSET_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'bin', 'json', 'mp3', 'woff2', 'otf', 'ttf']);
+  const ASSET_EXT = new Set(['png', 'jpg', 'jpeg', 'webp', 'gif', 'atlas', 'skel', 'obj', 'bin', 'json', 'mp3', 'mp4', 'woff2', 'otf', 'ttf']);
   const awaitingAudit = (key) => {
     const k = String(key || '').replace(/^\/+/, '');
     const ext = (k.split('.').pop() || '').toLowerCase();

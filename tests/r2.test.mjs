@@ -40,6 +40,8 @@ test('credentials come from the environment, and a missing one is named', () => 
 test('mime types cover the tree and default to octet-stream', () => {
   assert.equal(mimeFor('assets/a.png'), 'image/png');
   assert.equal(mimeFor('assets/a.mp3'), 'audio/mpeg');
+  // 2026-10-20：mp4 必须在表里点名。缺了会回落 octet-stream —— 字节照发，但浏览器不把它当视频播。
+  assert.equal(mimeFor('assets/a.mp4'), 'video/mp4');
   assert.equal(mimeFor('assets/a.skel'), 'application/octet-stream');
   assert.equal(mimeFor('assets/no-extension'), 'application/octet-stream');
 });
