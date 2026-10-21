@@ -69317,6 +69317,20 @@
           1453
         ]
       ]
+    },
+    {
+      "id": "crisis-intro",
+      "what": "危机开场动画 1280x720 h264/aac 36.6s",
+      "addedAt": "2026-10-21",
+      "source": "admin upload（只增不删；撤销请改本文件走 review）",
+      "files": 1,
+      "bytes": 18804348,
+      "keys": [
+        [
+          "assets/videos/crisis-intro.mp4",
+          18804348
+        ]
+      ]
     }
   ],
   "_prune_note": "hosted.json is read by the prune step so deliberately-hosted keys are never deleted. Today those keys are also outside the published cdn/v1/index.json, which is what prune diffs against, so they would survive regardless; the list matters once hosted keys are published."
