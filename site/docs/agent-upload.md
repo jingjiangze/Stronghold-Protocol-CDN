@@ -22,9 +22,16 @@
            放行之后仍然由发布轮逐字节核对 sha256 才落对外键
 说明       what 至少 10 个字符（它会进 hosted.json 当这一组的说明）——短于 10 字当场 400。
            这不是排版洁癖：那条下限同时是发布轮与站点部署的测试闸门，短了会把整条上线通道堵红
+最后一步   **传完不会自动上线**（2026-10-15 起 commit/put 的 dispatched 恒为 false）。
+           必须由上传方自己再做一步，三选一：
+             · 只要 R2 对外键：     POST /api/cdn/upload/kick
+             · 还要推 git 镜像：    POST /api/cdn/upload/sync-mirrors
+             · 收到 tier=hold 的：  先 POST /api/cdn/upload/release {id}，再 kick
+           什么都不做的话，字节只停在暂存区，等 promote-uploads 的 cron 兜底
+           （每日 4 窗 01/07/13/19 UTC，最坏约 6 小时）。
 ```
 
-> **2026-10-15 行为变更（重要）**：`commit` / `put` 成功后**不再自动触发发布轮**。返回里 `dispatched` 固定为 `false`，并提示「已收进暂存区（尚未上线）」。要让素材真正上线、进镜像，需显式调用发布（见「两种调用方式」里的 `kick` / 新增的 `sync-mirrors`，或等 30 分钟定时兜底）。
+> **2026-10-15 行为变更（重要）**：`commit` / `put` 成功后**不再自动触发发布轮**。返回里 `dispatched` 固定为 `false`，并提示「已收进暂存区（尚未上线）」。要让素材真正上线、进镜像，需显式调用发布（见「两种调用方式」里的 `kick` / 新增的 `sync-mirrors`，或等 promote-uploads 的 cron 兜底（每日 4 窗 01/07/13/19 UTC，最坏约 6 小时））。
 
 ## 目录怎么归类（照上游既有结构放，不要新造）
 
@@ -117,7 +124,7 @@ POST /api/cdn/upload/kick
 
 - `POST /api/cdn/upload/kick` —— 只跑发布轮（暂存 → 对外键 + hosted.json），**不推 git 镜像**；
 - `POST /api/cdn/upload/sync-mirrors` —— 先跑发布轮，再跑 `git-art-sync`（见下）；
-- `.github/workflows/promote-uploads.yml` 的 **30 分钟 cron 兜底** —— 处理暂存积压，平时主路径。
+- `.github/workflows/promote-uploads.yml` 的 **cron 兜底（每日 4 窗 01/07/13/19 UTC，最坏约 6 小时）** —— 处理暂存积压，平时主路径。
 
 发布轮做四件事——流式重算 sha256 与声明比对 → `CopyObject` 到对外键并带 `Cache-Control: public, max-age=31536000, immutable` 与 `x-amz-meta-sha256` → 清暂存 → **把 `hosted.json` 的登记提交进 git** 并刷新 `cdn/v1/tree.json`、`cdn/v1/hosted-index.json`、`cdn/v1/upload-log.json`。
 
@@ -140,7 +147,7 @@ POST /api/cdn/upload/kick
 | 阶段 | 动作 | 谁触发 | 结果 |
 |---|---|---|---|
 | 1 | 上传字节进暂存区 | `commit` / `put` / 直传 `put` | R2 `cdn/incoming/<id>/`（返回 `dispatched:false`） |
-| 2 | 发布轮（暂存 → 对外键 + hosted.json） | `kick` / `sync-mirrors` / 30min cron | R2 对外键 + `hosted.json` + tree/index/log |
+| 2 | 发布轮（暂存 → 对外键 + hosted.json） | `kick` / `sync-mirrors` / cron（4 窗/日） | R2 对外键 + `hosted.json` + tree/index/log |
 | 3 | git 同步（R2 → `assets-raw`） | `sync-mirrors` 第二步 / `git-art-sync` cron | 字节进 `assets-raw` 分支 |
 | 4 | 镜像跟随 | git 链收尾步自动 | openi（git push）、魔搭数据集（dataset-tree）、ghfast / jsDelivr / gitcdn（拉取式自动跟随） |
 
