@@ -29,8 +29,7 @@
       "root": "https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial",
       "probe": "/assets/char/avatar/char_003_kalts.png",
       "coverage": "full",
-      "enabled": false,
-      "note": "自建 ModelScope 数据集镜像。**2026-10-18 起数据集转为私有**（Visibility=1）：匿名 resolve 404 / repo/tree 403，所以它不能再给匿名客户端当镜像——本条以 `enabled:false` 保留在接口里（站点能显示它并说明原因），并已移出 order。**它没有停用**：CDN 的服务端链路仍照常调用它（魔搭平台内置的私有鉴权；所有者会话实测 resolve 200 / 56,617 字节真 PNG），公开字节由 R2 三个门牌（weishucdn / weishucdn2 / speedcdn）承接，同桶同字节。"
+      "note": "自建 ModelScope 数据集镜像。**2026-10-22 起重新启用并排第一**：数据集虽私有，但容器侧用 MODELSCOPE_API_TOKEN 换会话后可读（实测 resolve 302 → cdn-lfs 200）。它是 rank 的第一位，也是 sources.json 的首跳。"
     }
   ],
   "_git_comment": "Origins that mount files out of THIS git repository through a public mirror chain. The interface files live on `main`; the 14,741-file / 2.14 GiB art tree (incl. 2,476 skins) lives on the orphan branch `assets-raw`, committed 2026-10-09 specifically so git-mount CDNs can serve it. Coverage is therefore FULL for every entry here: git-mount sources were only ever 'partial' because the asset tree had not been committed, not because the mirrors could not carry it. Each entry still carries its own probe path. Skins are served from this git-mount layer (assets-raw); R2/Pages also carries them now because the upstream release zip bundles assets/skins/** (verified byte-identical on weishucdn vs assets-raw). Statically is not listed: it truncated a 262,144-byte probe to 16,384 / 32,768 / 0 bytes across three attempts and 403'd 5/5 on a real 854 KB asset.",
@@ -92,16 +91,17 @@
     "r2-alt"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
-  "_order_comment": "发布顺序（2026-10-19 用户指令：speedcdn 最优先；其后 ms-edge、r2）。ms-dataset 因数据集转私有而移出 order——匿名客户端取不到（404/403），但服务端仍在用它，所以是 `enabled:false` 而不是 retired。r2-alt（weishucdn2）2026-10-20 已删域移出。不能测速的选择器按此顺序取第一；能测速的（客户端探针）以此为打平次序。",
+  "_order_comment": "发布顺序（2026-10-22 用户指令：**数据集第一位**，其次其他镜像源，最后 r2）。rank.json 的排序主键就是这个 order，所以数据集会排 #1。",
   "order": [
+    "ms-dataset",
+    "ghfast-assets",
+    "gitcdn-own",
     "speedcdn",
-    "ms-edge",
     "r2"
   ],
   "disabled": [
     "jsdelivr",
     "jsdelivr-assets",
-    "openi",
-    "ms-dataset"
+    "openi"
   ]
 }
