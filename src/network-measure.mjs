@@ -59,7 +59,9 @@ const headers = { 'content-type': 'application/json', ...(TOKEN ? { authorizatio
 function targets(existingHosts) {
   const parked = readDisabledOrigins(ROOT);
   const rows = [
-    { id: 'r2', host: 'speedcdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin' },
+    // 2026-10-22：speedcdn 已改为 CF 302 → 数据集，不再是 R2 门牌；r2 的真实门牌是 weishucdn。
+    // 否则内地实测会把「数据集的速度」写成 r2-primary 的成绩，rank 的 R2 一栏从此不反映真实 R2。
+    { id: 'r2', host: 'weishucdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin' },
     ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, host: hostOf(o.root), probe: absProbe(o) })),
     ...readGitOrigins(ROOT).map((o) => ({ id: o.id, host: hostOf(o.root), probe: absProbe(o) })),
   ].filter((r) => r.host && r.probe && !parked.has(r.id));

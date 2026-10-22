@@ -277,6 +277,10 @@
     {
       "id": "raw.githubusercontent",
       "reason": "三网 HTTP 成功率均为 3/5（40% 失败），时延数据是污染下的假象。"
+    },
+    {
+      "id": "r2",
+      "reason": "2026-10-22 起 R2 订阅在账户级停用：weishucdn 全路径 403（仅边缘缓存命中能出旧字节）。按用户指令「兜底最后还是 R2、额度恢复即用」，本条目只把 r2 从 rank 头部降级（rankQualified 会丢弃 excluded），registry 里的 order 尾部仍保留 r2 作为静态兜底。R2 额度恢复后删掉这条即可回到正常排名。"
     }
   ],
   "defaultOrderHint": [
