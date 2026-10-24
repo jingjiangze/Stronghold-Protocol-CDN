@@ -20,7 +20,10 @@ const write = process.argv.includes('--write');
 
 const net = JSON.parse(fs.readFileSync(path.join(ROOT, 'network.json'), 'utf8'));
 const byHost = new Map((net.sources || []).map((s) => [s.host, s]));
-const excluded = new Set((net.excluded || []).map((e) => e.id));
+// network.json 的测量表 id 与 rank 候选 id 不总是同名（r2-primary 就是 r2 的门牌条目，
+// 2026-10-22 R2 停用后它被 excluded，但候选仍叫 r2）——不做别名就会「排除了却仍进头部」。
+const EXCLUDED_ALIAS = { 'r2-primary': 'r2' };
+const excluded = new Set((net.excluded || []).map((e) => EXCLUDED_ALIAS[e.id] || e.id));
 
 /** 每个启用源的候选项：来自 origins.json（r2 + extras + git origins），按 order 排好。 */
 function candidates() {
