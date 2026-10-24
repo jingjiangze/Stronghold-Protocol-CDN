@@ -98,29 +98,8 @@ function sameContent(label, urlA, urlB) {
   console.log(`  ${ok ? 'PASS' : 'FAIL'} ${label}（sha ${a} vs ${b}）${ok ? '（首次不同=传播窗口，重试后一致）' : ''}`);
 }
 
-console.log('=== 1) 两个 CDN 域名的关键对象必须等价 ===');
-const objects = [
-  ['/cdn/v1/art.json', 'application/json', 10000],
-  ['/cdn/v1/mirrors.json', 'application/json', 10000],
-  ['/cdn/v1/index.json', 'application/json', 1000000],
-  ['/cdn/v1/tree.json', 'application/json', 100000],
-  ['/cdn/v1/pick.js', 'text/javascript', 2000],
-  // The contract itself is part of the interface, so it is swept like every other interface file.
-  ['/cdn/v1/api.json', 'application/json', 500],
-  ['/cdn/v1/hosted-index.json', 'application/json', 100],
-  ['/cdn/v1/upload-log.json', 'application/json', 100],
-  ['/cdn/v1/probe.bin', 'application/octet-stream', 262144],
-  ['/data/assets.json', 'application/json', 100000],
-  ['/data/local-assets.json', 'application/json', 100000],
-  ['/assets/char/avatar/char_1016_agoat2.png', 'image/png', 60000],
-  ['/fonts/bender-regular.otf', 'font/otf', 40000],
-  // The official docs ride the same tree now. `text/plain` is the assertion that matters: a
-  // `text/markdown` regression would still be a 200 but would download instead of render.
-  ['/docs/PLAYING.md', 'text/plain', 50000],
-  ['/docs/research/03-operators.json', 'application/json', 1000000],
-];
-// 2026-10-24 用户指令：weishucdn/speedcdn 两个 R2 域名已解绑，不再作门牌 ——
-// 原先的 A/C 双门牌扫描与 APK 清单核对整段移除（R2 仅保留为上传中转）。
+// 2026-10-24：R2 域名解绑后，原先的 A/C 双门牌等价性检查整段移除（objects 定义随之删除）。
+
 console.log('\n=== 3) 我清掉的旧 packs 档：GitHub 侧仍在（镜像链后备）===');
 const rel = getJson('https://api.github.com/repos/jingjiangze/Stronghold-Protocol-CDN/releases/tags/assets-v0.2.1');
 const assets = (rel && rel.assets) || [];
