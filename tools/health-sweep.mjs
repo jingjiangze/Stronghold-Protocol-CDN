@@ -119,40 +119,8 @@ const objects = [
   ['/docs/PLAYING.md', 'text/plain', 50000],
   ['/docs/research/03-operators.json', 'application/json', 1000000],
 ];
-const A = 'weishucdn.jiangjiangze.icu';
-// 2026-10-19 用户指令：speedcdn 是最优先门牌，健康扫描必须覆盖它 ——
-// 原来只测 A/B 两个门牌，最优先的那个反而是盲区。
-// 2026-10-20：weishucdn2（r2-alt）已删域，仅返 Cloudflare 的 639 B 占位外壳，不再作门牌，移除 B 门的扫描与比对。
-const C = 'speedcdn.jiangjiangze.icu';
-for (const [p, type, min] of objects) {
-  check(`${A.split('.')[0]}${p}`, `https://${A}${p}${cb()}`, { code: '200', type, min, acao: '*' });
-  check(`${C.split('.')[0]}${p}`, `https://${C}${p}${cb()}`, { code: '200', type, min, acao: '*' });
-}
-console.log('  —— 两域名逐对象比内容哈希（不是比长度）——');
-for (const [p] of objects) {
-  sameContent(`A/C ${p}`, `https://${A}${p}${cb()}`, `https://${C}${p}${cb()}`);
-}
-
-console.log('\n=== 2) APK 线：签名清单引用的每个按需素材包都必须在桶上 ===');
-const man = getJson(`https://weishucdn.jiangjiangze.icu/site/manifest.json${cb()}`);
-const packs = (man && man.art && man.art.packs) || [];
-console.log(`  site/manifest.json buildTag=${man && man.buildTag} art.version=${man && man.art && man.art.version} packs=${packs.length}`);
-let packFail = 0;
-for (const p of packs) {
-  const url = (p.urls || [])[0];
-  if (!url) continue;
-  const r = probe(url);
-  const ok = r.code === '200' && r.bytes === Number(p.size);
-  if (!ok) {
-    packFail++;
-    bad.push(`APK 包 ${p.id}: ${r.code} ${r.bytes}B / 声明 ${p.size}B`);
-  }
-}
-console.log(`  ${packFail ? 'FAIL' : 'PASS'} 逐个包核对：${packs.length - packFail}/${packs.length} 命中且大小与清单一致`);
-packFail ? (fail += 1) : (pass += 1);
-const apkJ = getJson(`https://weishucdn.jiangjiangze.icu/apk/latest.json${cb()}`);
-if (apkJ) check(`APK ${apkJ.tag}`, `${apkJ.apkUrl}${cb()}`, { code: '200', bytes: Number(apkJ.size) });
-
+// 2026-10-24 用户指令：weishucdn/speedcdn 两个 R2 域名已解绑，不再作门牌 ——
+// 原先的 A/C 双门牌扫描与 APK 清单核对整段移除（R2 仅保留为上传中转）。
 console.log('\n=== 3) 我清掉的旧 packs 档：GitHub 侧仍在（镜像链后备）===');
 const rel = getJson('https://api.github.com/repos/jingjiangze/Stronghold-Protocol-CDN/releases/tags/assets-v0.2.1');
 const assets = (rel && rel.assets) || [];
@@ -167,8 +135,6 @@ check('dl /api/latest', `https://dl.jiangjiangze.icu/api/latest${cb()}`, { code:
 check('dl /api/servers（无口令=提示语）', `https://dl.jiangjiangze.icu/api/servers${cb()}`, { code: '200', type: 'application/json', min: 20 }, 'GET');
 check('dl /servers.json', `https://dl.jiangjiangze.icu/servers.json${cb()}`, { code: '200', type: 'application/json', min: 1000 }, 'GET');
 check('dl /admin', 'https://dl.jiangjiangze.icu/admin', { code: '200', type: 'text/html' }, 'GET');
-check('R2 site/verified.json', `https://weishucdn.jiangjiangze.icu/site/verified.json${cb()}`, { code: '200', type: 'application/json', min: 1000 });
-check('R2 site/servers.json', `https://weishucdn.jiangjiangze.icu/site/servers.json${cb()}`, { code: '200', type: 'application/json', min: 1000 });
 
 console.log('\n=== 5) 文档站：加了 Functions 后静态面不能被劫持 ===');
 for (const [label, p] of [['首页', '/'], ['/admin', '/admin'], ['/bandwidth', '/bandwidth'], ['/mod（另一窗口的页）', '/mod']]) {

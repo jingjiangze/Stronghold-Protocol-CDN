@@ -31,7 +31,7 @@ function candidates() {
     // 2026-10-22：speedcdn 已改由 CF Redirect Rule 302 到数据集（R2 订阅停用后它不再指向 R2 桶）。
     // 因此 r2 候选的门牌必须是**真正的 R2 门** weishucdn；继续写 speedcdn 会把「数据集的 302 速度」
     // 记在 R2 名下 —— rank 表里 r2 和 speedcdn 两个条目会同时报 speedcdn 主机，实际一个是另一个的跳板。
-    { id: 'r2', kind: 'r2', host: 'weishucdn.jiangjiangze.icu', probe: '/cdn/v1/probe.bin', coverage: 'full' },
+    // 2026-10-24 用户指令：R2 域名已解绑、不再作访问源 ⇒ 移除该候选（R2 仅作上传中转）。
     ...readExtraOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
     ...readGitOrigins(ROOT).map((o) => ({ id: o.id, kind: o.kind, host: (() => { try { return new URL(o.root).host; } catch { return ''; } })(), probe: o.probe, coverage: o.coverage })),
   ];
