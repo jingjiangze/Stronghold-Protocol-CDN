@@ -281,6 +281,10 @@
     {
       "id": "r2-primary",
       "reason": "2026-10-22 起 R2 订阅在账户级停用：weishucdn 全路径 403（仅边缘缓存命中能出旧字节）。按用户指令「兜底最后还是 R2、额度恢复即用」，本条目只把 r2 从 rank 头部降级（rankQualified 会丢弃 excluded），registry 里的 order 尾部仍保留 r2 作为静态兜底。R2 额度恢复后删掉这条即可回到正常排名。"
+    },
+    {
+      "id": "gitcdn",
+      "reason": "2026-10-24 用户指令删除：该 Worker 单日 158,701 次请求，吃爆免费档 100k/天（Workers+Pages Functions 合并池），且 R2 停用期被回退链顶成事实主力。按「Worker 转发没必要，魔搭自带转发」裁决移出运行时候选；实测数据保留供追溯。"
     }
   ],
   "defaultOrderHint": [

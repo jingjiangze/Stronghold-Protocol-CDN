@@ -67,14 +67,6 @@
       "note": "ghfast 挂载素材树（assets-raw 分支）：MIME/ACAO/Range 206 已实测"
     },
     {
-      "id": "gitcdn-own",
-      "kind": "git",
-      "root": "https://gitcdn.jiangjiangze.icu",
-      "probe": "/probe/cdn-probe.bin",
-      "coverage": "full",
-      "note": "自有域中转（sp-git-mount-relay）：一个域名同时服务接口文件与素材树，按路径自动选分支；后端按 jsdelivr→ghfast 顺序回退"
-    },
-    {
       "id": "openi",
       "kind": "git",
       "root": "https://openi.pcl.ac.cn/jingjiangze/Stronghold-Protocol/raw/branch/assets-raw",
@@ -88,14 +80,14 @@
   "_retired_comment": "Retired origin ids. carryForwardOrigins restores any previously-published origin the current run does not produce, which is what keeps the Pages origin alive on runs without --pages -- but it also resurrects an origin that was deliberately removed from this file. Naming it here is how a removal sticks. r2-alt（weishucdn2）2026-10-20 已删掉 R2 自定义域：域名还在，但只返回 Cloudflare 的占位响应（639 B 外壳，/cdn/v1/index.json 与不存在的路径都返 200），不能当源用。",
   "retired": [
     "statically",
-    "r2-alt"
+    "r2-alt",
+    "gitcdn-own"
   ],
   "_disabled_comment": "Origin ids that stay PUBLISHED but must not be selected. `retired` removes an origin from the interface; `disabled` keeps it visible so the site can show it and say why, while marking `enabled:false` for every selector to honour. Listed here as well as on the entry itself, because the two branches of this repo read it differently: the multi-source branch reads this list, main reads the entry's own `enabled`. Writing both is what makes the parking stick regardless of which one publishes next. The two jsdelivr entries were parked on that branch after measurement (slowest of the git mounts, and it times out on real assets — see docs/audit/asset-slowness-root-cause.md); they are repeated here so a main-branch publish cannot quietly re-enable them.",
   "_order_comment": "发布顺序（2026-10-22 用户指令：**数据集第一位**，其次其他镜像源，最后 r2）。rank.json 的排序主键就是这个 order，所以数据集会排 #1。",
   "order": [
     "ms-dataset",
     "ghfast-assets",
-    "gitcdn-own",
     "speedcdn",
     "r2"
   ],
