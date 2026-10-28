@@ -1,0 +1,65 @@
+name: publish-interface
+
+# Rebuild the interface set from the published index and push it into the ModelScope dataset.
+#
+# R2 is upload staging only and has no public hostname, so `cdn/v1/*` written by `sync` was
+# unreachable — which is how the dataset ended up serving an index from one era and an art.json
+# from another (tree-refresh refused to publish over the mismatch). This is the missing publish
+# step: sync rebuilds the JSONs into R2, then they are mirrored into the dataset, which is what
+# the site seeds from.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: '只报告，不推送数据集'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# Same group as promote-uploads: both write the same bucket, and reading R2 while a promote is
+# copying objects is how you get a half-finished interface set.
+concurrency:
+  group: promote-uploads
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: rebuild the interface from the published index
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          SP_CDN_BASE: ${{ vars.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu' }}
+        run: |
+          set -euo pipefail
+          # --interface-only 不发上游包、不重哈希素材，只按已发布的 index 重算派生接口。
+          node src/sync.mjs --write --interface-only
+
+      - name: mirror cdn/v1/* into the dataset
+        env:
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          MODELSCOPE_URL: ${{ secrets.MODELSCOPE_DATASET_URL }}
+        run: |
+          set -euo pipefail
+          args=""
+          if [ "${{ inputs.dry }}" = "true" ]; then args="--dry-run"; fi
+          node tools/publish-interface-dataset.mjs $args
