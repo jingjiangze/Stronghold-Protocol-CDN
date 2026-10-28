@@ -35,6 +35,13 @@
   Content-Type: text/plain; charset=utf-8
   X-Robots-Tag: all
 
+# `/docs/` 本身不是文档，是站点外壳（Pages 交给 index.html）。上面那条按前缀把 text/plain 也套到了
+# 它身上，浏览器于是把整页当源码渲染。这两条精确路径的规则写在后面，把 HTML 入口纠正回来。
+/docs/
+  Content-Type: text/html; charset=utf-8
+/docs/index.html
+  Content-Type: text/html; charset=utf-8
+
 # Pages serves this at /bandwidth (it 308s /bandwidth.html there), so the rule must name both.
 /bandwidth.html
   Cache-Control: public, max-age=300, stale-while-revalidate=3600

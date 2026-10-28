@@ -119,7 +119,8 @@ export async function onRequestGet(context) {
     removals = [];
   }
 
-  const CDN_BASE = 'https://weishucdn.jiangjiangze.icu';
+  // 2026-10-28：R2 域名退役，状态里的可点链接改指站点自身（它现在自带 cdn/v1 与 data/ 副本）。
+  const CDN_BASE = 'https://downcdn.jiangjiangze.icu';
   const linkable = (key) => (key ? `${CDN_BASE}/${String(key).split('/').map(encodeURIComponent).join('/')}` : null);
   for (const item of items) item.url = linkable(item.key || item.stagingKey);
   for (const entry of log.items || []) entry.url = linkable(entry.key);

@@ -5,10 +5,10 @@
 // Only the interface hosts are ever contacted, and only over https: the same rule the tooling
 // applies server-side, kept here so a tampered mirrors.json cannot point the page at something else.
 
-const CDN = (document.body.dataset.cdnBase || '').replace(/\/+$/, '');
+const CDN = (document.body.dataset.cdnBase || '').replace(/\/+$/, '') || location.origin;
 const SNAPSHOT = './data/snapshot.json';
-// 2026-10-13：清单优先读同源（随 Pages 部署落进 ./cdn/v1/），取不到再回 CDN 基址（R2）。
-// 动机：R2 上这些 JSON 不缓存（DYNAMIC），每次访客都实打实读一次 R2；同源由 Pages 边缘直接服务。
+// 清单优先读同源（随 Pages 部署落进 ./cdn/v1/）。2026-10-28：R2 降级为上传暂存、它的域名已解绑，
+// 原来那句「取不到再回 CDN 基址（R2）」现在会打到 302→403 的死门牌上，所以 CDN 缺省改成本身源。
 const MANIFEST_BASE = (document.body.dataset.manifestBase || '').replace(/\/+$/, '');
 async function getManifest(path, timeoutMs = 8000) {
   if (MANIFEST_BASE) return getJson(`${MANIFEST_BASE}${path}`, timeoutMs);

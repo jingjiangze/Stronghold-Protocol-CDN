@@ -11,7 +11,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
-<body data-cdn-base="https://speedcdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu">
+<body data-cdn-base="https://downcdn.jiangjiangze.icu" data-site-base="https://downcdn.jiangjiangze.icu">
 
 <div class="topbar">
   <div class="container topbar-inner">
@@ -25,8 +25,8 @@
     <nav class="navigation">
       <a href="./">返回文档</a>
       <a href="./stage">暂存区（精简页）</a>
-      <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/tree.json" target="_blank" rel="noopener">全量文件树</a>
-      <a href="https://speedcdn.jiangjiangze.icu/cdn/v1/upload-log.json" target="_blank" rel="noopener">发布日志</a>
+      <a href="https://downcdn.jiangjiangze.icu/cdn/v1/tree.json" target="_blank" rel="noopener">全量文件树</a>
+      <a href="https://downcdn.jiangjiangze.icu/cdn/v1/upload-log.json" target="_blank" rel="noopener">发布日志</a>
     </nav>
     <div class="nav-feedback"><span class="status-dot"></span><span id="nav-status">未进入</span></div>
   </div>
@@ -181,7 +181,8 @@
     <code class="inline">DELETE /api/cdn/upload/staging?id=</code>、
     <code class="inline">GET /api/cdn/upload/agent-doc</code>；
     只接受同源调用，命令行请用仓库里的 <code class="inline">tools/agent-upload.mjs</code>。
-    经 CF 代理的域名单次请求体上限 100 MB，所以本页面先把字节直传桶的 S3 端点，再由发布机搬到对外键。
+    经 CF 代理的域名单次请求体上限 100 MB，所以本页面把字节经同源 `PUT /api/cdn/upload/put` 写进暂存区
+    （≤64 MiB），更大的文件必须走 begin/commit 的 presigned 直传通道；再由发布机搬到对外键。
     站点文档的索引在 <code class="inline">/data/docs.json</code>（每次部署重新生成）。
     只想知道暂存区里有什么：<code class="inline">/stage</code> 是同一份状态的精简页（无上传表单、无发布历史树），
     给 agent 和脚本读。
