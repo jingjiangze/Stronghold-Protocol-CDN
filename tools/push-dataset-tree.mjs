@@ -95,6 +95,10 @@ const LFS_EXTS = new Set([
   'ttf', 'otf', 'woff', 'woff2',
   'zip',
   'json', 'css', 'svg',
+  // `spart`：5 个 sp-bundle 分包（256–300 MiB）在 assets-raw 侧已改用 Git LFS（超过 GitHub
+  // 100 MB 普通 blob 上限）。数据集侧本来就把它们存成 LFS，加进这张表后本脚本写出的形态
+  // 才与平台 resolve 时认定的一致，否则会把 1.5 GiB 原始字节灌进对象库。
+  'spart',
 ]);
 // 本轮之前已在 LFS 表里的扩展名——--migrate-lfs 只重推**新纳入**的（已在 LFS 的不用重推）。
 const LEGACY_LFS_EXTS = new Set([
@@ -107,6 +111,38 @@ const LEGACY_LFS_EXTS = new Set([
 const isLfsPath = (p) => {
   const dot = p.lastIndexOf('.');
   return dot > p.lastIndexOf('/') && LFS_EXTS.has(p.slice(dot + 1).toLowerCase());
+};
+
+// assets-raw 现在把 >100 MB 的分包放在 Git LFS 里，`git cat-file` 给出的是 ~130 B 指针，
+// 不是素材字节。原样写下去会在数据集留下永久的假素材（`have` 按路径去重，之后永不再修），
+// 因此命中指针魔数时必须先换回真实字节，换不回来就失败——绝不静默降级。
+const LFS_POINTER_MAGIC = 'version https://git-lfs.github.com/spec/v1';
+const isLfsPointer = (buf) =>
+  buf.length < 1024 && buf.toString('latin1', 0, LFS_POINTER_MAGIC.length) === LFS_POINTER_MAGIC;
+
+const runSmudge = (buf) =>
+  spawnSync('git', ['lfs', 'smudge'], { cwd: REPO_ROOT, input: buf, maxBuffer: 512 * 1024 * 1024 });
+
+const smudgeLfs = (buf, p) => {
+  // 对象不在本地时 git-lfs 会把指针原样吐出（只给一条 warning），所以必须复检输出。
+  let r = runSmudge(buf);
+  if (r.status === 0 && r.stdout && r.stdout.length && !isLfsPointer(r.stdout)) return r.stdout;
+
+  // 只按需拉这一个对象：整分支 `git lfs fetch` 会每次拖 1.5 GiB，白烧 LFS 流量额度。
+  const f = spawnSync('git', ['lfs', 'fetch', 'origin', SRC_REF, `--include=${p}`], {
+    cwd: REPO_ROOT, maxBuffer: 64 * 1024 * 1024,
+  });
+  if (f.status !== 0) {
+    throw new Error(`git lfs fetch ${p} 退出 ${f.status}：${String(f.stderr || '').trim().slice(0, 200)}`);
+  }
+  r = runSmudge(buf);
+  if (r.status !== 0 || !r.stdout || isLfsPointer(r.stdout)) {
+    throw new Error(
+      `git lfs smudge ${p} 仍拿不到真实字节（status=${r.status}）` +
+        '：assets-raw 的 LFS 对象缺失，拒绝把 130 B 指针当素材写进数据集',
+    );
+  }
+  return r.stdout;
 };
 
 // 平台已知不可达豁免表：这些路径**推得上去、但会被平台内容审核自动 revert**，永远进不了
@@ -285,10 +321,11 @@ try {
       const start = nl + 1;
       const dest = path.join(stage, slice[i].path);
       fs.mkdirSync(path.dirname(dest), { recursive: true });
-      const buf = out.subarray(start, start + size);
+      let buf = out.subarray(start, start + size);
+      if (isLfsPointer(buf)) buf = smudgeLfs(buf, slice[i].path);
       fs.writeFileSync(dest, buf);
       rel.push(slice[i].path);
-      if (USE_LFS && isLfsPath(slice[i].path)) lfsRel.push({ path: slice[i].path, size, buf });
+      if (USE_LFS && isLfsPath(slice[i].path)) lfsRel.push({ path: slice[i].path, size: buf.length, buf });
       off = start + size + 1; // 末尾还有一个 \n
     }
   }

@@ -140,6 +140,11 @@ export function hasTraversal(rawUrl) {
 // so the prefixes do the opposite job: they select which branch to read.
 const ASSET_TREE = ['/assets/', '/fonts/'];
 
+// `.spart` 分包在 assets-raw 上是 Git LFS 指针。三个后端（jsDelivr / raw / OpenI）都只回
+// 已提交的 blob 字节，不解析 LFS，透传出去就是 200 + 130 B 指针文本 —— 下游会把指针当素材缓存。
+// 它们本来也超过 MAX_BYTES，这里显式挡住，而不是指望下游的大小检查。
+export const LFS_POINTER_PATH = /^\/assets\/local\/sp-bundle\/.*\.spart$/;
+
 export function isAssetTree(raw) {
   const p = String(raw || '');
   return ASSET_TREE.some((prefix) => p === prefix.slice(0, -1) || p.startsWith(prefix));
@@ -213,6 +218,9 @@ export default {
     const raw = rawPathOf(request.url);
     const path = safePath(raw);
     if (!path) return new Response('bad path', { status: 400, headers: cors() });
+    if (LFS_POINTER_PATH.test(path)) {
+      return new Response('lfs object: fetch it from the dataset', { status: 404, headers: cors() });
+    }
 
     // Asset paths come from the orphan branch, everything else from main. Callers never name a
     // branch: the path decides, and a path outside /assets/** can never reach the art branch.

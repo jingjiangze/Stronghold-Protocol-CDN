@@ -26,7 +26,10 @@ const REF = process.env.SP_SYNC_REF || 'assets-raw';
 const DATASET = process.env.MODELSCOPE_DATASET || 'jingjiangze/Stronghold-Protocol-Assets';
 const REV = process.env.SP_DATASET_REV || 'master';
 const ROOT = process.env.SP_DATASET_ROOT || 'releases/v1-trial';
-// GitHub rejects blobs of 100 MB or more on a branch without Git LFS; keep a margin.
+// GitHub rejects blobs of 100 MB or more on a normal branch. assets-raw now carries an LFS
+// rule for assets/local/sp-bundle/*.spart, but the Data API used below can only create plain
+// blobs -- it cannot mint LFS objects -- so oversized files stay on the dataset and are listed
+// in the summary rather than silently dropped.
 const MAX_BYTES = Number(process.env.SP_SYNC_MAX_MB || 95) * 1024 * 1024;
 
 const WRITE = process.argv.includes('--write');
@@ -129,7 +132,7 @@ const main = async () => {
     `dataset files: ${datasetFiles.length} · assets-raw blobs: ${have.size}`,
     `dataset-only: ${only.length} (${mib(only.reduce((s, f) => s + f.size, 0))} MiB)`,
     `· will pull into git: ${todo.length} (${mib(todo.reduce((s, f) => s + f.size, 0))} MiB)`,
-    `· left on the dataset only (>= ${MAX_BYTES / 1048576} MiB, no LFS on assets-raw): ${tooBig.length}`,
+    `· left on the dataset only (>= ${MAX_BYTES / 1048576} MiB; the Data API cannot create LFS objects): ${tooBig.length}`,
     ...tooBig.map((f) => `  - ${mib(f.size)} MiB \`${f.path}\``),
     ...todo.map((f) => `  - ${f.size} B \`${f.path}\``),
   ];
@@ -161,7 +164,7 @@ const main = async () => {
   const message =
     `sync(assets-raw): 从魔搭数据集拉回 ${entries.length} 份仅存在于魔搭的素材\n\n` +
     `来源 ${DATASET}@${REV}:${ROOT}/。另有 ${tooBig.length} 份单文件超过 GitHub 100 MB 上限（` +
-    `assets-raw 无 LFS）留在数据集侧，未纳入 git。`;
+    `本工具只用 Data API 建普通 blob，造不出 LFS 对象）留在数据集侧，未纳入 git。`;
 
   // Fast-forward only: if the branch moved while we were downloading, rebuild on the new head.
   for (let attempt = 1; attempt <= 4; attempt++) {

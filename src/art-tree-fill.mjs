@@ -50,7 +50,11 @@ const CDN_BASE = (process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu
 const HOSTED_INDEX_KEY = 'cdn/v1/hosted-index.json';
 
 // 分片包：待下线通道（manifest 改指 GitHub 后即废弃），899 MiB 全塞进 git 是纯浪费。
-const EXCLUDE_PREFIXES = ['assets/packs/', 'packs/', 'apk/', 'cdn/'];
+// `assets/local/sp-bundle/` 同理排除：那 5 个 256–300 MiB 的 .spart 在 assets-raw 里是
+// **Git LFS 指针**，本脚本用 `hash-object -w --path` 写的是原始字节（--path 只查 main 工作树
+// 的 .gitattributes，那里没有 LFS 规则），一旦从 R2 捞到这些键就会造出 >100 MB 的普通 blob，
+// 推送直接被 GitHub 拒掉、整个 git-art-sync 作业变红。
+const EXCLUDE_PREFIXES = ['assets/packs/', 'assets/local/sp-bundle/', 'packs/', 'apk/', 'cdn/'];
 
 function run(cmd, args, { cwd = ROOT, env = process.env, input = null } = {}) {
   return new Promise((resolve, reject) => {
