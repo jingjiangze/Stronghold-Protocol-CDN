@@ -28,6 +28,10 @@ const KEYS = [
   'cdn/v1/network.json',
   'cdn/v1/tree.json',
   'cdn/v1/api.json',
+  // hosted-index.json 是上传通道的登记表，`sync` 重建 tree 时要并进 hosted 集合；它过去同样只活在
+  // R2 上，站点与数据集都没有 ⇒ 构建期读到 SPA 兜底 HTML，只能跳过合并（日志里的
+  // "hosted-index.json not merged"）。一并搬过来。
+  'cdn/v1/hosted-index.json',
 ];
 const SPARSE_EXCLUDE = '!releases/';
 

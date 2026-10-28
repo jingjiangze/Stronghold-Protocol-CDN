@@ -264,7 +264,7 @@ export async function buildSnapshot({ base, out, seeds = DEFAULT_SEEDS, log = co
   const manifests = { 'art.json': art, 'mirrors.json': mirrors, 'index.json': index };
   // rank.json 与 upload-log.json 过去只活在 R2：后台页头/状态里直接链它们，站点不部署就是 200 的
   // SPA 兜底 HTML（实测 /cdn/v1/rank.json 返回 text/html）。一并搬进同源副本。
-  for (const name of ['api.json', 'network.json', 'tree.json', 'rank.json', 'upload-log.json']) {
+  for (const name of ['api.json', 'network.json', 'tree.json', 'rank.json', 'upload-log.json', 'hosted-index.json']) {
     try { manifests[name] = await fromSeeds(tries, `cdn/v1/${name}`, getJson); }
     catch (error) { log(`site manifest: ${name} 跳过（${error.message}）`); }
   }
