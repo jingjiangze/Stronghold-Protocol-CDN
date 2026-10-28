@@ -303,8 +303,11 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     if (!verdict.ok || !g.payload) {
       report.rejected.push({ id: g.id, key: claim.key, reason: !g.payload ? '有 claim 但没有字节对象' : verdict.reason });
       if (!dry) {
-        await dropStaging(config, g.claim.key, { dry });
-        if (g.payload) await dropStaging(config, g.payload.key, { dry });
+        // 两次删除互相独立，串行只是白等一个 R2 往返。
+        await Promise.all([
+          dropStaging(config, g.claim.key, { dry }),
+          ...(g.payload ? [dropStaging(config, g.payload.key, { dry })] : []),
+        ]);
       }
       continue;
     }
@@ -371,8 +374,10 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
       report.errors.push({ id: g.id, key: claim.key, error: `复制后 HEAD ${after ? `${after.size} 字节` : '为空'}，与声明 ${claim.size} 不符` });
       continue;
     }
-    await dropStaging(config, g.payload.key, { dry });
-    await dropStaging(config, g.claim.key, { dry });
+    await Promise.all([
+      dropStaging(config, g.payload.key, { dry }),
+      dropStaging(config, g.claim.key, { dry }),
+    ]);
     report.published.push({
       id: g.id,
       key: claim.key,

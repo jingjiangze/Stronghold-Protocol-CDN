@@ -49,10 +49,17 @@ jobs:
 
       # Reads the live interface and writes site/data/snapshot.json. It only ever contacts https
       # hosts, and refuses loopback/private/reserved ones.
+      # 2026-10-28：R2 只做上传暂存，它的自定义域已解绑，不能再当种子（拿不到就会整步失败）。
+      # 种子顺序 = SP_SITE_SEEDS（默认魔搭数据集根）→ 站点自身线上副本；SP_CDN_BASE 只决定
+      # 页面里显示的规范地址，不再是唯一数据源。
       - name: snapshot
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node src/site-data.mjs --base=${{ vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }} --out=site/data/snapshot.json
+        run: >
+          node src/site-data.mjs
+          --base=${{ vars.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu' }}
+          --seeds=${{ vars.SP_SITE_SEEDS || 'https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master,https://downcdn.jiangjiangze.icu' }}
+          --out=site/data/snapshot.json
 
       # This zone's /js/* Cache Rule ignores the query string, so ?v= cannot bust it. Rename the
       # files to carry their content hash instead.

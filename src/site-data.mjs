@@ -24,6 +24,37 @@ async function getJson(url) {
   return res.json();
 }
 
+async function getText(url) {
+  assertPublicHttpsUrl(url);
+  const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+  if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+  return res.text();
+}
+
+/**
+ * R2 is only upload staging now (2026-10-28 用户指令), so the interfaces can no longer be seeded
+ * from an R2 custom domain: its hostnames are unbound and a rebuild would fail. Try the seeds in
+ * order — the ModelScope dataset carries `cdn/v1/*` and `data/*` at its root, and the site's own
+ * deployed copy is the last resort — and fail loudly only when every seed is exhausted.
+ */
+export const DEFAULT_SEEDS = [
+  'https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master',
+  'https://downcdn.jiangjiangze.icu',
+];
+
+async function fromSeeds(seeds, rel, read) {
+  const errors = [];
+  for (const seed of seeds) {
+    const url = `${String(seed).replace(/\/+$/, '')}/${rel}`;
+    try {
+      return await read(url);
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+  throw new Error(`every seed failed for ${rel}: ${errors.join(' | ')}`);
+}
+
 /** Aggregate the flat index into per-directory totals, biggest first. */
 export function aggregate(files) {
   const groups = new Map();
@@ -136,12 +167,13 @@ export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], ownBa
   return (await resolveReleaseAssets({ repo, prefixes, ownBase, token })).dropin;
 }
 
-export async function buildSnapshot({ base, out, log = console.log }) {
+export async function buildSnapshot({ base, out, seeds = DEFAULT_SEEDS, log = console.log }) {
   const root = String(base).replace(/\/+$/, '');
+  const tries = [root, ...seeds.map((s) => String(s).replace(/\/+$/, '')).filter((s) => s !== root)];
   const [art, mirrors, index] = await Promise.all([
-    getJson(`${root}/cdn/v1/art.json`),
-    getJson(`${root}/cdn/v1/mirrors.json`),
-    getJson(`${root}/cdn/v1/index.json`),
+    fromSeeds(tries, 'cdn/v1/art.json', getJson),
+    fromSeeds(tries, 'cdn/v1/mirrors.json', getJson),
+    fromSeeds(tries, 'cdn/v1/index.json', getJson),
   ]);
 
   // The download links are resolved here rather than in the page: api.github.com is unreliable from
@@ -179,7 +211,7 @@ export async function buildSnapshot({ base, out, log = console.log }) {
   await fsp.mkdir(manifestDir, { recursive: true });
   const manifests = { 'art.json': art, 'mirrors.json': mirrors, 'index.json': index };
   for (const name of ['api.json', 'network.json', 'tree.json']) {
-    try { manifests[name] = await getJson(`${root}/cdn/v1/${name}`); }
+    try { manifests[name] = await fromSeeds(tries, `cdn/v1/${name}`, getJson); }
     catch (error) { log(`site manifest: ${name} 跳过（${error.message}）`); }
   }
   let copied = 0;
@@ -189,6 +221,28 @@ export async function buildSnapshot({ base, out, log = console.log }) {
     copied += 1;
   }
   log(`site manifest: 同源清单 ${copied} 份 → ${path.relative(process.cwd(), manifestDir)}`);
+
+  // pick.js 与 data/*.json 过去只写 R2：R2 一旦只做暂存，它们就没有第二个落点，客户端脚本与三张
+  // 清单会在全网 404。这里把它们也搬进部署目录，站点自身成为它们的兜底副本。
+  try {
+    const pick = await fromSeeds(tries, 'cdn/v1/pick.js', getText);
+    await fsp.writeFile(path.join(manifestDir, 'pick.js'), pick, 'utf8');
+    log('site manifest: pick.js → cdn/v1/pick.js');
+  } catch (error) {
+    log(`site manifest: pick.js 跳过（${error.message}）`);
+  }
+  const dataDir = path.dirname(out);
+  let dataCopied = 0;
+  for (const name of ['assets.json', 'local-assets.json', 'emotes.json']) {
+    try {
+      const text = await fromSeeds(tries, `data/${name}`, getText);
+      await fsp.writeFile(path.join(dataDir, name), text, 'utf8');
+      dataCopied += 1;
+    } catch (error) {
+      log(`site manifest: data/${name} 跳过（${error.message}）`);
+    }
+  }
+  log(`site manifest: 客户端清单 ${dataCopied} 份 → ${path.relative(process.cwd(), dataDir)}`);
 
   // The docs index is rebuilt on every deploy, which is what makes "the newest document" a fact
   // rather than a path somebody has to remember to update. It is written beside the snapshot so the
@@ -204,9 +258,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToP
     const hit = process.argv.find((a) => a.startsWith(`--${name}=`));
     return hit ? hit.slice(name.length + 3) : fallback;
   };
-  const base = arg('base', process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu');
+  const base = arg('base', process.env.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu');
   const out = path.resolve(arg('out', 'site/data/snapshot.json'));
-  buildSnapshot({ base, out }).catch((error) => {
+  const seeds = arg('seeds', process.env.SP_SITE_SEEDS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  buildSnapshot({ base, out, seeds: seeds.length ? seeds : DEFAULT_SEEDS }).catch((error) => {
     console.error(`site-data: ${error.message}`);
     process.exit(1);
   });

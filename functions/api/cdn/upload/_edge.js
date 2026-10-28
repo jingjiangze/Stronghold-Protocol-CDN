@@ -133,15 +133,22 @@ export async function writeJson(cfg, key, doc) {
   return true;
 }
 
+// 一次上传里的每个新键都必然 HEAD 404，都补一次桶探测就等于每个文件多花一个 R2 往返。
+// 桶配置在同一个 isolate 生命周期内不会变，探通一次就记住；失败不缓存，下次仍会重探。
+let bucketProbeOk = null;
+
 /** 目标键是否已有对象 —— 「只增不改」的判据就靠它。返回 {exists, size}。 */
 export async function headKey(cfg, key) {
   const res = await s3fetch(cfg, 'HEAD', key);
   if (res.status === 404) {
     // HEAD 没有响应体，分不清「键不存在」与「桶名/端点配错了」—— 后者会把「不存在」当成
     // 「还没人传过」，于是只增守卫永远放行。这里补一次桶级探测，把配错变成明确错误。
-    const probe = await s3fetch(cfg, 'GET', null, { query: 'max-keys=0' });
-    if (probe.status !== 200) {
-      throw new Error(`桶 ${cfg.bucket} 在 ${cfg.host} 上不可用（HTTP ${probe.status}）—— 检查 R2_BUCKET / R2_ENDPOINT / 密钥`);
+    if (bucketProbeOk !== `${cfg.host}/${cfg.bucket}`) {
+      const probe = await s3fetch(cfg, 'GET', null, { query: 'max-keys=0' });
+      if (probe.status !== 200) {
+        throw new Error(`桶 ${cfg.bucket} 在 ${cfg.host} 上不可用（HTTP ${probe.status}）—— 检查 R2_BUCKET / R2_ENDPOINT / 密钥`);
+      }
+      bucketProbeOk = `${cfg.host}/${cfg.bucket}`;
     }
     return { exists: false };
   }

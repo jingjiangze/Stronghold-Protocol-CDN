@@ -1,0 +1,58 @@
+name: purge-r2-mirror
+
+# R2 keeps a second copy of everything git already stores. Since 2026-10-28 the bucket is meant to
+# be upload staging only, so this deletes the duplicate — but only for a key whose path exists in
+# `assets-raw` **with the same size**. Anything without a verified twin stays; a bug here can only
+# under-delete. Default is a dry run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '真的删除（默认只报告）'
+        type: boolean
+        default: false
+      include_packs:
+        description: '同时清理 packs/（GitHub Release 已是唯一发布通道；lineup-library 始终保留）'
+        type: boolean
+        default: false
+      max:
+        description: '单次最多删除多少个对象'
+        type: number
+        default: 500
+
+permissions:
+  contents: read
+
+# Same group as promote-uploads: both write the same bucket, and a delete racing a CopyObject is
+# exactly the kind of interference that is hard to see afterwards.
+concurrency:
+  group: promote-uploads
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: purge duplicates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          set -euo pipefail
+          args="--max=${{ inputs.max || 500 }}"
+          if [ "${{ inputs.apply }}" = "true" ]; then args="$args --apply"; fi
+          if [ "${{ inputs.include_packs }}" = "true" ]; then args="$args --include-packs"; fi
+          node tools/purge-r2-mirror.mjs $args
