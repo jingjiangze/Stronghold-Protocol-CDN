@@ -355,3 +355,17 @@ a.tree__name:hover { color: var(--accent); text-decoration: underline; }
 .mb-26 { margin-bottom: 26px !important; }
 .ml-10 { margin-left: 10px !important; }
 .ml-12 { margin-left: 12px !important; }
+.mt-0 { margin-top: 0 !important; }
+.m-0 { margin: 0 !important; }
+.m-8-0-0 { margin: 8px 0 0 !important; }
+.m-10-0-0 { margin: 10px 0 0 !important; }
+.m-0-0-10 { margin: 0 0 10px !important; }
+.m-26-0 { margin: 26px 0 !important; }
+.m-26-0-14 { margin: 26px 0 14px !important; }
+/* admin 的三处布局微调：宽度下限与可伸缩列。 */
+.min-w-220 { min-width: 220px !important; }
+.min-w-260 { min-width: 260px !important; }
+.min-w-320 { min-width: 320px !important; }
+.grow { flex: 1 1 auto !important; }
+.toolbar--tight { gap: 10px !important; }
+

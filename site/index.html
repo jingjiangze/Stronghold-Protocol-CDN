@@ -202,7 +202,7 @@
           <tr>
             <td>nginx 反代</td>
             <td>
-<pre class="code" style="margin:0">location = /data/assets.json {
+<pre class="code m-0">location = /data/assets.json {
   proxy_pass http://127.0.0.1:3001;
   proxy_set_header Accept-Encoding "";   <i># 必须：否则拿到的是 gzip，替换不生效</i>
   sub_filter '"/assets/'  '"<b>https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial</b>/assets/';
@@ -357,7 +357,7 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
       </a>
     </div>
 
-    <div class="section-heading" style="margin:26px 0 14px">
+    <div class="section-heading m-26-0-14">
       <div><div class="eyebrow">REFERENCE · PACKS</div><h3>打包通道</h3></div>
       <span class="section-status">同一批字节，少数几个下载</span>
     </div>
@@ -635,7 +635,7 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
         <tbody id="api-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
       </table>
     </div>
-    <p class="section-note" style="margin:10px 0 0">
+    <p class="section-note m-10-0-0">
       这张表由 <a href="https://downcdn.jiangjiangze.icu/cdn/v1/api.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/api.json</code></a>
       渲染，不再手抄。手抄版已经漂移过：<code class="inline">/fonts/**</code> 的缓存被写成
       <code class="inline">immutable</code>，实际是「带令牌 1 年 / 裸路径 1 小时」；而且漏掉了
@@ -646,7 +646,7 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
 
     <div class="mini mt-16">
       <h4>给 agent 的查询接口</h4>
-      <p class="section-note" style="margin:0 0 10px">
+      <p class="section-note m-0-0-10">
         没有服务端查询，所以"接口"就是三个静态文件加一个 HEAD 请求。按你要问的问题选：
       </p>
       <div class="table-wrap">
@@ -660,7 +660,7 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           </tbody>
         </table>
       </div>
-      <p class="section-note" style="margin:10px 0 0">
+      <p class="section-note m-10-0-0">
         <code class="inline">tree.json</code> 的形状：<code class="inline">dirs["&lt;目录&gt;"].files</code> 是
         <code class="inline">[[文件名, 体积, 是否托管?], …]</code>；<code class="inline">mod=1</code>
         表示该文件是本仓刻意托管的第三方 mod 素材，不是上游内容。所有源都带

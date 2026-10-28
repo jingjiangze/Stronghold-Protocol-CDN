@@ -62,16 +62,16 @@
       <span class="block__title">口令与接入说明</span>
       <span class="block__who">口令只存在本次浏览标签页里，关掉就没了</span>
     </div>
-    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px;flex-wrap:wrap">
-      <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
+    <form id="gate-form" autocomplete="off" class="toolbar toolbar--tight">
+      <input class="min-w-220" id="key" type="password" placeholder="管理口令" autocomplete="off" />
       <button class="button button-primary" type="submit" id="gate-go">进入</button>
       <span class="section-note" id="gate-msg"></span>
-      <span style="flex:1 1 auto"></span>
+      <span class="grow"></span>
       <button class="button button-secondary" type="button" id="copy-agent" disabled
               title="进入后可用：把完整的接入说明（含本次密钥）复制到剪贴板，直接粘给 agent">复制接入说明（含密钥）</button>
       <span class="section-note" id="copy-msg"></span>
     </form>
-    <p class="section-note" id="doc-note" style="margin:10px 0 0">
+    <p class="section-note m-10-0-0" id="doc-note">
       接入说明不写死路径：取站点文档里<b>最新的一份「描述上传通道」的文档</b>。进入后这里会写明是哪一份、以及为什么是它。
     </p>
   </section>
@@ -91,11 +91,11 @@
         <tbody>
           <tr>
             <td>来源标识<br /><span class="section-note">会成为 hosted.json 的分组 id，也是匹配不到时的暂存落点 packs/&lt;来源&gt;/</span></td>
-            <td><input id="source" placeholder="例如 mod-makoto-p3r" style="min-width:260px" /></td>
+            <td><input class="min-w-260" id="source" placeholder="例如 mod-makoto-p3r" /></td>
           </tr>
           <tr>
             <td>这批是什么</td>
-            <td><input id="what" placeholder="一句话说明内容与出处" style="min-width:320px" /></td>
+            <td><input class="min-w-320" id="what" placeholder="一句话说明内容与出处" /></td>
           </tr>
           <tr>
             <td>文件<br /><span class="section-note">不用选目录：按文件名和后缀自动定位（m_*.mp3→bgm、a_/b_/e_/g_/p_*.mp3→对应音效树、字体→fonts/）；匹配不到的先进暂存区等放行</span></td>
@@ -115,7 +115,7 @@
       <button class="button button-secondary" type="button" id="refresh">刷新状态</button>
       <span class="section-note" id="line"></span>
     </div>
-    <p class="section-note" style="margin:8px 0 0">
+    <p class="section-note m-8-0-0">
       <b>上传只写暂存区，不会自动上线</b>（2026-10-15 起：一次提交叫一轮发布会把 Actions 队列打爆，
       所以发布改成手动）。传完点<b>「同步到镜像源」</b>：一次点击按顺序触发 ——
       ① 发布轮（暂存 → 对外键 + hosted.json）② git 链（R2 → assets-raw 分支）
@@ -148,7 +148,7 @@
     <div class="table-wrap">
       <div id="stage-tree" class="tree" role="tree" aria-label="暂存区目录"><p class="muted">读取中…</p></div>
     </div>
-    <p class="section-note" style="margin:10px 0 0">
+    <p class="section-note m-10-0-0">
       按<b>目标键</b>展开（就是它上线之后会落在对外地址的位置）。暂存区的字节对外没有任何用处，
       没有任何清单引用它，所以清掉不影响任何玩家 —— 但这条通道<b>只给 agent</b>，见下面的删除说明。
     </p>
@@ -176,7 +176,7 @@
     </div>
   </section>
 
-  <p class="section-note" style="margin:26px 0">
+  <p class="section-note m-26-0">
     接口与限制：<code class="inline">POST /api/cdn/upload/begin · commit · remove · kick · sync-mirrors</code>、
     <code class="inline">DELETE /api/cdn/upload/staging?id=</code>、
     <code class="inline">GET /api/cdn/upload/agent-doc</code>；

@@ -54,12 +54,12 @@
       <span class="block__title">口令</span>
       <span class="block__who">和 /admin 是同一个口令，同样只活在这个标签页里</span>
     </div>
-    <form id="gate-form" autocomplete="off" class="toolbar" style="gap:10px;flex-wrap:wrap">
-      <input id="key" type="password" placeholder="管理口令" autocomplete="off" style="min-width:220px" />
+    <form id="gate-form" autocomplete="off" class="toolbar toolbar--tight">
+      <input class="min-w-220" id="key" type="password" placeholder="管理口令" autocomplete="off" />
       <button class="button button-primary" type="submit" id="gate-go">读取暂存区</button>
       <span class="section-note" id="gate-msg"></span>
     </form>
-    <p class="section-note" style="margin:10px 0 0">
+    <p class="section-note m-10-0-0">
       不想用口令也可以命令行取：<code class="inline">node tools/agent-upload.mjs --list</code>
       （要带 <code class="inline">--key=</code> 与 <code class="inline">--host=</code>，见
       <code class="inline">GET /api/cdn/upload/stage</code> 返回里的说明）。这个口令能读上传方的键名与来源，
@@ -86,7 +86,7 @@
         <tbody><tr><td colspan="6" class="muted">还没读取</td></tr></tbody>
       </table>
     </div>
-    <p class="section-note" style="margin:10px 0 0">
+    <p class="section-note m-10-0-0">
       这里的每一行都是<b>还没上线</b>的字节：暂存区没有任何清单引用，删掉不影响任何玩家。
       能删它的只有 agent 通道（<code class="inline">--purge=&lt;上传 id&gt;</code>），
       因为这个口令一次误点就会拿掉字节，而这一页的用途是「看清楚」。
