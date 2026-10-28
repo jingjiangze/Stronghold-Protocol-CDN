@@ -55,6 +55,40 @@ async function fromSeeds(seeds, rel, read) {
   throw new Error(`every seed failed for ${rel}: ${errors.join(' | ')}`);
 }
 
+/**
+ * The published art.json / mirrors.json are written by `sync.mjs` and, since 2026-10-24, nobody has
+ * been able to republish them (sync is red, and R2 has no live hostname to serve a new copy from).
+ * The copies still in circulation therefore advertise R2 origins that no longer exist.
+ *
+ * Rather than ship that, the site applies the repository's own decision — origins.json's `retired`
+ * / `disabled` lists and `order` — to whatever copy it seeds from. The transform is idempotent, so
+ * a fresh seed and an old one converge on the same output.
+ */
+export function retireOrigins(doc, origins) {
+  if (!doc || typeof doc !== 'object') return doc;
+  const retired = new Set(origins.retired || []);
+  const disabled = new Set(origins.disabled || []);
+  const roots = new Map(
+    [...(origins.extraOrigins || []), ...(origins.gitOrigins || [])].map((o) => [o.id, o.root]),
+  );
+  const lead = (origins.order || []).find((id) => roots.has(id));
+  const leadRoot = lead ? String(roots.get(lead)).replace(/\/+$/, '') : null;
+
+  const out = structuredClone(doc);
+  const art = out.art && typeof out.art === 'object' ? out.art : out;
+  const prune = (list) => list
+    .filter((m) => m && !retired.has(m.id))
+    .map((m) => (disabled.has(m.id) ? { ...m, enabled: false } : m));
+  if (Array.isArray(art.mirrors)) art.mirrors = prune(art.mirrors);
+  // mirrors.json 发布的是 `flat` 数组（同一批条目，另一个形状）。
+  if (Array.isArray(out.flat)) out.flat = prune(out.flat);
+  // `base` is the assets/ prefix clients actually fetch from; it must not name a dead host.
+  if (leadRoot && typeof art.base === 'string') art.base = `${leadRoot}/assets/`;
+  if (leadRoot && out.art && typeof out.art.base === 'string') out.art.base = `${leadRoot}/assets/`;
+  if (typeof art.token === 'string' && !art.token.includes('r2off')) art.token = `${art.token}-r2off`;
+  return out;
+}
+
 /** Aggregate the flat index into per-directory totals, biggest first. */
 export function aggregate(files) {
   const groups = new Map();
@@ -170,11 +204,22 @@ export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], ownBa
 export async function buildSnapshot({ base, out, seeds = DEFAULT_SEEDS, log = console.log }) {
   const root = String(base).replace(/\/+$/, '');
   const tries = [root, ...seeds.map((s) => String(s).replace(/\/+$/, '')).filter((s) => s !== root)];
-  const [art, mirrors, index] = await Promise.all([
+  const [artRaw, mirrorsRaw, index] = await Promise.all([
     fromSeeds(tries, 'cdn/v1/art.json', getJson),
     fromSeeds(tries, 'cdn/v1/mirrors.json', getJson),
     fromSeeds(tries, 'cdn/v1/index.json', getJson),
   ]);
+  // 种子里的镜像表可能还在宣传已经退役的源（R2），按仓库自己的决定抹掉，见 retireOrigins。
+  let originDoc = {};
+  try {
+    originDoc = JSON.parse(await fsp.readFile(path.join(ROOT, 'origins.json'), 'utf8'));
+  } catch (error) {
+    log(`site snapshot: origins.json 读不到（${error.message}），镜像表原样发布`);
+  }
+  const dropped = (artRaw.mirrors || artRaw.art?.mirrors || []).filter((m) => m && (originDoc.retired || []).includes(m.id));
+  if (dropped.length) log(`site snapshot: 按 retired 抹掉镜像 ${dropped.map((m) => m.id).join(', ')}`);
+  const art = retireOrigins(artRaw, originDoc);
+  const mirrors = retireOrigins(mirrorsRaw, originDoc);
 
   // The download links are resolved here rather than in the page: api.github.com is unreliable from
   // the networks this site is for, and a visitor should never wait on it.
