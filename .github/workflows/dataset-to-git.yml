@@ -1,0 +1,55 @@
+name: dataset-to-git
+
+# The return leg of the three-way sync. The forward legs are
+#   R2 → assets-raw            (git-art-sync.yml)
+#   assets-raw → dataset tree  (dataset-tree.yml)
+# and both are add-only, so a file written straight into the dataset (manual git-lfs
+# upload, repair pass) never reaches git on its own. This pulls those back.
+#
+# Deliberately one-way for content, not a mirror: a file missing from the dataset must
+# not delete bytes from git — the dataset is downstream, git is the store.
+
+on:
+  schedule:
+    # 21:17 UTC: ten minutes after dataset-tree's 21:00 fallback run has started, so the
+    # forward leg has already covered everything it can and only dataset-side additions
+    # remain. Offset from every other cron in this repo on purpose.
+    - cron: '17 21 * * *'
+  workflow_dispatch:
+    inputs:
+      dry:
+        description: '只报告，不写入'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dataset-to-git
+  cancel-in-progress: false
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: pull dataset-only files into assets-raw
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODELSCOPE_DATASET: jingjiangze/Stronghold-Protocol-Assets
+        run: |
+          set -euo pipefail
+          write="--write"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.dry }}" = "true" ]; then
+            write=""
+          fi
+          node tools/pull-dataset-tree.mjs $write
