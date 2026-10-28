@@ -85,7 +85,8 @@ export function retireOrigins(doc, origins) {
   // `base` is the assets/ prefix clients actually fetch from; it must not name a dead host.
   if (leadRoot && typeof art.base === 'string') art.base = `${leadRoot}/assets/`;
   if (leadRoot && out.art && typeof out.art.base === 'string') out.art.base = `${leadRoot}/assets/`;
-  if (typeof art.token === 'string' && !art.token.includes('r2off')) art.token = `${art.token}-r2off`;
+  // token 不再追加后缀：接口已由 publish-interface 重生成（v0.3.1-e471f46d），tree-refresh 的守卫
+  // 要求 art.token 与 index 推导值严格相等，加后缀反而会把自己判成陈旧。
   return out;
 }
 
