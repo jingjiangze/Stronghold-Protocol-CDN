@@ -8,3 +8,8 @@
 # This branch exists to be served by git-mount CDNs (jsDelivr / ghfast / gh-proxy), which deliver
 # whatever bytes git holds. Byte fidelity is therefore not cosmetic, it is the contract.
 * -text -diff -merge binary
+
+# The five sp-bundle packs are the only files above GitHub's 100 MB blob ceiling, so they
+# have to be LFS. The pattern is deliberately narrow: jsDelivr and raw.githubusercontent do
+# not resolve LFS, so widening it would turn the whole art tree into 130 B pointers.
+assets/local/sp-bundle/*.spart filter=lfs diff=lfs merge=lfs -text
