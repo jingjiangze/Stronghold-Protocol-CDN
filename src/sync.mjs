@@ -471,14 +471,16 @@ async function main() {
         cacheControl: SHORT,
       });
       if (built.overlap.length) {
-        // A warning, not a failure, and that is a measured decision rather than a softened one.
-        // 2026-10-18 CI proved it: with the upload channel's keys merged in, 5,082 of them are keys
-        // upstream also ships, and hosted.json itself carries 4,724 such entries. That is the steady
-        // state of this bucket — upstream absorbed art that used to be hosted for it — so making it
-        // fatal would red the run on every execution and, worse, red the 6-hour sync that carries
-        // the tree. A red nobody can clear is a red nobody reads, and the stale entries are a
-        // tidy-up, not a reason to stop publishing an otherwise-correct tree.
-        log(`tree: ${built.overlap.length} hosted key(s) are also upstream's — remove them from hosted.json, e.g. ${built.overlap[0]}`);
+        // A warning, not a failure, and that is a measured decision rather than a softened one:
+        // upstream absorbing art that used to come through the upload channel is the steady state
+        // of this bucket, so making it fatal would red every run — and a red nobody can clear is a
+        // red nobody reads.
+        //
+        // 2026-10-28 更正：这条提示原来叫大家「remove them from hosted.json」，是错的。overlap 来自
+        // 合并进 tree 的 hosted-index.json（上传通道登记表，实测 17,962 键），而 hosted.json 是那份
+        // 人工策展的 35 条清单、与上游 0 重叠。登记表由 promote 每次从 upload-log.json 重建，手工
+        // 删条目既无用又会被下一轮覆盖 —— 所以这里只报事实，不再指路到一个清不掉的地方。
+        log(`tree: ${built.overlap.length} key(s) registered by the upload channel are also upstream's (steady state; hosted-index.json is rebuilt from upload-log.json each promote, nothing to prune by hand), e.g. ${built.overlap[0]}`);
       }
       tree = built.doc.totals;
     } catch (error) {
