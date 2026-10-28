@@ -261,7 +261,10 @@ export async function runWave(items, limit, worker) {
       results[i] = await worker(items[i], i);
     }
   };
-  const width = Math.min(Math.max(1, limit), Math.max(1, items.length));
+  // `Math.max(1, NaN)` 还是 NaN —— 直接用会让 Array.from({length:NaN}) 得到空数组、一个 worker
+  // 都不起，结果是静默返回 undefined。先把 limit 归一成「>=1 的整数」，其余一律按 1 处理。
+  const safe = Number.isFinite(limit) && limit >= 1 ? Math.floor(limit) : 1;
+  const width = Math.min(safe, Math.max(1, items.length));
   await Promise.all(Array.from({ length: width }, pump));
   return results;
 }
