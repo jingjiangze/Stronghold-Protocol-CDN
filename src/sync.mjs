@@ -30,7 +30,7 @@ import { buildIndex, serializeIndex, sha256File } from './index-tree.mjs';
 import { rewriteManifestText, collectManifestPaths, manifestUrls } from './rewrite-manifest.mjs';
 import { diffIndex, uploadBytes } from './diff.mjs';
 import { verifyUrls, summarizeVerification, passes } from './verify-remote.mjs';
-import { r2Config, putObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
+import { r2Config, putObject, getObject, deleteObject, headObject, mimeFor, IMMUTABLE, SHORT } from './r2.mjs';
 import { preparePagesDist, deployPages, PAGES_PROJECT } from './pages.mjs';
 import { planPacks, publishPacks, ensureRelease, readMirrorPrefixes } from './packs.mjs';
 import { buildDropin } from './dropin.mjs';
@@ -300,6 +300,19 @@ async function uploadKeys(config, stage, keys, files) {
 
 /** The interface we published last time, or null when nothing has been published yet. */
 async function readPublishedArt(base) {
+  // 2026-10-28：R2 退役、它的自定义域已解绑，但桶里仍留着最后一次真正发布过的接口。
+  // 站点改成从数据集种子后，数据集那份 art 是旧件（v0.2.6），而 index 已是 v0.3.1 ——
+  // 拿线上的 art 当种子会自锁（tree.token 与 index 推导值对不上，守卫直接拒发）。
+  // 设 SP_PUBLISHED_FROM=r2 时直接从桶读，绕过已不可达的公网门牌。
+  if (process.env.SP_PUBLISHED_FROM === 'r2') {
+    try {
+      const buf = await getObject(r2Config(process.env), 'cdn/v1/art.json');
+      if (buf) return JSON.parse(buf.toString('utf8'));
+      log('published art: R2 上没有 cdn/v1/art.json');
+    } catch (error) {
+      log(`published art: 从 R2 读取失败（${error.message}）`);
+    }
+  }
   try {
     const res = await fetch(`${base}/cdn/v1/art.json`, { signal: AbortSignal.timeout(15_000) });
     return res.ok ? await res.json() : null;

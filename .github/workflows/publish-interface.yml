@@ -46,6 +46,9 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
           SP_CDN_BASE: ${{ vars.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu' }}
+          # 站点现在供的 art.json 是数据集里的旧件，拿它当种子会和 index 版本打架（自锁）；
+          # 桶里还留着最后一次真正发布的那份，直接读它。
+          SP_PUBLISHED_FROM: r2
         run: |
           set -euo pipefail
           # --interface-only 不发上游包、不重哈希素材，只按已发布的 index 重算派生接口。
