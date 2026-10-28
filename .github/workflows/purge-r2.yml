@@ -20,6 +20,10 @@ on:
         description: '单次最多删除多少个对象'
         type: number
         default: 500
+      concurrency:
+        description: '并发删除数（R2 单次 DELETE 约 100 ms，4 并发只有 ~9 个/秒）'
+        type: number
+        default: 12
 
 permissions:
   contents: read
@@ -52,7 +56,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
-          args="--max=${{ inputs.max || 500 }}"
+          args="--max=${{ inputs.max || 500 }} --concurrency=${{ inputs.concurrency || 12 }}"
           if [ "${{ inputs.apply }}" = "true" ]; then args="$args --apply"; fi
           if [ "${{ inputs.include_packs }}" = "true" ]; then args="$args --include-packs"; fi
           node tools/purge-r2-mirror.mjs $args
