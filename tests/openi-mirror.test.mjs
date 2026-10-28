@@ -535,3 +535,25 @@ test('the failure injection actually fires — without it the skip test proves n
     fs.rmSync(base, { recursive: true, force: true });
   }
 });
+
+// 2026-10-28：assets-raw 把 5 个 >100 MB 的 spart 分包改成了 Git LFS 指针（每个约 130 B）。
+// OpenI 侧没有 LFS 对象，推上去等于把指针当素材发出去；镜像必须跳过这几条，且不能因此少推别的。
+test('missingFiles skips the LFS-only paths and keeps everything else', () => {
+  const target = [
+    '100644 blob aaa 130\tassets/local/sp-bundle/pack-01-of-05.spart',
+    '100644 blob bbb 938\tassets/local/sp-bundle/bundle-parts.json',
+    '100644 blob ccc 42\tassets/local/map/x.png',
+  ].join('\n');
+  const todo = missingFiles('', target);
+  assert.deepEqual(todo.map((r) => r.p), [
+    'assets/local/sp-bundle/bundle-parts.json',
+    'assets/local/map/x.png',
+  ]);
+});
+
+test('the LFS skip is a default, not a hardcode: a caller can pass null to opt out', () => {
+  const target = '100644 blob aaa 130\tassets/local/sp-bundle/pack-01-of-05.spart';
+  assert.deepEqual(missingFiles('', target, null).map((r) => r.p), [
+    'assets/local/sp-bundle/pack-01-of-05.spart',
+  ]);
+});

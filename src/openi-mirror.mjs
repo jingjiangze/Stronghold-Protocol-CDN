@@ -329,7 +329,14 @@ export async function commitAddedBytes(cwd, commit) {
  * @param {string} remoteTree `ls-tree -r --name-only` output of the remote's tree
  * @param {string} targetTree `ls-tree -r -l` output of the tree we want the remote to hold
  */
-export function missingFiles(remoteTree, targetTree) {
+/**
+ * assets-raw 里被 Git LFS 化的路径。OpenI 侧没有对应的 LFS 对象，推上去只会留 130 B 指针
+ * （raw 端点原样返回文本，客户端拿到的不是素材）。它们只服务数据集通道，镜像时直接跳过。
+ * 与 `assets-raw:.gitattributes` 里那条 `assets/local/sp-bundle/*.spart` 规则一一对应。
+ */
+export const LFS_ONLY_PATHS = /^assets\/local\/sp-bundle\/.*\.spart$/;
+
+export function missingFiles(remoteTree, targetTree, skip = LFS_ONLY_PATHS) {
   const have = new Set(String(remoteTree || '').split('\n').filter(Boolean));
   const todo = [];
   for (const line of String(targetTree || '').split('\n')) {
@@ -339,6 +346,7 @@ export function missingFiles(remoteTree, targetTree) {
     const meta = line.slice(0, tab).trim().split(/\s+/);
     const p = line.slice(tab + 1);
     if (meta[1] !== 'blob' || have.has(p)) continue;
+    if (skip && skip.test(p)) continue;
     todo.push({ mode: meta[0], sha: meta[2], size: Number(meta[3]) || 0, p });
   }
   return todo;
