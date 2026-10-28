@@ -97,7 +97,11 @@ jobs:
         env:
           # 2026-10-14：主 CDN 门牌 = speedcdn（仓库变量；缺省仍回退 weishucdn）。
           # 这行让「清单绝对 URL / drop-in 基址」等随本仓发布的产物都带 speedcdn，别再改回旧门牌。
-          SP_CDN_BASE: ${{ vars.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu' }}
+          SP_CDN_BASE: ${{ vars.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu' }}
+          # 素材基址与接口基址不是同一个域：接口在站点（downcdn，带 cdn/v1 与 data 的同源副本），
+          # 素材在数据集（downcdn 只为 /assets/** 回 SPA 兜底）。混成一个变量会让清单与验收探针
+          # 一起指错 —— 实测 18676/18678 个 URL 报 size-unresolved。
+          SP_ASSET_BASE: ${{ vars.SP_ASSET_BASE || 'https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

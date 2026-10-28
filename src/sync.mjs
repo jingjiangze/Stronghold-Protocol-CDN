@@ -173,6 +173,7 @@ function parseArgs(argv) {
     else if (arg.startsWith('--tag=')) opts.tag = arg.slice('--tag='.length);
     else if (arg.startsWith('--work=')) opts.work = arg.slice('--work='.length);
     else if (arg.startsWith('--base=')) opts.base = arg.slice('--base='.length);
+    else if (arg.startsWith('--asset-base=')) opts.assetBase = arg.slice('--asset-base='.length);
     else if (arg.startsWith('--pages-base=')) opts.pagesBase = arg.slice('--pages-base='.length);
     else if (arg.startsWith('--sample=')) opts.sample = Number(arg.slice('--sample='.length)) || DEFAULT_SAMPLE;
     else throw new Error(`unknown argument: ${arg}`);
@@ -182,6 +183,12 @@ function parseArgs(argv) {
   if (opts.dropinOnly && !opts.write) throw new Error('--dropin-only publishes, so it needs --write');
   if (opts.interfaceOnly && !opts.write) throw new Error('--interface-only publishes, so it needs --write');
   opts.base = String(opts.base).replace(/\/+$/, '');
+  // 2026-10-28：`base` 一直兼着两个角色，R2 退役后必须拆开 ——
+  //   · 接口放在哪：读 art/index/hosted-index、写 cdn/v1/*（现在是站点域名）
+  //   · 素材放在哪：清单里写的 URL、验收探针、byte sample（必须是真正供字节的门牌）
+  // 合成一个变量时，把 base 指向站点就等于让一万八千个素材 URL 指向一个只回 SPA 的域：
+  // 验收探针会全部报 size-unresolved（实测 18676/18678），清单也会把客户端带过去。
+  opts.assetBase = String(opts.assetBase || process.env.SP_ASSET_BASE || opts.base).replace(/\/+$/, '');
   opts.pagesBase = String(opts.pagesBase).replace(/\/+$/, '');
   return opts;
 }
@@ -363,7 +370,7 @@ async function main() {
     const config = r2Config();
     // 来源表要按**当前配置**重算，不能照抄已发布的那份：往 origins.json 加一个镜像，
     // 本该是一次「重发接口」就能生效的事；照抄旧列表会让它永远等不到下一次上游版本才出现。
-    const origins = [{ id: 'r2', kind: 'r2', root: opts.base, base: `${opts.base}/assets/` }];
+    const origins = [{ id: 'r2', kind: 'r2', root: opts.assetBase, base: `${opts.assetBase}/assets/` }];
     const extraOrigins = readExtraOrigins(ROOT);
     if (extraOrigins.length) log(`extra origins: ${extraOrigins.map((o) => o.id).join(', ')}`);
     origins.push(...extraOrigins);
@@ -532,7 +539,7 @@ async function main() {
     const dropin = await buildDropin({
       root: ROOT,
       out: outDir,
-      base: opts.base,
+      base: opts.assetBase,
       token: published.art.token,
       upstreamTag: published.upstream.tag,
       mirrorsJson: mirrorsDoc,
@@ -555,7 +562,7 @@ async function main() {
       const release = await resolveRelease(published.upstream.tag);
       const variant = await buildOfficialCdn({
         out: outDir,
-        base: opts.base,
+        base: opts.assetBase,
         token: published.art.token,
         release,
         cacheDir: path.join(ROOT, opts.work, 'upstream-lite'),
@@ -667,12 +674,12 @@ async function main() {
 
   const urls = [
     ...new Set(
-      manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.base, version })),
+      manifests.flatMap((entry) => manifestUrls(entry.text, { base: opts.assetBase, version })),
     ),
   ].sort();
   const expected = {};
   for (const url of urls) {
-    const key = url.slice(opts.base.length + 1).split('?')[0];
+    const key = url.slice(opts.assetBase.length + 1).split('?')[0];
     if (index.files[key]) expected[url] = index.files[key].size;
   }
 
@@ -787,9 +794,9 @@ async function main() {
 
         let refs = 0;
         if (manifestText) {
-          for (const url of manifestUrls(manifestText, { base: opts.base, version })) {
+          for (const url of manifestUrls(manifestText, { base: opts.assetBase, version })) {
             if (urls.includes(url)) continue;
-            const key = url.slice(opts.base.length + 1).split('?')[0];
+            const key = url.slice(opts.assetBase.length + 1).split('?')[0];
             if (sourceIndex.files[key]) expected[url] = sourceIndex.files[key].size;
             urls.push(url);
             refs++;
@@ -824,7 +831,7 @@ async function main() {
   }
 
   const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
-  await reconcileUnreachableFromBucket(config, probe, { expected, base: opts.base });
+  await reconcileUnreachableFromBucket(config, probe, { expected, base: opts.assetBase });
   report.verification = probe;
   report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
@@ -836,7 +843,7 @@ async function main() {
   // The size gate proves the objects are the right length; this proves a sample is the upstream
   // bytes, which is what rules out a re-encoded copy sitting under the same name.
   const sampled = sampleKeys(index.files, { sample: opts.sample });
-  const byteSample = await verifyByteSample(urlsForKeys(sampled, { base: opts.base, version }), {
+  const byteSample = await verifyByteSample(urlsForKeys(sampled, { base: opts.assetBase, version }), {
     files: index.files,
   });
   report.byteSample = byteSample;
@@ -922,7 +929,7 @@ async function main() {
         mirrorPrefixes: readMirrorPrefixes(ROOT),
         // The R2 copy of each pack, so the URL list offers our own domain and not only github and
         // third-party mirrors.
-        ownBase: opts.base,
+        ownBase: opts.assetBase,
       });
       report.packs = packs.map((p) => ({ id: p.id, files: p.files, bytes: p.bytes }));
     } catch (error) {
@@ -976,7 +983,7 @@ async function main() {
       const dropin = await buildDropin({
         root: ROOT,
         out: path.join(workDir, 'packs'),
-        base: opts.base,
+        base: opts.assetBase,
         token: version,
         upstreamTag: release.tag,
         mirrorsJson: mirrorsDoc,
@@ -1005,7 +1012,7 @@ async function main() {
     try {
       const variant = await buildOfficialCdn({
         out: path.join(workDir, 'packs'),
-        base: opts.base,
+        base: opts.assetBase,
         token: version,
         release,
         cacheDir: path.join(workDir, 'upstream-lite'),
