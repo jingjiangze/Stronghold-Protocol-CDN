@@ -204,7 +204,13 @@ export async function resolveDropin({ repo = RELEASES_REPO, prefixes = [], ownBa
 
 export async function buildSnapshot({ base, out, seeds = DEFAULT_SEEDS, log = console.log }) {
   const root = String(base).replace(/\/+$/, '');
-  const tries = [root, ...seeds.map((s) => String(s).replace(/\/+$/, '')).filter((s) => s !== root)];
+  // 顺序很重要：数据集是接口的 durable 家（publish-interface 每次重生成都推它），站点自身那份
+  // 只是上一次部署的副本 —— 排在前面会让旧件永久自我传染（实测：art 卡在 v0.2.6、index 已是
+  // v0.3.1，tree-refresh 的守卫因此一直拒发）。所以 seeds 优先，base 只作兜底。
+  const tries = [
+    ...seeds.map((s) => String(s).replace(/\/+$/, '')).filter((s, i, a) => s && a.indexOf(s) === i),
+    root,
+  ];
   const [artRaw, mirrorsRaw, index] = await Promise.all([
     fromSeeds(tries, 'cdn/v1/art.json', getJson),
     fromSeeds(tries, 'cdn/v1/mirrors.json', getJson),
