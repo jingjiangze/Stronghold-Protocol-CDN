@@ -1,0 +1,38 @@
+{
+ "format": "sp-bundle-parts",
+ "version": 1,
+ "original": "spresources-20261022.spresources",
+ "totalBytes": 1526903270,
+ "parts": [
+  {
+   "index": 1,
+   "name": "pack-01-of-05.spart",
+   "size": 314572800,
+   "sha256": "d78907e1c4bdc9d376efa951a404865321d4e9f24365112e89f6d147122db6eb"
+  },
+  {
+   "index": 2,
+   "name": "pack-02-of-05.spart",
+   "size": 314572800,
+   "sha256": "316c0aa954e0abbd75777c02a14bdeab482c8e3d6054820b75ed6669809a91e2"
+  },
+  {
+   "index": 3,
+   "name": "pack-03-of-05.spart",
+   "size": 314572800,
+   "sha256": "780ede17f781910337af979ad1a98835bea076531e761fad394d9f682a22586e"
+  },
+  {
+   "index": 4,
+   "name": "pack-04-of-05.spart",
+   "size": 314572800,
+   "sha256": "7e2182409b58a1e2befa07c6c9f01442c42584a1a05ee38d838a7951d1919ed4"
+  },
+  {
+   "index": 5,
+   "name": "pack-05-of-05.spart",
+   "size": 268612070,
+   "sha256": "7ea4b076da08393c119f8e61c03adff36d88e14924d636ff7ce4dc456e7b1b85"
+  }
+ ]
+}
