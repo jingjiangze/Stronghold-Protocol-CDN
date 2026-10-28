@@ -217,29 +217,27 @@ test('parking still works: openi stays parked in the shipped disabled list (CORS
   assert.ok((raw.disabled || []).includes('openi'), 'openi stays parked — reachable only through the ms-edge ?sp_source=openi channel');
 });
 
-// 2026-10-18: the dataset was switched to private (Visibility=1). Anonymous access answers 404 on
-// the dataset API / resolve and 403 ("无权访问该数据集") on repo/tree, so it can no longer be a
-// mirror an anonymous client can fetch. It is PARKED, not retired: the CDN's server-side path
-// still calls it through ModelScope's built-in private auth, so the entry must stay in the
-// interface (with `enabled:false`) rather than disappear from it.
-test('the shipped origins.json parks the private dataset and keeps it listed', () => {
+// 2026-10-18 数据集曾转私有并被 park（enabled:false、入 disabled、不进 order）。
+// 2026-10-24 它已恢复公开，并被重新启用、排到 order 第一位 —— 断言随之改写：
+// 数据集现在必须是**可匿名取字节的首选源**，既不能 disabled，也不能 retired。
+test('the shipped origins.json enables the public dataset and leads the order', () => {
   const raw = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'origins.json'), 'utf8'));
   const origins = readExtraOrigins(path.resolve(process.cwd(), '.'));
   const ds = origins.find((o) => o.id === 'ms-dataset');
-  assert.ok(ds, 'the dataset stays listed: the CDN still calls it server-side with ModelScope private auth');
-  assert.equal(ds.enabled, false, 'anonymous clients cannot fetch a private dataset, so it must not be selectable');
-  assert.ok((raw.disabled || []).includes('ms-dataset'), 'enabled:false must survive into the interface for both branches');
-  assert.ok(!(raw.retired || []).includes('ms-dataset'), 'retired would erase it from the interface — it is parked, not dead');
-  assert.ok(!(raw.order || []).includes('ms-dataset'), 'a source anonymous clients cannot fetch must not sit in the preferred order');
+  assert.ok(ds, 'the dataset stays listed: it is the leading origin while R2 is staging-only');
+  assert.notEqual(ds.enabled, false, '数据集已恢复公开，匿名客户端可以取字节，不能再 park');
+  assert.ok(!(raw.disabled || []).includes('ms-dataset'), '公开数据集不应留在 disabled 里');
+  assert.ok(!(raw.retired || []).includes('ms-dataset'), 'retired 会把它从接口里抹掉，而它是首选源');
+  assert.deepEqual((raw.order || []).slice(0, 1), ['ms-dataset'], 'R2 退役后首选源必须是数据集');
 });
 
 test('发布顺序把实测最快的源排在前面，未点名的 id 保持相对次序', () => {
   const order = readPreferredOrder(path.resolve(process.cwd(), '.'));
-  // 2026-10-19 用户指令：speedcdn 最优先。2026-10-20 weishucdn2 删域，r2-alt 移出。
-  assert.deepEqual(order.slice(0, 2), ['speedcdn', 'ms-edge'], 'speedcdn 最优先，其次 ms-edge');
+  // 2026-10-24 R2 域名解绑后，order 改为数据集在前（speedcdn/ms-edge 已退居 retired/parked）。
+  assert.deepEqual(order.slice(0, 2), ['ms-dataset', 'ghfast-assets'], '数据集最优先，其次 ghfast-assets');
   const list = [{ id: 'r2' }, { id: 'ghfast-assets' }, { id: 'ms-dataset' }, { id: 'retired-alt' }];
   // 未点名的 id 保持**原相对次序**（retired-alt 在 fixture 里排最后，就仍在最后）
-  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'retired-alt']);
+  assert.deepEqual(applyPreferredOrder(list, order).map((o) => o.id), ['ms-dataset', 'ghfast-assets', 'r2', 'retired-alt']);
   // 空 order = 原样返回（不改动历史行为）
   assert.deepEqual(applyPreferredOrder(list, []).map((o) => o.id), ['r2', 'ghfast-assets', 'ms-dataset', 'retired-alt']);
 });

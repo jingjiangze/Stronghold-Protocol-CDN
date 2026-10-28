@@ -121,6 +121,8 @@ for (const [label, p] of [['首页', '/'], ['/admin', '/admin'], ['/bandwidth', 
 }
 check('/docs/agent-upload.md', `https://downcdn.jiangjiangze.icu/docs/agent-upload.md${cb()}`, { code: '200', type: 'text/plain', min: 2000 }, 'GET');
 check('/data/snapshot.json', `https://downcdn.jiangjiangze.icu/data/snapshot.json${cb()}`, { code: '200', type: 'application/json', min: 100 }, 'GET');
+// 2026-10-28：R2 退役后首选源是魔搭数据集（origins.order[0]），它必须进体检，否则「最优先的门牌」没人盯。
+check('数据集首选源 probe.bin', 'https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/cdn/v1/probe.bin', { code: '200' }, 'GET');
 const html = safeCurl(['-sS', '--ssl-no-revoke', '-m', '45', `https://downcdn.jiangjiangze.icu/${cb()}`], 4 * 1024 * 1024) || '';
 const css = (html.match(/href="\.\/css\/(cdn\.[0-9a-f]+\.css)"/) || [])[1];
 const js = (html.match(/src="\.\/js\/(cdn\.[0-9a-f]+\.js)"/) || [])[1];

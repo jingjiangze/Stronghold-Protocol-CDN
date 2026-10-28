@@ -1,6 +1,8 @@
-// rank.mjs 的候选表：探针路径必须真实存在于 R2 桶，host 必须与 origins.json 的 order 第一位一致。
-// 2026-10-19 修的两处回归：探针曾指向只在 git 仓库里的 /probe/cdn-probe.bin（桶上 404），
-// host 曾写死 weishucdn（与 order 第一位的 speedcdn 不一致，rank 表里出现两个同源条目）。
+// rank.mjs / network-measure.mjs 的候选表不变量。
+//
+// 2026-10-28：R2 不再是访问源（origins.json 已把 r2 / r2-alt / speedcdn 记 retired，桶降级为上传暂存），
+// 所以候选表里不允许再出现 R2 条目；原先「r2 探针必须命中桶对象」「r2 host 必须等于 order 第一位」
+// 这两条断言编码的是 R2 当家的旧世界，已替换为下面这组。
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,49 +11,66 @@ import path from 'node:path';
 const ROOT = path.resolve(process.cwd(), '.');
 const RANK_SRC = fs.readFileSync(path.join(ROOT, 'src', 'rank.mjs'), 'utf8');
 const NET_SRC = fs.readFileSync(path.join(ROOT, 'src', 'network-measure.mjs'), 'utf8');
+const HEALTH_SRC = fs.readFileSync(path.join(ROOT, 'tools', 'health-sweep.mjs'), 'utf8');
 const origins = JSON.parse(fs.readFileSync(path.join(ROOT, 'origins.json'), 'utf8'));
 
-/** 取 candidates() 里那条硬编码的 r2 条目。 */
-function hardcodedR2(src) {
-  const m = /\{\s*id:\s*'r2'[\s\S]{0,200}?\}/.exec(src);
-  assert.ok(m, 'rank/network 源码里应有一条硬编码的 r2 候选');
-  const host = /host:\s*'([^']+)'/.exec(m[0]);
-  const probe = /probe:\s*'([^']+)'/.exec(m[0]);
-  return { host: host?.[1], probe: probe?.[1] };
+/** 源码里真正参与探测的候选对象（`{ id: '…', host: … }`），注释行不算。 */
+function candidates(src) {
+  const out = [];
+  for (const line of src.split('\n')) {
+    if (/^\s*(\/\/|\*|\/\*)/.test(line)) continue;
+    const m = /\{\s*id:\s*'([^']+)'([^}]*)\}/.exec(line);
+    if (!m) continue;
+    out.push({
+      id: m[1],
+      host: (/host:\s*'([^']+)'/.exec(m[2]) || [])[1],
+      probe: (/probe:\s*'([^']+)'/.exec(m[2]) || [])[1],
+    });
+  }
+  return out;
 }
 
-test('rank.mjs 的 r2 探针路径是桶里真实存在的对象', () => {
-  const { probe } = hardcodedR2(RANK_SRC);
-  // /probe/cdn-probe.bin 只活在 git 仓库（git 挂载源能取到），R2 桶上 404。
-  assert.notEqual(probe, '/probe/cdn-probe.bin', '该路径在 R2 桶上不存在，实时探测每次都在量必然失败的路径');
-  assert.match(probe, /^\/cdn\/v1\/probe\.bin$/, `r2 的探针必须是桶里的接口对象，实际是 ${probe}`);
+const allRoots = [...(origins.extraOrigins || []), ...(origins.gitOrigins || [])];
+const rootOf = (id) => allRoots.find((o) => o.id === id)?.root;
+
+test('R2 已退役：候选表里不得再出现 r2 条目', () => {
+  const retired = origins.retired || [];
+  for (const id of ['r2', 'r2-alt', 'speedcdn']) {
+    assert.ok(retired.includes(id), `${id} 必须留在 origins.json 的 retired 里（R2 只做上传暂存）`);
+  }
+  const rankIds = candidates(RANK_SRC).map((c) => c.id);
+  assert.ok(!rankIds.includes('r2'), `rank.mjs 仍把 r2 当候选：${rankIds.join(', ')}`);
+  // network-measure 允许保留 r2 作为历史测速口径，但它不能出现在 order 里误导选源。
+  assert.ok(!(origins.order || []).includes('r2'), 'r2 不得出现在 order 里');
 });
 
-test('rank.mjs 与 network-measure.mjs 给 r2 用同一个探针路径与同一个 host', () => {
-  const a = hardcodedR2(RANK_SRC);
-  const b = hardcodedR2(NET_SRC);
-  assert.equal(a.probe, b.probe, `两条链的 r2 探针不一致：rank=${a.probe} network=${b.probe}`);
-  assert.equal(a.host, b.host, `两条链的 r2 host 不一致：rank=${a.host} network=${b.host}（两条链必须指向 order 第一位的同一个门牌）`);
-});
-
-test('rank.mjs 的 r2 host 与 origins.json 的 order 第一位一致', () => {
-  const { host } = hardcodedR2(RANK_SRC);
-  const lead = origins.order[0];
-  const leadRoot = origins.extraOrigins.find((o) => o.id === lead)?.root;
-  const leadHost = leadRoot ? new URL(leadRoot).host : null;
-  // order 第一位是 r2 系门牌时，硬编码 host 必须跟着它；否则 rank 表里 r2 与 speedcdn
-  // 会各报一个不同门牌，看起来像两个源在竞争排名（实际同桶同字节）。
-  if (leadHost && /weishucdn|speedcdn/.test(leadHost)) {
-    assert.equal(host, leadHost, `order 第一位是 ${lead}(${leadHost})，硬编码 host 却是 ${host}`);
+test('任何候选的探针都指向接口对象，而不是只活在 git 里的路径', () => {
+  for (const [name, src] of [['rank.mjs', RANK_SRC], ['network-measure.mjs', NET_SRC]]) {
+    for (const c of candidates(src)) {
+      if (!c.probe) continue;
+      assert.notEqual(c.probe, '/probe/cdn-probe.bin', `${name} 的 ${c.id} 探针指向只在 git 里的路径，桶上 404`);
+      assert.match(c.probe, /^\//, `${name} 的 ${c.id} 探针必须是根相对路径，实际 ${c.probe}`);
+    }
   }
 });
 
-test('health-sweep 覆盖 order 第一位的门牌', () => {
-  const src = fs.readFileSync(path.join(ROOT, 'tools', 'health-sweep.mjs'), 'utf8');
-  const lead = origins.order[0];
-  const leadRoot = origins.extraOrigins.find((o) => o.id === lead)?.root;
-  const leadHost = leadRoot ? new URL(leadRoot).host : null;
-  if (leadHost) {
-    assert.ok(src.includes(leadHost), `health-sweep 没测最优先门牌 ${leadHost}（用户已指定它优先）`);
+test('同一条链路里同一个 id 只用一个 host', () => {
+  for (const [name, src] of [['rank.mjs', RANK_SRC], ['network-measure.mjs', NET_SRC]]) {
+    const seen = new Map();
+    for (const c of candidates(src)) {
+      if (!c.host) continue;
+      const prev = seen.get(c.id);
+      assert.ok(!prev || prev === c.host, `${name} 里 ${c.id} 出现两个 host：${prev} / ${c.host}`);
+      seen.set(c.id, c.host);
+    }
+  }
+});
+
+test('health-sweep 覆盖 order 里每个源的门牌', () => {
+  for (const id of origins.order || []) {
+    const root = rootOf(id);
+    assert.ok(root, `order 里的 ${id} 在 origins.json 找不到 root`);
+    const host = new URL(root).host;
+    assert.ok(HEALTH_SRC.includes(host), `health-sweep 没测最优先门牌 ${host}（${id}）`);
   }
 });
