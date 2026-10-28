@@ -245,6 +245,27 @@ async function dropStaging(config, key, { dry }) {
   await deleteObject(config, key);
 }
 
+/**
+ * Run `worker` over `items` with at most `limit` in flight, keeping results in input order.
+ *
+ * 保序是硬要求：promote 的 report、hosted.json 的写入顺序、以及「先算摘要再复制」的条目内顺序
+ * 都要可复现。并发只用来摊时间，不用来改变可观察的顺序。
+ */
+export async function runWave(items, limit, worker) {
+  const results = new Array(items.length);
+  let next = 0;
+  const pump = async () => {
+    for (;;) {
+      const i = next++;
+      if (i >= items.length) return;
+      results[i] = await worker(items[i], i);
+    }
+  };
+  const width = Math.min(Math.max(1, limit), Math.max(1, items.length));
+  await Promise.all(Array.from({ length: width }, pump));
+  return results;
+}
+
 export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } = {}) {
   const config = r2Config(process.env);
   const report = { dry, scanned: 0, published: [], rejected: [], already: [], held: [], skippedNoClaim: 0, pendingLeft: 0, errors: [] };
@@ -264,44 +285,34 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
   // 触发式发布是「PENDING_LEFT>0 就自己再投一轮」，把待审计的算进去就会无限自投。
   const heldIds = new Set();
 
-  for (let i = 0; i < groups.length; i++) {
-    const g = groups[i];
-    if (!g.claim) {
-      report.skippedNoClaim++;
-      continue;
-    }
-    const done = report.published.length + report.rejected.length + report.already.length;
-    if (done >= max || Date.now() >= deadline) {
-      // 还剩多少要发的必须报出来：触发式发布靠这个数字决定"做完这一轮马上再来一轮"，
-      // 而不是回头等定时。
-      report.pendingLeft = groups.slice(i).filter((x) => x.claim && !heldIds.has(x.id)).length;
-      const why = done >= max ? `到单轮上限 ${max}` : `到单轮时间预算 ${budgetSeconds}s（已处理 ${done} 份）`;
-      log(`${why}，还剩 ${report.pendingLeft} 份等下一轮`);
-      break;
-    }
+  // 并发度：默认 1（与历史行为逐字节一致），由 SP_PROMOTE_CONCURRENCY 打开。
+  // 单条要 7 次 R2 往返（读 claim / HEAD / 整对象 digest / CopyObject / HEAD / 两次 DELETE），
+  // 串行时 500 份就是 21 分钟 —— 而条目之间没有共享状态（注释里那句「各自独立过闸」），
+  // 所以并行的边界只能是「一轮多少条」，不是「哪些条」。
+  const concurrency = Math.max(1, Number(process.env.SP_PROMOTE_CONCURRENCY || 1));
+
+  /** 处理一个暂存组。只读 config/dry，结果返回给调用方按顺序合并 —— 并发下才可复现同一份 report。 */
+  const processGroup = async (g) => {
+    if (!g.claim) return { kind: 'no-claim' };
     const payloadSize = g.payload?.size ?? null;
     let claim = null;
     try {
       claim = await readJsonKey(config, g.claim.key);
     } catch (error) {
-      report.errors.push({ id: g.id, error: `读 claim 失败：${error.message}` });
-      continue;
+      return { kind: 'error', entry: { id: g.id, error: `读 claim 失败：${error.message}` } };
     }
-    if (!claim) {
-      report.errors.push({ id: g.id, error: 'claim.json 不是合法 JSON' });
-      continue;
-    }
+    if (!claim) return { kind: 'error', entry: { id: g.id, error: 'claim.json 不是合法 JSON' } };
 
     const verdict = claimIsPublishable(claim, { payloadSize });
     if (verdict.hold) {
       // 待审计 ≠ 不合格：不合格会删暂存字节，而这一份就是要留在暂存区等人放行。
       // 不动字节、不登记 hosted.json、不进日志 —— 对外零影响，放行之后才走正常验收。
-      heldIds.add(g.id);
-      report.held.push({ id: g.id, key: claim.key, size: claim.size, source: claim.source || '', reason: verdict.reason });
-      continue;
+      return {
+        kind: 'held',
+        entry: { id: g.id, key: claim.key, size: claim.size, source: claim.source || '', reason: verdict.reason },
+      };
     }
     if (!verdict.ok || !g.payload) {
-      report.rejected.push({ id: g.id, key: claim.key, reason: !g.payload ? '有 claim 但没有字节对象' : verdict.reason });
       if (!dry) {
         // 两次删除互相独立，串行只是白等一个 R2 往返。
         await Promise.all([
@@ -309,7 +320,10 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
           ...(g.payload ? [dropStaging(config, g.payload.key, { dry })] : []),
         ]);
       }
-      continue;
+      return {
+        kind: 'rejected',
+        entry: { id: g.id, key: claim.key, reason: !g.payload ? '有 claim 但没有字节对象' : verdict.reason },
+      };
     }
 
     // 只增：目标键已经有东西了，只有「字节就是同一份」才允许继续。
@@ -317,23 +331,24 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     if (before) {
       const same = Number(before.size) === Number(claim.size) && String(before.meta?.sha256 || '') === claim.sha256;
       if (!same) {
-        report.rejected.push({
-          id: g.id,
-          key: claim.key,
-          reason: `目标键已存在且不是同一份（现网 ${before.size} 字节 / 声明 ${claim.size} 字节）—— 后台不覆盖`,
-        });
         if (!dry) {
           await dropStaging(config, g.payload.key, { dry });
           await dropStaging(config, g.claim.key, { dry });
         }
-        continue;
+        return {
+          kind: 'rejected',
+          entry: {
+            id: g.id,
+            key: claim.key,
+            reason: `目标键已存在且不是同一份（现网 ${before.size} 字节 / 声明 ${claim.size} 字节）—— 后台不覆盖`,
+          },
+        };
       }
-      report.already.push({ id: g.id, key: claim.key, size: before.size });
       if (!dry) {
         await dropStaging(config, g.payload.key, { dry });
         await dropStaging(config, g.claim.key, { dry });
       }
-      continue;
+      return { kind: 'already', entry: { id: g.id, key: claim.key, size: before.size } };
     }
 
     // 摘要以字节为准，不以调用方声明为准 —— 这是「上线的确实是你传的那份」的唯一凭据。
@@ -341,26 +356,29 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     try {
       measured = await sha256OfObject(config, g.payload.key, claim.size);
     } catch (error) {
-      report.errors.push({ id: g.id, key: claim.key, error: `读字节失败：${error.message}` });
-      continue;
+      return { kind: 'error', entry: { id: g.id, key: claim.key, error: `读字节失败：${error.message}` } };
     }
     if (measured.sha256 !== claim.sha256) {
-      report.rejected.push({
-        id: g.id,
-        key: claim.key,
-        reason: `sha256 不符：声明 ${claim.sha256}，实测 ${measured.sha256}`,
-      });
       if (!dry) {
         await dropStaging(config, g.payload.key, { dry });
         await dropStaging(config, g.claim.key, { dry });
       }
-      continue;
+      return {
+        kind: 'rejected',
+        entry: {
+          id: g.id,
+          key: claim.key,
+          reason: `sha256 不符：声明 ${claim.sha256}，实测 ${measured.sha256}`,
+        },
+      };
     }
 
     if (dry) {
-      report.published.push({ id: g.id, key: claim.key, size: claim.size, sha256: measured.sha256, source: claim.source, dry: true });
-      log(`dry-run：${claim.key}（${claim.size} 字节）核对通过，未写入`);
-      continue;
+      return {
+        kind: 'published',
+        entry: { id: g.id, key: claim.key, size: claim.size, sha256: measured.sha256, source: claim.source, dry: true },
+        log: `dry-run：${claim.key}（${claim.size} 字节）核对通过，未写入`,
+      };
     }
 
     await copyObject(config, g.payload.key, claim.key, {
@@ -371,22 +389,75 @@ export async function promote({ dry = false, max = 2000, budgetSeconds = 1200 } 
     const after = await headObject(config, claim.key);
     if (!after || Number(after.size) !== Number(claim.size)) {
       // 复制没落地就把 staging 留着，claim 也不删 —— 下一轮还能重试，别把字节丢了。
-      report.errors.push({ id: g.id, key: claim.key, error: `复制后 HEAD ${after ? `${after.size} 字节` : '为空'}，与声明 ${claim.size} 不符` });
-      continue;
+      return {
+        kind: 'error',
+        entry: {
+          id: g.id,
+          key: claim.key,
+          error: `复制后 HEAD ${after ? `${after.size} 字节` : '为空'}，与声明 ${claim.size} 不符`,
+        },
+      };
     }
     await Promise.all([
       dropStaging(config, g.payload.key, { dry }),
       dropStaging(config, g.claim.key, { dry }),
     ]);
-    report.published.push({
-      id: g.id,
-      key: claim.key,
-      size: after.size,
-      sha256: measured.sha256,
-      source: claim.source,
-      what: claim.what,
-    });
-    log(`published ${claim.key} (${after.size} B, sha256 ${measured.sha256.slice(0)}…)`);
+    return {
+      kind: 'published',
+      entry: {
+        id: g.id,
+        key: claim.key,
+        size: after.size,
+        sha256: measured.sha256,
+        source: claim.source,
+        what: claim.what,
+      },
+      log: `published ${claim.key} (${after.size} B, sha256 ${measured.sha256.slice(0)}…)`,
+    };
+  };
+
+  /** 按输入顺序合并一批结果 —— 并发只影响耗时，不影响 report 的顺序与计数。 */
+  const merge = (outcome) => {
+    switch (outcome.kind) {
+      case 'no-claim':
+        report.skippedNoClaim++;
+        break;
+      case 'held':
+        heldIds.add(outcome.entry.id);
+        report.held.push(outcome.entry);
+        break;
+      case 'rejected':
+        report.rejected.push(outcome.entry);
+        break;
+      case 'already':
+        report.already.push(outcome.entry);
+        break;
+      case 'published':
+        report.published.push(outcome.entry);
+        break;
+      case 'error':
+        report.errors.push(outcome.entry);
+        break;
+      default:
+        throw new Error(`unknown outcome ${outcome.kind}`);
+    }
+    if (outcome.log) log(outcome.log);
+  };
+
+  for (let i = 0; i < groups.length; ) {
+    const done = report.published.length + report.rejected.length + report.already.length;
+    if (done >= max || Date.now() >= deadline) {
+      // 还剩多少要发的必须报出来：触发式发布靠这个数字决定"做完这一轮马上再来一轮"，
+      // 而不是回头等定时。
+      report.pendingLeft = groups.slice(i).filter((x) => x.claim && !heldIds.has(x.id)).length;
+      const why = done >= max ? `到单轮上限 ${max}` : `到单轮时间预算 ${budgetSeconds}s（已处理 ${done} 份）`;
+      log(`${why}，还剩 ${report.pendingLeft} 份等下一轮`);
+      break;
+    }
+    // 单波不超过剩余配额，否则会越过 --max。
+    const wave = groups.slice(i, i + Math.min(concurrency, Math.max(1, max - done)));
+    i += wave.length;
+    for (const outcome of await runWave(wave, concurrency, processGroup)) merge(outcome);
   }
 
   if (!report.published.length) return report;

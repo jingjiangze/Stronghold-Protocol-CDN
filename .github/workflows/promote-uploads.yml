@@ -63,7 +63,7 @@ jobs:
 
       # 契约层出问题就别碰桶了 —— 与 sync.yml 同一道闸，两边不能一边严一边松。
       - name: unit tests
-        run: node --test tests/upload.test.mjs tests/hosted.test.mjs tests/tree-index.test.mjs tests/lineup-alias.test.mjs tests/lineup-channel.test.mjs
+        run: node --test tests/upload.test.mjs tests/hosted.test.mjs tests/tree-index.test.mjs tests/lineup-alias.test.mjs tests/lineup-channel.test.mjs tests/promote-wave.test.mjs
 
       - name: promote
         env:
@@ -71,6 +71,9 @@ jobs:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          # 每条要 7 次 R2 往返；条目之间无共享状态，所以并发只摊时间、不改语义。
+          # 默认 1 保持历史行为，这里显式开 4：再高要先确认 R2 的速率与 runner 的出流。
+          SP_PROMOTE_CONCURRENCY: '4'
         run: |
           set -euo pipefail
           # The `|| N` fallbacks and the inputs' `default:` above are the same numbers in two places,
