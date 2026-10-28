@@ -135,7 +135,7 @@
       </div>
     </div>
 
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>镜像源清单（2026-10-15 实测；2026-10-19 更新）：</b>① R2 桶（三域名，字节真源；<b>speedcdn 优先</b>）；② 🔒 <b>魔搭数据集已转私有</b>——匿名 <code class="inline">resolve</code> 404、<code class="inline">repo/tree</code> 403，不再是匿名客户端可取的镜像、也已移出 <code class="inline">order</code>；<b>但它没有被停用</b>——在 <code class="inline">origins.json</code> 里以 <code class="inline">enabled:false</code> 保留，CDN 的服务端链路继续调用它（魔搭内置私有鉴权；所有者会话 <code class="inline">resolve</code> 200 / 56,617 字节），公开字节由 ① 承接；③ OpenI 启智（<code class="inline">openi.pcl.ac.cn/.../raw/branch/assets-raw</code>，最快但 CORS 写死第三方域不可用，仅 <code class="inline">?sp_source=openi</code> 点名可达）；④ ghfast / jsDelivr（GitHub 代理，可用率低）；⑤ gitcdn-own（自有中转 Worker）；⑥ spages（Pages）。</span>
     </div>
   </section>

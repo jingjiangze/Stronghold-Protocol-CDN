@@ -99,7 +99,7 @@
         </tbody>
       </table>
     </div>
-    <p class="section-note" style="margin-top:14px">
+    <p class="section-note mt-14">
       抽样 CDN URL 实测 <code class="inline">200</code> + <code class="inline">Access-Control-Allow-Origin: *</code> 通过。
     </p>
   </section>
@@ -122,7 +122,7 @@
         <p>用 <code class="inline">tree.json</code> 的目录清单判断会漏掉整批文件。</p>
       </div>
     </div>
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>3 · <code class="inline">HEAD</code> 实测反查：</b>对「缺失」列表逐一带 <code class="inline">HEAD</code> 实测，
       才发现大量文件已在 CDN。<b>处置</b>：以桶实况（<code class="inline">HEAD</code> 实测）为准，
       弃用 <code class="inline">index.json</code> / <code class="inline">tree.json</code> 作为「有没有」的判断依据。</span>
@@ -135,7 +135,7 @@
       <div><div class="eyebrow">SAFETY</div><h2>风险排查：spine atlas 相对路径</h2></div>
       <span class="section-status">1,159 个目录 · 0 个混用</span>
     </div>
-    <p class="section-note" style="margin-bottom:12px">
+    <p class="section-note mb-12">
       spine 的 <code class="inline">atlas</code> 按相对路径找同目录 <code class="inline">png</code>。
       若「同一 spine 目录里部分文件走 CDN、部分留本机」会渲染失败。
     </p>
@@ -162,7 +162,7 @@
         </ul>
       </div>
     </div>
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>客户端拿清单的两个入口：</b><code class="inline">data/assets.json</code>（主清单，改写
       <code class="inline">/assets|fonts/</code> 绝对 URL，随 ETag 缓存）与 <code class="inline">data/local-assets.json</code>
       （本地客户端美术覆盖，同上）；<code class="inline">emotes.json</code> 同机制。<br />

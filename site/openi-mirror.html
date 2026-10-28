@@ -89,7 +89,7 @@
 
 <i>// 同时写进 disabled 数组（双写防静默启用）</i>
 "disabled": [ "jsdelivr", "jsdelivr-assets", "openi" ]</pre>
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>双写为什么必要：</b>主链读条目自身的 <code class="inline">enabled</code>，多源链读 <code class="inline">disabled</code> 列表。
       只写一处，下一次由另一条链发布的 <code class="inline">mirrors.json</code> 就可能把它当可用源放出。两条都写成，
       不论哪条链先发布，它都不会被选中。</span>
@@ -129,7 +129,7 @@
     </div>
     <pre class="code"><i># 带 / 不带 Origin，结果一致</i>
 Access-Control-Allow-Origin: https://experience.pro.iflyaicloud.com</pre>
-    <p class="block__lead" style="margin-top:14px">
+    <p class="block__lead mt-14">
       这是<b>写死的第三方域</b>，不反射请求方、也无 <code class="inline">Vary: Origin</code>。后果：浏览器跨域拿不到响应——
       对本项目就是那句老问题：<b>WebGL 贴图被污染，棋盘静默变白</b>。所以它<b>不能作为玩家运行时源</b>。
     </p>

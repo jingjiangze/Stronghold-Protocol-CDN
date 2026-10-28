@@ -24,7 +24,30 @@
   --accent-ink: #142d24;
   --amber: #e3bd72;
   --red: #eea19c;
+  /* accent / amber 的透明度变体：这些值原先在 12 处硬编码，改一处配色要满文件搜。 */
+  --accent-08: var(--accent-08);
+  --accent-12: var(--accent-12);
+  --accent-14: var(--accent-14);
+  --accent-33: var(--accent-33);
+  --accent-bright: var(--accent-bright);
+  --amber-ink: var(--amber-ink);
+  --amber-line: var(--amber-line);
+  --amber-text: var(--amber-text);
+  --amber-04: var(--amber-04);
+  --amber-06: var(--amber-06);
+  --amber-08: var(--amber-08);
+  --amber-17: var(--amber-17);
+  /* 边框强调色（数字徽章、chip）：同一族构件的共用描边。 */
+  --line-accent: var(--line-accent);
+  /* 非徽章表面的两个额外层级：代码块比 --bg 更深，次按钮比 --surface 更亮。 */
+  --code-bg: var(--code-bg);
+  --btn-2-bg: var(--btn-2-bg);
+  --btn-2-bg-hover: var(--btn-2-bg-hover);
+  --btn-2-line: var(--btn-2-line);
+  --topbar-bg: var(--topbar-bg);
   --radius: 14px;
+  --radius-md: 10px;
+  --radius-sm: 8px;
   --font: Inter, "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
 }
@@ -53,24 +76,31 @@ h1, h2, h3, p { margin: 0; }
 button { font: inherit; cursor: pointer; }
 svg { flex-shrink: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-::selection { background: #a5eccd33; }
+::selection { background: var(--accent-33); }
 
 /* ---- layout ------------------------------------------------------------------------------ */
 
 .container { width: min(1180px, calc(100% - 64px)); margin-inline: auto; }
 
-.topbar { border-bottom: 1px solid var(--line-soft); background: #101719cc; position: sticky; top: 0; z-index: 5; backdrop-filter: blur(6px); }
+.topbar { border-bottom: 1px solid var(--line-soft); background: var(--topbar-bg); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(6px); }
 .topbar-inner { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 
 .brand { display: flex; align-items: center; gap: 12px; font-size: 16px; font-weight: 600; letter-spacing: .2px; }
 .brand b { color: var(--dim); font-weight: 400; }
 .brand small { display: block; font-size: 8px; letter-spacing: 2.2px; color: var(--dim); margin-top: 1px; }
-.brand-mark { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border: 1px solid #618273; border-radius: 8px; color: var(--accent); font-size: 14px; letter-spacing: -.5px; background: #a5eccd08; flex-shrink: 0; }
+/* 三种「方形/圆形数字徽章」共用同一套骨架，只有尺寸/圆角/字号不同。 */
+.brand-mark, .block__num, .step__n {
+  color: var(--accent);
+  border: 1px solid var(--line-accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.brand-mark { position: relative; width: 38px; height: 38px; border-radius: var(--radius-sm); font-size: 14px; letter-spacing: -.5px; background: var(--accent-08); }
 .brand-mark span { position: absolute; width: 6px; height: 6px; right: -3px; bottom: -3px; background: var(--accent); border: 2px solid var(--bg); }
 
 .navigation { display: flex; gap: 26px; font-size: 12px; color: var(--muted); }
-.navigation a:hover { color: var(--accent); }
-
+.navigation a:hover, 
 .nav-feedback { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; white-space: nowrap; }
 .status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 
@@ -102,7 +132,7 @@ h3 { font-size: 15px; font-weight: 600; }
 .mirror-index { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
 .mirror-index a {
   font-size: 12px; color: var(--muted); text-decoration: none;
-  border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 14px;
   transition: border-color .15s, color .15s, background .15s;
 }
 .mirror-index a:hover { color: var(--fg); border-color: var(--accent); background: var(--surface-raised); }
@@ -124,12 +154,12 @@ h3 { font-size: 15px; font-weight: 600; }
 .card__stats span { display: inline-flex; align-items: baseline; gap: 5px; }
 .badge { position: absolute; top: -9px; right: 14px; background: var(--accent); color: var(--accent-ink); font-size: 10px; font-weight: 650; letter-spacing: 1.2px; padding: 2px 8px; border-radius: 6px; }
 /* A "最快" winner that carries no asset tree: amber, so it never reads as a usable asset base. */
-.badge--warn { background: var(--amber); color: #241a06; }
+.badge--warn { background: var(--amber); color: var(--amber-ink); }
 /* A git mount serves only what is committed to git; the @main mounts have no asset tree. */
 .chip { margin-left: auto; font-size: 10px; color: var(--dim); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
-.chip--warn { color: var(--amber); border-color: #6b5527; background: #e3bd7214; }
+.chip--warn { color: var(--amber); border-color: var(--amber-line); background: var(--amber-08); }
 /* The warning under a card whose base must never be used as an asset base. */
-.card__warn { margin-top: 10px; padding: 8px 10px; font-size: 11.5px; line-height: 1.6; color: #e6c48a; background: #e3bd7210; border: 1px solid #6b5527; border-radius: 7px; }
+.card__warn { margin-top: 10px; padding: 8px 10px; font-size: 11.5px; line-height: 1.6; color: var(--amber-text); background: var(--amber-06); border: 1px solid var(--amber-line); border-radius: 7px; }
 .mono { font-family: var(--mono); font-size: 12px; }
 .muted { color: var(--muted); }
 /* 上传队列里「按名字对不上素材树」的目标键：琥珀色，和「待放行」同一族信号。
@@ -143,7 +173,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12
 th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
 thead th { background: var(--surface-raised); color: var(--dim); font-weight: 600; font-size: 11px; letter-spacing: .9px; text-transform: uppercase; white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
-tbody tr:hover td { background: #a5eccd08; }
+tbody tr:hover td { background: var(--accent-08); }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 td.mono { font-family: var(--mono); font-size: 11.5px; word-break: break-all; }
 
@@ -156,9 +186,9 @@ a.pack-link:hover { border-bottom-color: currentColor; }
 
 pre.code {
   margin: 12px 0 0;
-  background: #0d1315;
+  background: var(--code-bg);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   overflow-x: auto;
   font-family: var(--mono);
@@ -173,18 +203,18 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
 
 /* ---- notices / buttons ------------------------------------------------------------------- */
 
-.notice { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; background: #e3bd720a; border: 1px solid #e3bd722b; color: var(--amber); font-size: 12px; border-radius: 10px; padding: 12px 14px; line-height: 1.75; }
+.notice { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 0; background: var(--amber-04); border: 1px solid var(--amber-17); color: var(--amber); font-size: 12px; border-radius: var(--radius-md); padding: 12px 14px; line-height: 1.75; }
 .notice b { font-weight: 650; }
 .notice a { text-decoration: underline; }
 
 .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border: 1px solid transparent; border-radius: 8px; min-height: 42px; font-size: 13px; font-weight: 650; transition: background .15s, border-color .15s, transform .15s; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 16px; border: 1px solid transparent; border-radius: var(--radius-sm); min-height: 42px; font-size: 13px; font-weight: 650; transition: background .15s, border-color .15s, transform .15s; }
 .button:hover { transform: translateY(-1px); }
 .button-primary { background: var(--accent); color: var(--accent-ink); }
-.button-primary:hover { background: #c4f7df; }
+.button-primary:hover { background: var(--accent-bright); }
 .button-primary:disabled { opacity: .55; cursor: wait; transform: none; }
-.button-secondary { background: #203230; color: var(--accent); border-color: #3b5750; }
-.button-secondary:hover { background: #2a403b; border-color: var(--accent); }
+.button-secondary { background: var(--btn-2-bg); color: var(--accent); border-color: var(--btn-2-line); }
+.button-secondary:hover { background: var(--btn-2-bg-hover); border-color: var(--accent); }
 .button[hidden] { display: none; }
 
 /* ---- footer ------------------------------------------------------------------------------ */
@@ -228,14 +258,14 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
 .block + .block { margin-top: 0; }
 
 .block__head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
-.block__num { width: 30px; height: 30px; border-radius: 9px; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 14px; font-weight: 650; background: #a5eccd08; flex-shrink: 0; }
+.block__num { width: 30px; height: 30px; border-radius: 9px; font-size: 14px; font-weight: 650; background: var(--accent-08); }
 .block__title { font-size: 20px; font-weight: 650; letter-spacing: -.4px; }
 .block__who { margin-left: auto; font-size: 11px; color: var(--dim); letter-spacing: .4px; }
 .block__lead { color: var(--muted); font-size: 13px; line-height: 1.8; max-width: 82ch; margin-top: 6px; }
 
 .steps { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 14px; }
 .step { display: flex; gap: 14px; align-items: flex-start; }
-.step__n { width: 24px; height: 24px; border-radius: 50%; background: #a5eccd14; border: 1px solid #618273; color: var(--accent); display: grid; place-items: center; font-size: 12px; font-weight: 650; flex-shrink: 0; margin-top: 1px; }
+.step__n { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-14); font-size: 12px; font-weight: 650; margin-top: 1px; }
 .step__body { min-width: 0; }
 .step__title { font-size: 14px; font-weight: 600; }
 .step__note { font-size: 12px; color: var(--dim); line-height: 1.8; margin-top: 4px; }
@@ -243,19 +273,12 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
 .download {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin: 16px 0 4px; padding: 14px 16px;
-  background: var(--surface-raised); border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-md);
 }
 .download__meta { font-size: 12px; color: var(--dim); line-height: 1.7; }
 .download__meta b { color: var(--fg); font-weight: 600; }
-/* The A/B label spans the whole row: it names the situation the choice applies to, so it has to
-   read before the buttons rather than sit beside them. */
-.download__label {
-  flex-basis: 100%; font-size: 12px; font-weight: 650; color: var(--fg);
-  letter-spacing: .02em; margin-bottom: -4px;
-}
-
 .two-col { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); margin-top: 16px; }
-.mini { background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.mini { background: var(--surface-raised); border: 1px solid var(--line-soft); border-radius: var(--radius-md); padding: 14px 16px; min-width: 0; }
 .mini h4 { margin: 0 0 8px; font-size: 13px; font-weight: 650; color: var(--fg); }
 .mini p, .mini li { font-size: 12px; color: var(--muted); line-height: 1.8; }
 .mini ul { margin: 0; padding-left: 18px; }
@@ -272,7 +295,7 @@ code.inline { font-family: var(--mono); font-size: 12px; background: var(--surfa
    DOM, and anything that assumed a full render (zebra striping by nth-child, for instance) would
    stripe the wrong things. */
 .tree {
-  border: 1px solid var(--line-soft); border-radius: 10px; background: var(--surface);
+  border: 1px solid var(--line-soft); border-radius: var(--radius-md); background: var(--surface);
   padding: 8px 0; max-height: 620px; overflow: auto;
 }
 .tree__row {
@@ -292,7 +315,7 @@ a.tree__name:hover { color: var(--accent); text-decoration: underline; }
 .tree__note { color: var(--dim); font-size: 11px; line-height: 1.5; padding: 1px 12px 3px; word-break: break-word; }
 .tree__row:hover ~ .tree__note, .tree__note:hover { color: var(--fg); }
 /* The hosted badge sits next to the name, not at the row end, so it reads as part of the name. */
-.chip--mod { margin-left: 0; color: var(--accent); border-color: #618273; background: #a5eccd12; }
+.chip--mod { margin-left: 0; color: var(--accent); border-color: var(--line-accent); background: var(--accent-12); }
 .toolbar input[type="search"] {
   flex: 1 1 260px; min-width: 200px; padding: 7px 10px; font: inherit; font-size: 12px;
   color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 7px;
@@ -308,3 +331,27 @@ a.tree__name:hover { color: var(--accent); text-decoration: underline; }
 .fold__chevron { font-size: 14px; color: var(--dim); transition: transform .15s; transform: rotate(0deg); }
 .fold[open] .fold__chevron { transform: rotate(90deg); }
 .fold > :not(summary) { margin-top: 0; }
+
+/* ---- spacing utilities -------------------------------------------------------------------- */
+/* 这些类是为了把页面里 97 处 `style="margin-top:Npx"` 收回样式表。用 !important 是刻意的：
+   它们替代的是行内样式，行内样式优先级最高，不加就无法保证「换完与换前逐像素一致」。 */
+
+.mt-2 { margin-top: 2px !important; }
+.mt-4 { margin-top: 4px !important; }
+.mt-6 { margin-top: 6px !important; }
+.mt-8 { margin-top: 8px !important; }
+.mt-10 { margin-top: 10px !important; }
+.mt-12 { margin-top: 12px !important; }
+.mt-14 { margin-top: 14px !important; }
+.mt-16 { margin-top: 16px !important; }
+.mt-18 { margin-top: 18px !important; }
+.mt-22 { margin-top: 22px !important; }
+.mt-20 { margin-top: 20px !important; }
+.mt-24 { margin-top: 24px !important; }
+.mt-26 { margin-top: 26px !important; }
+.mb-12 { margin-bottom: 12px !important; }
+.mb-14 { margin-bottom: 14px !important; }
+.mb-10 { margin-bottom: 10px !important; }
+.mb-26 { margin-bottom: 26px !important; }
+.ml-10 { margin-left: 10px !important; }
+.ml-12 { margin-left: 12px !important; }

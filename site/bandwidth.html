@@ -64,7 +64,7 @@
       压完之后 <b>稳态不再是瓶颈</b> —— 真约束变成<b>新玩家冷启动的 5.4 MB</b>（比对局流量贵 27 倍）。
     </p>
 
-    <div class="table-wrap" style="margin-top:16px">
+    <div class="table-wrap mt-16">
       <table>
         <thead><tr><th></th><th>稳态（默认配置）</th><th>首次进场（新玩家）</th></tr></thead>
         <tbody>
@@ -81,7 +81,7 @@
       ⚠️ 但<b>新玩家冷启动的 5.4 MB 走盒子上行</b>（CF 实测 <code class="inline">MISS</code>）
       摊到 60 分钟是 1,573 B/s，比稳态贵 <b>27 倍</b> —— <b>那才是现在的天花板</b>。两块都要做。</span>
     </div>
-    <p class="section-note" style="margin-top:14px">
+    <p class="section-note mt-14">
       WS 链路这块单独拆成了两份文档：
       <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
       （三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>、
@@ -127,7 +127,7 @@
       </table>
     </div>
 
-    <p class="section-note" style="margin-top:14px">
+    <p class="section-note mt-14">
       <b>素材那一块是全部问题的 99%。</b>它压不动，只能搬走 —— 这决定了后面所有措施的优先级。
       <b>稳态 WS 的 30~35 B/s 是建模值</b>，漏了整局流量里真正的两个大头
       <code class="inline">b.start</code> 与 <code class="inline">m.private</code>；
@@ -143,7 +143,7 @@
       <div><div class="eyebrow">IMPLEMENTATION</div><h2>落地措施与实测收益</h2></div>
       <span class="section-status">按收益从大到小排列</span>
     </div>
-    <p class="section-note" style="margin-bottom:2px">
+    <p class="section-note mb-2">
       措施 <b>1~3 贡献了几乎全部收益</b>，4~6 只影响非默认路径或防止回退。
       每张卡片第一行的「收益」就是它的全部价值，可以据此决定要不要做。
     </p>
@@ -153,7 +153,7 @@
         <h4>措施 1 · <code class="inline">SP_ASSET_CDN</code>：把素材整块搬出盒子</h4>
         <p class="download__meta">收益：<b>盒子出口砍掉 462.6 MiB/人</b>，改由 Cloudflare 边缘承担</p>
         <pre class="code">SP_ASSET_CDN=https://speedcdn.jiangjiangze.icu/</pre>
-        <ul style="margin-top:10px">
+        <ul class="mt-10">
           <li>运行时把 <code class="inline">data/assets.json</code> 里 7,969 个 <code class="inline">/assets/…</code> 引用改写成绝对 CDN URL 再回给客户端。</li>
           <li>线上核验：该接口实测 <b>1,408,362 字节</b>，素材条目<b>全部</b>指向 CDN —— 已生效，无需改动。</li>
         </ul>
@@ -167,7 +167,7 @@
       <div class="mini">
         <h4>措施 2 · 静态代码 gzip level 6</h4>
         <p class="download__meta">收益：<b>5.33 → 1.475 MiB/人</b>（省 3.86 MiB，27.7%）</p>
-        <div class="table-wrap" style="margin-top:10px">
+        <div class="table-wrap mt-10">
           <table>
             <thead><tr><th>目录</th><th class="num">文件</th><th class="num">原始</th><th class="num">gzip l6</th><th class="num">剩余</th></tr></thead>
             <tbody>
@@ -179,7 +179,7 @@
             </tbody>
           </table>
         </div>
-        <ul style="margin-top:12px">
+        <ul class="mt-12">
           <li><code class="inline">GZIP_MIN_BYTES = 512</code>：小文件不压 —— 压完带 header 反而变大，实测 chat 51 B → 94 B 就是反例。</li>
           <li><code class="inline">vendor/</code> 占 54%，且 CF 边缘已实测 HIT：这 2.82 MiB 里大部分连盒子都不用出。</li>
         </ul>
@@ -217,7 +217,7 @@
         <h4>措施 5 · <code class="inline">clientCombat: on</code>（别退回去）</h4>
         <p class="download__meta">收益：<b>天然的最大带宽优化</b> —— 不是我们做的，但必须守住</p>
         <p>战斗逻辑在各端浏览器跑，服务端不广播快照。</p>
-        <div class="table-wrap" style="margin-top:10px">
+        <div class="table-wrap mt-10">
           <table>
             <thead><tr><th></th><th class="num">单帧</th><th class="num">球员 20 Hz</th><th class="num">10 Mbps 容纳</th><th class="num">旁观 5 Hz</th><th class="num">10 Mbps 容纳</th></tr></thead>
             <tbody>
@@ -226,7 +226,7 @@
             </tbody>
           </table>
         </div>
-        <p style="margin-top:10px">
+        <p class="mt-10">
           压完是 4 倍差距，但<b>只要 <code class="inline">clientCombat</code> 退成 off，这两种都比默认路径贵 100 倍以上</b>。
           这是本轮唯一有数量级意义的风险点。
         </p>
@@ -264,8 +264,8 @@
       <span class="section-status">基准：10 Mbps = 1,250,000 B/s = 1.192 MiB/s</span>
     </div>
 
-    <h3 style="margin-top:6px">表 A · 首次进场 —— 决定「新玩家进来有多痛」</h3>
-    <div class="table-wrap" style="margin-top:12px">
+    <h3 class="mt-6">表 A · 首次进场 —— 决定「新玩家进来有多痛」</h3>
+    <div class="table-wrap mt-12">
       <table>
         <thead><tr><th></th><th class="num">人均上行</th><th class="num">10 Mbps 下耗时</th><th class="num">满速每秒接纳</th></tr></thead>
         <tbody>
@@ -275,13 +275,13 @@
         </tbody>
       </table>
     </div>
-    <p class="download__meta" style="margin-top:12px">优化前 → 优化后吞吐提速 <b>316×</b>，且复访降为 <b>0</b>。</p>
-    <p class="section-note" style="margin-top:8px">
+    <p class="download__meta mt-12">优化前 → 优化后吞吐提速 <b>316×</b>，且复访降为 <b>0</b>。</p>
+    <p class="section-note mt-8">
       优化前是「一个玩家进来就把上行占死 6 分半，期间所有人都卡」—— 这不是并发数问题，是可用性问题。
     </p>
 
-    <h3 style="margin-top:24px">表 B · 稳态 —— 决定「能挂多少人」</h3>
-    <div class="table-wrap" style="margin-top:12px">
+    <h3 class="mt-24">表 B · 稳态 —— 决定「能挂多少人」</h3>
+    <div class="table-wrap mt-12">
       <table>
         <thead><tr><th>场景</th><th class="num">人均上行</th><th class="num">人均速率</th><th class="num">10 Mbps 最大容纳</th><th>说明</th></tr></thead>
         <tbody>
@@ -329,13 +329,13 @@
       <code class="inline">m.field</code> 也会占用上行，单帧 × 帧率不等于完整 ws 流量。</span>
     </div>
 
-    <div class="mini" style="margin-top:16px">
+    <div class="mini mt-16">
       <h4>总结</h4>
       <p class="download__meta">
         优化前，10 Mbps 上行的实际容量是 <b>1~2 个新玩家排队进场</b>（素材占死）；
         优化后，首载吞吐 <b>0.81 人/s</b>，复访为 <b>0</b>。
       </p>
-      <p class="download__meta" style="margin-top:8px">
+      <p class="download__meta mt-8">
         ⚠️ <b>2026-10-12 再修正</b>：稳态容量<b>不是</b>「由 CPU 决定（万级）」，也不是「2,048 → 505 B/s」——
         那两版分别建立在「漏了 <code class="inline">m.public</code> 的 60 B/s 建模值」与
        「机器人座位（收不到单播）的样本」上。换成人类座位整局逐字节实测后：
@@ -353,7 +353,7 @@
       <span class="section-status">旧结论「98% 是 m.public」是在机器人座位上量出来的</span>
     </div>
 
-    <p class="section-note" style="margin-bottom:14px">
+    <p class="section-note mb-14">
       ⚠️ 这一节在 2026-10-12 <b>整体更正</b>。旧结论「98% 是 <code class="inline">m.public</code>」
       是在<b>机器人座位</b>上量的 —— <code class="inline">messaging.js</code> 的 <code class="inline">sendTo()</code>
       第一句是 <code class="inline">if (!ps || ps.isBot || ps.left) return false</code>，
@@ -372,13 +372,13 @@
         </tbody>
       </table>
     </div>
-    <p class="section-note" style="margin-top:10px">
+    <p class="section-note mt-10">
       <b>每席位实测 ≈105 B/s</b>（压 <code class="inline">b.start</code> 之前）→ <b>57.5 B/s</b>（之后）。
       三次口径各不相同，别混用：<b>60 B/s</b> 是漏了 <code class="inline">m.public</code> 的建模值；
       <b>2,048 B/s / 98% m.public</b> 是机器人座位的残缺样本；<b>105 → 57.5 B/s</b> 才是人类座位的整局实测。
     </p>
 
-    <div class="two-col" style="margin-top:18px">
+    <div class="two-col mt-18">
       <div class="mini">
         <h4>找到的真 bug：广播路径从来没压过</h4>
         <p class="download__meta">
@@ -387,7 +387,7 @@
           <code class="inline">compress</code>。所以无论白名单怎么写，<code class="inline">m.public</code>
           <b>永远不会被压缩</b>，白名单对它等于死代码。
         </p>
-        <p class="download__meta" style="margin-top:8px">
+        <p class="download__meta mt-8">
           修法：<code class="inline">broadcastRoom</code> 按 <code class="inline">isCompressibleType</code> 传
           <code class="inline">compress</code>；两条重放路径（<code class="inline">pendingResult</code> /
           <code class="inline">runResync</code>）同样压。
@@ -395,7 +395,7 @@
       </div>
       <div class="mini">
         <h4>两个参数<b>故意不声明</b>（2026-10-12）</h4>
-        <div class="table-wrap" style="margin-top:8px">
+        <div class="table-wrap mt-8">
           <table>
             <thead><tr><th>选项</th><th>状态</th></tr></thead>
             <tbody>
@@ -404,7 +404,7 @@
             </tbody>
           </table>
         </div>
-        <p class="download__meta" style="margin-top:8px">
+        <p class="download__meta mt-8">
           ⚠️ 写 <code class="inline">serverNoContextTakeover: false</code> 是错的 —— 字面 <code class="inline">false</code>
           是「强制要求」，会拒绝要 no-context-takeover 的客户端（HTTP 400）。旧的
           <code class="inline">serverMaxWindowBits: 12</code> 同样是潜伏 400 隐患，已去掉。
@@ -413,7 +413,7 @@
       </div>
     </div>
 
-    <div class="notice" style="margin-top:18px">
+    <div class="notice mt-18">
       <span><b>观战 / AI 节流：</b>快照率按<b>收件人身份</b>分两档 —— <b>驱动该场地的球员 20 Hz</b>
       （<code class="inline">SNAPSHOT_EVERY = 3</code>），<b>只观看的人 5 Hz</b>
       （<code class="inline">SNAPSHOT_EVERY_IDLE = 12</code>）。后者覆盖<b>纯观战者</b>（被淘汰队友、观战席）
@@ -424,7 +424,7 @@
       （15 → 7.5）。现在两档是<b>各自独立的常量</b>（20 Hz 与 5 Hz = 4 倍），<b>不再有倍数耦合</b>：
       调球员档不会连带改动旁观档的成本。</span>
     </div>
-    <div class="notice" style="margin-top:12px">
+    <div class="notice mt-12">
       <span><b>把 <code class="inline">b.start</code> 也压掉（真机 A/B）：</b>人均 <b>125.3 → 57.5 B/s（−54.1%）</b>；
       整局逐字节 应用层 70,626 B → 在线 <b>8,610 B（8.20×）</b>；逐帧校验 <b>36 帧 / 解析失败 0</b>。
       它<b>不可丢</b>（<code class="inline">isDroppable</code> 只认 <code class="inline">b.snap</code>）
@@ -432,8 +432,8 @@
       <code class="inline">update/ws-extra.txt</code> + 重启该槽。</span>
     </div>
 
-    <h3 style="margin-top:26px">10 Mbps 到底能不能带 2000 人</h3>
-    <div class="table-wrap" style="margin-top:12px">
+    <h3 class="mt-26">10 Mbps 到底能不能带 2000 人</h3>
+    <div class="table-wrap mt-12">
       <table>
         <thead><tr><th></th><th class="num">每席位上行</th><th class="num">10 Mbps 容纳</th><th>2000 人</th></tr></thead>
         <tbody>
@@ -442,7 +442,7 @@
         </tbody>
       </table>
     </div>
-    <div class="notice" style="margin-top:12px">
+    <div class="notice mt-12">
       <span><b>结论：稳态已经不是瓶颈了</b> —— 每席位 <b>57.5 B/s</b>，2000 人只花预算的 9.2%，余量约 10 倍。<br />
       ⚠️ 但把<b>冷启动</b>算进来，结论就反过来了：一个新玩家要拉 <b>5.4 MB</b> 客户端代码，
       摊到 60 分钟是 <b>1,573 B/s</b>，比对局流量贵 <b>27 倍</b>；新玩家占比 5% 时 10 Mbps 只够
@@ -452,8 +452,8 @@
       （不在发布包内，部署永不覆盖）；否则切槽后压缩静默失效。</span>
     </div>
 
-    <h3 style="margin-top:26px">下一个瓶颈：增量（delta）</h3>
-    <p class="section-note" style="margin-bottom:10px">
+    <h3 class="mt-26">下一个瓶颈：增量（delta）</h3>
+    <p class="section-note mb-10">
       压完之后 <code class="inline">m.public</code> 仍是<b>唯一</b>的大头。它的 JSON 高度重复
       （<code class="inline">players[].bonds</code> 一个字段就占整帧 ~2/3），所以下一步是 delta：
     </p>
@@ -467,7 +467,7 @@
         </tbody>
       </table>
     </div>
-    <p class="section-note" style="margin-top:10px">
+    <p class="section-note mt-10">
       ⚠️ <b>两个前提让这 2.98× 现在等于没上线</b>：① <code class="inline">SP_PUB_SYNC</code> 默认 <code class="inline">full</code>
       （delta <b>默认关</b>）；② ③④ 在 <b>re-apk 分支</b>，而盒子跑 master-play ⇒ <b>盒子拿不到</b>。<br />
       ⚠️ 另一条口径警告：这倍数以 <code class="inline">m.public</code> 为单位，而整局实测里它<b>只占 3%</b>
@@ -475,7 +475,7 @@
       下一轮该做的是<b>冷启动</b>。
     </p>
 
-    <div class="mini" style="margin-top:18px">
+    <div class="mini mt-18">
       <h4>再进一步：「客户端本地推演 + 服务端只发事件」会砍掉哪些可见内容</h4>
       <p class="download__meta">这是 delta 的极端版。它会<b>看得见地</b>砍掉 / 劣化：</p>
       <ol style="margin:8px 0 0;padding-left:18px">
@@ -486,7 +486,7 @@
         <li><b>结算结果 <code class="inline">m.result</code></b> —— 服务端判定；事件化让客户端自算 = 可伪造胜负，<b>必须保留服务端权威，砍不掉</b>。</li>
         <li><b>倒计时 / deadline 与断线重连</b> —— 现在重连靠重放一份全量 <code class="inline">m.public</code>；事件化后要重放整条事件日志，<b>重连成本回来了</b>。</li>
       </ol>
-      <p class="download__meta" style="margin-top:8px">
+      <p class="download__meta mt-8">
         <b>结论：</b>服务端不能放弃对结果 / 伤害的权威（否则就是外挂），所以砍得掉的是<b>队友状态保真度</b>与<b>敌人预览</b>，砍不掉权威层。
         能落地的是「服务端发增量 / 事件、客户端维护本地镜像」—— 正是上面的 delta。
       </p>
@@ -500,7 +500,7 @@
       <span class="section-status">基线 + 客户端合并；重连与兜底都按快照率那套做（PR #157，待合并）</span>
     </div>
 
-    <p class="section-note" style="margin-bottom:14px">
+    <p class="section-note mb-14">
       <code class="inline">m.public</code> 里有一批<b>开局即定、之后不再变</b>的字段
       （<code class="inline">lastRound</code> / <code class="inline">modeId</code> / <code class="inline">difficulty</code> /
       <code class="inline">stageId</code> / <code class="inline">factions</code> / <code class="inline">disabledBonds</code> /
@@ -527,7 +527,7 @@
       </table>
     </div>
 
-    <div class="two-col" style="margin-top:18px">
+    <div class="two-col mt-18">
       <div class="mini">
         <h4>基线 + 合并（重连是重中之重）</h4>
         <ul>
@@ -552,7 +552,7 @@
       </div>
     </div>
 
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>还没做（按顺序）：</b>
       ① <code class="inline">players[].bonds</code> <b>按收件人定制</b>（只发"屏幕上"那 1~2 个球员），单独约再省 <b>24% wire</b>；
       ② <b>delta</b>（只发变化字段），在裁剪之上再约 <b>1.24×</b>（建模合计 <b>2.05×</b>；本行的 <b>2.98× deflate / raw 6.05×</b> 是整局逐字节<b>实测</b>的压缩比，两者不是同一个量，区别见《带宽与最大压缩》§10.4「还没做」）；
@@ -568,8 +568,8 @@
       <span class="section-status">今天仍成立的两段旁注</span>
     </div>
 
-    <h3 style="margin-top:6px">已评估但否决的方案</h3>
-    <div class="table-wrap" style="margin-top:12px">
+    <h3 class="mt-6">已评估但否决的方案</h3>
+    <div class="table-wrap mt-12">
       <table>
         <thead><tr><th>方案</th><th>实测结论</th><th>为何不采用</th></tr></thead>
         <tbody>
@@ -591,11 +591,11 @@
         </tbody>
       </table>
     </div>
-    <p class="section-note" style="margin-top:12px">
+    <p class="section-note mt-12">
       ⚠️ 这三条都仍是「不采用的理由」—— brotli 那行的结论明确是「<b>用户已决定保持 gzip l6</b>」，<b>不是</b>推荐 brotli。
     </p>
 
-    <div class="notice" style="margin-top:14px">
+    <div class="notice mt-14">
       <span><b>已从「否决」改判的东西：上下文接管（context takeover）。</b>
       这一条原本在上表里（理由：当时内存测量三次结果互相矛盾，本轮不下结论），
       但 <b>2026-10-12 改判</b>：现行 <code class="inline">on</code> 档<b>故意不声明</b>
@@ -606,8 +606,8 @@
       （本页 <code class="inline">#compact</code> 节已写明「保留上下文接管」「<code class="inline">m.private</code> 4.07× → 43.55×」的事实，此处只补来龙去脉）。</span>
     </div>
 
-    <h3 style="margin-top:26px">p90 教训：容量从来由少数长连接决定</h3>
-    <p class="section-note" style="margin-bottom:12px">
+    <h3 class="mt-26">p90 教训：容量从来由少数长连接决定</h3>
+    <p class="section-note mb-12">
       长连接中按速率排前 10% 的那 <b>151 条</b>，占全部 ws 上行的 <b>90.5%</b>（618.2 / 682.8 MiB，n=1,503）。
       即<b>容量从来由少数长连接决定，不由中位数决定</b> —— 这个教训今天仍成立。
     </p>
@@ -624,14 +624,14 @@
         ⚠️ 只是其中的 <b>2,048 / 505 B/s 与「98% 是 m.public」已被整局实测推翻</b>。</li>
     </ol>
 
-    <div class="notice" style="margin-top:14px">
+    <div class="notice mt-14">
       <span>⚠️ <b>历史观测，2026-10-09，已被后续改动覆盖：</b>下面这张分位表是那一轮
       （快照率 20 Hz → 10 Hz、<code class="inline">SP_WS_COMPRESSION=on</code> 落地<b>之前</b>）的线上日志口径，
       <b>不是当前容量</b>，只作「容量由少数长连接决定」的旁注。
       口径：分母是<b>全部 <code class="inline">/ws</code> 请求的上行字节</b>（682.8 MiB，长连接占 682.7 MiB），分位取自同一集合；
       早先并列的 97.9% 与 88.8% 是两套不同分母，已统一为上面的 90.5%。</span>
     </div>
-    <div class="table-wrap" style="margin-top:12px">
+    <div class="table-wrap mt-12">
       <table>
         <thead><tr><th>分位</th><th class="num">B/s</th><th class="num">10 Mbps 容纳</th></tr></thead>
         <tbody>

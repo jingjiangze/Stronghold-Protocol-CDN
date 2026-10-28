@@ -259,7 +259,7 @@
       <span class="section-status">接入是纯增益：坏的情况只损失一条远程链接</span>
     </div>
 
-    <p class="section-note" style="margin-bottom:14px">
+    <p class="section-note mb-14">
       接入模块的每一条失败路径都指向同一个结果：<b><code class="inline">inviteUrl</code> 保持 null</b>。
       房间创建、加入、对局、断线重连全都不经过平台——它只负责「把一条链接递给玩家」。
       这一条已用「平台指向死端口」实测过。
@@ -298,7 +298,7 @@
       </table>
     </div>
 
-    <div class="notice" style="margin-top:16px">
+    <div class="notice mt-16">
       <span><b>协议不变：</b><code class="inline">room.state.inviteUrl</code> 是纯展示字段。
       旧客户端会忽略未知键（<code class="inline">validateC2S</code> 跳过未知字段），
       <code class="inline">PROTOCOL_VERSION</code> 保持 <b>1</b>——接入不需要客户端升级，也不需要房主升级。</span>
@@ -349,7 +349,7 @@ SP_PLATFORM_URL=0 node server/index.js</pre>
       <div><div class="eyebrow">PATCH</div><h2>同步到服务器</h2></div>
       <span class="section-status">6 个文件 · 相对 ms/master 的干净增量</span>
     </div>
-    <p class="section-note" style="margin-bottom:14px">
+    <p class="section-note mb-14">
       补丁按 <code class="inline">ms/master</code>（线上创空间实际运行的那棵树）重打过，
       本机已在干净基座上实测：能启动、冒烟 <b>30/30</b>、eslint <b>0 error</b>。
       解压覆盖 → <code class="inline">node --check</code> → 重启，三步。
@@ -367,7 +367,7 @@ SP_PLATFORM_URL=0 node server/index.js</pre>
         </tbody>
       </table>
     </div>
-    <div class="toolbar" style="margin-top:16px">
+    <div class="toolbar mt-16">
       <a class="button button-primary" href="./docs/openp2p-platform.md">读完整平台契约</a>
       <a class="button button-secondary" href="./docs/server-deploy.md">读服务器部署文档</a>
     </div>
