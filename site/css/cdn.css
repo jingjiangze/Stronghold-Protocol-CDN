@@ -25,26 +25,26 @@
   --amber: #e3bd72;
   --red: #eea19c;
   /* accent / amber 的透明度变体：这些值原先在 12 处硬编码，改一处配色要满文件搜。 */
-  --accent-08: var(--accent-08);
-  --accent-12: var(--accent-12);
-  --accent-14: var(--accent-14);
-  --accent-33: var(--accent-33);
-  --accent-bright: var(--accent-bright);
-  --amber-ink: var(--amber-ink);
-  --amber-line: var(--amber-line);
-  --amber-text: var(--amber-text);
-  --amber-04: var(--amber-04);
-  --amber-06: var(--amber-06);
-  --amber-08: var(--amber-08);
-  --amber-17: var(--amber-17);
+  --accent-08: #a5eccd08;
+  --accent-12: #a5eccd12;
+  --accent-14: #a5eccd14;
+  --accent-33: #a5eccd33;
+  --accent-bright: #c4f7df;
+  --amber-ink: #241a06;
+  --amber-line: #6b5527;
+  --amber-text: #e6c48a;
+  --amber-04: #e3bd720a;
+  --amber-06: #e3bd7210;
+  --amber-08: #e3bd7214;
+  --amber-17: #e3bd722b;
   /* 边框强调色（数字徽章、chip）：同一族构件的共用描边。 */
-  --line-accent: var(--line-accent);
+  --line-accent: #618273;
   /* 非徽章表面的两个额外层级：代码块比 --bg 更深，次按钮比 --surface 更亮。 */
-  --code-bg: var(--code-bg);
-  --btn-2-bg: var(--btn-2-bg);
-  --btn-2-bg-hover: var(--btn-2-bg-hover);
-  --btn-2-line: var(--btn-2-line);
-  --topbar-bg: var(--topbar-bg);
+  --code-bg: #0d1315;
+  --btn-2-bg: #203230;
+  --btn-2-bg-hover: #2a403b;
+  --btn-2-line: #3b5750;
+  --topbar-bg: #101719cc;
   --radius: 14px;
   --radius-md: 10px;
   --radius-sm: 8px;
