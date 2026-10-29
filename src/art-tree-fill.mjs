@@ -46,7 +46,14 @@ import { listKeys } from './r2.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BRANCH = 'assets-raw';
-const CDN_BASE = (process.env.SP_CDN_BASE || 'https://weishucdn.jiangjiangze.icu').replace(/\/+$/, '');
+// 无凭据时从哪取字节。原来缺省 weishucdn —— R2 退役后那个域名对任意路径都回 639 B 的占位页，
+// 而它又是 200，等于把「取到了」当成了「取对了」。现在优先 SP_ASSET_BASE（真正供字节的门牌），
+// 再退到 SP_CDN_BASE，最后才是数据集。
+const CDN_BASE = (
+  process.env.SP_ASSET_BASE
+  || process.env.SP_CDN_BASE
+  || 'https://modelscope.cn/datasets/jingjiangze/Stronghold-Protocol-Assets/resolve/master/releases/v1-trial'
+).replace(/\/+$/, '');
 const HOSTED_INDEX_KEY = 'cdn/v1/hosted-index.json';
 
 // 分片包：待下线通道（manifest 改指 GitHub 后即废弃），899 MiB 全塞进 git 是纯浪费。
@@ -97,17 +104,30 @@ async function trackedPaths() {
   return sizes;
 }
 
-async function fetchBytes(config, key) {
+/**
+ * 取一个键的字节。
+ *
+ * 2026-10-29 事故：这个函数原先在**有凭据时也先走 CDN_BASE**。R2 的自定义域退役后，`CDN_BASE`
+ * 指向的域名对任意路径都回 200 + 639 B 的 `o2p-platform` 占位页 —— 于是 714 个「体积不符」的
+ * 文件被写成了占位页；而本该兜住的 sha256 权威表（hosted-index.json）也是从同一个域名读的、
+ * 同样解析失败，两道保护同时失效。
+ *
+ * 现在：有凭据就走 S3；并强制用**期望体积**校验（体积来自 S3 LIST，与字节同源），不符就抛错。
+ * 占位页 639 B 与真实素材的几万字节永远对不上，这类事故不会再静默通过。
+ */
+async function fetchBytes(config, key, expected = 0) {
+  const check = (buf) => {
+    if (expected && buf.length !== expected) {
+      throw new Error(`${key}: 取到 ${buf.length} B，与期望 ${expected} B 不符（可能是占位页/错误页）`);
+    }
+    return buf;
+  };
   if (config) {
-    try {
-      const res = await fetch(`${CDN_BASE}/${key}`, { redirect: 'follow' });
-      if (res.ok) return Buffer.from(await res.arrayBuffer());
-    } catch { /* 回退 S3 */ }
-    return Buffer.from(await toBuffer(await getObject(config, key)));
+    return check(Buffer.from(await toBuffer(await getObject(config, key))));
   }
   const res = await fetch(`${CDN_BASE}/${key}`, { redirect: 'follow' });
   if (!res.ok) throw new Error(`${key}: CDN ${CDN_BASE} 返 ${res.status}`);
-  return Buffer.from(await res.arrayBuffer());
+  return check(Buffer.from(await res.arrayBuffer()));
 }
 
 async function toBuffer(body) {
@@ -238,7 +258,8 @@ export async function fill({
       if (!key) return;
       let buf;
       try {
-        buf = await fetchBytes(hasCreds ? config : null, key);
+        // 期望体积来自 S3 LIST（与字节同源）：占位页/错误页在这一步就会被挡下。
+        buf = await fetchBytes(hasCreds ? config : null, key, all.get(key) || 0);
         if (!buf || !buf.length) { report.missing.push(key); continue; }
       } catch { report.missing.push(key); continue; }
       if (report.bytes + buf.length > maxBytes && report.added > 0) { cursor--; return; }
