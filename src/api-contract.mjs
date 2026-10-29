@@ -22,7 +22,7 @@ export const API_ENDPOINTS = [
     path: '/cdn/v1/mirrors.json',
     contentType: 'application/json',
     cache: 'public, max-age=300',
-    what: '聚合清单：全部来源与打包通道（含各源前缀 URL）',
+    what: '聚合清单：全部来源与预载通道（含各源前缀 URL）',
   },
   {
     path: '/cdn/v1/index.json',
@@ -91,16 +91,10 @@ export const API_ENDPOINTS = [
     what: '字体本体（woff2 为主）。与 /assets/** 同构：键 = 上游 public/fonts/** 去掉 public/',
   },
   {
-    path: '/docs/**',
-    contentType: '.md → text/plain; charset=utf-8；.json → application/json',
-    cache: '浏览器 1 小时；边缘 裸路径 1 小时 / 带 ?v= 令牌 1 年',
-    what: '官方文档本体（PLAYING.md / DEPLOY.md / docs/research/*.json 的 wiki 数据）。键 = 上游包内 docs/**。.md 带 charset=utf-8：不带的话中文会被按 Latin-1 解码成乱码（真机视口实测过）',
-  },
-  {
     path: '/packs/assets-<tag>/<id>.zip',
     contentType: 'application/zip',
     cache: 'public, max-age=31536000, immutable',
-    what: '打包通道：同一批字节按目录打成 ~96 MB 的包，安装期用',
+    what: '预载通道：同一批字节按目录打成 ~96 MB 的包，预载或安装期用',
   },
   {
     path: '/dl/<tag>/<file>',

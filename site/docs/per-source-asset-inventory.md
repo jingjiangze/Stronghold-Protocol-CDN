@@ -20,7 +20,7 @@
 |---|---|---|---|
 | `index.json` | `{路径: {size, sha256}}` | **12,583** | 逐字节校验、做二级镜像 |
 | `tree.json` | `dirs[目录] = {bytes, files:[[名,体积,mod?]]}` | **20,130** / 3,243 目录 | 浏览目录、算体积 |
-| `mirrors.json` | `flat[]` 源清单 + `packs[]` 打包通道 | 11 个源 | 客户端选源 |
+| `mirrors.json` | `flat[]` 源清单 + `packs[]` 预载通道 | 11 个源 | 客户端选源 |
 
 ### 为什么两个数字差了 7,547 —— 这是设计，不是缺陷
 
@@ -56,7 +56,7 @@ index.json (12,583)  ⊂  tree.json (20,130)
 |---|---:|---:|---:|---|
 | skins | 625 | 1,856 | **1,158.4 MiB** | 全部属 `hosted`，不在 index.json |
 | spine | 1,554 | 4,880 | 534.8 MiB | 含较多 hosted |
-| packs | 1 | 23 | 464.8 MiB | 打包通道产物 |
+| packs | 1 | 23 | 464.8 MiB | 预载通道产物 |
 | local | 529 | 3,142 | 282.7 MiB | 含较多 hosted |
 | audio | 408 | 6,488 | 194.1 MiB | p_atk/p_imp 等音效多属 hosted |
 | char | 5 | 1,393 | 100.3 MiB | |

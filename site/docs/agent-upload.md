@@ -44,7 +44,7 @@
 | `assets/enemy/icon/` `assets/skill/` `assets/item/` `assets/bond/` `assets/band/` `assets/token/` | 敌人图标、技能、道具、盟约、唱片、信物 |
 | `assets/local/` | 不属于以上任何一类的本地素材（表情、地图、网格等按子目录继续分） |
 | `fonts/` | 字体 |
-| `packs/` | 打包通道用的 zip（文件名形如 `<组名>-<序号>.zip`） |
+| `packs/` | 预载通道用的 zip（文件名形如 `<组名>-<序号>.zip`） |
 
 不确定就对照现成的两张表：<https://speedcdn.jiangjiangze.icu/cdn/v1/tree.json>（桶里每个目录与文件）和 <https://speedcdn.jiangjiangze.icu/cdn/v1/index.json>（上游素材 + size/sha256）。
 
