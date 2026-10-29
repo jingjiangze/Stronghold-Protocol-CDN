@@ -29,6 +29,10 @@ on:
         description: 'true = 真的提交并推送 assets-raw'
         type: boolean
         default: false
+      repair:
+        description: 'true = 同时修复「路径已在但体积变了」的文件（上游改过的内容）'
+        type: boolean
+        default: false
       max_bytes:
         description: '单轮字节预算（MiB）'
         type: number
@@ -99,6 +103,9 @@ jobs:
           scheduled=${{ github.event_name == 'schedule' && 'true' || 'false' }}
           args="--max-bytes=500 --max-files=16000"
           if [ "${{ inputs.write }}" = "true" ] || [ "$scheduled" = "true" ]; then args="--write $args"; fi
+          # --repair 默认关：它会把「路径已在、体积不同」的上游改动覆盖进 assets-raw。
+          # 关着的时候行为与历史完全一致（只补缺失路径）。
+          if [ "${{ inputs.repair }}" = "true" ]; then args="$args --repair"; fi
           node src/art-tree-fill.mjs $args
 
       # 2026-10-14：git 链是素材树的唯一中枢 —— 落完 commit 就链发下游多源，不再等各自 6 小时定时窗。

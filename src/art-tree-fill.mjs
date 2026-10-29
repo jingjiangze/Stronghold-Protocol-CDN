@@ -82,8 +82,19 @@ async function fetchBranch() {
 
 /** 分支里已有的路径集合（只列名字，不读字节）。 */
 async function trackedPaths() {
-  const out = await run('git', ['ls-tree', '-r', '--name-only', `refs/heads/${BRANCH}`]);
-  return new Set(out.split('\n').filter(Boolean));
+  // 带上体积：只取路径名时，「路径在、字节变了」的上游文件永远进不了 todo，镜像会永久停在
+  // 第一次写入的那一版（实测 CDN 卡在 v0.3.1 就有这一半原因）。修复通道需要体积做判据。
+  const out = await run('git', ['ls-tree', '-r', '-l', `refs/heads/${BRANCH}`]);
+  const sizes = new Map();
+  for (const line of out.split('\n')) {
+    if (!line.trim()) continue;
+    const tab = line.indexOf('\t');
+    if (tab < 0) continue;
+    const meta = line.slice(0, tab).trim().split(/\s+/);
+    if (meta[1] !== 'blob') continue;
+    sizes.set(line.slice(tab + 1), Number(meta[3]) || 0);
+  }
+  return sizes;
 }
 
 async function fetchBytes(config, key) {
@@ -153,7 +164,7 @@ async function upstreamKeys(config, snapshot) {
 
 export async function fill({
   write = false, maxBytes = 220 * 1024 * 1024, maxFiles = 1200,
-  includePacks = false, snapshot = null, push = true, log = console.log,
+  includePacks = false, repair = false, snapshot = null, push = true, log = console.log,
 } = {}) {
   const report = { scanned: 0, added: 0, bytes: 0, missing: [], mismatched: [], pushed: false, commit: null, remaining: 0, dry: !write };
 
@@ -179,14 +190,18 @@ export async function fill({
 
   const all = await upstreamKeys(config, snapshot);
   const exclude = includePacks ? EXCLUDE_PREFIXES.filter((p) => p !== 'assets/packs/') : EXCLUDE_PREFIXES;
+  // 默认只补缺失路径（历史行为）。`--repair` 额外收录「路径在、体积不同」的键 —— 上游改过的
+  // 文件只有这条通道能进 git；不传则一切照旧。
   const todo = [...all.keys()].filter((k) => {
-    if (have.has(k)) return false;
-    return !exclude.some((p) => k.startsWith(p));
+    if (exclude.some((p) => k.startsWith(p))) return false;
+    if (!have.has(k)) return true;
+    return repair && have.get(k) !== (all.get(k) || 0);
   });
+  const repairs = todo.filter((k) => have.has(k)).length;
   report.scanned = todo.length;
   let backlogBytes = 0;
   for (const k of todo) backlogBytes += all.get(k) || 0;
-  log(`[art-tree-fill] R2 上游素材 ${all.size} 键（来源 ${snapshot ? snapshot : 'S3 LIST'}）/ 分支已有 ${have.size} → 待补 ${todo.length}（约 ${MiB(backlogBytes)}）`);
+  log(`[art-tree-fill] R2 上游素材 ${all.size} 键（来源 ${snapshot ? snapshot : 'S3 LIST'}）/ 分支已有 ${have.size} → 待补 ${todo.length}（其中修复 ${repairs} 份体积不符，约 ${MiB(backlogBytes)}）`);
 
   if (!write) {
     report.remaining = todo.length;
@@ -281,10 +296,12 @@ export async function fill({
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const write = process.argv.includes('--write');
   const includePacks = process.argv.includes('--include-packs');
+  const repair = process.argv.includes('--repair');
   // 前缀 = "--" (2) + name + "=" (1) = name.length + 3。写成 +2 会把 "=" 留在值里（路径变 "=C:\…"）。
   const arg = (n, d) => { const h = process.argv.find((a) => a.startsWith(`--${n}=`)); return h ? Number(h.slice(n.length + 3)) : d; };
   const sarg = (n, d) => { const h = process.argv.find((a) => a.startsWith(`--${n}=`)); return h ? h.slice(n.length + 3) : d; };
   const r = await fill({
+    repair,
     write, includePacks,
     push: !process.argv.includes('--no-push'),
     snapshot: sarg('snapshot', null),
