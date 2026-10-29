@@ -59,28 +59,15 @@ test('the manifest block explains partial coverage instead of just labelling it'
   assert.match(render, /assets-raw/, 'the lead names the branch that now carries the asset tree');
 });
 
-// 2026-10-14 改版：玩家区只剩**一个**下载（整合包）。原先的「两种下载，按你的情况选一个」
-// 由用户要求删除 —— 单一入口对两类读者都成立（有没有现成游戏服都能用），二选一反而让人在
-// 下载前先卡住。所以这里断言「只有一个入口、且二选一的说法已消失」，而不是「两个按钮都在」。
-test('the player section offers exactly one download and no either/or framing', () => {
-  for (const id of ['official']) {
-    assert.ok(new RegExp(`id="${id}-download"`).test(html), `missing the ${id} download button`);
-    assert.ok(new RegExp(`id="${id}-name"`).test(html), `missing the ${id} file name`);
-    assert.ok(new RegExp(`id="${id}-meta"`).test(html), `missing the ${id} size line`);
-    assert.ok(new RegExp(`id="${id}-mirror"`).test(html), `missing the ${id} mirror link`);
-  }
-  // 二选一的说法必须消失：那两句话是旧版用来区分两个按钮的。
-  assert.doesNotMatch(html, /已经有能跑的游戏服/, 'the either/or label must be gone');
-  assert.doesNotMatch(html, /还没有游戏服/, 'the either/or label must be gone');
-  assert.doesNotMatch(html, /两种下载/, 'the "two downloads" framing must be gone');
-  assert.doesNotMatch(html, /id="dropin-download"/, 'the second (dropin) download must be gone');
-
-  // 但渲染器仍由一张表驱动 —— 将来加回变体不必重写，表的 pattern 必须保持互斥。
+// 2026-10-29 用户令：站点精简，删掉「玩家：下载整合包，解压即开服」整块 —— 站上不再提供整合包下载入口。
+// 所以这里反过来断言「入口与它的渲染器都不在了」：留着死配置会让人以为页面上还有第二个入口。
+test('the player download section and its renderer are gone', () => {
+  assert.doesNotMatch(html, /id="players"/, 'the player section must be gone');
+  assert.doesNotMatch(html, /id="official-download"/, 'the drop-in download button must be gone');
+  assert.doesNotMatch(html, /解压即开服/, 'the "unzip and run" framing must be gone');
   const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
-  assert.match(script, /const DOWNLOADS = \[/, 'the variants must be driven by one table');
-  assert.match(script, /stronghold-official-cdn/, 'the variant pattern must be present');
-  assert.match(script, /function renderDownloads\(/, 'both must render through one function');
-  assert.match(script, /renderDownloads\(snapshot\)/, 'renderDownloads must be called');
+  assert.doesNotMatch(script, /const DOWNLOADS = \[/, 'the download variant table must be gone');
+  assert.doesNotMatch(script, /function renderDownloads\(/, 'the download renderer must be gone');
 });
 
 // The directory listing has to go down to individual files, and the page must fetch the compact
@@ -106,24 +93,39 @@ test('the file tree is expandable, filterable, and fed by the compact tree file'
   assert.match(script, /let built = false/, 'child rows must be built lazily');
 });
 
-// The official docs are the one part of the tree a reader wants as a page rather than a file, so
-// the site lists them. It renders from the tree it already fetches, so there is no second list.
-test('the page lists the official docs from the tree it already fetches', () => {
-  assert.match(html, /id="official-docs"/, 'the docs section is missing');
-  assert.match(html, /id="doc-rows"/, 'the docs table needs a host to render into');
+// 2026-10-29 用户令：删掉「官方文档与 wiki 数据」整节（连同它作为 /docs/** 导流入口的作用）。
+// 断言分节与渲染器都不在了，并且素材清单导语不再宣传 docs/ —— 那正是被删掉的那一节的内容。
+test('the official docs section is gone', () => {
+  assert.doesNotMatch(html, /id="official-docs"/, 'the docs section must be gone');
+  assert.doesNotMatch(html, /id="doc-rows"/, 'the docs table host must be gone');
   const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
-  assert.match(script, /function renderDocs/, 'the docs list needs a renderer');
-  assert.match(script, /renderDocs\(treePromise\)/, 'the docs must reuse the tree fetch, not add one');
-  assert.match(html, /href="#official-docs"/, 'the docs section needs a nav entry');
-  // tree.json's `dirs` is an object keyed by directory path, not an array of nodes. Treating it as
-  // an array throws inside a promise the caller swallows, which leaves the section on "loading"
-  // forever -- it shipped that way once. (The real gate is the mobile-viewport browser check at
-  // ~/tools/pwshot/verify-docs-realmachine.mjs; this is the cheap guard that runs in CI.)
-  assert.match(script, /Object\.entries\(byDir\)/, 'the docs renderer must iterate the dirs object');
-  assert.ok(
-    !/for \(const d of list\)/.test(script),
-    'iterating dirs as an array is the bug this guards against',
-  );
+  assert.doesNotMatch(script, /function renderDocs/, 'the docs renderer must be gone');
+  assert.doesNotMatch(script, /docBytes/, 'the manifest lead must stop advertising docs/');
+});
+
+// 「打包通道」改称「预载通道」：同一批 zip，但用法是预载到本机；并且必须写明它跟上游 tag 滚动
+// （包发布在 GitHub Release 的 assets-<tag> 下，页面读的是发布接口里的 packs 字段）。
+test('the preload channel is documented together with its rolling update', () => {
+  assert.match(html, /预载通道/, 'the preload block is missing');
+  assert.match(html, /id="packs"/, 'the pack table host is missing');
+  assert.match(html, /assets-&lt;tag&gt;/, 'the release tag naming must be stated');
+  assert.match(html, /滚动更新（GitHub）/, 'the rolling update has to be stated');
+  assert.doesNotMatch(html, /打包通道/, 'the old name must be gone');
+  const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
+  assert.match(script, /function renderPacks/, 'the pack renderer must stay');
+});
+
+// WS 链路这条线（三份文档 + 外部库 + 首页卡片）已按用户要求下线。站点里不得再出现指向它们的链接，
+// 文档文件也不得留在树里 —— 站内死链比少一节更难查。
+test('the ws link line is gone from the site', () => {
+  assert.doesNotMatch(html, /ws-link-compression|ws-compression-library-and-pack/, 'index must not link the ws docs');
+  for (const page of ['bandwidth.html', 'asset-cdn.html']) {
+    const text = fs.readFileSync(path.join(ROOT, 'site', page), 'utf8');
+    assert.doesNotMatch(text, /ws-link-compression|ws-compression-library-and-pack/, `${page} must not link the ws docs`);
+  }
+  for (const rel of ['ws-link-compression.md', 'ws-link-compression-next.md', 'ws-compression-library-and-pack.md']) {
+    assert.ok(!fs.existsSync(path.join(ROOT, 'site', 'docs', rel)), `${rel} must be deleted`);
+  }
 });
 
 // The manifest table used to assert "git mounts have it" for every row. That stopped being true
@@ -161,17 +163,12 @@ test('the endpoint table is rendered from the contract, not hand-copied', () => 
   assert.match(contract, /\/cdn\/v1\/tree-<token>\.json/, 'the frozen tree copy must be in the contract');
 });
 
-// The downloads are offered on several hosts and the ranking moves between them, so the button must
-// follow the measurement rather than the order the URLs happen to be listed in.
-test('the fastest measured host is wired into the downloads', () => {
+// The downloads are gone (2026-10-29), so the auto-selection that rewrote their href had to go too:
+// leaving it behind would probe candidate hosts on every page load for buttons that do not exist.
+test('the per-download host auto-selection is removed with the downloads', () => {
   const script = fs.readFileSync(path.join(ROOT, 'site', 'js', 'cdn.js'), 'utf8');
-  assert.match(script, /async function preferFastestDownload/, 'the auto-selection is missing');
-  assert.match(script, /preferFastestDownload\(snapshot, flat\)/, 'it must be called from main with the mirror list');
-  // It must choose among the hosts a variant actually uses, not probe every mirror: running the
-  // full nine-mirror test to pick between two URLs would spend megabytes per visitor.
-  const fn = script.slice(script.indexOf('async function preferFastestDownload'));
-  assert.match(fn.slice(0, 1200), /byHost\.get\(host\)/, 'candidates must come from the download URLs');
-  assert.match(fn.slice(0, 1200), /candidates\.size < 2/, 'with fewer than two candidates there is nothing to choose');
+  assert.doesNotMatch(script, /preferFastestDownload/, 'the download auto-selection must be gone');
+  assert.doesNotMatch(script, /refreshDownloads/, 'the GitHub release polling for downloads must be gone');
 });
 
 // The speed test probes each mirror on a path that mirror happens to serve, so an @main git mount

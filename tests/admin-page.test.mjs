@@ -102,20 +102,26 @@ test('untrusted names are escaped before they reach innerHTML', () => {
 // pushes the staging trees below the fold, so an operator watching the queue table has to scroll
 // past two trees. This is the 2026-10-15 arrangement the user asked for by hand, and it is the kind
 // of thing a later edit silently breaks (reveal both, forget the toggle, re-show on refresh).
+//
+// 2026-10-29：页面结构改为公开 —— 不再用 hidden 当门（门在服务端：每个上传接口都校验
+// x-admin-key）。所以这里钉的是「互斥仍由 showStaging() 一处决定」+「没钥匙时给占位而不是假加载」，
+// 而不是「口令通过才把两块放出来」。
 test('the manual-upload fold hides the staging block while it is open', () => {
   assert.match(html, /id="manual"/, 'the upload fold is missing');
   assert.ok(html.includes('id="todo"'), 'the staging block is missing');
   // Hiding must be wired to the fold's own state, not to a second button somebody has to click.
   assert.match(script, /addEventListener\('toggle'/, 'the fold must drive the block through its toggle event');
   assert.match(script, /manualOpen/, 'the fold state must be remembered, so a refresh does not resurrect the block');
-  // ...and the reveal path must go through the same helper, or the two disagree about who is hidden.
-  // The helper has to be the only place that decides, so a force-reveal would defeat the exclusion.
-  // `$` is escaped so the pattern reads as the literal path lookup it is checking for.
-  const reveal = new RegExp("upload'\\)\\.hidden = false;\\n {4}showStaging\\(\\);");
-  assert.ok(reveal.test(script), 'the gate must reveal the upload area and then let showStaging() decide about the staging block');
-  assert.ok(!/\$\('todo'\)\.hidden = false/.test(script), 'the staging block must not be force-revealed');
-  // The 401 path hides both again, or a rejected key leaves the trees on screen.
-  assert.match(script, /\$\('todo'\)\.hidden = true;/, 'the rejected-key path must hide the staging block');
+  // One decider: only showStaging() writes todo.hidden; nothing sets it directly anywhere else.
+  assert.match(script, /todo\.hidden = manualOpen;/, 'showStaging must be the single decider');
+  assert.ok(!/\$\('todo'\)\.hidden = /.test(script), 'nothing may set the staging block hidden directly');
+  assert.ok(!/\$\('upload'\)\.hidden = /.test(script), 'the upload block is no longer gated through hidden');
+  // The markup itself must stay un-gated, and a page opened without a key must say so instead of
+  // leaving the two trees on a permanent "读取中…".
+  assert.ok(!/id="upload" hidden/.test(html), 'the upload block must not be hidden in the markup');
+  assert.ok(!/id="todo" hidden/.test(html), 'the staging block must not be hidden in the markup');
+  assert.match(script, /function paintLocked/, 'a locked placeholder is required');
+  assert.match(script, /paintLocked\(\);/, 'the locked placeholder must actually be painted');
 });
 
 // The staging view is reachable without the upload form: that page answers "what is in staging"

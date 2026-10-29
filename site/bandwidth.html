@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
   <meta name="description" content="WS 链路压缩与上行带宽最大化 —— 小上行带宽盒子的压缩实测、m.public 真 bug 与 10 Mbps 容量表（非官方同人作品）" />
-  <title>WS 压缩与上行带宽 · 卫戍协议 CDN</title>
+  <title>上行带宽最大化压缩 · 卫戍协议 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
 </head>
@@ -36,7 +36,7 @@
 
   <section class="hero">
     <div>
-      <h1>WS 压缩与上行带宽最大化</h1>
+      <h1>上行带宽最大化压缩</h1>
       <p class="hero-description">
         在<b>小上行带宽</b>（以 10 Mbps 为算例）的家用盒子上，让一台服务器能带更多人。
         全部数字来自工作树实测与线上探测，不是估算值。
@@ -82,15 +82,8 @@
       摊到 60 分钟是 1,573 B/s，比稳态贵 <b>27 倍</b> —— <b>那才是现在的天花板</b>。两块都要做。</span>
     </div>
     <p class="section-note mt-14">
-      WS 链路这块单独拆成了两份文档：
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>写今天在跑的东西
-      （三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>、
-      广播漏压的真 bug、帧瘦身 / 快照节奏 / 会话路由）；
-      <a href="./docs/ws-link-compression-next.md">《WS 链路压缩（下一轮）》</a>是真瓶颈
-      （冷启动 5.4 MB）与还能做的三件；
-      <a href="./docs/ws-compression-library-and-pack.md">《独立库与工坊包》</a>讲复用与分发
-      （以及「工坊包为什么开不了传输压缩」）。
-      本页是给站点访客的自包含摘要。
+      本页是给站点访客的自包含摘要：WS 侧的三档配置、两个「故意不声明」的参数、白名单与
+      <code class="inline">b.start</code> 全在上面几节里，不另设文档。
     </p>
   </section>
 
@@ -199,8 +192,8 @@
 
       <div class="mini">
         <h4>措施 4 · permessage-deflate（<b>本节已作废 2026-10-12</b>）</h4>
-        <p class="download__meta">⚠️ 下面这组参数<b>不再使用，不要照抄</b>；现行配置见
-          <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a> §三</p>
+        <p class="download__meta">⚠️ 下面这组参数<b>不再使用，不要照抄</b>；现行配置见本页
+          <code class="inline">#compact</code> 节。</p>
         <ul>
           <li>本节原本追一部<b>被删参数的调优史</b>（窗口 12 → 9 → 12）。现行答案是<b>「故意不声明」</b>：
           <code class="inline">server_max_window_bits</code> 在 <code class="inline">on</code> 档会 pin 住窗口、
@@ -601,9 +594,8 @@
       但 <b>2026-10-12 改判</b>：现行 <code class="inline">on</code> 档<b>故意不声明</b>
       <code class="inline">serverNoContextTakeover</code> —— 即<b>保留上下文接管</b>，并重测到
       <code class="inline">m.private</code> 4.07× → <b>43.55×</b>。所以它现在是<b>线上在用</b>的配置，不再是「否决项」。<br />
-      参数现状与两个「故意不声明」项见
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a> §三
-      （本页 <code class="inline">#compact</code> 节已写明「保留上下文接管」「<code class="inline">m.private</code> 4.07× → 43.55×」的事实，此处只补来龙去脉）。</span>
+      参数现状与两个「故意不声明」项见本页 <code class="inline">#compact</code> 节
+      （那里已写明「保留上下文接管」「<code class="inline">m.private</code> 4.07× → 43.55×」的事实，此处只补来龙去脉）。</span>
     </div>
 
     <h3 class="mt-26">p90 教训：容量从来由少数长连接决定</h3>
@@ -687,9 +679,6 @@ let b="";s.on("data",d=>{b+=d;if(b.includes("\r\n\r\n")){
       </div>
       <div class="footer-links">
         <a href="./">CDN 首页</a>
-        <a href="./docs/ws-link-compression.md">WS 压缩（已上线）</a>
-        <a href="./docs/ws-link-compression-next.md">WS 压缩（下一轮）</a>
-        <a href="./docs/ws-compression-library-and-pack.md">独立库与工坊包</a>
         <a href="https://dl.jiangjiangze.icu/" target="_blank" rel="noopener">客户端下载</a>
         <a href="https://sp-lobby.jiangjiangze.icu/" target="_blank" rel="noopener">联机大厅</a>
         <a href="https://arknights.jiangjiangze.icu/" target="_blank" rel="noopener">明日方舟入口</a>

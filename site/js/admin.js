@@ -7,7 +7,9 @@
 //   3. 页面上没有任何「覆盖」「删除」按钮，而且**这是刻意的、不是没做**：删除确实存在，但只走
 //      agent 通道（CLI 的 --purge / --rm），因为一次误点就会把对外正被引用的字节拿掉。
 //      这里没有按钮可点，就没有误点的可能。
-//   4. 「复制接入说明（含密钥）」由服务端拼（GET /api/cdn/upload/agent-doc）：文档路径不写死，
+//   4. 页面结构本身就是公开的（不需要口令也能看见布局与说明）；只有「接入说明（含密钥）」要口令。
+//      真正的门在服务端：每个上传接口都校验 x-admin-key，不靠隐藏 DOM 当安全边界。
+//   5. 「复制接入说明（含密钥）」由服务端拼（GET /api/cdn/upload/agent-doc）：文档路径不写死，
 //      取站点文档里最新的一份描述上传通道的文档，密钥由边缘替换进占位符。页面自己拼也能做，
 //      但「复制的说明里少了钥匙」是静默失败 —— 粘出来的文本看起来完全正常。
 (() => {
@@ -40,13 +42,13 @@
   // 同屏出现时，人看到的是两棵大树夹一个表单，滚三屏才回到按钮上；更实际的麻烦是上传中途要
   // 一直盯着 queue-table，那棵树在下面一直在变。互斥之后一屏只干一件事。
   // 反过来也一样：想看暂存区时把「手动上传」收起来，否则页面仍然被表单占着。
+  // 2026-10-29 调整：页面结构全部公开，不再用 hidden 当门 —— 真正的门在服务端（每个上传接口都要
+  // x-admin-key）。所以互斥只剩「展开上传时收起暂存区」这一件事，没有口令也能看见页面长什么样。
   let manualOpen = false;
   const showStaging = () => {
     const todo = $('todo');
     if (!todo) return;
-    // 只在互斥真起作用（暂存区因互斥而隐藏）时才把 hidden 让回互斥逻辑管；口令没过时它俩也都是
-    // hidden，那时不能因为一次 toggle 就把没鉴权的暂存区放出来。
-    todo.hidden = manualOpen ? true : $('upload').hidden;
+    todo.hidden = manualOpen;
   };
   const wireManualToggle = () => {
     const manual = $('manual');
@@ -315,19 +317,29 @@
     const doc = await res.json().catch(() => null);
     if (!res.ok || !doc || doc.ok !== true) throw new Error((doc && doc.error) || `HTTP ${res.status}`);
     agentDoc = doc;
-    showDocNote();
+    renderDocPanel(doc);
     return doc;
   }
 
-  /** 只把「这份说明是哪一份」显示出来，不复制。进入后台时用。 */
-  async function peekAgentDoc() {
-    if (!key()) return;
-    try {
-      await fetchAgentDoc();
-    } catch (error) {
-      const el = $('doc-note');
-      if (el) el.textContent = `取接入说明失败：${String(error.message || error).slice(0, 80)}`;
+  /**
+   * 口令通过后页面上唯一必须出现的东西：可复制的接入说明。
+   *
+   * 直接铺在 <pre> 里而不是只给一个「复制」按钮 —— 剪贴板 API 在非安全上下文或权限被拒时会失败，
+   * 那时人还得手动选。铺出来就没有「复制不了就什么都没有」这种死角。
+   */
+  function renderDocPanel(doc) {
+    if (!doc) return;
+    const note = $('doc-note');
+    if (note) {
+      note.textContent = `接入说明 = ${doc.path}${doc.injected ? '（已含本次密钥）' : '（⚠ 未含密钥）'}`;
+      if (doc.why) note.textContent += ` · ${doc.why}`;
     }
+    const pre = $('doc-text');
+    if (pre) {
+      pre.textContent = doc.text || '';
+      pre.hidden = !doc.text;
+    }
+    setCopyEnabled();
   }
 
   async function copyAgentDoc() {
@@ -442,10 +454,24 @@
     );
   }
 
+  /** 没有口令时的占位。两块树是服务端读出来的，没钥匙就明确说「要口令」，而不是永远「读取中…」。 */
+  function paintLocked() {
+    for (const [host, statusEl, text] of [
+      [$('stage-tree'), $('stage-status'), '输入口令后显示暂存区（内容由服务端读取，页面不缓存）'],
+      [$('log-tree'), $('log-status'), '输入口令后显示最近发布'],
+    ]) {
+      if (host) host.innerHTML = `<p class="muted">${text}</p>`;
+      if (statusEl) statusEl.textContent = '未进入';
+    }
+    setNav('未进入');
+  }
+
   async function refresh() {
     // 暂存区因互斥而隐藏时，这棵树没有人看 —— 继续每 2 分钟拉一次全量状态（列一遍暂存 + 读每个
     // claim.json + 列撤销）是白烧请求，而且上传途中那两分钟正好在给人看 queue-table。所以
     // 「不可见就不拉」。手动点「刷新状态」仍然强制拉一次：它就在上传表单里，人点它就是要看结果。
+    // 没口令就不去拉状态：那一定是 401，拉回来只会把「未进入」刷成报错。
+    if (!key()) { paintLocked(); return; }
     if ($('todo').hidden && !manualOpen) return;
     // 每 2 分钟的 setInterval 也调这里。fetch 的网络失败会变成未捕获的 Promise 拒绝
     // （2026-10-12 实测：断网时整页弹错、按钮看着像失效），所以要在这里收住。
@@ -460,11 +486,12 @@
     if (status === 401) {
       $('gate-msg').textContent = doc && doc.error ? doc.error : '口令不对';
       sessionStorage.removeItem(KEY_STORE);
-      $('upload').hidden = true;
-      $('todo').hidden = true;
-      setNav('未进入');
+      setCopyEnabled();
+      paintLocked();
       return;
-    }    if (!doc || doc.ok !== true) {
+    }
+
+    if (!doc || doc.ok !== true) {
       setNav('状态读不到');
       line(`读状态失败：${(doc && doc.error) || `HTTP ${status}`}`, 'err');
       return;
@@ -621,31 +648,57 @@
   setCopyEnabled();
   wireManualToggle();
 
+  // 口令提交。两件事并发发出，而不是「先验口令、再取说明」串两次往返：
+  //   ① agent-doc —— 这一步唯一的目的，通常比 status 先回来，回来就立刻铺到页面上；
+  //   ② status —— 判定口令对不对（401）+ 填暂存区/发布树。
+  // 仍然由 status 的 401 作最终判定：说明接口失败也可能只是网络抖动，不能据此说口令错了。
   $('gate-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const value = $('key').value.trim();
     if (!value) { $('gate-msg').textContent = '先输入口令'; return; }
     sessionStorage.setItem(KEY_STORE, value);
+    const go = $('gate-go');
+    if (go) { go.disabled = true; go.textContent = '校验中…'; }
     $('gate-msg').textContent = '校验中…';
-    const { status, doc } = await api('/api/cdn/upload/status');
-    if (status === 401) {
-      sessionStorage.removeItem(KEY_STORE);
-      $('gate-msg').textContent = (doc && doc.error) || '口令不对';
+
+    const docP = fetchAgentDoc().catch(() => null);
+    const statusP = api('/api/cdn/upload/status');
+    const doc = await docP;
+    if (doc) {
+      $('gate-msg').textContent = '';
       setCopyEnabled();
+    } else if (key()) {
+      const el = $('doc-note');
+      if (el) el.textContent = '取接入说明失败：口令不对，或接口暂时不可达。';
+    }
+
+    let status;
+    let st;
+    try {
+      ({ status, doc: st } = await statusP);
+    } catch (error) {
+      $('gate-msg').textContent = `校验失败：网络请求没成功（${String(error.message || error).slice(0, 60)}）`;
+      if (go) { go.disabled = false; go.textContent = '进入'; }
       return;
     }
-    if (!doc || doc.ok !== true) {
-      $('gate-msg').textContent = `后端没准备好：${(doc && doc.error) || `HTTP ${status}`}（多半是 Pages secret 还没配）`;
+    if (go) { go.disabled = false; go.textContent = '进入'; }
+
+    if (status === 401) {
+      sessionStorage.removeItem(KEY_STORE);
+      $('gate-msg').textContent = (st && st.error) || '口令不对';
+      const pre = $('doc-text');
+      if (pre) { pre.textContent = ''; pre.hidden = true; }
+      setCopyEnabled();
+      paintLocked();
+      return;
+    }
+    if (!st || st.ok !== true) {
+      $('gate-msg').textContent = `后端没准备好：${(st && st.error) || `HTTP ${status}`}（多半是 Pages secret 还没配）`;
       return;
     }
     $('gate-msg').textContent = '';
-    $('upload').hidden = false;
-    showStaging();
-    renderStatus(doc);
+    renderStatus(st);
     setNav('在线');
-    setCopyEnabled();
-    // 顺手把「这份说明是哪一份」显示出来：它由服务端挑，页面不该让人猜。
-    peekAgentDoc();
   });
 
   $('go').addEventListener('click', upload);
@@ -657,7 +710,8 @@
 
   // 已经开着标签页的人不用重打口令：sessionStorage 里有就先验一次。
   if (key()) { $('key').value = key(); $('gate-form').requestSubmit(); }
-  // 2 分钟一次。里面第一行就是「不可见就不拉」：暂存区被互斥藏起来时这棵树没人看，
-  // 拉回来也只是让隐藏的 DOM 更新（上传途中那两分钟尤其白烧）。
-  setInterval(() => { if (!$('upload').hidden) refresh(); }, 120000);
+  // 首次进页面：没钥匙就把两块树打成「需要口令」的占位，不留「读取中…」的假象。
+  if (!key()) paintLocked();
+  // 2 分钟一次；refresh 自己会挡掉「没钥匙」与「暂存区被互斥收起」两种情况。
+  setInterval(() => { if (key()) refresh(); }, 120000);
 })();

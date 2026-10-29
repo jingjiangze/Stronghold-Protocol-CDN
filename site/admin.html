@@ -55,7 +55,7 @@
     </div>
   </section>
 
-  <!-- 口令门 -->
+  <!-- 口令入口：进入之后要做的事只有一件 —— 把「接入说明（含密钥）」复制走。 -->
   <section class="block" id="gate">
     <div class="block__head">
       <span class="block__num">0</span>
@@ -63,21 +63,25 @@
       <span class="block__who">口令只存在本次浏览标签页里，关掉就没了</span>
     </div>
     <form id="gate-form" autocomplete="off" class="toolbar toolbar--tight">
-      <input class="min-w-220" id="key" type="password" placeholder="管理口令" autocomplete="off" />
+      <input class="min-w-220" id="key" type="password" placeholder="管理口令"
+             autocomplete="off" maxlength="128" spellcheck="false" />
       <button class="button button-primary" type="submit" id="gate-go">进入</button>
       <span class="section-note" id="gate-msg"></span>
+    </form>
+    <div class="toolbar toolbar--tight mt-10">
+      <span class="section-note" id="doc-note">
+        进入后这里给出可复制的接入说明：取站点文档里<b>最新的一份「描述上传通道」的文档</b>，密钥由边缘注入。
+      </span>
       <span class="grow"></span>
       <button class="button button-secondary" type="button" id="copy-agent" disabled
-              title="进入后可用：把完整的接入说明（含本次密钥）复制到剪贴板，直接粘给 agent">复制接入说明（含密钥）</button>
+              title="把完整的接入说明（含本次密钥）复制到剪贴板，直接粘给 agent">复制接入说明（含密钥）</button>
       <span class="section-note" id="copy-msg"></span>
-    </form>
-    <p class="section-note m-10-0-0" id="doc-note">
-      接入说明不写死路径：取站点文档里<b>最新的一份「描述上传通道」的文档</b>。进入后这里会写明是哪一份、以及为什么是它。
-    </p>
+    </div>
+    <pre class="code mt-10" id="doc-text" tabindex="0" aria-label="接入说明全文（可直接选中复制）" hidden></pre>
   </section>
 
   <!-- 上传区 -->
-  <section class="block" id="upload" hidden>
+  <section class="block" id="upload">
     <div class="block__head">
       <span class="block__num">1</span>
       <span class="block__title">选文件</span>
@@ -133,11 +137,11 @@
   </section>
 
   <!-- 待办与日志 -->
-  <section class="block" id="todo" hidden>
+  <section class="block" id="todo">
     <div class="block__head">
       <span class="block__num">2</span>
       <span class="block__title">暂存区与最近发布</span>
-      <span class="block__who" id="todo-who">读的是桶里的事实，不是浏览器缓存 · 展开上方「手动上传」时本块自动隐藏</span>
+      <span class="block__who" id="todo-who">读的是桶里的事实，不是浏览器缓存 · 展开上方「手动上传」时本块自动隐藏 · 需要口令</span>
       <a class="button button-secondary" href="./stage" id="stage-jump" title="另一个更轻的页面：只有暂存区，没有上传表单；给 agent 与脚本读">单独打开暂存区页</a>
     </div>
     <div class="toolbar">

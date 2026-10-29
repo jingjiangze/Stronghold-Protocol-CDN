@@ -428,9 +428,9 @@ curl -X POST https://p2p.jiangjiangze.icu/api/room \
 
 **实测链路（2026-10-17 全部通过）**：`POST /api/room {"upstream":"https://jingjiangze-stronghold-protocol.ms.show","code":"MST2"}` → 200，`"kind":"direct"`, `"token":null`，`"joinUrl":"https://p2p.jiangjiangze.icu/go/<id>?room=MST2"`；`GET /go/<id>` → `302 Found`，`location: https://jingjiangze-stronghold-protocol.ms.show/?room=MST2`，**无 set-cookie**；目标站实测可用（`/?room=PUB1` → 200 标题「卫戍协议：盟约」，'/ws' → 101 Switching Protocols）；本机经 CF 隧道打公共入口 → 302 + location ms.show + `CF-RAY` 头，平台根路径只有纯文本、没有任何 `<script>/<title>`。
 
-> 取舍：**直连房间的游戏流量完全不经平台、不经 ECS 中转**——玩家浏览器按 302 直连魔搭，平台只发跳转、字节不过手。素材字节仍由浏览器直连 CDN；游戏会话字节走魔搭公网入口（受魔搭自身额度约束，与阿里云 ECS 出口无关，见 server-deploy.md 的量级估算）。相比方案 A/B「数据不过服务器」，直连房间用「玩家浏览器直连」换腐竹的零安装，平台零带宽开销。魔搭 WAF 对浏览器 UA 放行，玩家直连时无感。
+> 取舍：**直连房间的游戏流量完全不经平台、不经 ECS 中转**——玩家浏览器按 302 直连魔搭，平台只发跳转、字节不过手。素材字节仍由浏览器直连 CDN；游戏会话字节走魔搭公网入口（受魔搭自身额度约束，与阿里云 ECS 出口无关）。相比方案 A/B「数据不过服务器」，直连房间用「玩家浏览器直连」换腐竹的零安装，平台零带宽开销。魔搭 WAF 对浏览器 UA 放行，玩家直连时无感。
 
-完整部署步骤（准备什么、怎么建创空间、零域名·零叠加层最简 Dockerfile、怎么验收）见姊妹文档： [./server-deploy.md](./server-deploy.md)
+部署相关的姊妹文档已下线；创空间侧只需按本页「房主三种方案 · 云端直连」一节建容器并暴露端口。
 
 ## 房主侧通用提醒
 

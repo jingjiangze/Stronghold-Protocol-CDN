@@ -70,8 +70,6 @@ function renderStatus(art, source) {
   setText('nav-status', `${art.upstream?.tag || '?'} · ${clean ? '校验通过' : '校验异常'}`);
   setText('p-token', art.art?.token || '…');
   for (const el of document.querySelectorAll('.tok')) el.textContent = art.art?.token || '…';
-  // the download box names the zip by upstream tag, not by cache token
-  for (const el of document.querySelectorAll('.tag')) el.textContent = art.upstream?.tag || '…';
 
   const verifyEl = $('s-verify');
   verifyEl?.classList.toggle('ok', clean);
@@ -159,7 +157,7 @@ function renderPacks(packs) {
   const body = $('packs')?.querySelector('tbody');
   if (!body) return;
   if (!packs?.length) {
-    body.innerHTML = '<tr><td colspan="5" class="muted">本次同步没有产出打包通道。</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="muted">本次同步没有产出预载包。</td></tr>';
     return;
   }
   body.innerHTML = packs
@@ -190,47 +188,6 @@ function renderPacks(packs) {
  * Saying that in words matters more than the chip on each card.
  */
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-
-/**
- * The official documentation the release package ships, listed from the tree rather than typed out.
- *
- * `docs/**` rides the same index as the art, so it arrives with tree.json — no extra fetch and no
- * second list to keep in step. Files are linked absolutely (this page is served from the site
- * origin, which has no `/docs/`), and `.md` is served as `text/plain` by the CDN so it renders
- * instead of downloading.
- */
-function renderDocs(treePromise) {
-  const body = $('doc-rows');
-  if (!body) return;
-  const dirs = treePromise ? treePromise.catch(() => null) : Promise.resolve(null);
-  return dirs.then((doc) => {
-    // `dirs` is an object keyed by directory path, not an array of nodes -- iterating it as an
-    // array throws, and a throw here is invisible because the caller swallows it, leaving the
-    // "loading" placeholder forever. That is exactly how this section shipped broken once.
-    const byDir = doc?.dirs && typeof doc.dirs === 'object' ? doc.dirs : {};
-    const rows = [];
-    for (const [dir, entry] of Object.entries(byDir)) {
-      if (dir !== 'docs' && !dir.startsWith('docs/')) continue;
-      for (const f of entry.files || []) rows.push({ path: `${dir}/${f[0]}`, size: f[1] });
-    }
-    rows.sort((a, b) => a.path.localeCompare(b.path));
-    setText('doc-status', rows.length ? `${rows.length} 个文件` : '');
-    if (!rows.length) {
-      body.innerHTML =
-        '<tr><td colspan="3" class="muted">这次发布的包里没有 docs/（或者清单还没重建）。</td></tr>';
-      return;
-    }
-    body.innerHTML = rows
-      .map((r) => {
-        const name = r.path.slice('docs/'.length);
-        return (
-          `<tr><td class="mono">${esc(name)}</td><td class="num">${fmtBytes(r.size)}</td>` +
-          `<td><a class="mono" href="${CDN}/${r.path}" target="_blank" rel="noopener">打开</a></td></tr>`
-        );
-      })
-      .join('');
-  });
-}
 
 /**
  * The endpoint table, rendered from the published contract rather than hand-copied.
@@ -288,7 +245,6 @@ function renderManifest(dirs, totals, art) {
     .join('');
 
   const tag = art?.upstream?.tag ? `上游 ${art.upstream.tag} 发布包` : '上游发布包';
-  const docBytes = dirs.filter((d) => d.prefix.startsWith('docs')).reduce((s, d) => s + d.bytes, 0);
   const lead = $('manifest-lead');
   if (lead) {
     // innerHTML, not setText: the emphasis is the point, and setText escapes it into visible tags.
@@ -300,11 +256,7 @@ function renderManifest(dirs, totals, art) {
       `<b>@assets-raw</b>（素材树，2026-10-09 提交到本仓 <b>assets-raw</b> 孤儿分支，` +
       `抽样 40 条路径 × 3 个源逐字节 sha256 校验一致）持有<b>素材部分</b>。` +
       `所以素材基址只能用 R2 / Pages 或 <b>assets-raw</b> 源 —— ` +
-      `「不含素材」这个标记就是为此，不是还没同步完，而是那批字节在该源里确实不存在。` +
-      (docBytes
-        ? `另外 <b>docs/</b>（${fmtBytes(docBytes)} 官方文档与 wiki 数据）<b>只在 R2 / Pages 上</b>：` +
-          `它不在本仓里，git 挂载源对它返回 404，下表最后一行已按实际情况标注。`
-        : '');
+      `「不含素材」这个标记就是为此，不是还没同步完，而是那批字节在该源里确实不存在。`;
   }
 }
 
@@ -494,130 +446,6 @@ async function renderTree(snapshotDirs, snapshotTotals, treePromise = null) {
   if (collapse) collapse.addEventListener('click', () => { if (filter) filter.value = ''; draw(); });
 }
 
-
-// ---- the download link --------------------------------------------------------------------
-
-/**
- * Each zip is rebuilt whenever the guide, the launchers or the stamped token change, so a link
- * must never name a version. The deploy-time snapshot carries the resolved assets; the page only
- * falls back to the Releases page when that resolution failed.
- *
- * 2026-10-14 用户指令：给玩家的「两种下载，按你的情况选一个」已去掉，只留**整合包**一条路
- * （自给自足：自带启动脚本与依赖，玩家手上有没有游戏服都能直接开）。侧车包 dropin 已从页面
- * 下线，这里同步移除它的渲染项——`renderDownload` 对缺失元素本就 `if (!button) return`，
- * 但留着死配置会让人误以为页面上还有第二个入口。
- *
- * 只剩一个变体后，原先「两个 pattern 刻意不相交（official-cdn 不含 stronghold-cdn 子串）」
- * 的防撞车说明随之作废。
- */
-const DOWNLOADS = [
-  { key: 'officialCdn', id: 'official', pattern: /^stronghold-official-cdn[^/]*\.zip$/i },
-];
-
-function renderDownload({ id }, asset) {
-  const button = $(`${id}-download`);
-  if (!button) return;
-  if (!asset?.url) {
-    setText(`${id}-meta`, ' · 在 Releases 页面的 Assets 里');
-    return;
-  }
-  button.href = asset.url;
-  setText(`${id}-name`, asset.name);
-  setText(`${id}-meta`, ` · ${fmtBytes(asset.size)}${asset.release ? ` · release ${asset.release}` : ''}`);
-  const mirror = $(`${id}-mirror`);
-  if (mirror && asset.urls?.length > 1) {
-    mirror.href = asset.urls[1];
-    mirror.hidden = false;
-  }
-}
-
-function renderDownloads(snapshot) {
-  for (const variant of DOWNLOADS) renderDownload(variant, snapshot?.[variant.key]);
-}
-
-/**
- * Point each download at whichever of its own URLs measures fastest.
- *
- * The zips are offered on several hosts and the ranking is not stable — measured from mainland
- * China the own origin and the ghfast mirror trade places — so leaving the button on whichever URL
- * happens to be first gives some visitors the slower one. The speed test already measures every
- * mirror, so the same measurement should decide the download.
- *
- * Only the hosts the downloads actually use are probed. Running the full nine-mirror test here
- * would spend megabytes per visitor to choose between the two or three URLs a button has.
- *
- * Costs one 256 KiB fetch per candidate host, once per page load. It never blocks the page and
- * silently leaves the button alone if nothing measured better.
- */
-async function preferFastestDownload(snapshot, flat) {
-  const byHost = new Map();
-  for (const m of flat || []) {
-    try {
-      byHost.set(new URL(m.root).host, m);
-    } catch {
-      /* a malformed root is not a candidate */
-    }
-  }
-  for (const variant of DOWNLOADS) {
-    const asset = snapshot?.[variant.key];
-    const button = $(`${variant.id}-download`);
-    if (!asset?.urls?.length || !button) continue;
-
-    // One candidate per distinct host, so a variant listing the same host twice is probed once.
-    const candidates = new Map();
-    for (const url of asset.urls) {
-      try {
-        const host = new URL(url).host;
-        const mirror = byHost.get(host);
-        if (mirror && !candidates.has(host)) candidates.set(host, { url, mirror });
-      } catch {
-        /* skip a URL we cannot parse */
-      }
-    }
-    // Fewer than two measurable hosts means there is no choice to make.
-    if (candidates.size < 2) continue;
-
-    const measured = [];
-    for (const [host, { url, mirror }] of candidates) {
-      try {
-        measured.push({ host, url, ...(await measureMirror(mirror, 1)) });
-      } catch {
-        /* an unreachable candidate simply loses */
-      }
-    }
-    if (measured.length < 2) continue;
-    measured.sort((a, b) => b.kbps - a.kbps || a.latency - b.latency);
-    const win = measured[0];
-    button.href = win.url;
-    const meta = $(`${variant.id}-meta`);
-    if (meta) meta.textContent = `${meta.textContent} · 已按实测选 ${win.host}（${fmtSpeed(win.kbps)}）`;
-  }
-}
-
-/** Best effort: pick up a zip published after the last deploy. Never blocks the page. */
-async function refreshDownloads() {
-  const repo = document.body.dataset.repo;
-  if (!repo) return;
-  const releases = await getJson(`https://api.github.com/repos/${repo}/releases?per_page=20`, 6000);
-  for (const { id, pattern } of DOWNLOADS) {
-    const newest = (releases || [])
-      .map((release) => ({
-        release,
-        asset: (release.assets || []).find((asset) => pattern.test(asset.name || '')),
-      }))
-      .filter((entry) => entry.asset)
-      .sort((a, b) => String(b.release.published_at || '').localeCompare(String(a.release.published_at || '')))[0];
-    if (!newest) continue;
-    if ($(`${id}-download`)?.getAttribute('href') === newest.asset.browser_download_url) continue;
-    renderDownload({ id }, {
-      url: newest.asset.browser_download_url,
-      name: newest.asset.name,
-      size: newest.asset.size,
-      release: newest.release.tag_name,
-      urls: [newest.asset.browser_download_url],
-    });
-  }
-}
 
 // ---- mirror speed test -------------------------------------------------------------------
 
@@ -809,17 +637,11 @@ async function main() {
   // is what a consumer reads for the URLs, so prefer the complete one and fall back to it.
   renderPacks(art?.art?.packs?.length ? art.art.packs : mirrors?.packs || []);
   renderManifest(snapshot?.dirs || [], snapshot?.totals || null, art);
-  // One fetch of the 85 KiB tree feeds both the directory browser and the docs list; neither may
-  // hold up the rest of the page, so the promise is handed to each and awaited inside.
+  // One fetch of the 85 KiB tree feeds the directory browser; it must not hold up the rest of the
+  // page, so the promise is handed to the renderer and awaited inside.
   const treePromise = getManifest('/cdn/v1/tree.json', 20000).catch(() => null);
-  renderDocs(treePromise).catch(() => {});
   renderTree(snapshot?.dirs || [], snapshot?.totals || null, treePromise).catch(() => {});
-  renderDownloads(snapshot);
   wireProbe(flat);
-  // Fire and forget: a blocked api.github.com must not delay or break the page.
-  refreshDownloads().catch(() => {});
-  // Fire and forget: the fastest-host choice must never hold up the page.
-  preferFastestDownload(snapshot, flat).catch(() => {});
 }
 
 main().catch((error) => {

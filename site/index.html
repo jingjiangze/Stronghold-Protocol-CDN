@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#101719" />
-  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 玩家下载、接入契约与镜像接口（非官方同人作品）" />
+  <meta name="description" content="卫戍协议：盟约 · 素材 CDN —— 接入契约与镜像接口（非官方同人作品）" />
   <title>卫戍协议：盟约 · 素材 CDN</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23101719'/%3E%3Cpath fill='%23a5eccd' d='M5 5h14v3H5zm2 5h10v3H7zm2 5h6v3H9z'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="./css/cdn.css" />
@@ -23,13 +23,10 @@
       </div>
     </div>
     <nav class="navigation">
-      <a href="#players">玩家下载</a>
       <a href="#agents">agent 接入</a>
       <a href="#mirrors">镜像与选源</a>
-      <a href="#official-docs">官方文档</a>
       <a href="#layout">目录与 API</a>
       <a href="#bandwidth">上行带宽压缩</a>
-      <a href="#server-deploy">服务器部署</a>
       <a href="#p2p">异地联机</a>
       <a href="#asset-cdn">素材对账</a>
       <a href="./bandwidth">↗ 文档</a>
@@ -58,105 +55,11 @@
   </section>
   <p class="section-note mb-26" id="status-line"></p>
 
-  <!-- ============================ 板块一：给玩家 ============================ -->
-  <section class="block" id="players">
-    <div class="block__head">
-      <span class="block__num">1</span>
-      <span class="block__title">玩家：下载整合包，解压即开服</span>
-      <span class="block__who">不写代码 · 解压即用 · 随时撤销</span>
-    </div>
-    <p class="block__lead">
-      一个包就能让素材改从 CDN 走、把几百 MB 从你的上行带宽上拿掉。
-      <b>它自带启动脚本与依赖</b>，不管你手上有没有一份能跑的游戏服，下载这一个就行。
-    </p>
-
-    <div class="download">
-      <a class="button button-primary" id="official-download" href="https://github.com/jingjiangze/Stronghold-Protocol-CDN/releases/latest" target="_blank" rel="noopener">下载整合包</a>
-      <a class="button button-secondary" id="official-mirror" href="#" target="_blank" rel="noopener" hidden>镜像加速下载</a>
-      <div class="download__meta">
-        <b id="official-name">stronghold-official-cdn-<span class="tag">v0.2.2</span>.zip</b>
-        <span id="official-meta"> · 正在读取最新版本…</span><br />
-        二十几 MB 的官方最新包，<b>不含素材</b>，<b>只把素材地址改成了本 CDN</b>，
-        其余（代码、数据、依赖、启动脚本）与官方包完全一致。依赖已打包，<b>不需要 npm install</b>：
-        解压后 <code class="inline">node server/index.js</code> 就能跑。
-        首次进游戏时素材按需从 CDN 拉取，所以它不占你任何上行带宽。
-      </div>
-    </div>
-
-    <div class="notice">
-      <span><b>这个包会跟着上游最新版滚动更新</b>——上面的链接永远指向最新那份，不用记版本号。
-      上游发新版后请重新下整包，<b>不要</b>用官方的 update 增量包升级
-      （那会把你带回需要本地素材的状态）。</span>
-    </div>
-
-    <ol class="steps">
-      <li class="step">
-        <span class="step__n">1</span>
-        <div class="step__body">
-          <div class="step__title">下载并解压到部署目录旁边</div>
-          <div class="step__note">
-            解压后得到一个 <code class="inline">stronghold-cdn/</code> 文件夹。放<b>三种位置都行</b>：放进部署目录里面、
-            放在它旁边、或放在它上一级——启动脚本会自己找到部署目录。部署目录被改过名（例如 <code class="inline">servers/</code>）时，
-            启动前设一下 <code class="inline">SP_DEPLOY_DIR=部署目录</code>。
-          </div>
-        </div>
-      </li>
-      <li class="step">
-        <span class="step__n">2</span>
-        <div class="step__body">
-          <div class="step__title">双击启动</div>
-          <div class="step__note">
-            Windows 双击 <code class="inline">stronghold-cdn\start-with-cdn.cmd</code>；
-            Linux / macOS 运行 <code class="inline">sh stronghold-cdn/start-with-cdn.sh</code>。
-            它会把游戏服起在内部端口，在外层代理，并把三张素材清单在响应里改成 CDN 地址。房间与对局的 WebSocket 原样透传。
-          </div>
-        </div>
-      </li>
-      <li class="step">
-        <span class="step__n">3</span>
-        <div class="step__body">
-          <div class="step__title">验收：跑一条命令</div>
-          <div class="step__note">
-            另开一个终端：<code class="inline">node stronghold-cdn/verify-cdn.mjs http://127.0.0.1:3000</code><br />
-            看到 <code class="inline">OK: art is served from the CDN</code> 就成了（要求清单里 0 条素材仍指向本机）。
-          </div>
-        </div>
-      </li>
-    </ol>
-
-    <div class="two-col">
-      <div class="mini">
-        <h4>撤销 / 回退</h4>
-        <p>删掉 <code class="inline">stronghold-cdn/</code> 文件夹，按原来的方式启动即可。部署包自始至终没有被修改过。</p>
-      </div>
-      <div class="mini">
-        <h4>它做了什么 / 不做什么</h4>
-        <ul>
-          <li>做：把三张清单里的 <code class="inline">/assets/…</code>、<code class="inline">/fonts/…</code> 改写成 CDN 绝对地址</li>
-          <li>不做：不碰部署包里的文件、不动存档、不改游戏数据</li>
-          <li>需要：Node.js 18+（游戏服本来就要）</li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="table-wrap mt-16">
-      <table>
-        <thead><tr><th>遇到的情况</th><th>怎么处理</th></tr></thead>
-        <tbody>
-          <tr><td>素材还是本机在发</td><td>你连的是内部端口或另一个实例；请走启动脚本打印的那个端口</td></tr>
-          <tr><td>找不到部署目录</td><td>启动脚本会告诉你三种摆放位置；或显式设 <code class="inline">SP_DEPLOY_DIR</code></td></tr>
-          <tr><td>页面白块 / 控制台报 CORS</td><td>CDN 响应缺 <code class="inline">Access-Control-Allow-Origin</code>；把浏览器控制台的报错发出来</td></tr>
-          <tr><td>端口被占用</td><td><code class="inline">PORT=8080</code> 再启动（内部端口自动跟着变）</td></tr>
-          <tr><td>验收报缺文件</td><td>用 <code class="inline">/cdn/v1/index.json</code> 对账；清单只是索引，桶里 <code class="inline">HEAD</code> 实测才是「有没有」的权威（详见《素材 CDN 对账》）</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
+  <!-- ============================ 给 agent ============================ -->
   <!-- ============================ 板块二：给 agent ============================ -->
   <section class="block" id="agents">
     <div class="block__head">
-      <span class="block__num">2</span>
+      <span class="block__num">1</span>
       <span class="block__title">Agent：对所有服务器通用</span>
       <span class="block__who">读契约 · 按拓扑套做法 · 跑验收</span>
     </div>
@@ -358,14 +261,23 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
 
     <div class="section-heading m-26-0-14">
-      <div><div class="eyebrow">REFERENCE · PACKS</div><h3>打包通道</h3></div>
-      <span class="section-status">同一批字节，少数几个下载</span>
+      <div><div class="eyebrow">REFERENCE · PRELOAD</div><h3>预载通道</h3></div>
+      <span class="section-status">一次拉完整棵树，之后都由本地发</span>
     </div>
     <p class="section-note mb-12">
-      整棵树打成的压缩包（每包约 96 MB）。客户端逐个文件取时是延迟受限的；打包通道把同一批字节变成少数几个下载，
-      再套社区镜像前缀加速。<b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），
-      对象存储不再存包 —— 同一批 100 MB 的 zip 只保留一份权威副本，避免两处各自漂移。
-      每行右侧是同一个包的几条下载门牌：<b>第一条是 GitHub 上的权威副本</b>，后面是套了镜像前缀的加速入口（本机实测 gh-proxy ≈ 11.2 MB/s、ghfast ≈ 10.3 MB/s、GitHub 原站 ≈ 6.6 MB/s）。
+      整棵素材树按分组打成少数几个压缩包（每包约 96 MB）。逐文件取是<b>延迟受限</b>的；预载通道让部署机
+      在首次启动前把整批字节一次拉到本机，之后由本地直接发 —— <code class="inline">dropin</code> 的
+      <code class="inline">SP_LOCALIZE=1</code> 就是按这份清单拉包（<code class="inline">SP_LOCALIZE_PACKS</code>
+      可选子集，见 <code class="inline">dropin/README.md</code>）。
+      <b>包只发布在 GitHub Release</b>（<code class="inline">assets-&lt;tag&gt;</code>），对象存储不存包 ——
+      同一批字节只保留一份权威副本，避免两处各自漂移。
+    </p>
+    <p class="section-note mb-12">
+      <b>滚动更新（GitHub）：</b>包名与链接都跟上游 tag 走。上游每次发新版，
+      <code class="inline">sync.yml</code>（每天 4 轮、每 6 小时一次）重新打包并发布
+      <code class="inline">assets-&lt;新 tag&gt;</code> 下的一整套包；本表读的是发布接口里的
+      <code class="inline">packs</code> 字段，所以它跟着上游一起滚动，永远指向当前版本，不用记版本号。
+      每行右侧是同一个包的几条下载门牌：<b>第一条是 GitHub 上的权威副本</b>，后面是套了镜像前缀的加速入口。
     </p>
     <div class="table-wrap">
       <table id="packs">
@@ -399,22 +311,6 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>10 Mbps 带 <b>≈21,000 人</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/ws-link-compression.md">
-        <div class="card__title">WS 链路压缩（当前已上线 · 2026-10-12）</div>
-        <div class="card__meta"><span>三档 off/on/safe · 两个「故意不声明」的参数 · 白名单 + b.start · 广播漏压的真 bug</span></div>
-        <div class="card__stats">
-          <span>每席位 <b>57.5 B/s</b></span>
-          <span>10 Mbps 带 <b>≈21,000 人</b></span>
-        </div>
-      </a>
-      <a class="card" href="./docs/ws-link-compression-next.md">
-        <div class="card__title">WS 链路压缩（下一轮）</div>
-        <div class="card__meta"><span>真瓶颈是冷启动 5.4 MB · ③④ 已做但没上线 · 隐藏标签页停推</span></div>
-        <div class="card__stats">
-          <span>冷启动 <b>1,573 B/s</b></span>
-          <span>比稳态贵 <b>27×</b></span>
-        </div>
-      </a>
       <a class="card" href="./docs/official-effects.md">
         <div class="card__title">官方战斗特效（素材与清单）</div>
         <div class="card__meta"><span>4,518 prefab · 3,388 贴图 · 1,279 mesh · local-fx.json 清单格式与降级行为</span></div>
@@ -423,49 +319,11 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
           <span>缺失即退回 <b>程序化特效</b></span>
         </div>
       </a>
-      <a class="card" href="./docs/ws-compression-library-and-pack.md">
-        <div class="card__title">独立库与工坊兼容包</div>
-        <div class="card__meta"><span>零依赖库已发布 · 工坊包为什么开不了传输压缩 · 写包格式约定</span></div>
-        <div class="card__stats">
-          <span>MIT · <b>28 项测试</b></span>
-          <span>含 <b>只读接口</b></span>
-        </div>
-      </a>
     </div>
     <div class="notice mt-16">
-      <span><b>要落地这套压缩，用零依赖库，不要用旧的 as-built 包：</b>
-      现行实现在
-      <a href="https://github.com/jingjiangze/stronghold-ws-compression" target="_blank" rel="noopener"><b>stronghold-ws-compression</b></a>
-      （MIT·零依赖·<b>28 项测试</b>），用法与写包格式见
-      <a href="./docs/ws-compression-library-and-pack.md">《独立库与工坊兼容包》</a>；
-      线上配置（三档 <code class="inline">off/on/safe</code>、两个「故意不声明」的参数、白名单 + <code class="inline">b.start</code>）见
-      <a href="./docs/ws-link-compression.md">《WS 链路压缩（当前已上线）》</a>。
-      <br />⚠️ 曾有一个 <code class="inline">ws-link-AS-BUILT.zip</code>（45,580 B · sha256 <code class="inline">cc50666a…a75afa</code>，
-      来自 master-play <code class="inline">c587705f</code>）随本站点分发，<b>已于 2026-10-12 废弃并从站点删除</b>：
-      它是 2026-10-10 的旧配置（阈值 512 / 关上下文接管 / 窗口 pin 12），而线上握手实测证明那套参数已经不在跑 ——
-      照它合并会装回一套与线上不一致的配置。旧的安装说明页也一并删除了，用上面的独立库。</span>
-    </div>
-  </section>
-
-  <section class="section" id="server-deploy">
-    <div class="section-heading">
-      <div><div class="eyebrow">GUIDE · SERVER DEPLOY</div><h2>服务器部署文档</h2></div>
-      <span class="section-status">ModelScope 创空间 · 从零开始 · 默认配置</span>
-    </div>
-    <p class="section-note mb-14">
-      这份记「游戏服本身怎么跑起来」：在 <b>ModelScope 创空间</b>（Docker 容器）上从零部署卫戍协议游戏服——
-      所需信息清单、创空间创建、默认配置（边缘层 5 文件逐字可用）、推送并触发重新部署、验收与排错。
-      所有默认配置随配套仓库 <code class="inline">Stronghold-Protocol-Server-Deploy</code> 附上。
-    </p>
-    <div class="cards">
-      <a class="card" href="./docs/server-deploy.md">
-        <div class="card__title">完整文档（Markdown）</div>
-        <div class="card__meta"><span>所需信息 / 架构 / 创建创空间 / 默认配置 / 推送部署 / 验收</span></div>
-        <div class="card__stats">
-          <span>端口 <b>7860 锁死</b></span>
-          <span>含 <b>验收命令</b></span>
-        </div>
-      </a>
+      <span><b>首载的大头在客户端代码，不在素材。</b>素材挪到 CDN 之后，新玩家冷启动仍要拿
+      <b>5.4 MB</b> 客户端代码（约 <b>1,573 B/s</b>，比稳态贵 <b>27×</b>）—— 这一段由游戏服自己的静态
+      托管发出，CDN 帮不上忙，要压只能动客户端产物。</span>
     </div>
   </section>
 
@@ -539,13 +397,6 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     </div>
   </section>
 
-  
-
-  
-
-  
-
-  
 
   <section class="section" id="layout">
     <div class="section-heading">
@@ -555,8 +406,7 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <p class="section-lead">
       这个桶里实际托管的每一个文件，按目录展开。点目录名展开下一层，点文件名直接打开它。
       带 <span class="chip chip--mod">托管</span> 的是本仓<b>刻意托管</b>的第三方 mod 素材
-      （上游清单里没有，见 <code class="inline">hosted.json</code>），其余是上游素材树；
-      <code class="inline">docs/</code> 是上游包内的官方文档与 wiki 数据（见上一节）。
+      （上游清单里没有，见 <code class="inline">hosted.json</code>），其余是上游素材树。
     </p>
     <div class="toolbar">
       <input id="tree-filter" type="search" placeholder="按路径筛选，例如 spine/op/char_1016 或 .skel" autocomplete="off" />
@@ -566,48 +416,6 @@ curl "<b>https://downcdn.jiangjiangze.icu</b>/cdn/v1/index.json"</pre>
     <div class="table-wrap">
       <div id="tree" class="tree" role="tree" aria-label="托管文件目录"><p class="muted">加载中…</p></div>
     </div>
-  </section>
-
-    <section class="section" id="official-docs">
-    <details class="fold">
-      <summary class="fold__summary">
-        <div class="fold__head">
-          <div><div class="eyebrow">REFERENCE · OFFICIAL DOCS</div><h2>官方文档与 wiki 数据</h2></div>
-          <span class="section-status">读取中…</span>
-        </div>
-        <span class="fold__chevron" aria-hidden="true">▸</span>
-      </summary>
-<p class="section-lead">
-      上游发布包里的 <code class="inline">docs/**</code>，原样镜像到本 CDN，键就是包内路径。
-      这里面是<b>官方自己写的</b>资料：<code class="inline">PLAYING.md</code>（玩家手册）、
-      <code class="inline">DEPLOY.md</code>（部署），以及 <code class="inline">docs/research/*.json</code>
-      ——干员 / 敌人 / 地图 / 素材四份数据集，也就是通常说的 wiki 数据。
-      <b>这些文件游戏服务器不提供</b>（上游没有 <code class="inline">/docs/</code> 路由），
-      以前只能去 GitHub 取；现在和素材一样走这个域名。
-    </p>
-    <div class="notice">
-      <span><b>给 agent：怎么保证拿到的是最新版。</b>这批文件<b>随上游每次发布整体更换，但路径不变</b>，
-      而裸路径的浏览器缓存是 1 小时 —— 直接抓 <code class="inline">/docs/&lt;path&gt;</code> 可能读到旧版本。
-      正确顺序：① 读 <a href="https://downcdn.jiangjiangze.icu/cdn/v1/art.json" target="_blank" rel="noopener"><code class="inline">/cdn/v1/art.json</code></a>
-      的 <code class="inline">token</code>（页顶状态行的「缓存令牌」就是同一个值）；
-      ② 请求 <code class="inline">/docs/&lt;path&gt;?v=&lt;token&gt;</code> —— 带令牌的边缘副本不可变（1 年），
-      令牌一变即表示上游发了新版本，应重新取。
-      <b>唯一的源是 R2 / Pages</b>：git 挂载源不含 <code class="inline">docs/</code>，对它返回 404。</span>
-    </div>
-    <div class="notice">
-      <span><code class="inline">.md</code> 用 <code class="inline">text/plain; charset=utf-8</code> 发送，
-      所以点开是<b>直接显示</b>而不是下载，中文也不会变乱码（不带 charset 时浏览器会按 Latin-1 解码，
-      真机视口上实测成 <code class="inline"># çŽ©æ³•æŒ‡å—</code>）。手机浏览器上可直接读。
-      需要原始文件就右键另存，或者 <code class="inline">curl -O</code>。</span>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>文件</th><th>体积</th><th>直接打开</th></tr></thead>
-        <tbody id="doc-rows"><tr><td colspan="3" class="muted">加载中…</td></tr></tbody>
-      </table>
-    </div>
-  
-    </details>
   </section>
 
   <section class="section" id="api">
