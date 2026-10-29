@@ -4,7 +4,6 @@ size: 148,148
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Weapon
   rotate: false
   xy: 100, 82

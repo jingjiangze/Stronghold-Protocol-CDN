@@ -4,7 +4,6 @@ size: 128,128
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 F_Toy_A_a
   rotate: false
   xy: 60, 23

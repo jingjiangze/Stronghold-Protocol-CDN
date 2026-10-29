@@ -4,7 +4,6 @@ size: 256,256
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 Ball
   rotate: true
   xy: 131, 173

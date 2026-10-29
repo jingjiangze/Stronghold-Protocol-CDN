@@ -4,7 +4,6 @@ size: 256,256
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Arm_L
   rotate: false
   xy: 98, 174

@@ -4,7 +4,6 @@ size: 132,132
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 F_Paper_A
   rotate: true
   xy: 82, 62

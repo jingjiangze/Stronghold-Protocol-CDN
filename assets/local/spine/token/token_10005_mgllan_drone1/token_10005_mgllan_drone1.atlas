@@ -4,7 +4,6 @@ size: 128,128
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 F_Drone_1
   rotate: false
   xy: 2, 5

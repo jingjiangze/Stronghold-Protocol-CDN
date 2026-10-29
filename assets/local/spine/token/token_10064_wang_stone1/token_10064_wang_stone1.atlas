@@ -4,7 +4,6 @@ size: 132,132
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Chess
   rotate: false
   xy: 2, 2

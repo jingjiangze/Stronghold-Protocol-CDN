@@ -1,7 +1,1 @@
-o2p-platform (handshake-only: game bytes never transit this host)
-POST /api/room {"hostNode":"<host openp2p node>","code":"ABCD"}                    -> p2p room (direct tunnel)
-POST /api/room {"hostNode":"...","srcPort":3000,"upstream":"https://<game-host>","code":"ABCD"} -> p2p room + fallback
-POST /api/room {"upstream":"https://<game-host>","code":"ABCD"}                    -> direct room (pure 302)
-GET  /api/room/<id>   join params   |  GET /api/rooms  list  |  GET /api/health
-GET  /go/<id>         302 -> joiner's own 127.0.0.1:<srcPort> (tunnel up) or the fallback upstream (down)
-Web entry: https://p2p.jiangjiangze.icu/go/<id>
+{"format":"fx-mesh","version":2,"name":"Plane002","vertexCount":4,"positions":[1.43339,-0.0995033,0,-1.43339,0.0995033,0,-0.0995033,-1.43339,0,0.0995033,1.43339,0],"normals":[0,0,1,0,0,1,0,0,1,0,0,1],"uv0":[0,0,1,1,1,0,0,1],"submeshes":[[0,1,2,1,0,3]]}

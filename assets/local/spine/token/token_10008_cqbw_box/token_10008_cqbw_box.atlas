@@ -4,7 +4,6 @@ size: 128,128
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 Claymore
   rotate: false
   xy: 2, 2

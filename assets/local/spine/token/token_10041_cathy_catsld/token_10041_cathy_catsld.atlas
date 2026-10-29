@@ -4,7 +4,6 @@ size: 216,216
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 BC_B_leg_1
   rotate: false
   xy: 58, 106

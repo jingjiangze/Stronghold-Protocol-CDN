@@ -4,7 +4,6 @@ size: 116,116
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 F_Body
   rotate: false
   xy: 2, 62

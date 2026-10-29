@@ -4,7 +4,6 @@ size: 280,280
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Aircraft_A_I
   rotate: false
   xy: 268, 148

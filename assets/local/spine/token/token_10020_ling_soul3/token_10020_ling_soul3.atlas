@@ -4,7 +4,6 @@ size: 512,512
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 B2_Body_01
   rotate: false
   xy: 277, 368

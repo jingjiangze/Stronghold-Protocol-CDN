@@ -4,7 +4,6 @@ size: 200,200
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 B_NeckA
   rotate: true
   xy: 88, 83

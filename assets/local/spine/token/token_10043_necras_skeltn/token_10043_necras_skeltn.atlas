@@ -4,7 +4,6 @@ size: 428,428
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Belt_A
   rotate: true
   xy: 391, 376

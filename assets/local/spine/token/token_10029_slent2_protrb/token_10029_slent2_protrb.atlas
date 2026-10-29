@@ -4,7 +4,6 @@ size: 512,512
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Drones_A
   rotate: false
   xy: 2, 3

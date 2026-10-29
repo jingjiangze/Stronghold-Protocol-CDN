@@ -4,7 +4,6 @@ size: 164,164
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 TS3_A_ArmA
   rotate: false
   xy: 58, 12

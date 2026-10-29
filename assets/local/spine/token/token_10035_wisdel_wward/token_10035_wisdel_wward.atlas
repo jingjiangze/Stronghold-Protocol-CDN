@@ -4,7 +4,6 @@ size: 216,216
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 Token
   rotate: false
   xy: 2, 2

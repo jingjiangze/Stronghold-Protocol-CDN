@@ -1,7 +1,1 @@
-o2p-platform (handshake-only: game bytes never transit this host)
-POST /api/room {"hostNode":"<host openp2p node>","code":"ABCD"}                    -> p2p room (direct tunnel)
-POST /api/room {"hostNode":"...","srcPort":3000,"upstream":"https://<game-host>","code":"ABCD"} -> p2p room + fallback
-POST /api/room {"upstream":"https://<game-host>","code":"ABCD"}                    -> direct room (pure 302)
-GET  /api/room/<id>   join params   |  GET /api/rooms  list  |  GET /api/health
-GET  /go/<id>         302 -> joiner's own 127.0.0.1:<srcPort> (tunnel up) or the fallback upstream (down)
-Web entry: https://p2p.jiangjiangze.icu/go/<id>
+{"format":"fx-mesh","version":2,"name":"Plane001","vertexCount":14,"positions":[-2.87438,0.149836,-9.60536e-08,-2.8859,1.44869,-9.45058e-08,-3.44903,-0.655919,0,-2.40482,1.88094,-1.46034e-07,-2.29974,0.633481,-1.53709e-07,-1.92375,2.08744,-1.70651e-07,-1.72509,0.795016,-1.72965e-07,-1.44267,2.06819,-1.68356e-07,-1.15045,0.63444,-1.53823e-07,-0.961596,1.82318,-1.39149e-07,-0.575802,0.151755,-9.62823e-08,-0.480521,1.35243,-8.30304e-08,-0.0011571,-0.653041,-3.43096e-10,0.000554423,0.655919,0],"normals":[0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],"uv0":[0.833333,0,1,1,1,0,0.833333,1,0.666667,0,0.666667,1,0.5,0,0.5,1,0.333333,0,0.333333,1,0.166667,0,0.166667,1,0,0,0,1],"colors":[1,1,1,1,1,1,1,0,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"submeshes":[[0,1,2,0,3,1,4,3,0,4,5,3,6,5,4,6,7,5,8,7,6,8,9,7,9,8,10,9,10,11,11,10,12,11,12,13]]}

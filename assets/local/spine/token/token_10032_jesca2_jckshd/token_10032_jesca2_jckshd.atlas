@@ -4,7 +4,6 @@ size: 256,256
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 C_Bag_Ba
   rotate: true
   xy: 2, 3
