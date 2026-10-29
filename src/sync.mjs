@@ -155,7 +155,7 @@ function parseArgs(argv) {
     else if (arg === '--dry-run') opts.write = false;
     else if (arg === '--prune') opts.prune = true;
     // The gate is authoritative in both modes: a red run means the CDN is not complete. Use
-    // --report-only when the point is just to read the numbers.
+    // --report-only 让闸门只记录不拦截：只读模式退出 0，写模式照常发布（红名单留在 report.json）。
     else if (arg === '--report-only') opts.reportOnly = true;
     // Re-run even when the published interface already names this upstream tag.
     else if (arg === '--force') opts.force = true;
@@ -836,8 +836,15 @@ async function main() {
   report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
   if (!report.ok) {
-    await writeReports(ROOT, report);
-    throw new Error('acceptance gate failed — the interface files were NOT published');
+    if (!opts.reportOnly) {
+      await writeReports(ROOT, report);
+      throw new Error('acceptance gate failed — the interface files were NOT published');
+    }
+    // 2026-10-30：--report-only 在写模式也要生效。它此前只在只读分支被读取，于是「闸门红着、
+    // 但先把桶里这批字节和接口发布出去」这个唯一出口在写模式里并不存在 —— 镜像侧一旦出现
+    // 工具链修不了的问题（实测：魔搭数据集的 LFS 对象里存的是 o2p 占位页，而 push-dataset-tree
+    // 对 LFS 路径一律跳过 --repair），发布链就永久卡死。默认不变：不带该开关仍然红着停。
+    log('gate failed, but --report-only was given — publishing anyway; the mismatch list stays in report.json');
   }
 
   // The size gate proves the objects are the right length; this proves a sample is the upstream
@@ -852,11 +859,14 @@ async function main() {
       `${byteSample.failed.length} unreachable`,
   );
   if (byteSample.mismatch.length) {
-    await writeReports(ROOT, report);
-    throw new Error(
-      `byte sample mismatch on ${byteSample.mismatch.length} file(s) — the CDN is not serving the ` +
-        `upstream bytes (first: ${byteSample.mismatch[0].key})`,
-    );
+    if (!opts.reportOnly) {
+      await writeReports(ROOT, report);
+      throw new Error(
+        `byte sample mismatch on ${byteSample.mismatch.length} file(s) — the CDN is not serving the ` +
+          `upstream bytes (first: ${byteSample.mismatch[0].key})`,
+      );
+    }
+    log('byte sample mismatch, but --report-only was given — publishing anyway');
   }
 
   await publishCore(config, { opts, manifests, version, indexJson, indexFiles: index.files });
