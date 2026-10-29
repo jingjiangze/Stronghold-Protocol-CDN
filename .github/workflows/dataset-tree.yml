@@ -127,7 +127,13 @@ jobs:
             # 再跑会摘出已迁移的路径 → 重推相同指针 → tree 不变 → exit 0 → workflow 误停
             # （run 38915991675 round 1 实测）。如需重新迁移，手动 dispatch 传 --migrate-lfs。
             repair_flag=""
-            if [ "${{ inputs.repair }}" = "true" ]; then repair_flag="--repair"; fi
+            # 2026-10-30：定时轮也要 --repair。关着的时候本脚本只补「缺失路径」，永远不替换
+            # 「路径在但体积变了」的文件 —— 而上游一次改字节，sync 的验收闸门（拿本数据集当字节
+            # 真值）就会一直 mismatch、整条发布链永久卡死（实测 2026-10-23 起连续 21 次失败，
+            # 数据集停在 v0.3.1 的 639 B，源树早已是 v0.3.3 的 2349 B）。
+            if [ "${{ inputs.repair }}" = "true" ] || [ "${{ github.event_name }}" = "schedule" ]; then
+              repair_flag="--repair"
+            fi
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
               --max-files=${{ inputs.max_files || 400 }} $repair_flag; then

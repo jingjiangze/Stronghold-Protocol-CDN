@@ -157,3 +157,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run site.yml
+
+      # 2026-10-30：R2 没有公开域名，线上 /cdn/v1/* 是 302 到魔搭数据集；把接口从 R2 搬到数据集
+      # 的那一步是 publish-interface，而它此前**只有手动触发**。于是一次成功的 sync 之后，访客读到的
+      # art.json / index.json / api.json 仍是上一代（实测 6 天里两者差一整版：数据集 v0.3.1、
+      # 源树 v0.3.3）。这一步把「发布成功」和「接口可见」接上，否则修好闸门也看不到新版本。
+      - name: publish the interface set to the dataset
+        if: ${{ success() && (inputs.write || github.event_name == 'schedule') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run publish-interface.yml
+
+      # 闸门失败时的自愈：如果是「镜像比源树旧」造成的字节不符，踢一轮带 --repair 的镜像链，
+      # 下一轮 sync（或紧接的手动重跑）就能过。只对闸门失败动作 —— 下载/凭据/上传类失败踢了没用。
+      - name: kick the mirror repair when the acceptance gate failed
+        if: ${{ failure() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gate_failed=$(node -e "const r=require('./report.json'); process.exit(r && r.verification && r.ok===false ? 0 : 1)" && echo yes || echo no)
+          if [ "$gate_failed" != "yes" ]; then
+            echo "不是验收闸门失败（report.json 未显示 ok===false），不踢镜像修复"
+            exit 0
+          fi
+          echo "闸门失败：踢一轮镜像修复（git-art-sync --repair → dataset-tree --repair）"
+          gh workflow run git-art-sync.yml -f write=true -f repair=true || echo "触发 git-art-sync 失败"
+          gh workflow run dataset-tree.yml -f repair=true || echo "触发 dataset-tree 失败"
