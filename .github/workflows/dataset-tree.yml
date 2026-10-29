@@ -54,6 +54,10 @@ on:
         # `result=REJECTED legacy_exit=1`。默认值必须落在通过侧，否则整条链每次 head 前进都全红。
         type: number
         default: 400
+      repair:
+        description: 'true = 同时修复「路径已在但体积变了」的文件（上游改过的内容）'
+        type: boolean
+        default: false
       rounds:
         description: '本次运行最多跑几轮'
         type: number
@@ -122,9 +126,11 @@ jobs:
             # --migrate-lfs 已于 2026-10-16 完成一次性迁移（38910589078 round 1），后续不再需要：
             # 再跑会摘出已迁移的路径 → 重推相同指针 → tree 不变 → exit 0 → workflow 误停
             # （run 38915991675 round 1 实测）。如需重新迁移，手动 dispatch 传 --migrate-lfs。
+            repair_flag=""
+            if [ "${{ inputs.repair }}" = "true" ]; then repair_flag="--repair"; fi
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
-              --max-files=${{ inputs.max_files || 400 }}; then
+              --max-files=${{ inputs.max_files || 400 }} $repair_flag; then
               last=0
             else
               last=$?

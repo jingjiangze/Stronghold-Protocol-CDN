@@ -163,6 +163,8 @@ const smudgeLfs = (buf, p) => {
 //
 // ⚠ 维护约定：平台若放行某个路径，**必须从表里删掉它**，否则它会从「永动」变成「静默缺失」。
 // 脚本每轮都会打印豁免清单（见下方 `平台审核豁免` 日志），审查时以那行为准。
+// `--repair`：把「路径已在、体积不同」的也纳入（上游改过的内容）。默认关闭。
+const REPAIR = args.includes('--repair');
 const PLATFORM_REJECTED = new Set([
   'assets/skins/char_340_shwaz_snow_1/illustration.png',
 ]);
@@ -202,10 +204,17 @@ try {
   // 等于把数据集已有的 17k 份全删掉。
   sh('git -C work read-tree HEAD', tmp);
 
-  // 已有哪些：读远端树（不依赖 index/工作树）
-  const have = new Set();
-  for (const line of git(path.join(tmp, 'work'), 'ls-tree', '-r', '--name-only', 'HEAD', '--', DEST_ROOT).split('\n')) {
-    if (line.startsWith(DEST_ROOT + '/')) have.add(line.slice(DEST_ROOT.length + 1));
+  // 已有哪些：读远端树（不依赖 index/工作树）。带上体积 —— 只取路径名时，「路径在、字节变了」
+  // 的文件永远进不了 todo，数据集会永久停在第一次写入的那一版。
+  const have = new Map();
+  for (const line of git(path.join(tmp, 'work'), 'ls-tree', '-r', '-l', 'HEAD', '--', DEST_ROOT).split('\n')) {
+    const tab = line.indexOf('\t');
+    if (tab < 0) continue;
+    const p = line.slice(tab + 1);
+    if (!p.startsWith(DEST_ROOT + '/')) continue;
+    const meta = line.slice(0, tab).trim().split(/\s+/);
+    if (meta[1] !== 'blob') continue;
+    have.set(p.slice(DEST_ROOT.length + 1), Number(meta[3]) || 0);
   }
   console.log(`  数据集已有 ${have.size} 份`);
 
@@ -239,7 +248,14 @@ try {
     }
   }
 
-  const todo = all.filter((r) => !have.has(r.path) && !PLATFORM_REJECTED.has(r.path));
+  // 默认只补缺失（历史行为）。`--repair` 额外收录「路径在、体积不同」的，让上游改过的内容也能落地。
+  // LFS 路径不参与修复：两侧存的都是指针，比较指针体积没有意义，只按缺失处理。
+  const todo = all.filter((r) => {
+    if (PLATFORM_REJECTED.has(r.path)) return false;
+    if (!have.has(r.path)) return true;
+    if (!REPAIR || isLfsPath(r.path)) return false;
+    return have.get(r.path) !== r.size;
+  });
   console.log(`  待补 ${todo.length} 份 / ${(todo.reduce((s, r) => s + r.size, 0) / 1048576).toFixed(1)} MiB`);
   if (!todo.length) { console.log('数据集已与源树一致（含平台审核豁免），无需推送。'); process.exit(0); }
 
