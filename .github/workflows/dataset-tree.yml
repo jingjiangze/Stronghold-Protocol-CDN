@@ -62,6 +62,10 @@ on:
         description: '本次运行最多跑几轮'
         type: number
         default: 6
+      repair_list:
+        description: '定向重推清单的仓库内路径（例如 tools/repair-lists/xxx.json）；用于修「路径已在但字节错」'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -127,6 +131,8 @@ jobs:
             # 再跑会摘出已迁移的路径 → 重推相同指针 → tree 不变 → exit 0 → workflow 误停
             # （run 38915991675 round 1 实测）。如需重新迁移，手动 dispatch 传 --migrate-lfs。
             repair_flag=""
+            repair_list_flag=""
+            if [ -n "${{ inputs.repair_list }}" ]; then repair_list_flag="--repair-list=${{ inputs.repair_list }}"; fi
             # 2026-10-30 反复：定时轮**不要**自动带 --repair。它在真实数据上会把 todo 放大到远超
             # 单轮预算（实测两次带 repair 的派发分别跑了 75 分钟与 7 小时仍未推出一个 commit，
             # 只能 cancel；而不带 repair 的定时轮历史 9 次全绿）。repair 保留为手动手段：
@@ -134,7 +140,7 @@ jobs:
             if [ "${{ inputs.repair }}" = "true" ]; then repair_flag="--repair"; fi
             if node tools/push-dataset-tree.mjs \
               --max-bytes=${{ inputs.max_bytes || 400 }} \
-              --max-files=${{ inputs.max_files || 400 }} $repair_flag; then
+              --max-files=${{ inputs.max_files || 400 }} $repair_flag $repair_list_flag; then
               last=0
             else
               last=$?

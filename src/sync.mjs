@@ -854,6 +854,14 @@ async function main() {
 
   const probe = await verifyUrls(urls, { expected, onProgress: (done, total) => log(`probed ${done}/${total}`) });
   await reconcileUnreachableFromBucket(config, probe, { expected, base: opts.assetBase });
+  // 本仓刻意托管的键：hosted.json 声明了它的体积，上游包里的同名文件是**另一份字节**。
+  // 闸门的 expected 来自上游索引，对这些键必然对不上；而「服务端返回的体积 == hosted.json 的声明」
+  // 恰好证明发出去的就是我们声明要托管的那一份 —— 那不是不一致，是两种真值的交界。
+  // 实测（2026-10-30）：数据集上 15 个键卡在这里（8 个 char_449_glider 变体：上游 57326 / 托管 59231）。
+  const declaredHosted = reconcileHostedDeclared(probe, { hostedSizes: readHosted(ROOT).sizes, base: opts.assetBase });
+  if (declaredHosted.length) {
+    log(`gate: ${declaredHosted.length} 个键按 hosted.json 的声明体积通过（上游体积不同，属刻意托管）`);
+  }
   report.verification = probe;
   report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
@@ -1101,6 +1109,27 @@ function indexDocument({ release, index }) {
  * there: an object of the expected size proves the bytes are in place. What is still missing is
  * reported and still fails the gate.
  */
+/**
+ * 把「hosted.json 声明了、且服务端返回的正是声明体积」的 mismatch 转成非失败项。
+ *
+ * 只认一个条件：got === hosted.json 里为该键声明的 size。任何解释不了的差异仍留在 mismatch 里，
+ * 所以这条不会掩盖真实的字节损坏（占位页 639 B 与任何声明都对不上，照样会红）。
+ */
+function reconcileHostedDeclared(probe, { hostedSizes, base }) {
+  if (!hostedSizes?.size || !probe?.mismatch?.length) return [];
+  const declared = [];
+  const rest = [];
+  for (const entry of probe.mismatch) {
+    const key = String(entry.url || '').slice(base.length + 1).split('?')[0];
+    const size = hostedSizes.get(key);
+    if (size != null && entry.got === size && entry.expected !== size) declared.push({ ...entry, hostedSize: size });
+    else rest.push(entry);
+  }
+  probe.mismatch = rest;
+  probe.declaredHosted = declared;
+  return declared;
+}
+
 async function reconcileUnreachableFromBucket(config, probe, { expected, base }) {
   if (!probe.failed.length) return;
   const remaining = [];

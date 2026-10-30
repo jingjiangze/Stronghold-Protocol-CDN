@@ -74,6 +74,27 @@ const opt = (n, d) => { const h = args.find((a) => a.startsWith(`--${n}=`)); ret
 const MAX_FILES = opt('max-files', 400);
 const MAX_BYTES = opt('max-bytes', 400) * 1024 * 1024;
 
+// 定向重推清单：一行一个键（或 JSON 数组）。用途是修「路径已在、但字节是错的」——
+// 默认 todo 只按路径存在性判，--repair 又对 LFS 路径天然跳过（两侧都是 130 B 指针，
+// 比体积没有意义），所以「数据集里存着占位页」这种情况没有任何常规入口可以修。
+// 由 sync 的 report.json（verification.mismatch[].url）派生，落成仓库里的清单文件，
+// 便于审阅与复现。
+const REPAIR_LIST_FILE = (args.find((a) => a.startsWith('--repair-list=')) || '').slice('--repair-list='.length);
+const REPAIR_LIST = (() => {
+  if (!REPAIR_LIST_FILE) return null;
+  const p = path.isAbsolute(REPAIR_LIST_FILE) ? REPAIR_LIST_FILE : path.join(REPO_ROOT, REPAIR_LIST_FILE);
+  const raw = fs.readFileSync(p, 'utf8').trim();
+  let keys;
+  if (raw.startsWith('[')) {
+    keys = JSON.parse(raw).map((x) => (typeof x === 'string' ? x : x && (x.key || x.path)));
+  } else {
+    keys = raw.split(/\r?\n/);
+  }
+  const set = new Set(keys.map((k) => String(k || '').trim()).filter(Boolean));
+  console.log(`  --repair-list: ${set.size} 个键来自 ${REPAIR_LIST_FILE}`);
+  return set;
+})();
+
 // 与数据集根 .gitattributes 的 LFS 表逐字对齐（releases/v1-trial/.gitattributes 只补
 // -text -diff -merge，不覆盖 filter）。改动任一侧都要同步这一行，否则本脚本写出的形态
 // 与平台 resolve 时认定的形态不一致，客户端会拿到指针原文而不是素材。
@@ -252,10 +273,18 @@ try {
   // LFS 路径不参与修复：两侧存的都是指针，比较指针体积没有意义，只按缺失处理。
   const todo = all.filter((r) => {
     if (PLATFORM_REJECTED.has(r.path)) return false;
+    // 定向清单优先于下面所有判据：它就是为了修「路径已在但字节错」而存在的。
+    if (REPAIR_LIST && REPAIR_LIST.has(r.path)) return true;
     if (!have.has(r.path)) return true;
     if (!REPAIR || isLfsPath(r.path)) return false;
     return have.get(r.path) !== r.size;
   });
+  if (REPAIR_LIST) {
+    const hit = todo.filter((r) => REPAIR_LIST.has(r.path)).length;
+    const miss = [...REPAIR_LIST].filter((k) => !all.some((r) => r.path === k));
+    console.log(`  --repair-list: 命中 ${hit} 份进入 todo；清单里源树中不存在的键 ${miss.length} 个`);
+    if (miss.length) console.log(`    例如 ${miss.slice(0, 3).join(', ')}`);
+  }
   console.log(`  待补 ${todo.length} 份 / ${(todo.reduce((s, r) => s + r.size, 0) / 1048576).toFixed(1)} MiB`);
   if (!todo.length) { console.log('数据集已与源树一致（含平台审核豁免），无需推送。'); process.exit(0); }
 
