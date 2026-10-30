@@ -28,6 +28,10 @@ const KEYS = [
   'cdn/v1/network.json',
   'cdn/v1/tree.json',
   'cdn/v1/api.json',
+  // 2026-10-30：index.json 之前**不在**这里，于是公网那份永远停在旧代。它同时是
+  // ① 逐文件校验的权威 sha256 表（站点「拉取参数」与 api 契约都指向它）
+  // ② sync 算差集的基线（readRemoteIndex(opts.base)）—— 停在旧代就会每轮重复上传同一批文件。
+  'cdn/v1/index.json',
   // hosted-index.json 是上传通道的登记表，`sync` 重建 tree 时要并进 hosted 集合；它过去同样只活在
   // R2 上，站点与数据集都没有 ⇒ 构建期读到 SPA 兜底 HTML，只能跳过合并（日志里的
   // "hosted-index.json not merged"）。一并搬过来。
@@ -72,8 +76,10 @@ const main = async () => {
   // tree-<token>.json 的版本化副本也在发布集里，key 名要按刚读到的 token 拼。
   const art = JSON.parse(files.get('cdn/v1/art.json').toString('utf8'));
   const token = (art.art || art).token;
-  const versionedTree = `cdn/v1/tree-${token}.json`;
-  files.set(versionedTree, await fetchKey(versionedTree));
+  // 版本化副本同属发布集：契约里 tree-<token> 与 index-<token> 都写着「冻结版」。
+  for (const versioned of [`cdn/v1/tree-${token}.json`, `cdn/v1/index-${token}.json`]) {
+    files.set(versioned, await fetchKey(versioned));
+  }
 
   for (const [key, buf] of files) console.log(`  ${buf.length} B  ${key}`);
 
