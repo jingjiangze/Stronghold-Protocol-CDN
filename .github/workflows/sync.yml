@@ -180,6 +180,8 @@ jobs:
             echo "不是验收闸门失败（report.json 未显示 ok===false），不踢镜像修复"
             exit 0
           fi
-          echo "闸门失败：踢一轮镜像修复（git-art-sync --repair → dataset-tree --repair）"
+          # 只踢快的那条：git-art-sync --repair 实测 20 分钟跑完并成功（run 40974720980）。
+          # dataset-tree --repair 在真实数据上会长时间卡在 push（见 dataset-tree.yml 的注释），
+          # 自动踢它只会占住并发组、把下一轮定时轮挤掉，所以留作手动手段。
+          echo "闸门失败：踢一轮 git-art-sync --repair（把 R2 的新字节补进 assets-raw）"
           gh workflow run git-art-sync.yml -f write=true -f repair=true || echo "触发 git-art-sync 失败"
-          gh workflow run dataset-tree.yml -f repair=true || echo "触发 dataset-tree 失败"
