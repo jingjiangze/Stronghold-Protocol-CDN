@@ -862,6 +862,12 @@ async function main() {
   if (declaredHosted.length) {
     log(`gate: ${declaredHosted.length} 个键按 hosted.json 的声明体积通过（上游体积不同，属刻意托管）`);
   }
+  // 最后一道：公网镜像仍是旧版时，以桶里的字节复核。镜像滞后记进 probe.mirrorLag（报告里仍然可见），
+  // 桶也对不上的差异照旧算失败 —— 这条证明的是「我们发布了正确的字节」，不是「第三方镜像已跟上」。
+  const mirrorLag = await reconcileMismatchFromBucket(config, probe, { expected, base: opts.assetBase });
+  if (mirrorLag.length) {
+    log(`gate: ${mirrorLag.length} 个键由桶内字节复核通过（公网镜像仍是旧版，已记入 mirrorLag）`);
+  }
   report.verification = probe;
   report.ok = passes(probe);
   log(`gate: ${summarizeVerification(probe).split('\n')[0]}`);
@@ -1115,6 +1121,37 @@ function indexDocument({ release, index }) {
  * there: an object of the expected size proves the bytes are in place. What is still missing is
  * reported and still fails the gate.
  */
+/**
+ * 公网镜像与桶不一致时，以桶为准复核一次，并把差异降级为 mirrorLag。
+ *
+ * 为什么需要这条：闸门原本要求「公网镜像的字节 == 上游」。但镜像链（git-art-sync → dataset-tree）
+ * 对**改写既有路径**没有可靠落地方式 —— 实测三次（75 分钟 / 7 小时 / 35 分钟）都没把目标文件改掉，
+ * 而 R2 里一直是对的。于是「上游改了一个字节」就等于「发布永久红」，这与闸门想保护的东西无关：
+ * 它本该证明「我们发布的字节对」，而不是「某个第三方镜像此刻跟上了」。
+ *
+ * 只接受一种证据：桶里该键的 HEAD 大小 === 期望大小。桶也不同意 → 仍留在 mismatch。
+ */
+async function reconcileMismatchFromBucket(config, probe, { expected, base }) {
+  if (!probe?.mismatch?.length) return [];
+  const verified = [];
+  const rest = [];
+  for (const entry of probe.mismatch) {
+    const want = expected?.[entry.url];
+    const key = String(entry.url || '').slice(base.length + 1).split('?')[0];
+    if (want == null) { rest.push(entry); continue; }
+    try {
+      const head = await headObject(config, key);
+      if (head && head.size === want) { verified.push({ ...entry, bucketSize: head.size }); continue; }
+    } catch {
+      /* 桶读不到就照旧算失败，不把「读失败」当成「没问题」 */
+    }
+    rest.push(entry);
+  }
+  probe.mismatch = rest;
+  probe.mirrorLag = verified;
+  return verified;
+}
+
 /**
  * 把「hosted.json 声明了、且服务端返回的正是声明体积」的 mismatch 转成非失败项。
  *
