@@ -919,7 +919,13 @@ async function main() {
       });
       log(`pages dist: ${dist.files} files → ${opts.pagesBase}`);
       deployPages({ dist: dist.out });
-      origins.push({ id: 'pages', kind: 'pages', root: opts.pagesBase, base: `${opts.pagesBase}/assets/` });
+      // 2026-10-30：退役后即使在手动轮里部署成功，也不再把它写回镜像表 ——
+      // retired 只挡住「从已发布列表回填」，挡不住当轮 push。
+      if (readRetiredOrigins(ROOT).has('pages')) {
+        log('pages origin 已在 origins.json 的 retired 里，本次不写回镜像表');
+      } else {
+        origins.push({ id: 'pages', kind: 'pages', root: opts.pagesBase, base: `${opts.pagesBase}/assets/` });
+      }
       report.pages = { base: opts.pagesBase, files: dist.files };
     } catch (error) {
       console.error(`[sync] pages origin FAILED: ${error.message}`);

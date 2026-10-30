@@ -70,7 +70,9 @@
     }
   ],
   "_retired_comment": "Retired origin ids. carryForwardOrigins restores any previously-published origin the current run does not produce, which is what keeps the Pages origin alive on runs without --pages -- but it also resurrects an origin that was deliberately removed from this file. Naming it here is how a removal sticks. r2-alt（weishucdn2）2026-10-20 已删掉 R2 自定义域：域名还在，但只返回 Cloudflare 的占位响应（639 B 外壳，/cdn/v1/index.json 与不存在的路径都返 200），不能当源用。",
+  "_retired_pages_note": "2026-10-30：pages（spages.jiangjiangze.icu）退役。原因不是它坏了，而是它已经**无法再更新**：Cloudflare Pages 当前套餐单次部署上限 20,000 文件，而素材树 dist 是 31,624 个文件（实测报错 'Pages only supports up to 20,000 files in a deployment for your current plan'）。它从树长过两万份那天起就没再部署成功过，却一直挂在对外镜像表里 enabled:true —— 等于把一个冻结的源推荐给客户端。要恢复：把 dist 裁到两万以内（去掉 docs/ 与部分大目录，但那样 coverage 就不再是 full），或升级套餐，然后把它从 retired 移回。",
   "retired": [
+    "pages",
     "statically",
     "r2-alt",
     "gitcdn-own",

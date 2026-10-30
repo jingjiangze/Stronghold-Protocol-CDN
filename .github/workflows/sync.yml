@@ -116,7 +116,10 @@ jobs:
           args=""
           if [ -n "${{ inputs.tag }}" ]; then args="$args --tag=${{ inputs.tag }}"; fi
           if [ "$(want "${{ inputs.write }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --write"; fi
-          if [ "$(want "${{ inputs.pages }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --pages"; fi
+          # 2026-10-30：定时轮不再带 --pages。该源已退役（origins.json retired），而部署本身
+          # 必然失败（Pages 单次上限 20,000 文件 vs dist 31,624），每轮白烧约 5 分钟。
+          # 手动轮仍可用 -f pages=true 复现/验证。
+          if [ "$(want "${{ inputs.pages }}")" = "true" ]; then args="$args --pages"; fi
           if [ "$(want "${{ inputs.packs }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --packs"; fi
           if [ "$(want "${{ inputs.sources }}")" = "true" ] || [ "$scheduled" = "true" ]; then args="$args --sources"; fi
           if [ "${{ inputs.dropin_only }}" = "true" ]; then args="$args --dropin-only"; fi
