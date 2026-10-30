@@ -73,11 +73,15 @@ jobs:
 
       - name: rebuild + verify the tree
         env:
-          SP_CDN_BASE: ${{ inputs.base || vars.SP_CDN_BASE || 'https://speedcdn.jiangjiangze.icu' }}
+          # 2026-10-30：缺省值原来是 speedcdn —— 该域已于 2026-10-28 解绑（R2 只做上传暂存），
+          # 拿它当基址等于每次都在探一个死门牌。改成站点自身。
+          SP_CDN_BASE: ${{ inputs.base || vars.SP_CDN_BASE || 'https://downcdn.jiangjiangze.icu' }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          # 与 publish-interface 同源读已发布态，否则会把 R2 的接口回写成公网那一代（旧）。
+          SP_PUBLISHED_FROM: r2
         run: |
           set -euo pipefail
           # --interface-only 不发上游包、不重哈希，只按已发布的 index 重建派生接口。
