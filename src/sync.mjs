@@ -138,6 +138,7 @@ function parseArgs(argv) {
     prune: false,
     reportOnly: false,
     force: false,
+    reupload: [],
     sample: DEFAULT_SAMPLE,
     pages: false,
     packs: false,
@@ -176,6 +177,15 @@ function parseArgs(argv) {
     else if (arg.startsWith('--asset-base=')) opts.assetBase = arg.slice('--asset-base='.length);
     else if (arg.startsWith('--pages-base=')) opts.pagesBase = arg.slice('--pages-base='.length);
     else if (arg.startsWith('--sample=')) opts.sample = Number(arg.slice('--sample='.length)) || DEFAULT_SAMPLE;
+    // 定向重传清单：一行一个键或 JSON 数组。用来修「索引说 A、桶里存着 B」——
+    // diff 是跟已发布索引比的，这种情况 diff 为 0，常规路径永远发现不了。
+    else if (arg.startsWith('--reupload=')) {
+      const rel = arg.slice('--reupload='.length);
+      const abs = path.isAbsolute(rel) ? rel : path.join(ROOT, rel);
+      const raw = fs.readFileSync(abs, 'utf8').trim();
+      const keys = raw.startsWith('[') ? JSON.parse(raw) : raw.split(/\r?\n/);
+      opts.reupload = keys.map((k) => String(typeof k === 'string' ? k : (k && (k.key || k.path)) || '').trim()).filter(Boolean);
+    }
     else throw new Error(`unknown argument: ${arg}`);
   }
   if (opts.prune && !opts.write) throw new Error('--prune only makes sense together with --write');
@@ -760,6 +770,21 @@ async function main() {
       const uploaded = await uploadKeys(config, stage, keys, index.files);
       report.uploaded = uploaded;
       if (uploaded.failed) throw new Error(`${uploaded.failed} uploads failed — not publishing the interface`);
+    }
+  }
+
+  // 定向重传：diff 只跟「已发布的索引」比。索引说 A、桶里存着 B 时 diff 为 0，桶里的错字节
+  // 就永远修不掉（实测 4 个 scene.bin + fonts.css 卡在这里）。清单来自闸门的桶复核失败项。
+  if (opts.reupload.length) {
+    const forced = opts.reupload.filter((key) => index.files[key]);
+    const unknown = opts.reupload.length - forced.length;
+    if (unknown) log(`reupload: ${unknown} 个键不在本次索引里，跳过`);
+    if (forced.length) {
+      log(`reupload: 定向重传 ${forced.length} 个键（桶内字节与索引不符，diff 发现不了）`);
+      const re = await uploadKeys(config, stage, forced, index.files);
+      report.reuploaded = re;
+      log(`reupload: ${re.done} 个完成 / ${re.failed} 个失败`);
+      if (re.failed) throw new Error(`${re.failed} reuploads failed — not publishing the interface`);
     }
   }
 

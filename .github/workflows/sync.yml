@@ -48,6 +48,10 @@ on:
         description: 'true = also delete keys upstream no longer lists (dangerous)'
         type: boolean
         default: false
+      reupload:
+        description: '定向重传清单的仓库内路径（一行一个键或 JSON 数组）：修「桶里字节与索引不符」'
+        type: string
+        default: ''
       report_only:
         description: 'true = never fail on the gate; just report (a red run means the CDN is incomplete)'
         type: boolean
@@ -126,6 +130,7 @@ jobs:
           if [ "${{ inputs.force }}" = "true" ]; then args="$args --force"; fi
           if [ "${{ inputs.interface_only }}" = "true" ]; then args="$args --interface-only"; fi
           if [ "${{ inputs.prune }}" = "true" ]; then args="$args --prune"; fi
+          if [ -n "${{ inputs.reupload }}" ]; then args="$args --reupload=${{ inputs.reupload }}"; fi
           if [ "${{ inputs.report_only }}" = "true" ]; then args="$args --report-only"; fi
           echo "node src/sync.mjs $args"
           node src/sync.mjs $args
