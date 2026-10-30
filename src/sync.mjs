@@ -305,6 +305,27 @@ async function uploadKeys(config, stage, keys, files) {
   return { done, failed };
 }
 
+/**
+ * 读「已发布的那一份」JSON：SP_PUBLISHED_FROM=r2 时从桶读，否则走公网门牌。
+ *
+ * 为什么必须同源：一份接口由 art（提供 token）与 index（派生 tree）共同决定。两者从不同代读取时，
+ * verifyTreeAndIndex 一定拒绝 —— 这不是数据坏了，是取数取错了地方。
+ */
+async function readPublishedJson(key, base, timeoutMs) {
+  if (process.env.SP_PUBLISHED_FROM === 'r2') {
+    try {
+      const buf = await getObject(r2Config(process.env), key);
+      if (buf) return JSON.parse(buf.toString('utf8'));
+      log(`published ${key}: R2 上没有这个键`);
+    } catch (error) {
+      log(`published ${key}: 从 R2 读取失败（${error.message}）`);
+    }
+  }
+  const res = await fetch(`${base}/${key}`, { signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 /** The interface we published last time, or null when nothing has been published yet. */
 async function readPublishedArt(base) {
   // 2026-10-28：R2 退役、它的自定义域已解绑，但桶里仍留着最后一次真正发布过的接口。
@@ -428,9 +449,10 @@ async function main() {
     // fails the run instead.
     let tree = null;
     try {
-      const res = await fetch(`${opts.base}/cdn/v1/index.json`, { signal: AbortSignal.timeout(30000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const idx = await res.json();
+      // 2026-10-30：改成与 readPublishedArt 同源（SP_PUBLISHED_FROM=r2 时从桶读）。
+      // 之前 token 来自 R2（新）而 index 来自公网（旧），一次成功的 sync 之后守卫必然拒发 ——
+      // 于是「把接口从 R2 搬到数据集」这一步从来没能在真正发布之后跑通。
+      const idx = await readPublishedJson('cdn/v1/index.json', opts.base, 30000);
       // The upload channel's keys live in hosted-index.json, not in index.json (which mirrors the
       // upstream package) and not in this repo's curated hosted.json. Without this merge the
       // browsable tree cannot see them at all: on 2026-10-17 it listed 1,856 skin files while the
