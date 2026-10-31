@@ -1,7 +1,16 @@
-o2p-platform (handshake-only: game bytes never transit this host)
-POST /api/room {"hostNode":"<host openp2p node>","code":"ABCD"}                    -> p2p room (direct tunnel)
-POST /api/room {"hostNode":"...","srcPort":3000,"upstream":"https://<game-host>","code":"ABCD"} -> p2p room + fallback
-POST /api/room {"upstream":"https://<game-host>","code":"ABCD"}                    -> direct room (pure 302)
-GET  /api/room/<id>   join params   |  GET /api/rooms  list  |  GET /api/health
-GET  /go/<id>         302 -> joiner's own 127.0.0.1:<srcPort> (tunnel up) or the fallback upstream (down)
-Web entry: https://p2p.jiangjiangze.icu/go/<id>
+g S_outworld_pPlane3
+v -943.703186 -1.02318154E-12 -978.866089
+v -943.703186 -1.02318154E-12 978.86615
+v 943.703247 -1.02318154E-12 978.86615
+v 943.703247 -1.02318154E-12 -978.866089
+vt 0.197277412 0.826593697
+vt 0.0940399766 0.826593697
+vt 0.0940399766 0.929831505
+vt 0.197277412 0.929831505
+vn -0 -1 0
+vn -0 -1 0
+vn -0 -1 0
+vn -0 -1 0
+g S_outworld_pPlane3_0
+f 3/3/3 2/2/2 1/1/1
+f 4/4/4 3/3/3 1/1/1
