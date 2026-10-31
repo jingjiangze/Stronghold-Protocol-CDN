@@ -1,0 +1,210 @@
+{
+ "version": 1,
+ "props": [
+  {
+   "id": "prop_4",
+   "file": "prop_4.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_5",
+   "file": "prop_5.obj",
+   "verts": 644
+  },
+  {
+   "id": "prop_6",
+   "file": "prop_6.obj",
+   "verts": 511
+  },
+  {
+   "id": "prop_8",
+   "file": "prop_8.obj",
+   "verts": 220
+  },
+  {
+   "id": "prop_10",
+   "file": "prop_10.obj",
+   "verts": 1137
+  },
+  {
+   "id": "prop_12",
+   "file": "prop_12.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_13",
+   "file": "prop_13.obj",
+   "verts": 40
+  },
+  {
+   "id": "prop_14",
+   "file": "prop_14.obj",
+   "verts": 36
+  },
+  {
+   "id": "prop_15",
+   "file": "prop_15.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_17",
+   "file": "prop_17.obj",
+   "verts": 336
+  },
+  {
+   "id": "prop_18",
+   "file": "prop_18.obj",
+   "verts": 4
+  },
+  {
+   "id": "prop_22",
+   "file": "prop_22.obj",
+   "verts": 456
+  },
+  {
+   "id": "prop_26",
+   "file": "prop_26.obj",
+   "verts": 420
+  },
+  {
+   "id": "prop_33",
+   "file": "prop_33.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_35",
+   "file": "prop_35.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_38",
+   "file": "prop_38.obj",
+   "verts": 4
+  },
+  {
+   "id": "prop_39",
+   "file": "prop_39.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_43",
+   "file": "prop_43.obj",
+   "verts": 924
+  },
+  {
+   "id": "prop_44",
+   "file": "prop_44.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_54",
+   "file": "prop_54.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_55",
+   "file": "prop_55.obj",
+   "verts": 502
+  },
+  {
+   "id": "prop_58",
+   "file": "prop_58.obj",
+   "verts": 224
+  },
+  {
+   "id": "prop_69",
+   "file": "prop_69.obj",
+   "verts": 644
+  },
+  {
+   "id": "prop_71",
+   "file": "prop_71.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_74",
+   "file": "prop_74.obj",
+   "verts": 220
+  },
+  {
+   "id": "prop_75",
+   "file": "prop_75.obj",
+   "verts": 240
+  },
+  {
+   "id": "prop_76",
+   "file": "prop_76.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_79",
+   "file": "prop_79.obj",
+   "verts": 224
+  },
+  {
+   "id": "prop_94",
+   "file": "prop_94.obj",
+   "verts": 924
+  },
+  {
+   "id": "prop_107",
+   "file": "prop_107.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_109",
+   "file": "prop_109.obj",
+   "verts": 60
+  },
+  {
+   "id": "prop_110",
+   "file": "prop_110.obj",
+   "verts": 40
+  },
+  {
+   "id": "prop_128",
+   "file": "prop_128.obj",
+   "verts": 20
+  },
+  {
+   "id": "prop_137",
+   "file": "prop_137.obj",
+   "verts": 2280
+  },
+  {
+   "id": "prop_141",
+   "file": "prop_141.obj",
+   "verts": 1668
+  },
+  {
+   "id": "prop_146",
+   "file": "prop_146.obj",
+   "verts": 680
+  },
+  {
+   "id": "prop_164",
+   "file": "prop_164.obj",
+   "verts": 676
+  },
+  {
+   "id": "prop_165",
+   "file": "prop_165.obj",
+   "verts": 2280
+  },
+  {
+   "id": "prop_181",
+   "file": "prop_181.obj",
+   "verts": 420
+  },
+  {
+   "id": "prop_210",
+   "file": "prop_210.obj",
+   "verts": 1780
+  },
+  {
+   "id": "prop_213",
+   "file": "prop_213.obj",
+   "verts": 480
+  }
+ ]
+}
