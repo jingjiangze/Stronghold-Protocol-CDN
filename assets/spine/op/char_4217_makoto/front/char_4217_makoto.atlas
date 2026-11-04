@@ -1,8 +1,10 @@
+
 char_4217_makoto.png
 size: 636,636
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
+pma: true
 B_Belt_A
   rotate: true
   xy: 619, 595
