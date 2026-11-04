@@ -1,0 +1,90 @@
+{
+  "_comment": "Manifest of this snapshot, derived from the R2 origin's cdn/v1/index.json. Kept here so the branch is self-describing: a reader can see what should be present and check any file without needing the origin.",
+  "_generatedAt": "2026-10-09T03:35:45.044Z",
+  "_origin": "https://weishucdn.jiangjiangze.icu/cdn/v1/index.json",
+  "_token": "v0.2.2-4cb05ed6",
+  "_upstream": {
+    "repo": "sganggs/Stronghold-Protocol",
+    "tag": "v0.2.2",
+    "zip": "Stronghold-Protocol-v0.2.2.zip",
+    "zipSha256": "7a4342af163cae9972a7bc73081f152702092d9e8aec4d3938cf1a9cc9cfc31e"
+  },
+  "_verified": "every entry matched on size and sha256 against _origin before commit",
+  "_howToVerify": "for each key: sha256(file) === value.sha256 and size(file) === value.size, using _origin as truth",
+  "totals": {
+    "files": 12261,
+    "bytes": 648431696
+  },
+  "dirs": [
+    {
+      "prefix": "assets/spine/",
+      "files": 2015,
+      "bytes": 236001660
+    },
+    {
+      "prefix": "assets/audio/",
+      "files": 6053,
+      "bytes": 197369269
+    },
+    {
+      "prefix": "assets/local/",
+      "files": 1611,
+      "bytes": 73751270
+    },
+    {
+      "prefix": "assets/char/",
+      "files": 804,
+      "bytes": 72981105
+    },
+    {
+      "prefix": "assets/ui/",
+      "files": 602,
+      "bytes": 41065933
+    },
+    {
+      "prefix": "assets/enemy/",
+      "files": 252,
+      "bytes": 11079159
+    },
+    {
+      "prefix": "assets/skill/",
+      "files": 522,
+      "bytes": 10054787
+    },
+    {
+      "prefix": "assets/band/",
+      "files": 40,
+      "bytes": 2740050
+    },
+    {
+      "prefix": "assets/token/",
+      "files": 50,
+      "bytes": 1454775
+    },
+    {
+      "prefix": "assets/item/",
+      "files": 59,
+      "bytes": 1114423
+    },
+    {
+      "prefix": "assets/prof/",
+      "files": 93,
+      "bytes": 279115
+    },
+    {
+      "prefix": "fonts/",
+      "files": 7,
+      "bytes": 230526
+    },
+    {
+      "prefix": "assets/module/",
+      "files": 130,
+      "bytes": 219556
+    },
+    {
+      "prefix": "assets/bond/",
+      "files": 23,
+      "bytes": 90068
+    }
+  ]
+}
