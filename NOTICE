@@ -1,0 +1,31 @@
+# NOTICE · 素材字节与代码的分界
+
+## 代码：GPL-3.0-or-later
+
+本仓库的**代码与文档**——`worker/`、`functions/`、`src/`、`tools/`、`probe/`、`tests/`、
+`docs/`、各类 `*.json` 清单——以 **GNU General Public License v3.0 或更新版本**
+（`GPL-3.0-or-later`）发布，全文见 `LICENSE`。
+
+## 不随 GPL 授权的部分
+
+### 1. 游戏素材（版权归 Hypergryph / Yostar）
+
+本仓库**不把素材字节提交进 git**（见 README「安全约定」）。实际分发的图集、立绘、音效、
+spine 动画等上游素材位于对象存储（R2）与上游发布包中，**版权归 Hypergryph / Yostar 所有**，
+仅作非商业同人分发，**不适用**本仓库的 GPL-3.0 授权。
+
+### 2. 上游 Release 包与按需素材包
+
+按需生成的素材包（如 APK 侧包）与从上游 Release 派生的文件，
+其来源为 **Stronghold-Protocol**（`sganggs/Stronghold-Protocol`，GPL-3.0-or-later）
+与官方发布渠道；其中代码部分沿用上游 GPL-3.0，素材部分仍归 Hypergryph / Yostar。
+本仓库只负责镜像、校验与索引，不重新授权这些字节。
+
+### 3. 第三方字体与依赖
+
+`public/` 与前端中引入的字体、第三方库版权归各自作者，按其原始许可分发。
+
+## 再分发时
+
+保留本文件与 `LICENSE`。若你把镜像下来的素材字节再分发，请同时遵守素材权利人的条款，
+GPL-3.0 不覆盖这部分内容。
