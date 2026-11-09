@@ -193,3 +193,9 @@ node tools/report-undeclared.mjs       # 桶里有、契约/hosted.json 都没�
   （APK 的按需素材包就靠这一条活着：23 个键 / 464.8 MB，不在上游清单里）。
 - 上游 URL 只允许 `https://`，且拒绝环回/私有/保留地址。
 - 不把字节提交进仓库（素材体积以 GB 计，且版权归 Hypergryph / Yostar；见 `NOTICE` 说明）。
+
+## 许可
+
+本仓库的代码与文档以 **GNU General Public License v3.0 或更新版本**（`GPL-3.0-or-later`）发布，全文见 [`LICENSE`](LICENSE)。
+
+素材字节（版权归 Hypergryph / Yostar）与上游 Release 包**不在** GPL-3.0 授权范围内，分界见 [`NOTICE`](NOTICE)。
