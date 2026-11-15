@@ -1,0 +1,184 @@
+{
+  "spTheme": 1,
+  "id": "ac_n_initial",
+  "name": "卫戍协议终端",
+  "author": "Hypergryph (official)",
+  "version": "79.2.0",
+  "description": "一切模拟都从此开始。",
+  "thumbnail": "thumb.webp",
+  "preview": "preview.webp",
+  "colors": {
+    "garrisonIconColor1": "#FFFFFF33",
+    "garrisonIconColor2": "#FFFFFF33",
+    "garrisonIconColor3": "#FFFFFF33",
+    "bondColor": "#B7B7B7",
+    "bondIconColor": "#031712",
+    "chessNameColor": "#FFFFFF",
+    "saleColor1": "#FFBA00",
+    "saleColor2": "#3A2D0A",
+    "destroyColor1": "#DC3B3B",
+    "destroyColor2": "#290808",
+    "countdownHintColor": "#FF0000",
+    "obIconColor": "#00FFC4",
+    "skinDarkColor": "#00FFC4",
+    "skinLightColor": "#00FFC4"
+  },
+  "images": {
+    "hud_player_info": {
+      "src": "sprites/bg_board.webp",
+      "slice": [
+        0,
+        5,
+        0,
+        5
+      ]
+    },
+    "game_start": "sprites/goal_bg.webp",
+    "help_battle": {
+      "src": "sprites/round_bg.webp",
+      "slice": [
+        79,
+        82,
+        75,
+        79
+      ]
+    },
+    "round_start": {
+      "src": "sprites/round_bg.webp",
+      "slice": [
+        79,
+        82,
+        75,
+        79
+      ]
+    },
+    "round_result": {
+      "src": "sprites/bg_all.webp",
+      "slice": [
+        85,
+        95,
+        86,
+        95
+      ]
+    },
+    "effect_choose_self_select": "sprites/bg_circle.webp",
+    "img_check_enemy": "sprites/btn_check_enemy.webp",
+    "img_check_player": "sprites/btn_check_player_normal.webp",
+    "img_check_buff_back": "sprites/buff_btn_opened.webp",
+    "img_check_buff_normal": "sprites/buff_btn_clickable.webp",
+    "countdown": "sprites/img_single.webp",
+    "countdown_effectchoose": "sprites/img_single.webp",
+    "countdown_outer": "sprites/img_single.webp",
+    "prep_ready": {
+      "src": "sprites/ready_bg.webp",
+      "slice": [
+        23,
+        23,
+        23,
+        23
+      ]
+    },
+    "char_spine_outer": "sprites/img_char_spine_outer.webp",
+    "win_streak": "sprites/win_streak_2_base.webp",
+    "boss_damage": {
+      "src": "sprites/damage_fx_frame_cross.webp",
+      "slice": [
+        14,
+        15,
+        13,
+        12
+      ]
+    },
+    "img_shop_sell_chess_normal": "sprites/img_sell_chess_normal.webp",
+    "img_shop_sell_chess_hover": "sprites/img_sell_chess_hover.webp",
+    "img_shop_sell_equip_normal": "sprites/img_sell_equip_normal.webp",
+    "img_shop_sell_equip_hover": "sprites/img_sell_equip_hover.webp",
+    "chess_frame_normal": "sprites/chess_frame_normal.webp",
+    "chess_frame_level_five": "sprites/chess_frame_level_five.webp",
+    "chess_frame_level_six": "sprites/chess_frame_level_six.webp",
+    "chess_level_icon_1": "sprites/chess_level_icon_1.webp",
+    "chess_level_icon_2": "sprites/chess_level_icon_2.webp",
+    "chess_level_icon_3": "sprites/chess_level_icon_3.webp",
+    "chess_level_icon_4": "sprites/chess_level_icon_4.webp",
+    "chess_level_icon_5": "sprites/chess_level_icon_5.webp",
+    "chess_level_icon_6": "sprites/chess_level_icon_6.webp",
+    "shop_level_1": "sprites/shop_level_1.webp",
+    "shop_level_2": "sprites/shop_level_2.webp",
+    "shop_level_3": "sprites/shop_level_3.webp",
+    "shop_level_4": "sprites/shop_level_4.webp",
+    "shop_level_5": "sprites/shop_level_5.webp",
+    "shop_level_6": "sprites/shop_level_6.webp"
+  },
+  "banners": {
+    "gameStart": "sprites/goal_bg.webp",
+    "rest": {
+      "src": "sprites/round_bg.webp",
+      "slice": [
+        79,
+        82,
+        75,
+        79
+      ]
+    },
+    "perfect": {
+      "src": "sprites/bg_all.webp",
+      "slice": [
+        85,
+        95,
+        86,
+        95
+      ]
+    },
+    "coop": {
+      "src": "sprites/round_bg.webp",
+      "slice": [
+        79,
+        82,
+        75,
+        79
+      ]
+    },
+    "effectChoose": "sprites/bg_circle.webp",
+    "battleEnd": {
+      "src": "sprites/round_bg.webp",
+      "slice": [
+        79,
+        82,
+        75,
+        79
+      ]
+    },
+    "perfectStreak": "sprites/win_streak_2_base.webp",
+    "finalAssault": {
+      "src": "sprites/frame_mid_boss.webp",
+      "slice": [
+        12,
+        26,
+        11,
+        26
+      ]
+    },
+    "bossDamage": {
+      "src": "sprites/damage_fx_frame_cross.webp",
+      "slice": [
+        14,
+        15,
+        13,
+        12
+      ]
+    }
+  },
+  "voice": {},
+  "character": {
+    "spine": {
+      "skel": "spine/trap_1096_acshopup.json",
+      "atlas": "spine/trap_1096_acshopup.atlas",
+      "textures": [
+        "spine/trap_1096_acshopup.png"
+      ]
+    },
+    "anims": {
+      "idle": "Idle"
+    }
+  }
+}

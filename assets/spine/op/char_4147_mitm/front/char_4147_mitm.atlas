@@ -4,7 +4,6 @@ size: 300,300
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 B_Hand_L_Open_1
   rotate: true
   xy: 45, 144

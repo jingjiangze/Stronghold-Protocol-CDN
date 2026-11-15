@@ -1,0 +1,140 @@
+{
+  "spTheme": 1,
+  "id": "ac_n_iron",
+  "name": "乌萨斯齐心团",
+  "author": "Hypergryph (official)",
+  "version": "79.2.0",
+  "description": "卫戍协议模拟中的乌萨斯工人团体，每个人都是大嗓门。",
+  "thumbnail": "thumb.webp",
+  "preview": "preview.webp",
+  "colors": {
+    "garrisonIconColor1": "#4C412A80",
+    "garrisonIconColor2": "#4C412A80",
+    "garrisonIconColor3": "#4C412A80",
+    "bondColor": "#EFEBDF",
+    "bondIconColor": "#BAD7CF",
+    "chessNameColor": "#EFEBDF",
+    "saleColor1": "#FFBA00",
+    "saleColor2": "#3A2D0A",
+    "destroyColor1": "#DC3B3B",
+    "destroyColor2": "#290808",
+    "countdownHintColor": "#FF0000",
+    "obIconColor": "#BAD7CF",
+    "skinDarkColor": "#BAD7CF",
+    "skinLightColor": "#BAD7CF"
+  },
+  "images": {
+    "hud_player_info": "sprites/bg_1_2.webp",
+    "game_start": "sprites/goal_bg.webp",
+    "help_battle": "sprites/bg.webp",
+    "round_start": {
+      "src": "sprites/tag_round_boss.webp",
+      "slice": [
+        0,
+        90,
+        0,
+        232
+      ]
+    },
+    "round_result": "sprites/bg.webp",
+    "effect_choose_self_select": "sprites/bg_back.webp",
+    "img_check_enemy": "sprites/btn_check_enemy.webp",
+    "img_check_player": "sprites/btn_check_player_normal.webp",
+    "img_check_buff_back": "sprites/buff_btn_opened.webp",
+    "img_check_buff_normal": "sprites/buff_btn_clickable.webp",
+    "countdown": "sprites/img_back.webp",
+    "countdown_effectchoose": "sprites/img_bg_1.webp",
+    "prep_ready": "sprites/btn_ready.webp",
+    "char_spine_outer": "sprites/img_char_spine_outer.webp",
+    "chess_frame_normal": "sprites/chess_frame_normal.webp",
+    "chess_frame_level_five": "sprites/chess_frame_level_five.webp",
+    "chess_frame_level_six": "sprites/chess_frame_level_six.webp",
+    "chess_level_icon_1": "sprites/chess_level_icon_1.webp",
+    "chess_level_icon_2": "sprites/chess_level_icon_2.webp",
+    "chess_level_icon_3": "sprites/chess_level_icon_3.webp",
+    "chess_level_icon_4": "sprites/chess_level_icon_4.webp",
+    "chess_level_icon_5": "sprites/chess_level_icon_5.webp",
+    "chess_level_icon_6": "sprites/chess_level_icon_6.webp",
+    "shop_level_1": "sprites/shop_level_1.webp",
+    "shop_level_2": "sprites/shop_level_2.webp",
+    "shop_level_3": "sprites/shop_level_3.webp",
+    "shop_level_4": "sprites/shop_level_4.webp",
+    "shop_level_5": "sprites/shop_level_5.webp",
+    "shop_level_6": "sprites/shop_level_6.webp"
+  },
+  "banners": {
+    "gameStart": "sprites/goal_bg.webp",
+    "rest": {
+      "src": "sprites/tag_round_boss.webp",
+      "slice": [
+        0,
+        90,
+        0,
+        232
+      ]
+    },
+    "perfect": "sprites/bg.webp",
+    "coop": "sprites/bg.webp",
+    "effectChoose": "sprites/bg_back.webp",
+    "battleEnd": "sprites/bg.webp",
+    "finalAssault": {
+      "src": "sprites/boss_bg.webp",
+      "slice": [
+        0,
+        26,
+        0,
+        26
+      ]
+    }
+  },
+  "voice": {
+    "AUTOCHESS_GAME_START": [
+      "voice/cn_001.mp3",
+      "voice/cn_002.mp3",
+      "voice/cn_003.mp3"
+    ],
+    "AUTOCHESS_REST_NO_HP_LOSS": [
+      "voice/cn_004.mp3",
+      "voice/cn_005.mp3"
+    ],
+    "AUTOCHESS_REST_HP_LOSS": [
+      "voice/cn_006.mp3",
+      "voice/cn_007.mp3"
+    ],
+    "AUTOCHESS_REST_BOSS": [
+      "voice/cn_008.mp3"
+    ],
+    "AUTOCHESS_REST_HIDDEN_BOSS": [
+      "voice/cn_009.mp3"
+    ],
+    "AUTOCHESS_SAME_OPERATOR": [
+      "voice/cn_010.mp3",
+      "voice/cn_011.mp3"
+    ],
+    "AUTOCHESS_BUY_OPERATOR_LOW": [
+      "voice/cn_012.mp3"
+    ],
+    "AUTOCHESS_BUY_OPERATOR_HIGH": [
+      "voice/cn_013.mp3"
+    ],
+    "AUTOCHESS_SHOP_UPGRADE": [
+      "voice/cn_014.mp3",
+      "voice/cn_017.mp3"
+    ],
+    "AUTOCHESS_COUNTDOWN": [
+      "voice/cn_018.mp3"
+    ],
+    "AUTOCHESS_MERGE_TRIPLE": [
+      "voice/cn_019.mp3"
+    ],
+    "AUTOCHESS_ALLIANCE_LEVEL": [
+      "voice/cn_020.mp3"
+    ],
+    "AUTOCHESS_FREEZE": [
+      "voice/cn_021.mp3"
+    ]
+  },
+  "character": {
+    "image": "sprites/char_2.webp"
+  }
+}

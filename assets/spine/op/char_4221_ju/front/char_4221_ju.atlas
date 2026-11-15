@@ -4,7 +4,6 @@ size: 488,488
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-pma: true
 Arw
   rotate: false
   xy: 157, 181
